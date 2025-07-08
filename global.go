@@ -88,6 +88,9 @@ func gfnLen(args ...Value) (Value, error) {
 		case *Array:
 			return Integer(len(v.Value)), nil
 		case *Object:
+			if _, ok := v.Value[__proto]; ok {
+				return Integer(len(v.Value) - 1), nil
+			}
 			return Integer(len(v.Value)), nil
 		case *String:
 			if v.Runes == nil {
