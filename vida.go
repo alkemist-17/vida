@@ -35,7 +35,7 @@ func About() string {
 	by implementing the Value interface.
 	The core and foundation libs are implemented in such way, so anyone can add to the
 	language all what could be needed for your projects.
-	Vida can be embedded in a host environment or used as self-sufficient language.
+	Vida can be embedded in a host environment or can be used as self-sufficient language.
 	Vida is a living language!
 	Contributions are always welcome.
 	

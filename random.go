@@ -13,7 +13,6 @@ func loadFoundationRandom() Value {
 	m.Value["exp"] = randNextF(rand.ExpFloat64)
 	m.Value["perm"] = GFn(randPerm)
 	m.Value["shuffled"] = GFn(randShuffled)
-	m.UpdateKeys()
 	return m
 }
 
@@ -52,7 +51,7 @@ func randPerm(args ...Value) (Value, error) {
 					xs[i] = Integer(i)
 				}
 				rand.Shuffle(int(v), func(i, j int) { xs[i], xs[j] = xs[j], xs[i] })
-				return &List{Value: xs}, nil
+				return &Array{Value: xs}, nil
 			}
 		}
 	}
@@ -61,8 +60,8 @@ func randPerm(args ...Value) (Value, error) {
 
 func randShuffled(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if v, ok := args[0].(*List); ok {
-			c := v.Clone().(*List)
+		if v, ok := args[0].(*Array); ok {
+			c := v.Clone().(*Array)
 			rand.Shuffle(len(v.Value), func(i, j int) { c.Value[i], c.Value[j] = c.Value[j], c.Value[i] })
 			return c, nil
 		}

@@ -61,7 +61,7 @@ type Nil struct {
 	Value struct{}
 }
 
-type List struct {
+type Array struct {
 	ExprList []Node
 }
 
@@ -248,7 +248,7 @@ func (n *Block) _node()           {}
 func (n *Integer) _node()         {}
 func (n *Float) _node()           {}
 func (n *String) _node()          {}
-func (n *List) _node()            {}
+func (n *Array) _node()           {}
 func (n *IGet) _node()            {}
 func (n *IGetStmt) _node()        {}
 func (n *Slice) _node()           {}

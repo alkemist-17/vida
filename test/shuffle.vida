@@ -18,7 +18,7 @@ var shuffle = fun xs {
 }
 
 var generateList = fun N {
-    var xs = list(N)
+    var xs = array(N)
     for i in 0, N {
         xs[i] = i
     }

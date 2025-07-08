@@ -27,4 +27,4 @@ var g = fun xs... {
 var c = curry(g)
 
 assert(c(1,2,3)(4,5) == 15)
-assert(c(...list(100, 2))(...list(100, 1)) == 300)
+assert(c(...array(100, 2))(...array(100, 1)) == 300)

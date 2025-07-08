@@ -9,7 +9,7 @@ assert(object.inject(void, void, void) == void and object.inject(void, void, voi
 var gen = { calipso casipea ursaMaiorem }
 
 assert(object.inject(void, void, gen))
-assert(object.check(void, gen))
+assert(object.conforms(void, gen))
 
 void = {}
 

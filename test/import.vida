@@ -4,15 +4,15 @@ var depA = import("dep-A")
 var depB = import("dep-B")
 
 assert(
-    depA--fourTimesTau() == math.tau * 4 or
-    depA--fourTimesTau() >= math.tau * 4 or
-    depA--fourTimesTau() <= math.tau * 4
+    depA:fourTimesTau() == math.tau * 4 or
+    depA:fourTimesTau() >= math.tau * 4 or
+    depA:fourTimesTau() <= math.tau * 4
 )
 
 assert(
-    depA--fourTimesPi() == math.pi * 4 or
-    depA--fourTimesPi() >= math.pi * 4 or
-    depA--fourTimesPi() <= math.pi * 4
+    depA:fourTimesPi() == math.pi * 4 or
+    depA:fourTimesPi() >= math.pi * 4 or
+    depA:fourTimesPi() <= math.pi * 4
 )
 
 assert(not depB)

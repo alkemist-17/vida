@@ -5,7 +5,7 @@ assert(bin)
 var time = load("std/time")
 assert(time)
 
-var cast = load("std/cast")
+var cast = load("std/conv")
 assert(cast)
 
 var exception = load("std/exception")

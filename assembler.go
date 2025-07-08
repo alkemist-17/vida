@@ -133,11 +133,11 @@ func (c *compiler) emitSuperEq(lidx, ridx, to, scopeLeft, scopeRight int, operat
 	c.currentFn.Code = append(c.currentFn.Code, i)
 }
 
-func (c *compiler) emitList(length, root, to int) {
+func (c *compiler) emitArray(length, root, to int) {
 	var i uint64 = uint64(to)
 	i |= uint64(root) << shift16
 	i |= uint64(length) << shift32
-	i |= list << shift56
+	i |= array << shift56
 	c.currentFn.Code = append(c.currentFn.Code, i)
 }
 

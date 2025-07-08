@@ -34,10 +34,12 @@ func NewInterpreter(path string, extensionlibloader map[string]func() Value) (*I
 	if err != nil {
 		return nil, err
 	}
+	vm := &VM{mainThread}
+	(*(script.Store))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
 	return &Interpreter{
 		parser:   p,
 		compiler: c,
-		vm:       &VM{mainThread},
+		vm:       vm,
 	}, nil
 }
 
@@ -66,10 +68,12 @@ func NewDebugger(path string, extensionlibloader map[string]func() Value) (*Inte
 	if err != nil {
 		return nil, err
 	}
+	vm := &VM{mainThread}
+	(*(script.Store))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
 	return &Interpreter{
 		parser:   p,
 		compiler: c,
-		vm:       &VM{mainThread},
+		vm:       vm,
 	}, nil
 }
 

@@ -36,7 +36,6 @@ func loadFoundationText() Value {
 	m.Value["isSpace"] = GFn(isSpace)
 	m.Value["codePoint"] = GFn(codepoint)
 	m.Value["byteslen"] = GFn(byteslen)
-	m.UpdateKeys()
 	return m
 }
 
@@ -136,15 +135,15 @@ func split(args ...Value) (Value, error) {
 	if l > 1 {
 		if v, ok := args[0].(*String); ok {
 			if p, ok := args[1].(*String); ok {
-				return stringSliceToList(strings.Split(v.Value, p.Value)), nil
+				return stringSliceToArray(strings.Split(v.Value, p.Value)), nil
 			}
-			return stringSliceToList(strings.Split(v.Value, "")), nil
+			return stringSliceToArray(strings.Split(v.Value, "")), nil
 		}
 		return NilValue, nil
 	}
 	if l == 1 {
 		if v, ok := args[0].(*String); ok {
-			return stringSliceToList(strings.Split(v.Value, "")), nil
+			return stringSliceToArray(strings.Split(v.Value, "")), nil
 		}
 	}
 	return NilValue, nil
@@ -153,7 +152,7 @@ func split(args ...Value) (Value, error) {
 func fields(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
-			return stringSliceToList(strings.Fields(v.Value)), nil
+			return stringSliceToArray(strings.Fields(v.Value)), nil
 		}
 	}
 	return NilValue, nil
@@ -293,7 +292,7 @@ func index(args ...Value) (Value, error) {
 
 func join(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if xs, ok := args[0].(*List); ok {
+		if xs, ok := args[0].(*Array); ok {
 			if sep, ok := args[1].(*String); ok {
 				var r []string
 				for _, v := range xs.Value {
@@ -430,11 +429,11 @@ func byteslen(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func stringSliceToList(slice []string) Value {
+func stringSliceToArray(slice []string) Value {
 	l := len(slice)
 	xs := make([]Value, l)
 	for i := 0; i < l; i++ {
 		xs[i] = &String{Value: slice[i]}
 	}
-	return &List{Value: xs}
+	return &Array{Value: xs}
 }

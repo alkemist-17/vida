@@ -281,14 +281,14 @@ func (vm *VM) run() (Result, error) {
 				return vm.createError(ip, err)
 			}
 			vm.Frame.stack[B] = val
-		case list:
+		case array:
 			xs := make([]Value, P)
 			F := A
 			for i := 0; i < int(P); i++ {
 				xs[i] = vm.Frame.stack[F]
 				F++
 			}
-			vm.Frame.stack[B] = &List{Value: xs}
+			vm.Frame.stack[B] = &Array{Value: xs}
 		case object:
 			vm.Frame.stack[B] = &Object{Value: make(map[string]Value)}
 		case forSet:
@@ -368,7 +368,7 @@ func (vm *VM) run() (Result, error) {
 				if P != 0 {
 					switch P {
 					case ellipsisFirst:
-						if xs, ok := vm.Frame.stack[B+F].(*List); ok {
+						if xs, ok := vm.Frame.stack[B+F].(*Array); ok {
 							nargs = len(xs.Value) + int(F) - 1
 							for i, v := range xs.Value {
 								vm.Frame.stack[int(B)+int(F)+i] = v
@@ -377,7 +377,7 @@ func (vm *VM) run() (Result, error) {
 							return vm.createError(ip, verror.ErrVariadicArgs)
 						}
 					case ellipsisLast:
-						if xs, ok := vm.Frame.stack[int(B)+nargs].(*List); ok {
+						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok {
 							nargs += len(xs.Value) - 1
 							for i, v := range xs.Value {
 								vm.Frame.stack[int(B)+int(A)+i] = v
@@ -397,7 +397,7 @@ func (vm *VM) run() (Result, error) {
 					for i := 0; i < count; i++ {
 						xs[i] = vm.Frame.stack[init+i]
 					}
-					vm.Frame.stack[init] = &List{Value: xs}
+					vm.Frame.stack[init] = &Array{Value: xs}
 				} else if nargs != fn.CoreFn.Arity {
 					return vm.createError(ip, verror.ErrArity)
 				}
@@ -421,7 +421,52 @@ func (vm *VM) run() (Result, error) {
 			} else {
 				v, err := val.Call(vm.Frame.stack[B+1 : B+A+1]...)
 				if err != nil {
-					return vm.createError(ip, err)
+					switch err {
+					case verror.ErrResumeThreadSignal:
+						_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
+						if threadError != nil {
+							return vm.createError(ip, threadError)
+						}
+						switch vm.State {
+						case Closed:
+							v = vm.Channel
+							invoker := vm.Thread.Invoker
+							invoker.State = Running
+							vm.Thread.Invoker = nil
+							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.Thread = invoker
+						case Suspended:
+							v = vm.Channel
+							invoker := vm.Thread.Invoker
+							invoker.State = Running
+							vm.Thread.Invoker = nil
+							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.Thread = invoker
+						}
+					case verror.ErrStartThreadSignal:
+						_, threadError := vm.runThread(vm.fp, 0, true, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
+						if threadError != nil {
+							return vm.createError(ip, threadError)
+						}
+						switch vm.State {
+						case Closed:
+							v = vm.Channel
+							invoker := vm.Thread.Invoker
+							invoker.State = Running
+							vm.Thread.Invoker = nil
+							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.Thread = invoker
+						case Suspended:
+							v = vm.Channel
+							invoker := vm.Thread.Invoker
+							invoker.State = Running
+							vm.Thread.Invoker = nil
+							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.Thread = invoker
+						}
+					default:
+						return vm.createError(ip, err)
+					}
 				}
 				vm.Frame.stack[B] = v
 			}
@@ -454,10 +499,10 @@ func (vm *VM) run() (Result, error) {
 func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 	val := vm.Frame.stack[sliceable]
 	switch v := val.(type) {
-	case *List:
+	case *Array:
 		switch mode {
 		case vcv:
-			return &List{Value: v.Value[:]}, nil
+			return &Array{Value: v.Value[:]}, nil
 		case vce:
 			e := vm.Frame.stack[sliceable+1]
 			switch ee := e.(type) {
@@ -467,12 +512,12 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					ee += l
 				}
 				if 0 <= ee && ee <= l {
-					return &List{Value: v.Value[:ee]}, nil
+					return &Array{Value: v.Value[:ee]}, nil
 				}
 				if ee > l {
-					return &List{Value: v.Value[:]}, nil
+					return &Array{Value: v.Value[:]}, nil
 				}
-				return &List{}, nil
+				return &Array{}, nil
 			}
 		case ecv:
 			e := vm.Frame.stack[sliceable+1]
@@ -483,12 +528,12 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					ee += l
 				}
 				if 0 <= ee && ee <= l {
-					return &List{Value: v.Value[ee:]}, nil
+					return &Array{Value: v.Value[ee:]}, nil
 				}
 				if ee < 0 {
-					return &List{Value: v.Value[:]}, nil
+					return &Array{Value: v.Value[:]}, nil
 				}
-				return &List{}, nil
+				return &Array{}, nil
 			}
 		case ece:
 			l := vm.Frame.stack[sliceable+1]
@@ -505,22 +550,22 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 						rr += xslen
 					}
 					if 0 <= ll && ll <= xslen && 0 <= rr && rr <= xslen {
-						return &List{Value: v.Value[ll:rr]}, nil
+						return &Array{Value: v.Value[ll:rr]}, nil
 					}
 					if ll < 0 {
 						if 0 <= rr && rr <= xslen {
-							return &List{Value: v.Value[:rr]}, nil
+							return &Array{Value: v.Value[:rr]}, nil
 						}
 						if rr > xslen {
-							return &List{Value: v.Value[:]}, nil
+							return &Array{Value: v.Value[:]}, nil
 						}
 					} else if rr > xslen {
 						if 0 <= ll && ll <= xslen {
-							return &List{Value: v.Value[ll:]}, nil
+							return &Array{Value: v.Value[ll:]}, nil
 						}
 					}
 				}
-				return &List{}, nil
+				return &Array{}, nil
 			}
 		}
 	case *String:

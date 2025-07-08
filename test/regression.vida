@@ -16,12 +16,12 @@ var data = {
 
 for in 1000 {
     var data = clone(data)
-    assert(data--getId() == data.id)
-    assert(data--getName() == data.name)
-    assert(data--getEmail() == data.email)
-    data--getId()
-    data--getName()
-    data--getEmail()
+    assert(data:getId() == data.id)
+    assert(data:getName() == data.name)
+    assert(data:getEmail() == data.email)
+    data:getId()
+    data:getName()
+    data:getEmail()
 }
 
 var src = [1, 2, 3, 4, 5] // This values should be all different

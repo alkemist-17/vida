@@ -10,7 +10,7 @@ const (
 	binopG
 	binopK
 	binopQ
-	list
+	array
 	object
 	iGet
 	iSet
@@ -36,7 +36,7 @@ var opcodes = [...]string{
 	binopG:   "BinopG",
 	binopK:   "BinopK",
 	binopQ:   "BinopQ",
-	list:     "List",
+	array:    "Array",
 	object:   "Object",
 	iGet:     "IGet",
 	iSet:     "ISet",

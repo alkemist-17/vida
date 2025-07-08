@@ -1,7 +1,7 @@
 
 
 let map = fun xs, f {
-    var newXS = list(len(xs))
+    var newXS = array(len(xs))
     for i, v in xs {
         newXS[i] = f(v)
     }
@@ -28,7 +28,7 @@ let reduce = fun xs, acc, f {
 let one = 1
 let threshold = 100
 let N = 10_000_000
-let xs = list(N, one)
+let xs = array(N, one)
 
 let r = reduce(
         filter(

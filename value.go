@@ -1,9 +1,7 @@
 package vida
 
 import (
-	"encoding/json"
 	"fmt"
-	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -26,6 +24,7 @@ type Value interface {
 	String() string
 	Type() string
 	Clone() Value
+	ObjectKey() string
 }
 
 type Nil struct {
@@ -84,6 +83,10 @@ func (n Nil) Iterator() Value {
 }
 
 func (n Nil) String() string {
+	return "nil"
+}
+
+func (n Nil) ObjectKey() string {
 	return "nil"
 }
 
@@ -161,6 +164,13 @@ func (b Bool) Iterator() Value {
 }
 
 func (b Bool) String() string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+func (b Bool) ObjectKey() string {
 	if b {
 		return "true"
 	}
@@ -277,6 +287,10 @@ func (s *String) Iterator() Value {
 }
 
 func (s String) String() string {
+	return s.Value
+}
+
+func (s *String) ObjectKey() string {
 	return s.Value
 }
 
@@ -431,6 +445,10 @@ func (i Integer) String() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
+func (i Integer) ObjectKey() string {
+	return fmt.Sprintf("Int[%v]", strconv.FormatInt(int64(i), 10))
+}
+
 func (i Integer) Type() string {
 	return "int"
 }
@@ -561,6 +579,10 @@ func (f Float) String() string {
 	return strconv.FormatFloat(float64(f), 'g', -1, 64)
 }
 
+func (f Float) ObjectKey() string {
+	return fmt.Sprintf("Flt[%v]", strconv.FormatFloat(float64(f), 'g', -1, 64))
+}
+
 func (f Float) Type() string {
 	return "float"
 }
@@ -569,16 +591,16 @@ func (f Float) Clone() Value {
 	return f
 }
 
-type List struct {
+type Array struct {
 	ReferenceSemanticsImpl
 	Value []Value
 }
 
-func (xs *List) Boolean() Bool {
+func (xs *Array) Boolean() Bool {
 	return Bool(true)
 }
 
-func (xs *List) Prefix(op uint64) (Value, error) {
+func (xs *Array) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return Bool(false), nil
@@ -587,9 +609,9 @@ func (xs *List) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (xs *List) Binop(op uint64, rhs Value) (Value, error) {
+func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
 	switch r := rhs.(type) {
-	case *List:
+	case *Array:
 		switch op {
 		case uint64(token.ADD):
 			rLen := len(r.Value)
@@ -603,7 +625,7 @@ func (xs *List) Binop(op uint64, rhs Value) (Value, error) {
 			values := make([]Value, lLen+rLen)
 			copy(values[:lLen], xs.Value)
 			copy(values[lLen:], r.Value)
-			return &List{Value: values}, nil
+			return &Array{Value: values}, nil
 		case uint64(token.AND):
 			return r, nil
 		case uint64(token.OR):
@@ -624,7 +646,7 @@ func (xs *List) Binop(op uint64, rhs Value) (Value, error) {
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
 
-func (xs *List) IGet(index Value) (Value, error) {
+func (xs *Array) IGet(index Value) (Value, error) {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(xs.Value))
@@ -638,7 +660,7 @@ func (xs *List) IGet(index Value) (Value, error) {
 	return NilValue, verror.ErrValueNotIndexable
 }
 
-func (xs *List) ISet(index, val Value) error {
+func (xs *Array) ISet(index, val Value) error {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(xs.Value))
@@ -653,26 +675,26 @@ func (xs *List) ISet(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (xs *List) Equals(other Value) Bool {
-	if val, ok := other.(*List); ok {
+func (xs *Array) Equals(other Value) Bool {
+	if val, ok := other.(*Array); ok {
 		return xs == val
 	}
 	return false
 }
 
-func (xs *List) IsIterable() Bool {
+func (xs *Array) IsIterable() Bool {
 	return true
 }
 
-func (xs *List) IsCallable() Bool {
+func (xs *Array) IsCallable() Bool {
 	return false
 }
 
-func (xs *List) Iterator() Value {
-	return &ListIterator{List: xs.Value, Init: -1, End: len(xs.Value)}
+func (xs *Array) Iterator() Value {
+	return &ArrayIterator{Array: xs.Value, Init: -1, End: len(xs.Value)}
 }
 
-func (xs List) String() string {
+func (xs Array) String() string {
 	if len(xs.Value) == 0 {
 		return "[]"
 	}
@@ -683,21 +705,24 @@ func (xs List) String() string {
 	return fmt.Sprintf("[%v]", strings.Join(r, ", "))
 }
 
-func (xs *List) Type() string {
-	return "list"
+func (xs *Array) ObjectKey() string {
+	return fmt.Sprintf("Array(%p)", xs)
 }
 
-func (xs *List) Clone() Value {
+func (xs *Array) Type() string {
+	return "array"
+}
+
+func (xs *Array) Clone() Value {
 	c := make([]Value, len(xs.Value))
 	for i, v := range xs.Value {
 		c[i] = v.Clone()
 	}
-	return &List{Value: c}
+	return &Array{Value: c}
 }
 
 type Object struct {
 	ReferenceSemanticsImpl
-	Keys  []string
 	Value map[string]Value
 }
 
@@ -720,18 +745,13 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 		switch op {
 		case uint64(token.ADD):
 			pairs := make(map[string]Value)
-			keys := make([]string, 0)
 			for k, v := range o.Value {
 				pairs[k] = v
-				keys = append(keys, k)
 			}
 			for k, v := range r.Value {
-				if _, isPresent := pairs[k]; !isPresent {
-					keys = append(keys, k)
-				}
 				pairs[k] = v
 			}
-			return &Object{Value: pairs, Keys: keys}, nil
+			return &Object{Value: pairs}, nil
 		case uint64(token.AND):
 			return r, nil
 		case uint64(token.OR):
@@ -753,18 +773,16 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
-	if val, ok := o.Value[index.String()]; ok {
+	if val, ok := o.Value[index.ObjectKey()]; ok {
 		return val, nil
+	} else if proto, ok := o.Value[__proto].(*Object); ok {
+		return proto.IGet(index)
 	}
 	return NilValue, nil
 }
 
 func (o *Object) ISet(index, val Value) error {
-	k := index.String()
-	if _, isPresent := o.Value[k]; !isPresent {
-		o.Keys = append(o.Keys, k)
-	}
-	o.Value[k] = val
+	o.Value[index.ObjectKey()] = val
 	return nil
 }
 
@@ -784,7 +802,7 @@ func (o *Object) IsCallable() Bool {
 }
 
 func (o *Object) Iterator() Value {
-	return &ObjectIterator{Obj: o.Value, Init: -1, End: len(o.Value), Keys: o.Keys}
+	return newObjectIterator(o)
 }
 
 func (o *Object) String() string {
@@ -792,10 +810,16 @@ func (o *Object) String() string {
 		return "{}"
 	}
 	var r []string
-	for _, v := range o.Keys {
-		r = append(r, fmt.Sprintf("%v: %v", v, o.Value[v]))
+	for k, v := range o.Value {
+		if k != __proto {
+			r = append(r, fmt.Sprintf("%v: %v", k, v))
+		}
 	}
 	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
+}
+
+func (o *Object) ObjectKey() string {
+	return fmt.Sprintf("Object(%p)", o)
 }
 
 func (o *Object) Type() string {
@@ -804,20 +828,10 @@ func (o *Object) Type() string {
 
 func (o *Object) Clone() Value {
 	m := make(map[string]Value)
-	k := make([]string, len(o.Keys))
-	copy(k, o.Keys)
 	for k, v := range o.Value {
 		m[k] = v.Clone()
 	}
-	return &Object{Value: m, Keys: k}
-}
-
-func (o *Object) UpdateKeys() {
-	keys := make([]string, 0, len(o.Value))
-	for k := range o.Value {
-		keys = append(keys, k)
-	}
-	o.Keys = keys
+	return &Object{Value: m}
 }
 
 type freeInfo struct {
@@ -957,6 +971,10 @@ func (f Function) String() string {
 	return fmt.Sprintf("Function(%p)", f.CoreFn)
 }
 
+func (f *Function) ObjectKey() string {
+	return fmt.Sprintf("Function(%p)", f.CoreFn)
+}
+
 type GFn func(args ...Value) (Value, error)
 
 func (gfn GFn) Boolean() Bool {
@@ -1013,6 +1031,10 @@ func (gfn GFn) Iterator() Value {
 }
 
 func (gfn GFn) String() string {
+	return "GFn"
+}
+
+func (gfn GFn) ObjectKey() string {
 	return "GFn"
 }
 
@@ -1087,6 +1109,10 @@ func (e Error) String() string {
 	return fmt.Sprintf("Error(message: %v)", e.Message.String())
 }
 
+func (e Error) ObjectKey() string {
+	return fmt.Sprintf("Error(message: %v)", e.Message.ObjectKey())
+}
+
 func (e Error) Type() string {
 	return "error"
 }
@@ -1095,13 +1121,15 @@ func (e Error) Clone() Value {
 	return e
 }
 
-type Enum map[string]Integer
+type Enum struct {
+	Pairs map[string]Integer
+}
 
-func (e Enum) Boolean() Bool {
+func (e *Enum) Boolean() Bool {
 	return true
 }
 
-func (e Enum) Prefix(op uint64) (Value, error) {
+func (e *Enum) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return Bool(false), nil
@@ -1110,7 +1138,7 @@ func (e Enum) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (e Enum) Binop(op uint64, rhs Value) (Value, error) {
+func (e *Enum) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return e, nil
@@ -1123,53 +1151,60 @@ func (e Enum) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e Enum) IGet(index Value) (Value, error) {
-	if val, ok := e[index.String()]; ok {
+func (e *Enum) IGet(index Value) (Value, error) {
+	if val, ok := e.Pairs[index.String()]; ok {
 		return val, nil
 	}
 	return NilValue, nil
 }
 
-func (e Enum) ISet(Value, Value) error {
+func (e *Enum) ISet(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (e Enum) Equals(other Value) Bool {
-	if val, ok := other.(Enum); ok {
-		return Bool(maps.Equal(e, val))
+func (e *Enum) Equals(other Value) Bool {
+	if val, ok := other.(*Enum); ok {
+		return Bool(val == other)
 	}
 	return false
 }
 
-func (e Enum) IsIterable() Bool {
+func (e *Enum) IsIterable() Bool {
 	return false
 }
 
-func (e Enum) Iterator() Value {
+func (e *Enum) Iterator() Value {
 	return NilValue
 }
 
-func (e Enum) IsCallable() Bool {
+func (e *Enum) IsCallable() Bool {
 	return false
 }
 
-func (e Enum) Call(args ...Value) (Value, error) {
+func (e *Enum) Call(args ...Value) (Value, error) {
 	return NilValue, verror.ErrNotImplemented
 }
 
 func (e Enum) String() string {
-	jsonbytes, err := json.Marshal(e)
-	if err != nil {
-		return "enum{...}"
+	if len(e.Pairs) == 0 {
+		return "enum{ }"
 	}
-	return fmt.Sprintf("enum %s", jsonbytes)
+	var r []string
+	for k, v := range e.Pairs {
+		r = append(r, fmt.Sprintf("%v: %v", k, v))
+	}
+	return fmt.Sprintf("enum{%v}", strings.Join(r, ", "))
 }
 
-func (e Enum) Type() string {
+func (e *Enum) ObjectKey() string {
+	return fmt.Sprintf("Enum(%p)", e)
+}
+
+func (e *Enum) Type() string {
 	return "enum"
 }
 
-func (e Enum) Clone() Value {
+func (e *Enum) Clone() Value {
 	return e
 }
 
@@ -1269,6 +1304,10 @@ func (b Bytes) String() string {
 	return fmt.Sprintf("bytes[% x]", b.Value)
 }
 
+func (b *Bytes) ObjectKey() string {
+	return fmt.Sprintf("Bytes(%p)", b)
+}
+
 func (b *Bytes) Type() string {
 	return "bytes"
 }
@@ -1331,6 +1370,10 @@ func (i ValueSemanticsImpl) Clone() Value {
 	return NilValue
 }
 
+func (i ValueSemanticsImpl) ObjectKey() string {
+	return ""
+}
+
 type ReferenceSemanticsImpl struct{}
 
 func (i *ReferenceSemanticsImpl) Boolean() Bool {
@@ -1383,4 +1426,8 @@ func (i *ReferenceSemanticsImpl) Type() string {
 
 func (i *ReferenceSemanticsImpl) Clone() Value {
 	return NilValue
+}
+
+func (i *ReferenceSemanticsImpl) ObjectKey() string {
+	return ""
 }

@@ -290,13 +290,14 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case eof:
 			tok = token.EOF
 		case '=':
-			if l.c == '=' {
+			switch l.c {
+			case '=':
 				l.next()
 				tok = token.EQ
-			} else if l.c == '>' {
+			case '>':
 				l.next()
 				tok = token.ARROW
-			} else {
+			default:
 				tok = token.ASSIGN
 			}
 		case '"':
@@ -306,12 +307,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case '+':
 			tok = token.ADD
 		case '-':
-			if l.c == '-' {
-				l.next()
-				tok = token.METHOD_CALL
-			} else {
-				tok = token.SUB
-			}
+			tok = token.SUB
 		case '*':
 			tok = token.MUL
 		case '/':
@@ -345,23 +341,25 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				l.LexicalError = verror.New(l.ScriptName, "found an unrecognized character '!'", verror.LexicalErrType, l.line)
 			}
 		case '<':
-			if l.c == '=' {
+			switch l.c {
+			case '=':
 				l.next()
 				tok = token.LE
-			} else if l.c == '<' {
+			case '<':
 				l.next()
 				tok = token.BSHL
-			} else {
+			default:
 				tok = token.LT
 			}
 		case '>':
-			if l.c == '=' {
+			switch l.c {
+			case '=':
 				l.next()
 				tok = token.GE
-			} else if l.c == '>' {
+			case '>':
 				l.next()
 				tok = token.BSHR
-			} else {
+			default:
 				tok = token.GT
 			}
 		case '(':
@@ -376,6 +374,8 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			tok = token.LBRACKET
 		case ']':
 			tok = token.RBRACKET
+		case ':':
+			tok = token.METHOD_CALL
 		case '~':
 			tok = token.TILDE
 		case '|':

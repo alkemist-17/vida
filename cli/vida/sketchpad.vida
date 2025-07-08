@@ -3,16 +3,34 @@
 var co = load("std/co")
 
 var echo  = fun x {
-  print(x)
+  print(x, "first argument")
+  x = "variable changed"
+  print("Before first suspend => ", x)
   x = co.suspend(x)
-  print(x)
+  print("After suspend => ", x)
+  x = "Second variable change"
+  print("Before second suspend =>", x)
+  x = co.suspend(x)
+  print(x, "last statement before return")
+  ret 65
 }
 
 var th1 = co.new(echo)
+assert(th1)
+assert(co.state(th1) == co.ready)
+print("Thread Ready => ", th1)
 
-print(type(th1))
-print(th1)
-print(co.state(th1))
-print(co.ready, co.running, co.suspended, co.closed)
 
+var r = co.start(th1, "hello")
+print("After suspend => ", r, th1, co.state(th1) == co.suspended)
+
+
+/*
+r = co.resume(th1, 42)
+print("After Resume", r, th1, co.state(th1) == co.running)
+
+
+r = co.resume(th1, 42)
+print(r, co.state(th1) == co.running)
+*/
 

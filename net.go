@@ -8,7 +8,6 @@ import (
 func loadFoundationNetworkIO() Value {
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["listen"] = GFn(networkListen)
-	m.UpdateKeys()
 	return m
 }
 

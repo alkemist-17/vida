@@ -25,12 +25,11 @@ func loadFoundationOS() Value {
 	m.Value["stdin"] = &FileHandler{Handler: os.Stdin}
 	m.Value["stdout"] = &FileHandler{Handler: os.Stdout}
 	m.Value["stderr"] = &FileHandler{Handler: os.Stderr}
-	m.UpdateKeys()
 	return m
 }
 
 func args(args ...Value) (Value, error) {
-	xs := &List{}
+	xs := &Array{}
 	for _, v := range os.Args {
 		xs.Value = append(xs.Value, &String{Value: v})
 	}
@@ -38,7 +37,7 @@ func args(args ...Value) (Value, error) {
 }
 
 func environ(args ...Value) (Value, error) {
-	xs := &List{}
+	xs := &Array{}
 	for _, v := range os.Environ() {
 		xs.Value = append(xs.Value, &String{Value: v})
 	}
@@ -61,7 +60,7 @@ func getEnv(args ...Value) (Value, error) {
 				xs = append(xs, &String{Value: ""})
 				xs = append(xs, Bool(ok))
 			}
-			return &List{Value: xs}, nil
+			return &Array{Value: xs}, nil
 		}
 	}
 	return NilValue, nil

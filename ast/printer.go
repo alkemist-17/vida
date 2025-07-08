@@ -111,9 +111,9 @@ func printAST(node Node, sb *strings.Builder, level int) {
 		sb.WriteRune(nl)
 		buildIndent(sb, level+twoLevels)
 		sb.WriteString(n.Value)
-	case *List:
+	case *Array:
 		buildIndent(sb, level+oneLevel)
-		sb.WriteString("List")
+		sb.WriteString("Array")
 		sb.WriteRune(nl)
 		if len(n.ExprList) == 0 {
 			buildIndent(sb, level+twoLevels)

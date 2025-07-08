@@ -8,7 +8,6 @@ func loadFoundationCasting() Value {
 	m.Value["toInt"] = GFn(toInt)
 	m.Value["toFloat"] = GFn(toFloat)
 	m.Value["toBool"] = GFn(toBool)
-	m.UpdateKeys()
 	return m
 }
 

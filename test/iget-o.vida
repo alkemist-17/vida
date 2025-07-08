@@ -48,7 +48,7 @@ let world = {
 
 let idx = [0,1,2,3,4]
 
-let xs = list(5, 100)
+let xs = array(5, 100)
 
 let r = xs[idx[hello.one.two.three.four.five.code-world.one.two.three.four.five.code]] +
         xs[idx[hello.one.two.three.four.five.code+world.one.two.three.four.five.code]] -

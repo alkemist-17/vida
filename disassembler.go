@@ -70,7 +70,7 @@ func printInstr(instr, ip uint64, isRunningDebug bool) string {
 	switch op {
 	case end:
 		return sb.String()
-	case list, slice, iForSet, check, load:
+	case array, slice, iForSet, check, load:
 		sb.WriteString(fmt.Sprintf(" %3v %3v %3v", P, A, B))
 	case forSet, forLoop, iForLoop, fun, ret:
 		sb.WriteString(fmt.Sprintf(" %3v %3v", A, B))

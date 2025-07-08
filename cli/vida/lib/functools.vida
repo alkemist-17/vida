@@ -1,7 +1,7 @@
 
 //
 // Script: functools
-// Provides some high order functions for lists.
+// Provides some high order functions for arrays.
 // Version 1.0.0
 //
 
@@ -14,7 +14,7 @@ var lib = {}
 
 // Map 
 lib.map = fun l, f {
-    var xs = list(len(l))
+    var xs = array(len(l))
     for i, v in l {
         xs[i] = f(v)
     }
@@ -94,7 +94,7 @@ lib.zip = fun l, r {
     } else {
         length = lr
     }
-    var xs = list(length)
+    var xs = array(length)
     for i in 0, length {
         xs[i] = [l[i], r[i]]
     }
@@ -106,8 +106,8 @@ lib.zip = fun l, r {
 // UnZip
 lib.unzip = fun l {
     var ll = len(l)
-    var a = list(ll)
-    var b = list(ll)
+    var a = array(ll)
+    var b = array(ll)
     for i, v in l {
         a[i] = v[0]
         b[i] = v[1]

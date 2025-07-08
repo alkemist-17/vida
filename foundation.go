@@ -9,7 +9,6 @@ import (
 func loadFoundationException() Value {
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["rise"] = GFn(riseException)
-	m.UpdateKeys()
 	return m
 }
 

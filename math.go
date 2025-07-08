@@ -34,7 +34,6 @@ func loadFoundationMath() Value {
 	m.Value["acosh"] = mathFromFloatToFloat(math.Acosh)
 	m.Value["atanh"] = mathFromFloatToFloat(math.Atanh)
 	m.Value["pow"] = mathPow(math.Pow)
-	m.UpdateKeys()
 	return m
 }
 

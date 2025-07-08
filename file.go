@@ -29,7 +29,6 @@ func generateFileHandlerObject(file *os.File) Value {
 	o.Value["write"] = GFn(fileWrite())
 	o.Value["lines"] = GFn(fileReadLines())
 	o.Value["read"] = GFn(fileRead())
-	o.UpdateKeys()
 	return o
 }
 
@@ -297,7 +296,7 @@ func fileReadLines() GFn {
 						file.Handler.Close()
 						return Error{Message: &String{Value: err.Error()}}, nil
 					}
-					xs := &List{}
+					xs := &Array{}
 					for _, v := range data {
 						xs.Value = append(xs.Value, &String{Value: v})
 					}

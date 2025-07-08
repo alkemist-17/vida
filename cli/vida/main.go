@@ -35,7 +35,7 @@ func main() {
 		case RUN:
 			run(args)
 		case DEGUG:
-			debug(args)
+			runDebug(args)
 		case TIME:
 			time(args)
 		case TOKENS:
@@ -62,7 +62,7 @@ func main() {
 	}
 }
 
-func debug(args []string) {
+func runDebug(args []string) {
 	clear()
 	extensions := extension.LoadExtensions()
 	if len(args) > 2 {

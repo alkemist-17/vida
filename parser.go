@@ -512,7 +512,7 @@ func (p *parser) operand() ast.Node {
 	case token.IDENTIFIER:
 		return &ast.Reference{Value: p.current.Lit, Line: p.current.Line}
 	case token.LBRACKET:
-		xs := &ast.List{}
+		xs := &ast.Array{}
 		p.advance()
 		for p.current.Token != token.RBRACKET && p.current.Token != token.EOF {
 			e := p.expression(token.LowestPrec)

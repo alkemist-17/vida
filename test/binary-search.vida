@@ -1,6 +1,6 @@
 
 let N = 10_000_000
-let data = list(N, 0)
+let data = array(N, 0)
 
 for i in 0, len(data) {
     data[i] = i

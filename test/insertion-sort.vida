@@ -17,7 +17,7 @@ let iComparable = {
 }
 
 let less = fun v, w {
-    if v--comparedTo(w) < 0 {
+    if v:comparedTo(w) < 0 {
         ret true
     }
     ret false
@@ -65,7 +65,7 @@ let newNumber = fun x {
 
 let N = 1_000
 let upperLimit = N
-let numbers = list(N)
+let numbers = array(N)
 
 for i, _ in numbers {
     numbers[i] = newNumber(rand.nextI(N))

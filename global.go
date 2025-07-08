@@ -18,20 +18,30 @@ type ErrorInfo map[string]map[int]uint
 
 var extensionlibsLoader LibsLoader
 
-const mainThIndex = 0
+var __proto string
 
-const DefaultInputPrompt = "Input > "
+const (
+	globalStateIndex = 0
 
-const foundationInterfaceName = "std/"
+	DefaultInputPrompt = "Input > "
+
+	foundationInterfaceName = "std/"
+)
 
 var clbu *[]Value
 
+type GlobalState struct {
+	*VM
+	Main    *Thread
+	Current *Thread
+}
+
 var coreLibNames = []string{
-	"--mt--",
+	"--G--",
 	"print",
 	"len",
 	"append",
-	"list",
+	"array",
 	"load",
 	"type",
 	"assert",
@@ -49,7 +59,7 @@ func loadCoreLib(store *[]Value) *[]Value {
 		GFn(gfnPrint),
 		GFn(gfnLen),
 		GFn(gfnAppend),
-		GFn(gfnMakeList),
+		GFn(gfnMakeArray),
 		GFn(gfnLoadLib),
 		GFn(gfnType),
 		GFn(gfnAssert),
@@ -75,7 +85,7 @@ func gfnPrint(args ...Value) (Value, error) {
 func gfnLen(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
-		case *List:
+		case *Array:
 			return Integer(len(v.Value)), nil
 		case *Object:
 			return Integer(len(v.Value)), nil
@@ -132,7 +142,7 @@ func gfnAssert(args ...Value) (Value, error) {
 func gfnAppend(args ...Value) (Value, error) {
 	if len(args) >= 2 {
 		switch v := args[0].(type) {
-		case *List:
+		case *Array:
 			v.Value = append(v.Value, args[1:]...)
 			return v, nil
 		case *Bytes:
@@ -147,7 +157,7 @@ func gfnAppend(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnMakeList(args ...Value) (Value, error) {
+func gfnMakeArray(args ...Value) (Value, error) {
 	largs := len(args)
 	if largs > 0 {
 		switch v := args[0].(type) {
@@ -161,7 +171,7 @@ func gfnMakeList(args ...Value) (Value, error) {
 				for i := range v {
 					arr[i] = init
 				}
-				return &List{Value: arr}, nil
+				return &Array{Value: arr}, nil
 			}
 		case *Object:
 			if f, ok := v.Value["from"]; ok && f.Type() == "int" {
@@ -175,13 +185,13 @@ func gfnMakeList(args ...Value) (Value, error) {
 							xs[i] = Integer(from)
 							from++
 						}
-						return &List{Value: xs}, nil
+						return &Array{Value: xs}, nil
 					}
 				}
 			}
 		}
 	}
-	return &List{}, nil
+	return &Array{}, nil
 }
 
 func gfnReadLine(args ...Value) (Value, error) {
@@ -220,7 +230,7 @@ func gfnLoadLib(args ...Value) (Value, error) {
 					return loadFoundationBinary(), nil
 				case "time":
 					return loadFoundationTime(), nil
-				case "cast":
+				case "conv":
 					return loadFoundationCasting(), nil
 				case "rand":
 					return loadFoundationRandom(), nil
@@ -263,9 +273,9 @@ func gfnIsError(args ...Value) (Value, error) {
 func gfnCopy(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch dst := args[0].(type) {
-		case *List:
+		case *Array:
 			switch src := args[1].(type) {
-			case *List:
+			case *Array:
 				copy(dst.Value, src.Value)
 				return dst, nil
 			case *Bytes:
@@ -294,7 +304,7 @@ func gfnCopy(args ...Value) (Value, error) {
 			}
 		case *Bytes:
 			switch src := args[1].(type) {
-			case *List:
+			case *Array:
 				l := len(dst.Value)
 				b := len(src.Value)
 				if b < l {
@@ -333,7 +343,6 @@ func loadFoundationCorelib() Value {
 	for i := 0; i < len((*clbu)); i++ {
 		m.Value[coreLibNames[i]] = (*clbu)[i]
 	}
-	m.UpdateKeys()
 	return m
 }
 
@@ -347,7 +356,7 @@ func StringLength(input *String) Integer {
 func IsMemberOf(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {
-		case *List:
+		case *Array:
 			item := args[0]
 			for _, v := range collection.Value {
 				if item.Equals(v) {
@@ -357,8 +366,8 @@ func IsMemberOf(args ...Value) (Value, error) {
 			return Bool(false), nil
 		case *Object:
 			item := args[0]
-			for _, key := range collection.Keys {
-				if item.Equals(&String{Value: key}) {
+			for k := range collection.Value {
+				if item.Equals(&String{Value: k}) {
 					return Bool(true), nil
 				}
 			}
@@ -392,32 +401,32 @@ var coreLibDescription = []string{
 	Examples: print(v0 v1 v2), print(a, b, c) -> nil
 	`,
 	`
-	Return an integer representing the length of lists, 
+	Return an integer representing the length of arrays, 
 	objects, bytes or strings. In case of a string value, 
 	the function returns the number of unicode codepoints.
 	Example: len(value) -> int
 	`,
 	`
-	Add one of more values at the end of a list.
-	Return the list passed as first argument.
-	Examples: let xs be a list, then 
+	Add one of more values at the end of an array.
+	Return the array passed as first argument.
+	Examples: let xs be an array, then 
 	append(xs, value), append(xs a b c) -> xs
-	If the list is a list of bytes, only convert
+	If the array is an array of bytes, only convert
 	integer values to uint8 bits values.
 	`,
 	`
-	Create a list. 
+	Create an array. 
 	Receive 0, 1 or 2 arguments. 
-	Whith zero arguments, return an empty list. 
+	Whith zero arguments, return an empty array. 
 	With 1 argument n of type intenger,
-	return a list of n elements all initialized to nil.
+	return an array of n elements all initialized to nil.
 	With 2 argumeents (n, m), with n of type integer,
-	and m of type T, return a list of n elements all 
+	and m of type T, return an array of n elements all 
 	initialized to the m value.
 	Examples: 
-		list() -> [],
-		list(10) -> [nil, ... , nil],
-		list(n, v) -> [v, v, ... , v]
+		array() -> [],
+		array(10) -> [nil, ... , nil],
+		array(n, v) -> [v, v, ... , v]
 	`,
 	`
 	Load a library from the package lib.
@@ -489,4 +498,11 @@ func PrintCoreLibInformation() {
 	for i := 1; i < len(coreLibNames); i++ {
 		fmt.Printf("  %v %v\n\n", coreLibNames[i], coreLibDescription[i])
 	}
+}
+
+func pauseExecution(message string) {
+	fmt.Printf("\n\n\n\t\tExecution Paused")
+	fmt.Printf("\n\t\t%v", message)
+	fmt.Printf("\n\n\n")
+	fmt.Scanf(" ")
 }

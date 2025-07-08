@@ -70,6 +70,10 @@ func (t Time) String() string {
 	return time.Time(t).String()
 }
 
+func (t Time) ObjectKey() string {
+	return time.Time(t).String()
+}
+
 func (t Time) Type() string {
 	return "time"
 }
@@ -142,7 +146,6 @@ func loadFoundationTime() Value {
 	m.Value["sub"] = GFn(timeSub)
 	m.Value["after"] = GFn(timeAfter)
 	m.Value["before"] = GFn(timeBefore)
-	m.UpdateKeys()
 	return m
 }
 
@@ -431,6 +434,5 @@ func createDuration(v time.Duration) *Object {
 	o.Value["milliseconds"] = Integer(v.Milliseconds())
 	o.Value["nanoseconds"] = Integer(v.Nanoseconds())
 	o.Value["description"] = &String{Value: v.String()}
-	o.UpdateKeys()
 	return o
 }

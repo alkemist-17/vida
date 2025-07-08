@@ -12,72 +12,72 @@ type Iterator interface {
 	Value() Value
 }
 
-type ListIterator struct {
+type ArrayIterator struct {
 	ReferenceSemanticsImpl
-	List []Value
-	Init int
-	End  int
+	Array []Value
+	Init  int
+	End   int
 }
 
-func (it *ListIterator) Next() bool {
+func (it *ArrayIterator) Next() bool {
 	it.Init++
 	return it.Init < it.End
 }
 
-func (it *ListIterator) Key() Value {
+func (it *ArrayIterator) Key() Value {
 	return Integer(it.Init)
 }
 
-func (it *ListIterator) Value() Value {
-	return it.List[it.Init]
+func (it *ArrayIterator) Value() Value {
+	return it.Array[it.Init]
 }
 
-func (it *ListIterator) Boolean() Bool {
+func (it *ArrayIterator) Boolean() Bool {
 	return true
 }
 
-func (it *ListIterator) Prefix(uint64) (Value, error) {
+func (it *ArrayIterator) Prefix(uint64) (Value, error) {
 	return NilValue, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ListIterator) Binop(uint64, Value) (Value, error) {
+func (it *ArrayIterator) Binop(uint64, Value) (Value, error) {
 	return NilValue, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ListIterator) IGet(Value) (Value, error) {
+func (it *ArrayIterator) IGet(Value) (Value, error) {
 	return NilValue, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ListIterator) ISet(Value, Value) error {
+func (it *ArrayIterator) ISet(Value, Value) error {
 	return verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ListIterator) Equals(Value) Bool {
+func (it *ArrayIterator) Equals(Value) Bool {
 	return false
 }
 
-func (it *ListIterator) IsIterable() Bool {
+func (it *ArrayIterator) IsIterable() Bool {
 	return false
 }
 
-func (it *ListIterator) IsCallable() Bool {
+func (it *ArrayIterator) IsCallable() Bool {
 	return false
 }
 
-func (it *ListIterator) Iterator() Value {
+func (it *ArrayIterator) Iterator() Value {
 	return NilValue
 }
 
-func (it ListIterator) String() string {
-	return fmt.Sprintf("ListIter [i = %v, e = %v]", it.Init, it.End)
+func (it ArrayIterator) String() string {
+	return fmt.Sprintf("ArrayIter [i = %v, e = %v]", it.Init, it.End)
 }
 
-func (it *ListIterator) Clone() Value {
+func (it *ArrayIterator) Clone() Value {
 	return it
 }
 
-func (it *ListIterator) Type() string {
-	return "ListIter"
+func (it *ArrayIterator) Type() string {
+	return "ArrayIter"
 }
 
 type ObjectIterator struct {
@@ -86,6 +86,22 @@ type ObjectIterator struct {
 	Obj  map[string]Value
 	Init int
 	End  int
+}
+
+func newObjectIterator(o *Object) *ObjectIterator {
+	var keys []string
+	for k, _ := range o.Value {
+		if k != __proto {
+			keys = append(keys, k)
+		}
+	}
+	it := &ObjectIterator{
+		Obj:  o.Value,
+		Init: -1,
+		End:  len(keys),
+		Keys: keys,
+	}
+	return it
 }
 
 func (it *ObjectIterator) Next() bool {

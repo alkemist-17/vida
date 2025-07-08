@@ -5,7 +5,6 @@ import "github.com/alkemist-17/vida/verror"
 func loadFoundationBinary() Value {
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["bytes"] = GFn(createBytes)
-	m.UpdateKeys()
 	return m
 }
 
@@ -31,7 +30,7 @@ func createBytes(args ...Value) (Value, error) {
 			return &Bytes{Value: []byte(v.Value)}, nil
 		case *Bytes:
 			return v, nil
-		case *List:
+		case *Array:
 			var bts []byte
 			for _, val := range v.Value {
 				if i, ok := val.(Integer); ok {

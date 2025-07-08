@@ -6,8 +6,8 @@ var randRange = fun a, b {
     ret rand.nextI(b - a) + a
 }
 
-var makeList = fun N, a, b {
-    var xs = list(N)
+var makeArray = fun N, a, b {
+    var xs = array(N)
     for i in 0, N {
         xs[i] = randRange(a, b)
     }
@@ -23,4 +23,4 @@ var checkRange = fun xs, a, b {
 var a = 1_000_000
 var b = 2_000_000
 
-checkRange(makeList(N, a, b), a, b)
+checkRange(makeArray(N, a, b), a, b)

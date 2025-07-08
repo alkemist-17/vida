@@ -39,7 +39,7 @@ primary		:=	'true'
 			|	Integer
 			|	Float
 			|	String
-			|	List
+			|	Array
 			|	Object
 			|	Function
 			|	Error
@@ -66,7 +66,7 @@ binop		:=	'and'
 			|	'in'
 String		:=	'"' Any valid utf-8 encoded byte '"'
 			|	'`' Any valid utf-8 encoded byte '`'
-List		:=	'[' expr (',' expr)* ','? | λ ']'
+Array		:=	'[' expr (',' expr)* ','? | λ ']'
 Object		:=	'{' (iden | pair) ((',')? ident | pair)* (',')? | λ '}'
 pair		:=	ident '=' expr
 Error		:=	'error' '(' expr? ')'
@@ -78,7 +78,7 @@ Enumeration :=	'enum' '{' ident+ '}'
 select		:=	'[' expr | '..' | '..' expr | expr '..' | expr '..' expr ']' select*
 			|	'.' ident select*
 			|	'(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' | select*
-			|	'--' ident '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' select*
+			|	':' ident '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' select*
 break		:=	'break'
 continue	:=	'continue'
 ret			:=	'ret' expr

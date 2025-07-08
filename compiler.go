@@ -583,7 +583,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			c.generateReferenceError(n.Value, n.Line)
 		}
 		return i, s
-	case *ast.List:
+	case *ast.Array:
 		var count int
 		for _, v := range n.ExprList {
 			i, s := c.compileExpr(v, false)
@@ -604,10 +604,10 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		}
 		c.rAlloc -= count
 		if c.mutLoc && isRoot {
-			c.emitList(count, c.rAlloc, c.rDest)
+			c.emitArray(count, c.rAlloc, c.rDest)
 			return c.rDest, rLoc
 		}
-		c.emitList(count, c.rAlloc, c.rAlloc)
+		c.emitArray(count, c.rAlloc, c.rAlloc)
 		return c.rAlloc, rLoc
 	case *ast.Object:
 		o := c.rAlloc
@@ -1097,14 +1097,14 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		c.errorInfo[c.currentFn.ScriptName][len(c.currentFn.Code)] = n.Line
 		return c.rAlloc, rLoc
 	case *ast.Enum:
-		e := make(Enum)
+		e := &Enum{Pairs: map[string]Integer{}}
 		if n.HasInitVal {
 			for _, v := range n.Variants {
 				if v == "_" {
 					n.Init++
 					continue
 				}
-				e[v] = Integer(n.Init)
+				e.Pairs[v] = Integer(n.Init)
 				n.Init++
 			}
 			return c.kb.EnumIndex(e), rKonst
@@ -1113,7 +1113,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			if v == "_" {
 				continue
 			}
-			e[v] = Integer(i)
+			e.Pairs[v] = Integer(i)
 		}
 		return c.kb.EnumIndex(e), rKonst
 	default:

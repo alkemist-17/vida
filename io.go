@@ -33,7 +33,6 @@ func loadFoundationIO() Value {
 	m.Value["stdin"] = &FileHandler{Handler: os.Stdin}
 	m.Value["stdout"] = &FileHandler{Handler: os.Stdout}
 	m.Value["stderr"] = &FileHandler{Handler: os.Stderr}
-	m.UpdateKeys()
 	return m
 }
 
