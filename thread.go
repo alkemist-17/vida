@@ -124,7 +124,9 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 	vm.Frame.code = vm.Script.MainFunction.CoreFn.Code
 	vm.Frame.lambda = vm.Script.MainFunction
 	vm.Frame.stack = vm.Stack[:]
-	copy(vm.Frame.stack[0:], args)
+	if start {
+		copy(vm.Frame.stack[0:], args)
+	}
 	ip := givenIP
 	var i, op, A, B, P uint64
 	largs := len(args)
@@ -132,12 +134,8 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 		for i := largs; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
 			vm.Frame.stack[i] = NilValue
 		}
-	} else if !start {
-		i = vm.Frame.code[ip]
-		A = i >> shift16 & clean16
-		if largs > 0 {
-			vm.Frame.stack[A] = args[0]
-		}
+	} else if !start && largs > 0 {
+		vm.Frame.stack[vm.Frame.ret] = args[0]
 	}
 	// println("FP = ", fp)
 	// println("IP = ", givenIP)
@@ -567,7 +565,12 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 							vm.Thread = invoker
 						}
 					case verror.ErrSuspendThreadSignal:
+						// println("IP = ", ip)
+						// println("B = ", B)
+						// println("V = ", v.String())
+						// pauseExecution("BEFORE SUSPEND")
 						vm.Frame.ip = ip
+						vm.Frame.ret = int(B)
 						return Success, nil
 					default:
 						return vm.createError(ip, err)
