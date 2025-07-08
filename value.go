@@ -446,7 +446,7 @@ func (i Integer) String() string {
 }
 
 func (i Integer) ObjectKey() string {
-	return fmt.Sprintf("Int[%v]", strconv.FormatInt(int64(i), 10))
+	return strconv.FormatInt(int64(i), 10)
 }
 
 func (i Integer) Type() string {
@@ -580,7 +580,7 @@ func (f Float) String() string {
 }
 
 func (f Float) ObjectKey() string {
-	return fmt.Sprintf("Flt[%v]", strconv.FormatFloat(float64(f), 'g', -1, 64))
+	return fmt.Sprintf("%vf", strconv.FormatFloat(float64(f), 'g', -1, 64))
 }
 
 func (f Float) Type() string {
