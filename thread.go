@@ -43,6 +43,7 @@ type Thread struct {
 	Invoker *Thread
 	State   ThreadState
 	Channel Value
+	Reg     uint64
 	fp      int
 }
 
@@ -119,23 +120,25 @@ func (th *Thread) Clone() Value {
 }
 
 func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, error) {
-	vm.fp = fp
-	vm.Frame = &vm.Frames[vm.fp]
-	vm.Frame.code = vm.Script.MainFunction.CoreFn.Code
-	vm.Frame.lambda = vm.Script.MainFunction
-	vm.Frame.stack = vm.Stack[:]
-	if start {
-		copy(vm.Frame.stack[0:], args)
-	}
 	ip := givenIP
 	var i, op, A, B, P uint64
 	largs := len(args)
+	if start {
+		vm.fp = fp
+		vm.Frame = &vm.Frames[vm.fp]
+		vm.Frame.code = vm.Script.MainFunction.CoreFn.Code
+		vm.Frame.lambda = vm.Script.MainFunction
+		vm.Frame.stack = vm.Stack[:]
+		copy(vm.Frame.stack[0:], args)
+	}
 	if start && vm.Script.MainFunction.CoreFn.Arity > largs {
 		for i := largs; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
 			vm.Frame.stack[i] = NilValue
 		}
 	} else if !start && largs > 0 {
-		vm.Frame.stack[vm.Frame.ret] = args[0]
+		vm.Frame.stack[vm.Reg] = args[0]
+		// println("Transfer", vm.Transfer)
+		// pauseExecution("Inside Transfer")
 	}
 	// println("FP = ", fp)
 	// println("IP = ", givenIP)
@@ -570,7 +573,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 						// println("V = ", v.String())
 						// pauseExecution("BEFORE SUSPEND")
 						vm.Frame.ip = ip
-						vm.Frame.ret = int(B)
+						vm.Reg = B
 						return Success, nil
 					default:
 						return vm.createError(ip, err)
@@ -590,9 +593,21 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			default:
 				val = vm.Frame.lambda.Free[A]
 			}
-			vm.Channel = val
-			vm.State = Closed
-			return Success, nil
+			if vm.fp == 0 {
+				vm.Channel = val
+				vm.State = Closed
+				return Success, nil
+			}
+			vm.fp--
+			vm.Frame = &vm.Frames[vm.fp]
+			ip = vm.Frame.ip
+			vm.Frame.stack = vm.Stack[vm.Frame.bp:]
+			vm.Frame.stack[vm.Frame.ret] = val
+			// println("IP = ", ip)
+			// println("B = ", B)
+			// println("FP = ", vm.fp)
+			// println("V = ", val.String())
+			// pauseExecution("BEFORE RETURN")
 		case end:
 			return Success, nil
 		default:
