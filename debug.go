@@ -8,7 +8,7 @@ import (
 
 func (vm *VM) Inspect(ip int) {
 	clear()
-	fmt.Println("Thread", vm.Thread.String())
+	fmt.Println("Thread", ((*clbu)[globalStateIndex].(*GlobalState).Current).ObjectKey())
 	fmt.Println("Running", vm.Frame.lambda.CoreFn.ScriptName)
 	fmt.Printf("Store => ")
 	for i := len(coreLibNames); i < len((*vm.Script.Store)); i++ {
@@ -426,7 +426,7 @@ func (vm *VM) debug() (Result, error) {
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
+						_, threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -447,7 +447,7 @@ func (vm *VM) debug() (Result, error) {
 							vm.Thread = invoker
 						}
 					case verror.ErrStartThreadSignal:
-						_, threadError := vm.runThread(vm.fp, 0, true, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
+						_, threadError := vm.debugThread(vm.fp, 0, true, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
