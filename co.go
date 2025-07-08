@@ -12,7 +12,7 @@ func loadFoundationCoroutine() Value {
 	m.Value["suspend"] = GFn(gfnSuspendThread)
 	m.Value["close"] = GFn(gfnCloseThread)
 	m.Value["isAlive"] = GFn(gfnIsAlive)
-	m.Value["isClosed"] = GFn(gfnIsAlive)
+	m.Value["isClosed"] = GFn(gfnIsClosed)
 	//m.Value["recycle"] = GFn(gfnRecycleThread)
 	m.Value["state"] = GFn(gfnGetThreadState)
 	m.Value["running"] = GFn(gfnRunningThread)
