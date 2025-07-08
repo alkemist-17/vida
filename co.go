@@ -11,6 +11,8 @@ func loadFoundationCoroutine() Value {
 	m.Value["run"] = GFn(gfnRunThread)
 	m.Value["suspend"] = GFn(gfnSuspendThread)
 	m.Value["close"] = GFn(gfnCloseThread)
+	m.Value["isAlive"] = GFn(gfnIsAlive)
+	m.Value["isClosed"] = GFn(gfnIsAlive)
 	//m.Value["recycle"] = GFn(gfnRecycleThread)
 	m.Value["state"] = GFn(gfnGetThreadState)
 	m.Value["running"] = GFn(gfnRunningThread)
@@ -116,6 +118,28 @@ func gfnCloseThread(args ...Value) (Value, error) {
 			} else {
 				return NilValue, verror.ErrClosingAThread
 			}
+		} else {
+			return NilValue, verror.ErrNotThread
+		}
+	}
+	return NilValue, nil
+}
+
+func gfnIsAlive(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if th, ok := args[0].(*Thread); ok {
+			return Bool(th.State != Closed), nil
+		} else {
+			return NilValue, verror.ErrNotThread
+		}
+	}
+	return NilValue, nil
+}
+
+func gfnIsClosed(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if th, ok := args[0].(*Thread); ok {
+			return Bool(th.State == Closed), nil
 		} else {
 			return NilValue, verror.ErrNotThread
 		}
