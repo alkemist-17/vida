@@ -28,16 +28,12 @@ func About() string {
 	
 	What is Vida?
 
-	Vida is a simple, elegant, interpreted computer language.
-	Vida has a minimal set of constructs that makes it 
+	Vida is a simple and elegant computer language.
+	It features a minimal set of constructs that makes it 
 	easy to learn and suitable for most common programming tasks.
-	Vida is a high level language, and it can be extended 
-	by implementing the Value interface.
-	The core and foundation libs are implemented in such way, so anyone can add to the
-	language all what could be needed for your projects.
-	Vida can be embedded in a host environment or can be used as self-sufficient language.
+	Vida can be seamlessly extended and embedded in host environments or 
+	used as a standalone language.
 	Vida is a living language!
-	Contributions are always welcome.
 	
 	Happy Vida coding!
 
