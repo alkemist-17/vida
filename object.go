@@ -102,6 +102,7 @@ func setPrototype(args ...Value) (Value, error) {
 		if o, ok := args[0].(*Object); ok {
 			if proto, ok := args[1].(*Object); ok {
 				o.Value[__proto] = proto
+				return o, nil
 			}
 		}
 	}
