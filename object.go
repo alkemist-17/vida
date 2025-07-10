@@ -14,6 +14,8 @@ func loadObjectLib() Value {
 	m.Value["del"] = GFn(deleteProperty)
 	m.Value["setproto"] = GFn(setPrototype)
 	m.Value["getproto"] = GFn(getPrototype)
+	m.Value["setmeta"] = GFn(setMeta)
+	m.Value["getmeta"] = GFn(getMeta)
 	return m
 }
 
@@ -96,7 +98,7 @@ func deleteProperty(args ...Value) (Value, error) {
 
 func setPrototype(args ...Value) (Value, error) {
 	if len(__proto) == 0 {
-		__proto = fmt.Sprint(rand.Uint64())
+		__proto = fmt.Sprint("__proto", rand.Uint64())
 	}
 	if len(args) >= 2 {
 		if o, ok := args[0].(*Object); ok {
@@ -110,10 +112,44 @@ func setPrototype(args ...Value) (Value, error) {
 }
 
 func getPrototype(args ...Value) (Value, error) {
+	if len(__proto) == 0 {
+		__proto = fmt.Sprint("__proto", rand.Uint64())
+	}
 	if len(args) >= 0 {
 		if o, ok := args[0].(*Object); ok {
 			if proto, ok := o.Value[__proto]; ok {
 				return proto, nil
+			}
+		}
+	}
+	return NilValue, nil
+}
+
+func setMeta(args ...Value) (Value, error) {
+	if len(__meta) == 0 {
+		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
+		__meta = fmt.Sprint("__meta", rand.Uint64())
+	}
+	if len(args) >= 2 {
+		if o, ok := args[0].(*Object); ok {
+			if meta, ok := args[1].(*Object); ok {
+				o.Value[__meta] = meta
+				return o, nil
+			}
+		}
+	}
+	return NilValue, nil
+}
+
+func getMeta(args ...Value) (Value, error) {
+	if len(__meta) == 0 {
+		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
+		__meta = fmt.Sprint("__meta", rand.Uint64())
+	}
+	if len(args) >= 0 {
+		if o, ok := args[0].(*Object); ok {
+			if meta, ok := o.Value[__meta]; ok {
+				return meta, nil
 			}
 		}
 	}

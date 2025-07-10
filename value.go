@@ -806,12 +806,47 @@ func (o *Object) Iterator() Value {
 }
 
 func (o *Object) String() string {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		if str, ok := meta.Value[__str]; ok {
+			switch v := str.(type) {
+			case *Function:
+				vm := (*clbu)[globalStateIndex].(*GlobalState).VM
+				th := (*clbu)[globalStateIndex].(*GlobalState).Aux
+				th.Invoker = (*clbu)[globalStateIndex].(*GlobalState).Current
+				(*clbu)[globalStateIndex].(*GlobalState).Current = th
+				th.State = Running
+				th.Invoker.State = Waiting
+				vm.Thread = th
+				vm.fp = 0
+				vm.Frame = &vm.Frames[vm.fp]
+				vm.Frame.code = v.CoreFn.Code
+				vm.Frame.lambda = v
+				vm.Frame.stack = vm.Stack[:]
+				vm.Frame.stack[0] = o
+				// ------------------
+				_, err := vm.runThread(0, 0, false)
+				val := vm.Channel
+				invoker := vm.Thread.Invoker
+				invoker.State = Running
+				vm.Thread.Invoker = nil
+				vm.Thread.State = Ready
+				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+				vm.Thread = invoker
+				if err != nil {
+					return NilValue.String()
+				}
+				return val.String()
+			default:
+				return v.String()
+			}
+		}
+	}
 	if len(o.Value) == 0 {
 		return "{}"
 	}
 	var r []string
 	for k, v := range o.Value {
-		if k != __proto {
+		if k != __proto && k != __meta {
 			r = append(r, fmt.Sprintf("%v: %v", k, v))
 		}
 	}

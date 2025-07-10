@@ -20,12 +20,16 @@ var extensionlibsLoader LibsLoader
 
 var __proto string
 
+var __meta string
+
 const (
 	globalStateIndex = 0
 
 	DefaultInputPrompt = "Input > "
 
 	foundationInterfaceName = "std/"
+
+	__str = "__str"
 )
 
 var clbu *[]Value
@@ -34,6 +38,7 @@ type GlobalState struct {
 	*VM
 	Main    *Thread
 	Current *Thread
+	Aux     *Thread
 }
 
 var coreLibNames = []string{
@@ -88,10 +93,17 @@ func gfnLen(args ...Value) (Value, error) {
 		case *Array:
 			return Integer(len(v.Value)), nil
 		case *Object:
-			if _, ok := v.Value[__proto]; ok {
-				return Integer(len(v.Value) - 1), nil
+			lobj := len(v.Value)
+			if lobj == 0 {
+				return Integer(lobj), nil
 			}
-			return Integer(len(v.Value)), nil
+			if _, ok := v.Value[__proto]; ok {
+				lobj--
+			}
+			if _, ok := v.Value[__meta]; ok {
+				lobj--
+			}
+			return Integer(lobj), nil
 		case *String:
 			if v.Runes == nil {
 				v.Runes = []rune(v.Value)
