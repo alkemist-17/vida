@@ -127,7 +127,7 @@ func getPrototype(args ...Value) (Value, error) {
 
 func setMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
-		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
+		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, quarterStack)
 		__meta = fmt.Sprint("__meta", rand.Uint64())
 	}
 	if len(args) >= 2 {
@@ -143,7 +143,7 @@ func setMeta(args ...Value) (Value, error) {
 
 func getMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
-		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
+		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, quarterStack)
 		__meta = fmt.Sprint("__meta", rand.Uint64())
 	}
 	if len(args) >= 0 {
