@@ -798,46 +798,64 @@ func (o *Object) IsIterable() Bool {
 }
 
 func (o *Object) IsCallable() Bool {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		if _, ok := meta.Value["__call"]; ok {
+			return true
+		}
+	}
 	return false
+}
+
+func (o *Object) Call(args ...Value) (Value, error) {
+	switch fn := o.Value[__meta].(*Object).Value["__call"].(type) {
+	case *Function:
+		if fn.CoreFn.IsVar {
+			a := make([]Value, len(args))
+			copy(a, args)
+			return o.execute(fn, &Array{Value: a})
+		}
+		return o.execute(fn, args...)
+	default:
+		return NilValue, nil
+	}
 }
 
 func (o *Object) Iterator() Value {
 	return newObjectIterator(o)
 }
 
+func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
+	vm := (*clbu)[globalStateIndex].(*GlobalState).VM
+	th := (*clbu)[globalStateIndex].(*GlobalState).Aux
+	th.Invoker = (*clbu)[globalStateIndex].(*GlobalState).Current
+	(*clbu)[globalStateIndex].(*GlobalState).Current = th
+	th.State = Running
+	th.Invoker.State = Waiting
+	vm.Thread = th
+	// ------------------
+	_, err := vm.runMetaFunction(fn, o, args...)
+	val := vm.Channel
+	invoker := vm.Thread.Invoker
+	invoker.State = Running
+	vm.Thread.Invoker = nil
+	vm.Thread.State = Ready
+	(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+	vm.Thread = invoker
+	if err != nil {
+		return NilValue, err
+	}
+	return val, nil
+}
+
 func (o *Object) String() string {
 	if meta, ok := o.Value[__meta].(*Object); ok {
 		if str, ok := meta.Value[__str]; ok {
-			switch v := str.(type) {
+			switch fn := str.(type) {
 			case *Function:
-				vm := (*clbu)[globalStateIndex].(*GlobalState).VM
-				th := (*clbu)[globalStateIndex].(*GlobalState).Aux
-				th.Invoker = (*clbu)[globalStateIndex].(*GlobalState).Current
-				(*clbu)[globalStateIndex].(*GlobalState).Current = th
-				th.State = Running
-				th.Invoker.State = Waiting
-				vm.Thread = th
-				vm.fp = 0
-				vm.Frame = &vm.Frames[vm.fp]
-				vm.Frame.code = v.CoreFn.Code
-				vm.Frame.lambda = v
-				vm.Frame.stack = vm.Stack[:]
-				vm.Frame.stack[0] = o
-				// ------------------
-				_, err := vm.runThread(0, 0, false)
-				val := vm.Channel
-				invoker := vm.Thread.Invoker
-				invoker.State = Running
-				vm.Thread.Invoker = nil
-				vm.Thread.State = Ready
-				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-				vm.Thread = invoker
-				if err != nil {
-					return NilValue.String()
-				}
+				val, _ := o.execute(fn)
 				return val.String()
 			default:
-				return v.String()
+				return fn.String()
 			}
 		}
 	}

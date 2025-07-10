@@ -422,7 +422,30 @@ func (vm *VM) debug() (Result, error) {
 				vm.Frame.stack = vm.Stack[vm.Frame.bp:]
 				ip = 0
 			} else {
-				v, err := val.Call(vm.Frame.stack[B+1 : B+A+1]...)
+				varargs := vm.Frame.stack[B+1 : B+A+1]
+				if P != 0 {
+					switch P {
+					case ellipsisFirst:
+						if arr, ok := varargs[0].(*Array); ok {
+							for i := 0; i < len(arr.Value); i++ {
+								vm.Frame.stack[int(B)+1+i] = arr.Value[i]
+							}
+							varargs = vm.Frame.stack[B+1 : int(B)+int(A)+len(arr.Value)]
+						} else {
+							return vm.createError(ip, verror.ErrVariadicArgs)
+						}
+					case ellipsisLast:
+						if arr, ok := varargs[len(varargs)-1].(*Array); ok {
+							for i, v := range arr.Value {
+								vm.Frame.stack[int(B)+len(varargs)+i] = v
+							}
+							varargs = vm.Frame.stack[B+1 : B+A+uint64(len(arr.Value))]
+						} else {
+							return vm.createError(ip, verror.ErrVariadicArgs)
+						}
+					}
+				}
+				v, err := val.Call(varargs...)
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
