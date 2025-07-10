@@ -30,6 +30,8 @@ const (
 	foundationInterfaceName = "std/"
 
 	__str = "__str"
+
+	__call = "__call"
 )
 
 var clbu *[]Value

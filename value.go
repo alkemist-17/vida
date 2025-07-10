@@ -799,7 +799,7 @@ func (o *Object) IsIterable() Bool {
 
 func (o *Object) IsCallable() Bool {
 	if meta, ok := o.Value[__meta].(*Object); ok {
-		if _, ok := meta.Value["__call"]; ok {
+		if _, ok := meta.Value[__call]; ok {
 			return true
 		}
 	}
@@ -807,7 +807,7 @@ func (o *Object) IsCallable() Bool {
 }
 
 func (o *Object) Call(args ...Value) (Value, error) {
-	switch fn := o.Value[__meta].(*Object).Value["__call"].(type) {
+	switch fn := o.Value[__meta].(*Object).Value[__call].(type) {
 	case *Function:
 		if fn.CoreFn.IsVar {
 			a := make([]Value, len(args))
@@ -816,7 +816,7 @@ func (o *Object) Call(args ...Value) (Value, error) {
 		}
 		return o.execute(fn, args...)
 	default:
-		return NilValue, nil
+		return fn, nil
 	}
 }
 
