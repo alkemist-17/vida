@@ -13,9 +13,9 @@ var lib = {}
 
 
 // Map 
-lib.map = fun l, f {
-    var xs = array(len(l))
-    for i, v in l {
+lib.map = fun a, f {
+    var xs = array(len(a))
+    for i, v in a {
         xs[i] = f(v)
     }
     ret xs
@@ -24,9 +24,9 @@ lib.map = fun l, f {
 
 
 // Filter
-lib.filter = fun l, pred {
+lib.filter = fun a, pred {
     var xs = []
-    for _, v in l {
+    for _, v in a {
         if pred(v) {
             append(xs, v)
         }
@@ -37,8 +37,8 @@ lib.filter = fun l, pred {
 
 
 // All
-lib.all = fun l, pred {
-    for _, v in l {
+lib.all = fun a, pred {
+    for _, v in a {
         if not pred(v) {
             ret false
         }
@@ -49,8 +49,8 @@ lib.all = fun l, pred {
 
 
 // Any
-lib.any = fun l, pred {
-    for _, v in l {
+lib.any = fun a, pred {
+    for _, v in a {
         if pred(v) {
             ret true
         }
@@ -61,8 +61,8 @@ lib.any = fun l, pred {
 
 
 // Reduce
-lib.reduce = fun l, f, init {
-    for _, v in l {
+lib.reduce = fun a, f, init {
+    for _, v in a {
         init = f(init, v)
     }
     ret init
@@ -71,9 +71,9 @@ lib.reduce = fun l, f, init {
 
 
 // TakeWhile
-lib.takeWhile = fun l, pred {
+lib.takeWhile = fun a, pred {
     var xs = []
-    for _, v in l {
+    for _, v in a {
         if not pred(v) {
             ret xs
         }
@@ -104,11 +104,11 @@ lib.zip = fun l, r {
 
 
 // UnZip
-lib.unzip = fun l {
-    var ll = len(l)
+lib.unzip = fun zipped {
+    var ll = len(zipped)
     var a = array(ll)
     var b = array(ll)
-    for i, v in l {
+    for i, v in zipped {
         a[i] = v[0]
         b[i] = v[1]
     }
