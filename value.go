@@ -770,6 +770,18 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		if get, ok := meta.Value[__get]; ok {
+			switch val := get.(type) {
+			case *Function:
+				return o.execute(val, index)
+			case *Object:
+				return val.IGet(index)
+			default:
+				return val, nil
+			}
+		}
+	}
 	if val, ok := o.Value[index.ObjectKey()]; ok {
 		return val, nil
 	} else if proto, ok := o.Value[__proto].(*Object); ok {

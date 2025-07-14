@@ -16,6 +16,9 @@ func loadObjectLib() Value {
 	m.Value["getproto"] = GFn(getPrototype)
 	m.Value["setmeta"] = GFn(setMeta)
 	m.Value["getmeta"] = GFn(getMeta)
+	m.Value["get"] = GFn(getValue)
+	m.Value["keys"] = GFn(getKeys)
+	m.Value["values"] = GFn(getValues)
 	return m
 }
 
@@ -90,7 +93,9 @@ func extractProps(args ...Value) (Value, error) {
 func deleteProperty(args ...Value) (Value, error) {
 	if len(args) >= 2 {
 		if o, ok := args[0].(*Object); ok {
-			delete(o.Value, args[1].String())
+			for _, v := range args[1:] {
+				delete(o.Value, v.ObjectKey())
+			}
 		}
 	}
 	return NilValue, nil
@@ -98,7 +103,7 @@ func deleteProperty(args ...Value) (Value, error) {
 
 func setPrototype(args ...Value) (Value, error) {
 	if len(__proto) == 0 {
-		__proto = fmt.Sprint("__proto", rand.Uint64())
+		__proto = fmt.Sprint(__proto, rand.Uint64())
 	}
 	if len(args) >= 2 {
 		if o, ok := args[0].(*Object); ok {
@@ -113,7 +118,7 @@ func setPrototype(args ...Value) (Value, error) {
 
 func getPrototype(args ...Value) (Value, error) {
 	if len(__proto) == 0 {
-		__proto = fmt.Sprint("__proto", rand.Uint64())
+		__proto = fmt.Sprint(__proto, rand.Uint64())
 	}
 	if len(args) >= 0 {
 		if o, ok := args[0].(*Object); ok {
@@ -128,7 +133,7 @@ func getPrototype(args ...Value) (Value, error) {
 func setMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
 		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, quarterStack)
-		__meta = fmt.Sprint("__meta", rand.Uint64())
+		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
 	if len(args) >= 2 {
 		if o, ok := args[0].(*Object); ok {
@@ -144,13 +149,72 @@ func setMeta(args ...Value) (Value, error) {
 func getMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
 		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, quarterStack)
-		__meta = fmt.Sprint("__meta", rand.Uint64())
+		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
 	if len(args) >= 0 {
 		if o, ok := args[0].(*Object); ok {
 			if meta, ok := o.Value[__meta]; ok {
 				return meta, nil
 			}
+		}
+	}
+	return NilValue, nil
+}
+
+func getValue(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if o, ok := args[0].(*Object); ok {
+			if val, ok := o.Value[args[1].ObjectKey()]; ok {
+				return val, nil
+			}
+		}
+	}
+	return NilValue, nil
+}
+
+func getKeys(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if v, ok := args[0].(*Object); ok {
+			lobj := len(v.Value)
+			if _, ok := v.Value[__proto]; ok {
+				lobj--
+			}
+			if _, ok := v.Value[__meta]; ok {
+				lobj--
+			}
+			keys := make([]Value, int(lobj))
+			var idx int
+			for k := range v.Value {
+				if k != __proto && k != __meta {
+					keys[idx] = &String{Value: k}
+					idx++
+				}
+			}
+			return &Array{Value: keys}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func getValues(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if v, ok := args[0].(*Object); ok {
+			lobj := len(v.Value)
+			if _, ok := v.Value[__proto]; ok {
+				lobj--
+			}
+			if _, ok := v.Value[__meta]; ok {
+				lobj--
+			}
+			values := make([]Value, int(lobj))
+			var idx int
+			for k, v := range v.Value {
+				if k != __proto && k != __meta {
+					values[idx] = v
+					idx++
+				}
+			}
+			return &Array{Value: values}, nil
 		}
 	}
 	return NilValue, nil
