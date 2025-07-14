@@ -2,6 +2,7 @@ package vida
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -745,12 +746,8 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 		switch op {
 		case uint64(token.ADD):
 			pairs := make(map[string]Value)
-			for k, v := range o.Value {
-				pairs[k] = v
-			}
-			for k, v := range r.Value {
-				pairs[k] = v
-			}
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
 		case uint64(token.AND):
 			return r, nil

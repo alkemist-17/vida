@@ -74,7 +74,7 @@ var (
 	ErrStackOverflow                    = errors.New("stack overflow")
 	ErrArity                            = errors.New("given arguments count is different from arity definition")
 	ErrNotEnoughArgs                    = errors.New("not given enough arguments to the function")
-	ErrVariadicArgs                     = errors.New("expected a list for variradic arguments")
+	ErrVariadicArgs                     = errors.New("expected an array for variradic arguments")
 	ErrSlice                            = errors.New("could not process the slice")
 	ErrValueIsConstant                  = errors.New("value is constant")
 	ErrMaxMemSize                       = errors.New("max memory size")
