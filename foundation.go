@@ -31,7 +31,7 @@ func catchException(args ...Value) (Value, error) {
 			} else {
 				switch e := err.(type) {
 				case verror.VidaError:
-					return &Error{Message: &String{Value: e.Message}}, nil
+					return Error{Message: &String{Value: e.Message}}, nil
 				}
 			}
 		}

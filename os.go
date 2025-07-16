@@ -158,7 +158,7 @@ func runCMD(args ...Value) (Value, error) {
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
 			if err != nil {
-				return &Error{Message: &String{Value: err.Error()}}, nil
+				return Error{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
