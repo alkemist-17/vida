@@ -42,7 +42,6 @@ type GlobalState struct {
 	*VM
 	Main    *Thread
 	Current *Thread
-	Aux     *Thread
 }
 
 var coreLibNames = []string{

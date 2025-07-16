@@ -834,26 +834,11 @@ func (o *Object) Iterator() Value {
 }
 
 func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
-	vm := (*clbu)[globalStateIndex].(*GlobalState).VM
-	th := (*clbu)[globalStateIndex].(*GlobalState).Aux
-	th.Invoker = (*clbu)[globalStateIndex].(*GlobalState).Current
-	(*clbu)[globalStateIndex].(*GlobalState).Current = th
-	th.State = Running
-	th.Invoker.State = Waiting
-	vm.Thread = th
-	// ------------------
-	_, err := vm.runMetaFunction(fn, o, args...)
-	val := vm.Channel
-	invoker := vm.Thread.Invoker
-	invoker.State = Running
-	vm.Thread.Invoker = nil
-	vm.Thread.State = Ready
-	(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-	vm.Thread = invoker
-	if err != nil {
+	vm := &VM{newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, picoStack)}
+	if _, err := vm.runMetaFunction(fn, o, args...); err != nil {
 		return NilValue, err
 	}
-	return val, nil
+	return vm.Channel, nil
 }
 
 func (o *Object) String() string {

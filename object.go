@@ -17,6 +17,7 @@ func loadObjectLib() Value {
 	m.Value["setmeta"] = GFn(setMeta)
 	m.Value["getmeta"] = GFn(getMeta)
 	m.Value["get"] = GFn(getValue)
+	m.Value["has"] = GFn(hasValue)
 	m.Value["keys"] = GFn(getKeys)
 	m.Value["values"] = GFn(getValues)
 	return m
@@ -132,7 +133,6 @@ func getPrototype(args ...Value) (Value, error) {
 
 func setMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
-		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, quarterStack)
 		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
 	if len(args) >= 2 {
@@ -148,7 +148,6 @@ func setMeta(args ...Value) (Value, error) {
 
 func getMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
-		((*clbu)[globalStateIndex].(*GlobalState)).Aux = newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, quarterStack)
 		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
 	if len(args) >= 0 {
@@ -167,6 +166,21 @@ func getValue(args ...Value) (Value, error) {
 			if val, ok := o.Value[args[1].ObjectKey()]; ok {
 				return val, nil
 			}
+		}
+	}
+	return NilValue, nil
+}
+
+func hasValue(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if o, ok := args[0].(*Object); ok {
+			item := args[1].ObjectKey()
+			for k := range o.Value {
+				if item == k {
+					return Bool(true), nil
+				}
+			}
+			return Bool(false), nil
 		}
 	}
 	return NilValue, nil
