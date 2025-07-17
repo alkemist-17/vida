@@ -34,6 +34,8 @@ const (
 	__call = "__call"
 
 	__get = "__get"
+
+	__set = "__set"
 )
 
 var clbu *[]Value

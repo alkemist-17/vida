@@ -791,6 +791,19 @@ func (o *Object) IGet(index Value) (Value, error) {
 }
 
 func (o *Object) ISet(index, val Value) error {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		if set, ok := meta.Value[__set]; ok {
+			switch setvalue := set.(type) {
+			case *Function:
+				_, err := o.execute(setvalue, index, val)
+				return err
+			case *Object:
+				return setvalue.ISet(index, val)
+			default:
+				return nil
+			}
+		}
+	}
 	o.Value[index.ObjectKey()] = val
 	return nil
 }

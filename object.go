@@ -17,6 +17,7 @@ func loadObjectLib() Value {
 	m.Value["setmeta"] = GFn(setMeta)
 	m.Value["getmeta"] = GFn(getMeta)
 	m.Value["get"] = GFn(getValue)
+	m.Value["set"] = GFn(setValue)
 	m.Value["has"] = GFn(hasValue)
 	m.Value["keys"] = GFn(getKeys)
 	m.Value["values"] = GFn(getValues)
@@ -150,7 +151,7 @@ func getMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
 		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
-	if len(args) >= 0 {
+	if len(args) >= 1 {
 		if o, ok := args[0].(*Object); ok {
 			if meta, ok := o.Value[__meta]; ok {
 				return meta, nil
@@ -166,6 +167,15 @@ func getValue(args ...Value) (Value, error) {
 			if val, ok := o.Value[args[1].ObjectKey()]; ok {
 				return val, nil
 			}
+		}
+	}
+	return NilValue, nil
+}
+
+func setValue(args ...Value) (Value, error) {
+	if len(args) > 2 {
+		if o, ok := args[0].(*Object); ok {
+			o.Value[args[1].ObjectKey()] = args[2]
 		}
 	}
 	return NilValue, nil
