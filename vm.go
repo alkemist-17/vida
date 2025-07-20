@@ -21,6 +21,8 @@ const nanoStack = 32
 const primeStack = 23
 const picoStack = 16
 const femtoStack = 8
+const defaultMetaStackSize = picoStack
+const defaultThreadStackSize = primeStack
 
 type frame struct {
 	code   []uint64

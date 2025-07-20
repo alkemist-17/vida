@@ -40,10 +40,33 @@ const (
 
 var clbu *[]Value
 
+type ThreadPool struct {
+	VM  map[int]*VM
+	Key int
+}
+
+func newThreadPool() *ThreadPool {
+	return &ThreadPool{
+		VM: make(map[int]*VM),
+	}
+}
+
+func (tp *ThreadPool) getVM() *VM {
+	if vm, ok := tp.VM[tp.Key]; ok {
+		tp.Key++
+		return vm
+	}
+	vm := &VM{newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, defaultMetaStackSize)}
+	tp.VM[tp.Key] = vm
+	tp.Key++
+	return vm
+}
+
 type GlobalState struct {
 	*VM
 	Main    *Thread
 	Current *Thread
+	Pool    *ThreadPool
 }
 
 var coreLibNames = []string{

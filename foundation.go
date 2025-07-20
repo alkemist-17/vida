@@ -25,8 +25,11 @@ func raiseException(args ...Value) (Value, error) {
 func catchException(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if fn, ok := args[0].(*Function); ok {
-			vm := &VM{newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, picoStack)}
-			if _, err := vm.runThread(0, 0, true, args[1:]...); err == nil {
+			vm := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getVM()
+			vm.Thread.Script.MainFunction = fn
+			_, err := vm.runThread(0, 0, true, args[1:]...)
+			((*clbu)[globalStateIndex].(*GlobalState)).Pool.Key--
+			if err == nil {
 				return vm.Channel, nil
 			} else {
 				switch e := err.(type) {

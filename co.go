@@ -25,7 +25,7 @@ func gfnNewThread(args ...Value) (Value, error) {
 	l := len(args)
 	if l == 1 {
 		if fn, ok := args[0].(*Function); ok {
-			return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, primeStack), nil
+			return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, defaultThreadStackSize), nil
 		} else {
 			return NilValue, verror.ErrNotAFunction
 		}

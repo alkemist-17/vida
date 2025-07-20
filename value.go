@@ -847,8 +847,11 @@ func (o *Object) Iterator() Value {
 }
 
 func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
-	vm := &VM{newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, picoStack)}
-	if _, err := vm.runMetaFunction(fn, o, args...); err != nil {
+	vm := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getVM()
+	vm.Thread.Script.MainFunction = fn
+	_, err := vm.runMetaFunction(fn, o, args...)
+	((*clbu)[globalStateIndex].(*GlobalState)).Pool.Key--
+	if err != nil {
 		return NilValue, err
 	}
 	return vm.Channel, nil
