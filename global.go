@@ -273,7 +273,7 @@ func gfnLoadLib(args ...Value) (Value, error) {
 					return loadFoundationBinary(), nil
 				case "time":
 					return loadFoundationTime(), nil
-				case "conv":
+				case "cast":
 					return loadFoundationCasting(), nil
 				case "rand":
 					return loadFoundationRandom(), nil
