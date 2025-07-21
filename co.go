@@ -13,10 +13,9 @@ func loadFoundationCoroutine() Value {
 	m.Value["close"] = GFn(gfnCloseThread)
 	m.Value["isAlive"] = GFn(gfnIsAlive)
 	m.Value["isClosed"] = GFn(gfnIsClosed)
-	//m.Value["recycle"] = GFn(gfnRecycleThread)
+	m.Value["recycle"] = GFn(gfnRecycleThread)
 	m.Value["state"] = GFn(gfnGetThreadState)
 	m.Value["running"] = GFn(gfnRunningThread)
-	// Thread stack sizes
 	m.Value["stack"] = getStackSizes()
 	return m
 }
@@ -105,6 +104,10 @@ func gfnRecycleThread(args ...Value) (Value, error) {
 				th.State = Ready
 				return th, nil
 			}
+		} else if !ok {
+			return NilValue, verror.ErrNotThread
+		} else if th.State == Closed {
+			return NilValue, verror.ErrRecyclingThread
 		}
 	}
 	return NilValue, nil

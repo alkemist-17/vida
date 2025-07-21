@@ -88,4 +88,5 @@ var (
 	ErrStartThreadSignal                = errors.New("start thread signal")
 	ErrResumeThreadSignal               = errors.New("resume thread signal")
 	ErrSuspendThreadSignal              = errors.New("suspend thread signal")
+	ErrRecyclingThread                  = errors.New("cannot recycle a non closed thread")
 )
