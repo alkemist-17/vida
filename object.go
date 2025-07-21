@@ -26,17 +26,17 @@ func loadObjectLib() Value {
 
 func injectProps(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
-				if m, ok := v.(*Object); ok && m != o {
-					for k, x := range m.Value {
-						if _, isPresent := o.Value[k]; !isPresent {
-							o.Value[k] = x
+				if other, ok := v.(*Object); ok && other != self {
+					for k, x := range other.Value {
+						if _, isPresent := self.Value[k]; !isPresent {
+							self.Value[k] = x
 						}
 					}
 				}
 			}
-			return o, nil
+			return self, nil
 		}
 	}
 	return NilValue, nil
@@ -44,15 +44,15 @@ func injectProps(args ...Value) (Value, error) {
 
 func injectAndOverrideProps(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
-				if m, ok := v.(*Object); ok && m != o {
-					for k, x := range m.Value {
-						o.Value[k] = x
+				if other, ok := v.(*Object); ok && other != self {
+					for k, x := range other.Value {
+						self.Value[k] = x
 					}
 				}
 			}
-			return o, nil
+			return self, nil
 		}
 	}
 	return NilValue, nil
@@ -60,11 +60,11 @@ func injectAndOverrideProps(args ...Value) (Value, error) {
 
 func checkProps(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
-				if m, ok := v.(*Object); ok && m != o {
-					for k := range m.Value {
-						if _, isPresent := o.Value[k]; !isPresent {
+				if other, ok := v.(*Object); ok && other != self {
+					for k := range other.Value {
+						if _, isPresent := self.Value[k]; !isPresent {
 							return Bool(false), nil
 						}
 					}
@@ -78,15 +78,15 @@ func checkProps(args ...Value) (Value, error) {
 
 func extractProps(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
-				if m, ok := v.(*Object); ok && m != o {
-					for k := range m.Value {
-						delete(o.Value, k)
+				if other, ok := v.(*Object); ok && other != self {
+					for k := range other.Value {
+						delete(self.Value, k)
 					}
 				}
 			}
-			return o, nil
+			return self, nil
 		}
 	}
 	return NilValue, nil
@@ -94,9 +94,9 @@ func extractProps(args ...Value) (Value, error) {
 
 func deleteProperty(args ...Value) (Value, error) {
 	if len(args) >= 2 {
-		if o, ok := args[0].(*Object); ok {
-			for _, v := range args[1:] {
-				delete(o.Value, v.ObjectKey())
+		if self, ok := args[0].(*Object); ok {
+			for _, prop := range args[1:] {
+				delete(self.Value, prop.ObjectKey())
 			}
 		}
 	}
@@ -108,10 +108,10 @@ func setPrototype(args ...Value) (Value, error) {
 		__proto = fmt.Sprint(__proto, rand.Uint64())
 	}
 	if len(args) >= 2 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			if proto, ok := args[1].(*Object); ok {
-				o.Value[__proto] = proto
-				return o, nil
+				self.Value[__proto] = proto
+				return self, nil
 			}
 		}
 	}
@@ -123,8 +123,8 @@ func getPrototype(args ...Value) (Value, error) {
 		__proto = fmt.Sprint(__proto, rand.Uint64())
 	}
 	if len(args) >= 0 {
-		if o, ok := args[0].(*Object); ok {
-			if proto, ok := o.Value[__proto]; ok {
+		if self, ok := args[0].(*Object); ok {
+			if proto, ok := self.Value[__proto]; ok {
 				return proto, nil
 			}
 		}
@@ -138,10 +138,10 @@ func setMeta(args ...Value) (Value, error) {
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
 	if len(args) >= 2 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			if meta, ok := args[1].(*Object); ok {
-				o.Value[__meta] = meta
-				return o, nil
+				self.Value[__meta] = meta
+				return self, nil
 			}
 		}
 	}
@@ -153,8 +153,8 @@ func getMeta(args ...Value) (Value, error) {
 		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
 	if len(args) >= 1 {
-		if o, ok := args[0].(*Object); ok {
-			if meta, ok := o.Value[__meta]; ok {
+		if self, ok := args[0].(*Object); ok {
+			if meta, ok := self.Value[__meta]; ok {
 				return meta, nil
 			}
 		}
@@ -164,8 +164,8 @@ func getMeta(args ...Value) (Value, error) {
 
 func getValue(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if o, ok := args[0].(*Object); ok {
-			if val, ok := o.Value[args[1].ObjectKey()]; ok {
+		if self, ok := args[0].(*Object); ok {
+			if val, ok := self.Value[args[1].ObjectKey()]; ok {
 				return val, nil
 			}
 		}
@@ -175,8 +175,8 @@ func getValue(args ...Value) (Value, error) {
 
 func setValue(args ...Value) (Value, error) {
 	if len(args) > 2 {
-		if o, ok := args[0].(*Object); ok {
-			o.Value[args[1].ObjectKey()] = args[2]
+		if self, ok := args[0].(*Object); ok {
+			self.Value[args[1].ObjectKey()] = args[2]
 		}
 	}
 	return NilValue, nil
@@ -184,9 +184,9 @@ func setValue(args ...Value) (Value, error) {
 
 func hasValue(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if o, ok := args[0].(*Object); ok {
+		if self, ok := args[0].(*Object); ok {
 			item := args[1].ObjectKey()
-			for k := range o.Value {
+			for k := range self.Value {
 				if item == k {
 					return Bool(true), nil
 				}
@@ -199,17 +199,17 @@ func hasValue(args ...Value) (Value, error) {
 
 func getKeys(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if v, ok := args[0].(*Object); ok {
-			lobj := len(v.Value)
-			if _, ok := v.Value[__proto]; ok {
+		if self, ok := args[0].(*Object); ok {
+			lobj := len(self.Value)
+			if _, ok := self.Value[__proto]; ok {
 				lobj--
 			}
-			if _, ok := v.Value[__meta]; ok {
+			if _, ok := self.Value[__meta]; ok {
 				lobj--
 			}
 			keys := make([]Value, int(lobj))
 			var idx int
-			for k := range v.Value {
+			for k := range self.Value {
 				if k != __proto && k != __meta {
 					keys[idx] = &String{Value: k}
 					idx++
@@ -223,17 +223,17 @@ func getKeys(args ...Value) (Value, error) {
 
 func getValues(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if v, ok := args[0].(*Object); ok {
-			lobj := len(v.Value)
-			if _, ok := v.Value[__proto]; ok {
+		if self, ok := args[0].(*Object); ok {
+			lobj := len(self.Value)
+			if _, ok := self.Value[__proto]; ok {
 				lobj--
 			}
-			if _, ok := v.Value[__meta]; ok {
+			if _, ok := self.Value[__meta]; ok {
 				lobj--
 			}
 			values := make([]Value, int(lobj))
 			var idx int
-			for k, v := range v.Value {
+			for k, v := range self.Value {
 				if k != __proto && k != __meta {
 					values[idx] = v
 					idx++

@@ -83,7 +83,6 @@ var coreLibNames = []string{
 	"clone",
 	"error",
 	"isError",
-	"object",
 }
 
 func loadCoreLib(store *[]Value) *[]Value {
@@ -101,7 +100,6 @@ func loadCoreLib(store *[]Value) *[]Value {
 		GFn(gfnClone),
 		GFn(gfnError),
 		GFn(gfnIsError),
-		loadObjectLib(),
 	)
 	return store
 }
@@ -269,6 +267,8 @@ func gfnLoadLib(args ...Value) (Value, error) {
 					return loadFoundationText(), nil
 				case "math":
 					return loadFoundationMath(), nil
+				case "object":
+					return loadObjectLib(), nil
 				case "bin":
 					return loadFoundationBinary(), nil
 				case "time":
@@ -529,10 +529,6 @@ var coreLibDescription = []string{
 	`
 	Help to explicitly check for an error value.
 	Example: if isError(value) {handle the error here}
-	`,
-	`
-	It is the built-in object library with some functionality
-	for working with objects.
 	`,
 }
 
