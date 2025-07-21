@@ -1,3 +1,5 @@
+var object = load("std/object")
+
 assert(object)
 
 var void = {}
