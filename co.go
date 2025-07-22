@@ -6,7 +6,6 @@ import (
 
 func loadFoundationCoroutine() Value {
 	m := &Object{Value: make(map[string]Value)}
-	// Co API
 	m.Value["new"] = GFn(gfnNewThread)
 	m.Value["run"] = GFn(gfnRunThread)
 	m.Value["suspend"] = GFn(gfnSuspendThread)

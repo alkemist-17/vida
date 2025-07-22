@@ -2,6 +2,7 @@ package vida
 
 import (
 	"fmt"
+	"maps"
 	"math/rand/v2"
 )
 
@@ -47,9 +48,7 @@ func injectAndOverrideProps(args ...Value) (Value, error) {
 		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
-					for k, x := range other.Value {
-						self.Value[k] = x
-					}
+					maps.Copy(self.Value, other.Value)
 				}
 			}
 			return self, nil
@@ -61,13 +60,20 @@ func injectAndOverrideProps(args ...Value) (Value, error) {
 func checkProps(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
+			set := make(map[string]bool)
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
 					for k := range other.Value {
-						if _, isPresent := self.Value[k]; !isPresent {
-							return Bool(false), nil
+						if k != __proto && k != __meta {
+							set[k] = false
 						}
 					}
+				}
+			}
+			recursiveProtoCheck(set, self)
+			for _, v := range set {
+				if v == false {
+					return Bool(false), nil
 				}
 			}
 			return Bool(true), nil
@@ -243,4 +249,21 @@ func getValues(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func recursiveProtoCheck(set map[string]bool, self *Object) {
+	if self == nil {
+		return
+	}
+	for k := range self.Value {
+		if k != __proto && k != __meta {
+			if _, isPresent := set[k]; isPresent {
+				set[k] = true
+			}
+		}
+	}
+	if p, ok := self.Value[__proto]; ok {
+		proto := p.(*Object)
+		recursiveProtoCheck(set, proto)
+	}
 }
