@@ -749,6 +749,27 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
+		case uint64(token.SUB):
+			pairs := make(map[string]Value)
+			for k, v := range o.Value {
+				if _, contains := r.Value[k]; !contains {
+					pairs[k] = v
+				}
+			}
+			return &Object{Value: pairs}, nil
+		case uint64(token.BAND):
+			pairs := make(map[string]Value)
+			for k, v := range o.Value {
+				if _, contains := r.Value[k]; contains {
+					pairs[k] = v
+				}
+			}
+			return &Object{Value: pairs}, nil
+		case uint64(token.BOR):
+			pairs := make(map[string]Value)
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
 		case uint64(token.AND):
 			return r, nil
 		case uint64(token.OR):
