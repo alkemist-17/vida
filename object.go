@@ -101,6 +101,11 @@ func extractProps(args ...Value) (Value, error) {
 func deleteProperty(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
+			if meta, ok := self.Value[__meta].(*Object); ok {
+				if __delete, ok := meta.Value[__del]; ok {
+					return __delete, nil
+				}
+			}
 			for _, prop := range args[1:] {
 				delete(self.Value, prop.ObjectKey())
 			}
