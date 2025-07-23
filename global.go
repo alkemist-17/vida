@@ -36,6 +36,10 @@ const (
 	__get = "__get"
 
 	__set = "__set"
+
+	__getmeta = "__getmeta"
+
+	__getproto = "__getproto"
 )
 
 var clbu *[]Value

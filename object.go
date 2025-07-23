@@ -99,7 +99,7 @@ func extractProps(args ...Value) (Value, error) {
 }
 
 func deleteProperty(args ...Value) (Value, error) {
-	if len(args) >= 2 {
+	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			for _, prop := range args[1:] {
 				delete(self.Value, prop.ObjectKey())
@@ -113,7 +113,7 @@ func setPrototype(args ...Value) (Value, error) {
 	if len(__proto) == 0 {
 		__proto = fmt.Sprint(__proto, rand.Uint64())
 	}
-	if len(args) >= 2 {
+	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if proto, ok := args[1].(*Object); ok {
 				self.Value[__proto] = proto
@@ -128,9 +128,12 @@ func getPrototype(args ...Value) (Value, error) {
 	if len(__proto) == 0 {
 		__proto = fmt.Sprint(__proto, rand.Uint64())
 	}
-	if len(args) >= 0 {
+	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
-			if proto, ok := self.Value[__proto]; ok {
+			if proto, ok := self.Value[__proto].(*Object); ok {
+				if getproto, ok := proto.Value[__getproto]; ok {
+					return getproto, nil
+				}
 				return proto, nil
 			}
 		}
@@ -143,7 +146,7 @@ func setMeta(args ...Value) (Value, error) {
 		__meta = fmt.Sprint(__meta, rand.Uint64())
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
-	if len(args) >= 2 {
+	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if meta, ok := args[1].(*Object); ok {
 				self.Value[__meta] = meta
@@ -158,9 +161,12 @@ func getMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
 		__meta = fmt.Sprint(__meta, rand.Uint64())
 	}
-	if len(args) >= 1 {
+	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
-			if meta, ok := self.Value[__meta]; ok {
+			if meta, ok := self.Value[__meta].(*Object); ok {
+				if metaobject, ok := meta.Value[__getmeta]; ok {
+					return metaobject, nil
+				}
 				return meta, nil
 			}
 		}
