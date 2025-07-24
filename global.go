@@ -46,6 +46,28 @@ const (
 	__setproto = "__setproto"
 
 	__del = "__del"
+
+	__add = "__add"
+
+	__sub = "__sub"
+
+	__mul = "__mul"
+
+	__div = "__div"
+
+	__rem = "__rem"
+
+	__eq = "__eq"
+
+	__neq = "__neq"
+
+	__le = "__le"
+
+	__lt = "__lt"
+
+	__ge = "__ge"
+
+	__gt = "__gt"
 )
 
 var clbu *[]Value

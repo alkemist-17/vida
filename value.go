@@ -741,6 +741,109 @@ func (o *Object) Prefix(op uint64) (Value, error) {
 }
 
 func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		switch op {
+		case uint64(token.ADD):
+			if generic, ok := meta.Value[__add]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.SUB):
+			if generic, ok := meta.Value[__sub]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.MUL):
+			if generic, ok := meta.Value[__mul]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.DIV):
+			if generic, ok := meta.Value[__div]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.REM):
+			if generic, ok := meta.Value[__rem]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.EQ):
+			if generic, ok := meta.Value[__eq]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.NEQ):
+			if generic, ok := meta.Value[__neq]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.LE):
+			if generic, ok := meta.Value[__le]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.LT):
+			if generic, ok := meta.Value[__lt]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.GE):
+			if generic, ok := meta.Value[__ge]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.GT):
+			if generic, ok := meta.Value[__gt]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
+		}
+	}
 	switch r := rhs.(type) {
 	case *Object:
 		switch op {
