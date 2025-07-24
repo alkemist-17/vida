@@ -41,6 +41,10 @@ const (
 
 	__getproto = "__getproto"
 
+	__setmeta = "__setmeta"
+
+	__setproto = "__setproto"
+
 	__del = "__del"
 )
 

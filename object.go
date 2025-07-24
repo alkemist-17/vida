@@ -121,6 +121,9 @@ func setPrototype(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if proto, ok := args[1].(*Object); ok {
+				if setproto, ok := proto.Value[__setproto]; ok {
+					return setproto, nil
+				}
 				self.Value[__proto] = proto
 				return self, nil
 			}
@@ -154,6 +157,9 @@ func setMeta(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if meta, ok := args[1].(*Object); ok {
+				if metaobject, ok := meta.Value[__setmeta]; ok {
+					return metaobject, nil
+				}
 				self.Value[__meta] = meta
 				return self, nil
 			}
