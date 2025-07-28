@@ -454,14 +454,7 @@ func (vm *VM) debug() (Result, error) {
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -475,14 +468,7 @@ func (vm *VM) debug() (Result, error) {
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running

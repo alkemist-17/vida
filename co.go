@@ -9,13 +9,12 @@ func loadFoundationCoroutine() Value {
 	m.Value["new"] = GFn(gfnNewThread)
 	m.Value["run"] = GFn(gfnRunThread)
 	m.Value["suspend"] = GFn(gfnSuspendThread)
-	m.Value["close"] = GFn(gfnCloseThread)
-	m.Value["isAlive"] = GFn(gfnIsAlive)
-	m.Value["isClosed"] = GFn(gfnIsClosed)
+	m.Value["complete"] = GFn(gfnCloseThread)
+	m.Value["isActive"] = GFn(gfnIsActive)
+	m.Value["isCompleted"] = GFn(gfnIsCompleted)
 	m.Value["recycle"] = GFn(gfnRecycleThread)
 	m.Value["state"] = GFn(gfnGetThreadState)
-	m.Value["running"] = GFn(gfnRunningThread)
-	m.Value["stack"] = getStackSizes()
+	m.Value["running"] = GFn(gfnGetCurrentRunningThread)
 	return m
 }
 
@@ -70,7 +69,7 @@ func gfnRunThread(args ...Value) (Value, error) {
 			return NilValue, signal
 		} else if !ok {
 			return NilValue, verror.ErrNotThread
-		} else if th.State == Running || th.State == Closed || th.State == Waiting {
+		} else if th.State == Running || th.State == Completed || th.State == Waiting {
 			return NilValue, verror.ErrResumingNotSuspendedThread
 		}
 	}
@@ -91,13 +90,13 @@ func gfnSuspendThread(args ...Value) (Value, error) {
 	return NilValue, verror.ErrSuspendThreadSignal
 }
 
-func gfnRunningThread(args ...Value) (Value, error) {
+func gfnGetCurrentRunningThread(args ...Value) (Value, error) {
 	return ((*clbu)[globalStateIndex].(*GlobalState)).Current, nil
 }
 
 func gfnRecycleThread(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if th, ok := args[0].(*Thread); ok && th.State == Closed {
+		if th, ok := args[0].(*Thread); ok && th.State == Completed {
 			if fn, okfn := args[1].(*Function); okfn {
 				th.Script.MainFunction = fn
 				th.State = Ready
@@ -105,7 +104,7 @@ func gfnRecycleThread(args ...Value) (Value, error) {
 			}
 		} else if !ok {
 			return NilValue, verror.ErrNotThread
-		} else if th.State == Closed {
+		} else if th.State == Completed {
 			return NilValue, verror.ErrRecyclingThread
 		}
 	}
@@ -116,7 +115,7 @@ func gfnCloseThread(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			if th.State == Ready || th.State == Suspended {
-				th.State = Closed
+				th.State = Completed
 			} else {
 				return NilValue, verror.ErrClosingAThread
 			}
@@ -127,10 +126,10 @@ func gfnCloseThread(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnIsAlive(args ...Value) (Value, error) {
+func gfnIsActive(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
-			return Bool(th.State != Closed), nil
+			return Bool(th.State != Completed), nil
 		} else {
 			return NilValue, verror.ErrNotThread
 		}
@@ -138,27 +137,13 @@ func gfnIsAlive(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnIsClosed(args ...Value) (Value, error) {
+func gfnIsCompleted(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
-			return Bool(th.State == Closed), nil
+			return Bool(th.State == Completed), nil
 		} else {
 			return NilValue, verror.ErrNotThread
 		}
 	}
 	return NilValue, nil
-}
-
-func getStackSizes() *Object {
-	m := &Object{Value: make(map[string]Value)}
-	m.Value["of1024"] = Integer(fullStack)
-	m.Value["of512"] = Integer(halfStack)
-	m.Value["of256"] = Integer(quarterStack)
-	m.Value["of128"] = Integer(microStack)
-	m.Value["of64"] = Integer(milliStack)
-	m.Value["of32"] = Integer(nanoStack)
-	m.Value["of23"] = Integer(primeStack)
-	m.Value["of16"] = Integer(picoStack)
-	m.Value["of8"] = Integer(femtoStack)
-	return m
 }

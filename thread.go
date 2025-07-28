@@ -14,7 +14,7 @@ const (
 	Running
 	Suspended
 	Waiting
-	Closed
+	Completed
 )
 
 func (state ThreadState) String() string {
@@ -27,8 +27,8 @@ func (state ThreadState) String() string {
 		return "suspended"
 	case Waiting:
 		return "waiting"
-	case Closed:
-		return "closed"
+	case Completed:
+		return "completed"
 	default:
 		return "unknown"
 	}
@@ -547,14 +547,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -568,14 +561,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -607,7 +593,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			}
 			if vm.fp == 0 {
 				vm.Channel = val
-				vm.State = Closed
+				vm.State = Completed
 				return Success, nil
 			}
 			vm.fp--
@@ -1053,14 +1039,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -1074,14 +1053,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -1113,7 +1085,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 			}
 			if vm.fp == 0 {
 				vm.Channel = val
-				vm.State = Closed
+				vm.State = Completed
 				return Success, nil
 			}
 			vm.fp--
@@ -1555,14 +1527,7 @@ func (vm *VM) runMetaFunction(fn *Function, o *Object, args ...Value) (Result, e
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -1576,14 +1541,7 @@ func (vm *VM) runMetaFunction(fn *Function, o *Object, args ...Value) (Result, e
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Closed:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						case Suspended:
+						case Completed, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -1615,7 +1573,7 @@ func (vm *VM) runMetaFunction(fn *Function, o *Object, args ...Value) (Result, e
 			}
 			if vm.fp == 0 {
 				vm.Channel = val
-				vm.State = Closed
+				vm.State = Completed
 				return Success, nil
 			}
 			vm.fp--
