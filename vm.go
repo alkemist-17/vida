@@ -513,7 +513,9 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 	case *Array:
 		switch mode {
 		case vcv:
-			return &Array{Value: v.Value[:]}, nil
+			data := make([]Value, len(v.Value))
+			copy(data, v.Value)
+			return &Array{Value: data}, nil
 		case vce:
 			e := vm.Frame.stack[sliceable+1]
 			switch ee := e.(type) {
@@ -523,10 +525,15 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					ee += l
 				}
 				if 0 <= ee && ee <= l {
-					return &Array{Value: v.Value[:ee]}, nil
+					slc := v.Value[:ee]
+					data := make([]Value, len(slc))
+					copy(data, slc)
+					return &Array{Value: data}, nil
 				}
 				if ee > l {
-					return &Array{Value: v.Value[:]}, nil
+					data := make([]Value, len(v.Value))
+					copy(data, v.Value)
+					return &Array{Value: data}, nil
 				}
 				return &Array{}, nil
 			}
@@ -539,10 +546,15 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					ee += l
 				}
 				if 0 <= ee && ee <= l {
-					return &Array{Value: v.Value[ee:]}, nil
+					slc := v.Value[ee:]
+					data := make([]Value, len(slc))
+					copy(data, slc)
+					return &Array{Value: data}, nil
 				}
 				if ee < 0 {
-					return &Array{Value: v.Value[:]}, nil
+					data := make([]Value, len(v.Value))
+					copy(data, v.Value)
+					return &Array{Value: data}, nil
 				}
 				return &Array{}, nil
 			}
@@ -561,18 +573,29 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 						rr += xslen
 					}
 					if 0 <= ll && ll <= xslen && 0 <= rr && rr <= xslen {
-						return &Array{Value: v.Value[ll:rr]}, nil
+						slc := v.Value[ll:rr]
+						data := make([]Value, len(slc))
+						copy(data, slc)
+						return &Array{Value: data}, nil
 					}
 					if ll < 0 {
 						if 0 <= rr && rr <= xslen {
-							return &Array{Value: v.Value[:rr]}, nil
+							slc := v.Value[:rr]
+							data := make([]Value, len(slc))
+							copy(data, slc)
+							return &Array{Value: data}, nil
 						}
 						if rr > xslen {
-							return &Array{Value: v.Value[:]}, nil
+							data := make([]Value, len(v.Value))
+							copy(data, v.Value)
+							return &Array{Value: data}, nil
 						}
 					} else if rr > xslen {
 						if 0 <= ll && ll <= xslen {
-							return &Array{Value: v.Value[ll:]}, nil
+							slc := v.Value[ll:]
+							data := make([]Value, len(slc))
+							copy(data, slc)
+							return &Array{Value: data}, nil
 						}
 					}
 				}
@@ -585,7 +608,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		}
 		switch mode {
 		case vcv:
-			return &String{Value: string(v.Runes[:])}, nil
+			return v, nil
 		case vce:
 			e := vm.Frame.stack[sliceable+1]
 			switch ee := e.(type) {
@@ -598,7 +621,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					return &String{Value: string(v.Runes[:ee])}, nil
 				}
 				if ee > l {
-					return &String{Value: string(v.Runes[:])}, nil
+					return v, nil
 				}
 				return &String{}, nil
 			}
@@ -614,7 +637,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					return &String{Value: string(v.Runes[ee:])}, nil
 				}
 				if ee < 0 {
-					return &String{Value: string(v.Runes[:])}, nil
+					return v, nil
 				}
 				return &String{}, nil
 			}
@@ -640,7 +663,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 							return &String{Value: string(v.Runes[:rr])}, nil
 						}
 						if rr > xslen {
-							return &String{Value: string(v.Runes[:])}, nil
+							return v, nil
 						}
 					} else if rr > xslen {
 						if 0 <= ll && ll <= xslen {
@@ -654,7 +677,9 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 	case *Bytes:
 		switch mode {
 		case vcv:
-			return &Bytes{Value: v.Value}, nil
+			data := make([]byte, len(v.Value))
+			copy(data, v.Value)
+			return &Bytes{Value: data}, nil
 		case vce:
 			e := vm.Frame.stack[sliceable+1]
 			switch ee := e.(type) {
@@ -664,10 +689,15 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					ee += l
 				}
 				if 0 <= ee && ee <= l {
-					return &Bytes{Value: v.Value[:ee]}, nil
+					slc := v.Value[:ee]
+					data := make([]byte, len(slc))
+					copy(data, slc)
+					return &Bytes{Value: data}, nil
 				}
 				if ee > l {
-					return &Bytes{Value: v.Value[:]}, nil
+					data := make([]byte, len(v.Value))
+					copy(data, v.Value)
+					return &Bytes{Value: data}, nil
 				}
 				return &Bytes{}, nil
 			}
@@ -680,10 +710,15 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 					ee += l
 				}
 				if 0 <= ee && ee <= l {
-					return &Bytes{Value: v.Value[ee:]}, nil
+					slc := v.Value[ee:]
+					data := make([]byte, len(slc))
+					copy(data, slc)
+					return &Bytes{Value: data}, nil
 				}
 				if ee < 0 {
-					return &Bytes{Value: v.Value[:]}, nil
+					data := make([]byte, len(v.Value))
+					copy(data, v.Value)
+					return &Bytes{Value: data}, nil
 				}
 				return &Bytes{}, nil
 			}
@@ -702,18 +737,29 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 						rr += xslen
 					}
 					if 0 <= ll && ll <= xslen && 0 <= rr && rr <= xslen {
-						return &Bytes{Value: v.Value[ll:rr]}, nil
+						slc := v.Value[ll:rr]
+						data := make([]byte, len(slc))
+						copy(data, slc)
+						return &Bytes{Value: data}, nil
 					}
 					if ll < 0 {
 						if 0 <= rr && rr <= xslen {
-							return &Bytes{Value: v.Value[:rr]}, nil
+							slc := v.Value[:rr]
+							data := make([]byte, len(slc))
+							copy(data, slc)
+							return &Bytes{Value: data}, nil
 						}
 						if rr > xslen {
-							return &Bytes{Value: v.Value[:]}, nil
+							data := make([]byte, len(v.Value))
+							copy(data, v.Value)
+							return &Bytes{Value: data}, nil
 						}
 					} else if rr > xslen {
 						if 0 <= ll && ll <= xslen {
-							return &Bytes{Value: v.Value[ll:]}, nil
+							slc := v.Value[ll:]
+							data := make([]byte, len(slc))
+							copy(data, slc)
+							return &Bytes{Value: data}, nil
 						}
 					}
 				}
