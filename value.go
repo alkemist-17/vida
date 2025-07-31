@@ -971,7 +971,6 @@ func (o *Object) Iterator() Value {
 }
 
 func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
-	println("LEN", len(((*clbu)[globalStateIndex].(*GlobalState)).Pool.ThreadMap))
 	th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
 	th.State = Ready
 	th.Script.MainFunction = fn
