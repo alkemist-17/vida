@@ -28,18 +28,57 @@ func raiseException(args ...Value) (Value, error) {
 func catchException(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if fn, ok := args[0].(*Function); ok {
-			vm := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getVM()
-			vm.Thread.Script.MainFunction = fn
-			_, err := vm.runThread(0, 0, true, args[1:]...)
-			((*clbu)[globalStateIndex].(*GlobalState)).Pool.Key--
-			if err == nil {
-				return vm.Channel, nil
-			} else {
-				switch e := err.(type) {
-				case verror.VidaError:
-					return Error{Message: &String{Value: e.Message}}, nil
+			th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
+			th.State = Ready
+			th.Script.MainFunction = fn
+			v, err := gfnRunThread(th)
+			vm := (*clbu)[globalStateIndex].(*GlobalState).VM
+			if err != nil {
+				switch err {
+				case verror.ErrResumeThreadSignal:
+					_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[1:]...)
+					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+					if threadError != nil {
+						switch e := threadError.(type) {
+						case verror.VidaError:
+							return Error{Message: &String{Value: e.Message}}, nil
+						}
+					}
+					switch vm.State {
+					case Completed, Suspended:
+						v = vm.Channel
+						invoker := vm.Thread.Invoker
+						invoker.State = Running
+						vm.Thread.Invoker = nil
+						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						vm.Thread = invoker
+					}
+				case verror.ErrStartThreadSignal:
+					_, threadError := vm.runThread(vm.fp, 0, true, args[1:]...)
+					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+					if threadError != nil {
+						switch e := threadError.(type) {
+						case verror.VidaError:
+							return Error{Message: &String{Value: e.Message}}, nil
+						}
+					}
+					switch vm.State {
+					case Completed, Suspended:
+						v = vm.Channel
+						invoker := vm.Thread.Invoker
+						invoker.State = Running
+						vm.Thread.Invoker = nil
+						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						vm.Thread = invoker
+					}
+				default:
+					switch e := err.(type) {
+					case verror.VidaError:
+						return Error{Message: &String{Value: e.Message}}, nil
+					}
 				}
 			}
+			return v, nil
 		}
 	}
 	return NilValue, nil

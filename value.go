@@ -971,14 +971,52 @@ func (o *Object) Iterator() Value {
 }
 
 func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
-	vm := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getVM()
-	vm.Thread.Script.MainFunction = fn
-	_, err := vm.runMetaFunction(fn, o, args...)
-	((*clbu)[globalStateIndex].(*GlobalState)).Pool.Key--
+	println("LEN", len(((*clbu)[globalStateIndex].(*GlobalState)).Pool.ThreadMap))
+	th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
+	th.State = Ready
+	th.Script.MainFunction = fn
+	var A []Value
+	A = append(A, o)
+	A = append(A, args...)
+	v, err := gfnRunThread(th)
+	vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 	if err != nil {
-		return NilValue, err
+		switch err {
+		case verror.ErrResumeThreadSignal:
+			_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, A...)
+			((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+			if threadError != nil {
+				return v, threadError
+			}
+			switch vm.State {
+			case Completed, Suspended:
+				v = vm.Channel
+				invoker := vm.Thread.Invoker
+				invoker.State = Running
+				vm.Thread.Invoker = nil
+				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+				vm.Thread = invoker
+			}
+		case verror.ErrStartThreadSignal:
+			_, threadError := vm.runThread(vm.fp, 0, true, A...)
+			((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+			if threadError != nil {
+				return v, threadError
+			}
+			switch vm.State {
+			case Completed, Suspended:
+				v = vm.Channel
+				invoker := vm.Thread.Invoker
+				invoker.State = Running
+				vm.Thread.Invoker = nil
+				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+				vm.Thread = invoker
+			}
+		default:
+			return v, err
+		}
 	}
-	return vm.Channel, nil
+	return v, nil
 }
 
 func (o *Object) String() string {
@@ -1374,7 +1412,7 @@ func (e *Enum) Call(args ...Value) (Value, error) {
 
 func (e Enum) String() string {
 	if len(e.Pairs) == 0 {
-		return "enum{ }"
+		return "enum{}"
 	}
 	var r []string
 	for k, v := range e.Pairs {
