@@ -13,15 +13,8 @@ const Failure Result = "Failure"
 
 const frameSize = 1024
 const fullStack = 1024
-const halfStack = 512
-const quarterStack = 256
-const microStack = 128
-const milliStack = 64
-const nanoStack = 32
 const primeStack = 23
-const picoStack = 16
 const femtoStack = 8
-const defaultMetaStackSize = picoStack
 const defaultThreadStackSize = primeStack
 
 type frame struct {
