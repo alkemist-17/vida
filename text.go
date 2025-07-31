@@ -4,6 +4,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationText() Value {
@@ -162,7 +164,7 @@ func repeat(args ...Value) (Value, error) {
 	if len(args) >= 2 {
 		if v, ok := args[0].(*String); ok {
 			if times, ok := args[1].(Integer); ok && times >= 0 {
-				if StringLength(v)*times > MaxStringSize {
+				if StringLength(v)*times > verror.MaxMemSize {
 					return NilValue, nil
 				}
 				return &String{Value: strings.Repeat(v.Value, int(times))}, nil

@@ -301,6 +301,8 @@ func gfnLoadLib(args ...Value) (Value, error) {
 					return loadFoundationMath(), nil
 				case "object":
 					return loadObjectLib(), nil
+				case "array":
+					return loadFoundationArray(), nil
 				case "bin":
 					return loadFoundationBinary(), nil
 				case "time":

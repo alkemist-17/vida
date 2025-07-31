@@ -8,8 +8,6 @@ import (
 	"github.com/alkemist-17/vida/verror"
 )
 
-const MaxStringSize = 0x7FFF_FFFF
-
 // Strings for use with fmtbuf.WriteString. This is less overhead than using
 // fmtbuf.Write with byte arrays.
 const (
@@ -89,7 +87,7 @@ func (f *formatter) writePadding(n int) {
 	oldLen := len(buf)
 	newLen := oldLen + n
 
-	if newLen > MaxStringSize {
+	if newLen > verror.MaxMemSize {
 		panic(verror.ErrStringLimit)
 	}
 
@@ -624,7 +622,7 @@ func (f *formatter) fmtFloat(v float64, size int, verb rune, prec int) {
 type fmtbuf []byte
 
 func (b *fmtbuf) Write(p []byte) {
-	if len(*b)+len(p) > MaxStringSize {
+	if len(*b)+len(p) > verror.MaxMemSize {
 		panic(verror.ErrStringLimit)
 	}
 
@@ -632,7 +630,7 @@ func (b *fmtbuf) Write(p []byte) {
 }
 
 func (b *fmtbuf) WriteString(s string) {
-	if len(*b)+len(s) > MaxStringSize {
+	if len(*b)+len(s) > verror.MaxMemSize {
 		panic(verror.ErrStringLimit)
 	}
 
@@ -640,7 +638,7 @@ func (b *fmtbuf) WriteString(s string) {
 }
 
 func (b *fmtbuf) WriteSingleByte(c byte) {
-	if len(*b) >= MaxStringSize {
+	if len(*b) >= verror.MaxMemSize {
 		panic(verror.ErrStringLimit)
 	}
 
@@ -648,7 +646,7 @@ func (b *fmtbuf) WriteSingleByte(c byte) {
 }
 
 func (b *fmtbuf) WriteRune(r rune) {
-	if len(*b)+utf8.RuneLen(r) > MaxStringSize {
+	if len(*b)+utf8.RuneLen(r) > verror.MaxMemSize {
 		panic(verror.ErrStringLimit)
 	}
 
