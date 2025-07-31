@@ -18,7 +18,7 @@ func loadFoundationArray() Value {
 	m.Value["sortI"] = GFn(arraySortInts)
 	m.Value["sortF"] = GFn(arraySortFloats)
 	m.Value["sortS"] = GFn(arraySortStrings)
-	m.Value["sortO"] = GFn(arraySortObjects)
+	m.Value["sort"] = GFn(arraySortObjects)
 	return m
 }
 
@@ -211,29 +211,63 @@ func arraySortObjects(args ...Value) (Value, error) {
 				if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
 					((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 				}
-				vm := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getVM()
-				vm.Thread.Script.MainFunction = fn
-				vm.fp = 0
-				vm.Frame = &vm.Frames[vm.fp]
-				vm.Frame.code = vm.Script.MainFunction.CoreFn.Code
-				vm.Frame.lambda = vm.Script.MainFunction
-				vm.Frame.stack = vm.Stack[:]
-				arguments := make([]Value, 2)
+				A := make([]Value, 2)
 				slices.SortFunc(xs.Value, func(l, r Value) int {
-					arguments[0], arguments[1] = l, r
-					copy(vm.Frame.stack[0:], arguments)
-					_, err := vm.runThread(0, 0, true, arguments...)
+					th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
+					th.State = Ready
+					th.Script.MainFunction = fn
+					A[0], A[1] = l, r
+					_, err := gfnRunThread(th)
+					vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 					if err != nil {
-						return 0
-					}
-					if r, ok := vm.Channel.(Bool); ok {
-						if r {
-							return -1
+						switch err {
+						case verror.ErrResumeThreadSignal:
+							_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, A...)
+							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+							if threadError != nil {
+								return 0
+							}
+							switch vm.State {
+							case Completed, Suspended:
+								v := vm.Channel
+								invoker := vm.Thread.Invoker
+								invoker.State = Running
+								vm.Thread.Invoker = nil
+								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+								vm.Thread = invoker
+								if bval, ok := v.(Bool); ok {
+									if bval {
+										return -1
+									}
+									return 1
+								}
+							}
+						case verror.ErrStartThreadSignal:
+							_, threadError := vm.runThread(vm.fp, 0, true, A...)
+							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+							if threadError != nil {
+								return 0
+							}
+							switch vm.State {
+							case Completed, Suspended:
+								v := vm.Channel
+								invoker := vm.Thread.Invoker
+								invoker.State = Running
+								vm.Thread.Invoker = nil
+								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+								vm.Thread = invoker
+								if bval, ok := v.(Bool); ok {
+									if bval {
+										return -1
+									}
+									return 1
+								}
+							}
+						default:
+							return 0
 						}
-						return 1
-					} else {
-						return 0
 					}
+					return 0
 				})
 				return xs, nil
 			}
