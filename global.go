@@ -72,18 +72,18 @@ const (
 
 var clbu *[]Value
 
-type ThreadPool struct {
+type metaobjectThreadPool struct {
 	VM  map[int]*VM
 	Key int
 }
 
-func newThreadPool() *ThreadPool {
-	return &ThreadPool{
+func newThreadPool() *metaobjectThreadPool {
+	return &metaobjectThreadPool{
 		VM: make(map[int]*VM),
 	}
 }
 
-func (tp *ThreadPool) getVM() *VM {
+func (tp *metaobjectThreadPool) getVM() *VM {
 	if vm, ok := tp.VM[tp.Key]; ok {
 		tp.Key++
 		return vm
@@ -98,7 +98,7 @@ type GlobalState struct {
 	*VM
 	Main    *Thread
 	Current *Thread
-	Pool    *ThreadPool
+	Pool    *metaobjectThreadPool
 }
 
 var coreLibNames = []string{
@@ -254,7 +254,7 @@ func gfnMakeArray(args ...Value) (Value, error) {
 					if from < to {
 						l := to - from
 						xs := make([]Value, l)
-						for i := Integer(0); i < l; i++ {
+						for i := range l {
 							xs[i] = Integer(from)
 							from++
 						}
