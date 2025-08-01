@@ -35,7 +35,7 @@ func newScript(name string, store *[]Value) *Script {
 }
 
 func (s Script) String() string {
-	return fmt.Sprintf("Script [%v]", s.MainFunction.CoreFn.ScriptName)
+	return fmt.Sprintf("Script(%v)", s.MainFunction.CoreFn.ScriptName)
 }
 
 func readScript(scriptName string) ([]byte, error) {
