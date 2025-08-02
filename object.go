@@ -152,7 +152,9 @@ func getPrototype(args ...Value) (Value, error) {
 func setMeta(args ...Value) (Value, error) {
 	if len(__meta) == 0 {
 		__meta = fmt.Sprint(__meta, rand.Uint64())
-		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
+		if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
+			((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
+		}
 	}
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {

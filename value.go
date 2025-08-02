@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 
@@ -978,14 +979,19 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 	A = append(A, o)
 	A = append(A, args...)
 	v, err := gfnRunThread(th)
-	vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 	if err != nil {
+		vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 		switch err {
 		case verror.ErrResumeThreadSignal:
 			_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, A...)
 			((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 			if threadError != nil {
-				return v, threadError
+				invoker := vm.Thread.Invoker
+				invoker.State = Running
+				vm.Thread.Invoker = nil
+				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+				vm.Thread = invoker
+				return NilValue, threadError
 			}
 			switch vm.State {
 			case Completed, Suspended:
@@ -1000,7 +1006,12 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 			_, threadError := vm.runThread(vm.fp, 0, true, A...)
 			((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 			if threadError != nil {
-				return v, threadError
+				invoker := vm.Thread.Invoker
+				invoker.State = Running
+				vm.Thread.Invoker = nil
+				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+				vm.Thread = invoker
+				return NilValue, threadError
 			}
 			switch vm.State {
 			case Completed, Suspended:
@@ -1023,8 +1034,12 @@ func (o *Object) String() string {
 		if str, ok := meta.Value[__str]; ok {
 			switch fn := str.(type) {
 			case *Function:
-				val, _ := o.execute(fn)
-				return val.String()
+				if val, err := o.execute(fn); err == nil {
+					return val.String()
+				} else {
+					fmt.Printf("\n\nRun Time error inside meta function __str %v\n", err)
+					os.Exit(0)
+				}
 			default:
 				return fn.String()
 			}
