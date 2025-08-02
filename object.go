@@ -7,6 +7,11 @@ import (
 )
 
 func loadObjectLib() Value {
+	if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
+		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
+	}
+	__meta = fmt.Sprint(__meta, rand.Uint64())
+	__proto = fmt.Sprint(__proto, rand.Uint64())
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["inject"] = GFn(injectProps)
 	m.Value["extract"] = GFn(extractProps)
@@ -17,6 +22,7 @@ func loadObjectLib() Value {
 	m.Value["getproto"] = GFn(getPrototype)
 	m.Value["setmeta"] = GFn(setMeta)
 	m.Value["getmeta"] = GFn(getMeta)
+	m.Value["search"] = GFn(searchValueInProtoChain)
 	m.Value["get"] = GFn(getValue)
 	m.Value["set"] = GFn(setValue)
 	m.Value["has"] = GFn(hasValue)
@@ -115,16 +121,15 @@ func deleteProperty(args ...Value) (Value, error) {
 }
 
 func setPrototype(args ...Value) (Value, error) {
-	if len(__proto) == 0 {
-		__proto = fmt.Sprint(__proto, rand.Uint64())
-	}
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
-			if proto, ok := args[1].(*Object); ok {
-				if setproto, ok := proto.Value[__setproto]; ok {
-					return setproto, nil
+			if possibleNewProto, ok := args[1].(*Object); ok {
+				if meta, ok := self.Value[__meta].(*Object); ok {
+					if v, ok := meta.Value[__setproto]; ok {
+						return v, nil
+					}
 				}
-				self.Value[__proto] = proto
+				self.Value[__proto] = possibleNewProto
 				return self, nil
 			}
 		}
@@ -133,15 +138,14 @@ func setPrototype(args ...Value) (Value, error) {
 }
 
 func getPrototype(args ...Value) (Value, error) {
-	if len(__proto) == 0 {
-		__proto = fmt.Sprint(__proto, rand.Uint64())
-	}
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
-			if proto, ok := self.Value[__proto].(*Object); ok {
-				if getproto, ok := proto.Value[__getproto]; ok {
-					return getproto, nil
+			if meta, ok := self.Value[__meta].(*Object); ok {
+				if v, ok := meta.Value[__getproto]; ok {
+					return v, nil
 				}
+			}
+			if proto, ok := self.Value[__proto]; ok {
 				return proto, nil
 			}
 		}
@@ -150,19 +154,15 @@ func getPrototype(args ...Value) (Value, error) {
 }
 
 func setMeta(args ...Value) (Value, error) {
-	if len(__meta) == 0 {
-		__meta = fmt.Sprint(__meta, rand.Uint64())
-		if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
-			((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
-		}
-	}
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
-			if meta, ok := args[1].(*Object); ok {
-				if metaobject, ok := meta.Value[__setmeta]; ok {
-					return metaobject, nil
+			if possibleNewMeta, ok := args[1].(*Object); ok {
+				if meta, ok := self.Value[__meta].(*Object); ok {
+					if v, ok := meta.Value[__setmeta]; ok {
+						return v, nil
+					}
 				}
-				self.Value[__meta] = meta
+				self.Value[__meta] = possibleNewMeta
 				return self, nil
 			}
 		}
@@ -171,14 +171,11 @@ func setMeta(args ...Value) (Value, error) {
 }
 
 func getMeta(args ...Value) (Value, error) {
-	if len(__meta) == 0 {
-		__meta = fmt.Sprint(__meta, rand.Uint64())
-	}
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
 			if meta, ok := self.Value[__meta].(*Object); ok {
-				if metaobject, ok := meta.Value[__getmeta]; ok {
-					return metaobject, nil
+				if v, ok := meta.Value[__getmeta]; ok {
+					return v, nil
 				}
 				return meta, nil
 			}
@@ -192,6 +189,17 @@ func getValue(args ...Value) (Value, error) {
 		if self, ok := args[0].(*Object); ok {
 			if val, ok := self.Value[args[1].ObjectKey()]; ok {
 				return val, nil
+			}
+		}
+	}
+	return NilValue, nil
+}
+
+func searchValueInProtoChain(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if self, ok := args[0].(*Object); ok {
+			if proto, ok := self.Value[__proto]; ok {
+				return proto.IGet(args[1])
 			}
 		}
 	}
