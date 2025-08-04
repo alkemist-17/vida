@@ -1,0 +1,82 @@
+
+//
+// Script: v
+// V is a utility library for Vida.
+// Version 1.0.0
+//
+
+
+
+// Chunk
+var chunk = fun A, size {
+	var R = []
+	var N = []
+	for i in len(A) {
+		if (i + 1) % size == 0 {
+			append(R, append(N, A[i]))
+			N = []
+			continue
+		}
+		append(N, A[i])
+	}
+	if len(N) > 0 {
+		append(R, N)
+	}
+	ret R
+}
+
+
+
+// Head
+var head = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[0]
+}
+
+
+
+// Tail
+var tail = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[1..]
+}
+
+
+
+// Exclude Nil
+var excludeNil = fun A {
+	var R = []
+	for _, v in A {
+		if v != nil {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
+
+
+// Compact
+var compact = fun A {
+	var R = []
+	for _, v in A {
+		if v {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
+
+
+export {
+    chunk = chunk
+    head = head
+    tail = tail
+	excludeNil = excludeNil
+	compact = compact
+}
