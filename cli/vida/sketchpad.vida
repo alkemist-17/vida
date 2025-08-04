@@ -1,0 +1,54 @@
+var v = import("lib/v")
+var f = import("lib/fun")
+
+var A = [1,2,3,4,5]
+var s = 3
+var r = nil
+
+print(A)
+
+var R = v.chunk(A, s)
+
+print(R)
+
+var h = v.head(A)
+var t = v.tail(A)
+
+print(h)
+print(t)
+
+r = f.map(A, fun x => x * x * x)
+print(r)
+
+r = f.filter(A, fun x => x % 2 == 0)
+print(r)
+
+r = f.exclude(A, fun x => x % 2 == 0)
+print(r)
+
+r = f.all(A, fun x => type(x) == "int")
+print(r)
+
+r = f.any(A, fun x => x == 3)
+print(r)
+
+r = f.reduce(A, fun x, y => (x + y) * (x - y), 0)
+print(r)
+
+r = f.takeWhile(A, fun x => x <= 3)
+print(r)
+
+r = f.zip(A, f.map(A, fun x => x * x * x))
+print(r)
+
+r = f.unzip(f.zip(A, f.map(A, fun x => x * x * x)))
+print(r)
+
+r = f.drop(A, 2)
+print(r)
+
+r = v.excludeNil(A + [true, false, nil, error(42)])
+print(r)
+
+r = v.compact(A + [true, false, nil, error(42)])
+print(r)
