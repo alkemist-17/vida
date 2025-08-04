@@ -1345,11 +1345,11 @@ func (e Error) Iterator() Value {
 }
 
 func (e Error) String() string {
-	return fmt.Sprintf("Error(message: %v)", e.Message.String())
+	return fmt.Sprintf("Error(%v)", e.Message.String())
 }
 
 func (e Error) ObjectKey() string {
-	return fmt.Sprintf("Error(message: %v)", e.Message.ObjectKey())
+	return fmt.Sprintf("Error(%v)", e.Message.ObjectKey())
 }
 
 func (e Error) Type() string {
