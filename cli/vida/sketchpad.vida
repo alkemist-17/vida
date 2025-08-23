@@ -52,3 +52,9 @@ print(r)
 
 r = v.compact(A + [true, false, nil, error(42)])
 print(r)
+
+r = v.difference(A, [2, 3])
+print(r)
+
+r = v.difference([fun x => x + 2], [fun x => x + 3])
+print(r, r[0](90))

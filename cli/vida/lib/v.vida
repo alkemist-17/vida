@@ -1,7 +1,7 @@
 
 //
 // Script: v
-// V is a utility library for Vida.
+// v is a utility library for Vida.
 // Version 1.0.0
 //
 
@@ -59,6 +59,19 @@ var excludeNil = fun A {
 }
 
 
+// Difference
+var difference = fun A, B {
+	var map = load("std/array").toMap
+	var setB = map(B)
+	var R = []
+	for _, v in A {
+		if not setB[v] {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
 
 // Compact
 var compact = fun A {
@@ -79,4 +92,5 @@ export {
     tail = tail
 	excludeNil = excludeNil
 	compact = compact
+	difference = difference
 }
