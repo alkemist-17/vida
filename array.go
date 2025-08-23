@@ -19,6 +19,7 @@ func loadFoundationArray() Value {
 	m.Value["sortF"] = GFn(arraySortFloats)
 	m.Value["sortS"] = GFn(arraySortStrings)
 	m.Value["sort"] = GFn(arraySortObjects)
+	m.Value["toMap"] = GFn(arraySet)
 	return m
 }
 
@@ -193,6 +194,19 @@ func arraySortStrings(args ...Value) (Value, error) {
 				}
 			})
 			return xs, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func arraySet(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if xs, ok := args[0].(*Array); ok {
+			set := &Object{Value: make(map[string]Value)}
+			for i := 0; i < len(xs.Value); i++ {
+				set.Value[xs.Value[i].ObjectKey()] = Bool(true)
+			}
+			return set, nil
 		}
 	}
 	return NilValue, nil
