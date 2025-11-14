@@ -20,7 +20,8 @@ func toString(args ...Value) (Value, error) {
 
 func toInt(args ...Value) (Value, error) {
 	l := len(args)
-	if l == 1 {
+	switch l {
+	case 1:
 		switch v := args[0].(type) {
 		case *String:
 			i, e := strconv.ParseInt(v.Value, 0, 64)
@@ -39,7 +40,7 @@ func toInt(args ...Value) (Value, error) {
 		case Nil:
 			return Integer(0), nil
 		}
-	} else if l == 2 {
+	case 2:
 		if v, ok := args[0].(*String); ok {
 			if b, ok := args[1].(Integer); ok {
 				i, e := strconv.ParseInt(v.Value, int(b), 64)
