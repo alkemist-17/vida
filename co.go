@@ -104,7 +104,7 @@ func gfnRecycleThread(args ...Value) (Value, error) {
 			}
 		} else if !ok {
 			return NilValue, verror.ErrNotThread
-		} else if th.State == Completed {
+		} else if th.State != Completed {
 			return NilValue, verror.ErrRecyclingThread
 		}
 	}
