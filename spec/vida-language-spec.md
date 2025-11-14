@@ -1,7 +1,8 @@
 
-# Specification of the Vida Language No.1 a.k.a Vida1
+# Specification of the Vida Programming Language
 
+## Journey to the Version 1.0.0
 
-Completion Status: Not finished yet.
+Completion Status: Not finished.
 
 
