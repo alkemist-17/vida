@@ -1,5 +1,0 @@
-
-var world = import("world")
-
-print(world.msg([[[fun => nil]]][0][0][0]))
-

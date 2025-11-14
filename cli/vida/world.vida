@@ -1,6 +1,0 @@
-var lib = {}
-
-lib.msg = fun x => x()
-
-export lib
-

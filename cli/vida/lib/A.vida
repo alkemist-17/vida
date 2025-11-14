@@ -1,0 +1,273 @@
+//
+// Script: A.vida
+// A is a utility library for Arrays.
+// Version 1.0.0
+//
+
+
+
+// Library object
+var lib = {}
+
+
+
+// Map 
+lib.map = fun A, f {
+    var R = array(len(A))
+    for i, v in A {
+        R[i] = f(v)
+    }
+    ret R
+}
+
+
+
+// Filter
+lib.filter = fun A, pred {
+    var R = []
+    for _, v in A {
+        if pred(v) {
+            append(R, v)
+        }
+    }
+    ret R
+}
+
+
+
+// Exclude
+lib.exclude = fun A, pred {
+    var R = []
+    for _, v in A {
+        if not pred(v) {
+            append(R, v)
+        }
+    }
+    ret R
+}
+
+
+
+// All
+lib.all = fun A, pred {
+    for _, v in A {
+        if not pred(v) {
+            ret false
+        }
+    }
+    ret true
+}
+
+
+
+// Any
+lib.any = fun A, pred {
+    for _, v in A {
+        if pred(v) {
+            ret true
+        }
+    }
+    ret false
+}
+
+
+
+// Reduce
+lib.reduce = fun A, f, init {
+    for _, v in A {
+        init = f(init, v)
+    }
+    ret init
+}
+
+
+
+// TakeWhile
+lib.takeWhile = fun A, pred {
+    var R = []
+    for _, v in A {
+        if not pred(v) {
+            ret R
+        }
+        append(R, v)
+    }
+    ret R
+}
+
+
+
+// Zip
+lib.zip = fun l, r {
+    var length = nil
+    var ll = len(l)
+    var lr = len(r)
+    if ll < lr {
+        length = ll
+    } else {
+        length = lr
+    }
+    var R = array(length)
+    for i in length {
+        R[i] = [l[i], r[i]]
+    }
+    ret R
+}
+
+
+
+// UnZip
+lib.unzip = fun zipped {
+    var l = len(zipped)
+    var A = array(l)
+    var B = array(l)
+    for i, v in zipped {
+        A[i] = v[0]
+        B[i] = v[1]
+    }
+    ret [A, B]
+}
+
+
+
+// Drop
+lib.drop = fun A, n {
+    if n <= 0 {
+        ret A
+    }
+    ret A[n..]
+}
+
+
+
+// Chunk
+lib.chunk = fun A, size {
+	var R = []
+	var N = []
+	for i in len(A) {
+		if (i + 1) % size == 0 {
+			append(R, append(N, A[i]))
+			N = []
+			continue
+		}
+		append(N, A[i])
+	}
+	if len(N) > 0 {
+		append(R, N)
+	}
+	ret R
+}
+
+
+
+// First
+lib.first = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[0]
+}
+
+
+
+// Last
+lib.last = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[-1]
+}
+
+
+
+// Tail
+lib.tail = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[1..]
+}
+
+
+
+// Init
+lib.init = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[0..-1]
+}
+
+
+
+// Exclude Nil
+lib.excludeNil = fun A {
+	var R = []
+	for _, v in A {
+		if v != nil {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
+
+
+// Exclude Falsy
+lib.excludeNil = fun A {
+	var R = []
+	for _, v in A {
+		if v {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
+
+
+// Difference
+lib.difference = fun A, B {
+	var map = load("std/array").toMap
+	var setB = map(B)
+	var R = []
+	for _, v in A {
+		if not setB[v] {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
+
+
+// Compact
+lib.compact = fun A {
+	var R = []
+	for _, v in A {
+		if v {
+			append(R, v)
+		}
+	}
+	ret R
+}
+
+
+
+// IsArray
+lib.isArray = fun A => ret type(A) == "array"
+
+
+
+// IsEmpty
+lib.isEmpty = fun A => len(A) == 0
+
+
+
+
+
+
+
+// Export the library
+export lib
+
+
