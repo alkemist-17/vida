@@ -325,6 +325,8 @@ func gfnLoadLib(args ...Value) (Value, error) {
 					return loadFoundationNetworkIO(), nil
 				case "co":
 					return loadFoundationCoroutine(), nil
+				case "json":
+					return loadFoundationJSON(), nil
 				case "core":
 					return loadFoundationCorelib(), nil
 				}

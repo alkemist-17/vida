@@ -1,6 +1,7 @@
 package vida
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
 	"math"
@@ -302,6 +303,10 @@ func (s *String) Type() string {
 
 func (s *String) Clone() Value {
 	return s
+}
+
+func (s *String) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Value)
 }
 
 type Integer int64
@@ -723,6 +728,10 @@ func (xs *Array) Clone() Value {
 	return &Array{Value: c}
 }
 
+func (xs *Array) MarshalJSON() ([]byte, error) {
+	return json.Marshal(xs.Value)
+}
+
 type Object struct {
 	ReferenceSemanticsImpl
 	Value map[string]Value
@@ -1073,6 +1082,10 @@ func (o *Object) Clone() Value {
 	return &Object{Value: m}
 }
 
+func (o *Object) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.Value)
+}
+
 type freeInfo struct {
 	Index   int
 	IsLocal Bool
@@ -1285,6 +1298,10 @@ func (gfn GFn) Type() string {
 	return "gfn"
 }
 
+func (gfn GFn) MarshalJSON() ([]byte, error) {
+	return json.Marshal(nil)
+}
+
 type Error struct {
 	ValueSemanticsImpl
 	Message Value
@@ -1445,6 +1462,10 @@ func (e *Enum) Type() string {
 
 func (e *Enum) Clone() Value {
 	return e
+}
+
+func (e *Enum) MarshalJSON() ([]byte, error) {
+	return json.Marshal(nil)
 }
 
 type Bytes struct {
@@ -1613,6 +1634,10 @@ func (i ValueSemanticsImpl) ObjectKey() string {
 	return ""
 }
 
+func (i ValueSemanticsImpl) MarshalJSON() ([]byte, error) {
+	return json.Marshal(nil)
+}
+
 type ReferenceSemanticsImpl struct{}
 
 func (i *ReferenceSemanticsImpl) Boolean() Bool {
@@ -1669,4 +1694,8 @@ func (i *ReferenceSemanticsImpl) Clone() Value {
 
 func (i *ReferenceSemanticsImpl) ObjectKey() string {
 	return ""
+}
+
+func (i *ReferenceSemanticsImpl) MarshalJSON() ([]byte, error) {
+	return json.Marshal(nil)
 }
