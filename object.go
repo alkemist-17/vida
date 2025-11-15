@@ -78,7 +78,7 @@ func checkProps(args ...Value) (Value, error) {
 			}
 			recursiveProtoCheck(set, self)
 			for _, v := range set {
-				if v == false {
+				if !v {
 					return Bool(false), nil
 				}
 			}
