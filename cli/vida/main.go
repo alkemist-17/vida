@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -21,7 +20,6 @@ const (
 	ABOUT   = "about"
 	CODE    = "code"
 	CORELIB = "corelib"
-	UNKNOWN = "unknown"
 )
 
 func main() {
@@ -55,7 +53,7 @@ func main() {
 		default:
 			clear()
 			printVersion()
-			handleError(errors.New("unknown command\ntype in your cli 'vida help' for assistance"))
+			handleError(fmt.Errorf("unknown command '%v'. Type 'vida help' for assistance", parseCMD(args[1])))
 		}
 	} else {
 		printHelp()
@@ -73,6 +71,7 @@ func runDebug(args []string) {
 		handleError(err)
 		fmt.Println(r)
 	} else {
+		clear()
 		printVersion()
 		handleError(errorNoArgsGivenTo(DEGUG))
 	}
@@ -89,6 +88,7 @@ func run(args []string) {
 			i.PrintCallStack()
 		}
 	} else {
+		clear()
 		printVersion()
 		handleError(errorNoArgsGivenTo(RUN))
 	}
@@ -108,6 +108,7 @@ func time(args []string) {
 		}
 		fmt.Printf("   Interpretation Result : %v\n\n\n\n", r)
 	} else {
+		clear()
 		printVersion()
 		handleError(errorNoArgsGivenTo(TIME))
 	}
@@ -123,6 +124,7 @@ func printTokens(args []string) {
 			handleError(err)
 		}
 	} else {
+		clear()
 		printVersion()
 		handleError(errorNoArgsGivenTo(TOKENS))
 	}
@@ -138,6 +140,7 @@ func printAST(args []string) {
 			handleError(err)
 		}
 	} else {
+		clear()
 		printVersion()
 		handleError(errorNoArgsGivenTo(AST))
 	}
@@ -153,6 +156,7 @@ func printMachineCode(args []string) {
 			handleError(err)
 		}
 	} else {
+		clear()
 		printVersion()
 		handleError(errorNoArgsGivenTo(CODE))
 	}
@@ -177,7 +181,7 @@ func parseCMD(cmd string) string {
 	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, CORELIB:
 		return cmd
 	default:
-		return UNKNOWN
+		return cmd
 	}
 }
 
