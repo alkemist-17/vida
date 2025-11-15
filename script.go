@@ -3,11 +3,12 @@ package vida
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alkemist-17/vida/verror"
 )
 
-const vidaFileExtension = ".vida"
+const VidaFileExtension = ".vida"
 
 type Script struct {
 	Store        *[]Value
@@ -39,9 +40,12 @@ func (s Script) String() string {
 }
 
 func readScript(scriptName string) ([]byte, error) {
-	if data, err := os.ReadFile(scriptName); err == nil {
-		return data, nil
-	} else {
-		return nil, verror.New(scriptName, err.Error(), verror.FileErrType, 0)
+	if strings.HasSuffix(scriptName, VidaFileExtension) {
+		if data, err := os.ReadFile(scriptName); err == nil {
+			return data, nil
+		} else {
+			return nil, verror.New(scriptName, err.Error(), verror.FileErrType, 0)
+		}
 	}
+	return nil, verror.New(scriptName, "It is not a vida script", verror.FileErrType, 0)
 }

@@ -1,0 +1,6 @@
+var lib = {}
+
+lib.world = "world"
+
+export lib
+

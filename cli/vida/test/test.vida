@@ -1,0 +1,3 @@
+assert(true)
+var i = import("hi")
+assert(i == 42)

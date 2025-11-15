@@ -623,7 +623,7 @@ func (p *parser) operand() ast.Node {
 		p.advance()
 		p.expect(token.STRING)
 		s, _ := strconv.Unquote(p.current.Lit)
-		i.Path = s + vidaFileExtension
+		i.Path = s + VidaFileExtension
 		p.advance()
 		p.expect(token.RPAREN)
 		return i
