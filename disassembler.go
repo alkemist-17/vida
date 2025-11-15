@@ -11,7 +11,7 @@ func PrintBytecode(script *Script, name string) string {
 	clear()
 	fmt.Println("Compiled Code for", name)
 	var sb strings.Builder
-	sb.WriteString(printHeader(script))
+	sb.WriteString(printHeader())
 	var s string
 	for i := 1; i < len(script.MainFunction.CoreFn.Code); i++ {
 		s = printInstr(script.MainFunction.CoreFn.Code[i], uint64(i), false)
@@ -19,7 +19,7 @@ func PrintBytecode(script *Script, name string) string {
 	}
 	for idx, v := range *script.Konstants {
 		if f, ok := v.(*CoreFunction); ok {
-			sb.WriteString(fmt.Sprintf("\n\nFunction %v/%v/%v", idx, f.Arity, f.Free))
+			sb.WriteString(fmt.Sprintf("\n\n\n\nFunction %v/%v/%v", idx, f.Arity, f.Free))
 			var s string
 			for i := 0; i < len(f.Code); i++ {
 				s = printInstr(f.Code[i], uint64(i), false)
@@ -31,13 +31,11 @@ func PrintBytecode(script *Script, name string) string {
 	return sb.String()
 }
 
-func printHeader(script *Script) string {
+func printHeader() string {
 	var sb strings.Builder
-	var major, minor, patch uint64
-	major = script.MainFunction.CoreFn.Code[0] >> 24 & 255
-	minor = script.MainFunction.CoreFn.Code[0] >> 16 & 255
-	patch = script.MainFunction.CoreFn.Code[0] >> 8 & 255
-	sb.WriteString(fmt.Sprintf("Vida Version %v.%v.%v", major, minor, patch))
+	sb.WriteString(fmt.Sprintf("%v\n%v", Name(), Version()))
+	sb.WriteRune(10)
+	sb.WriteRune(10)
 	sb.WriteRune(10)
 	sb.WriteRune(10)
 	sb.WriteString("Main\n")
@@ -46,10 +44,12 @@ func printHeader(script *Script) string {
 
 func printKonstants(konst []Value) string {
 	var sb strings.Builder
-	sb.WriteString("\n\n\nKonstants\n")
+	sb.WriteString("\n\n\n\nKonstants\n")
 	for i, v := range konst {
 		sb.WriteString(fmt.Sprintf("  %4v  [%4v]  %v\n", i+1, i, v))
 	}
+	sb.WriteRune(10)
+	sb.WriteRune(10)
 	return sb.String()
 }
 

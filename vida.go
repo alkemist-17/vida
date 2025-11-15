@@ -12,7 +12,7 @@ const minor uint64 = 3
 const patch uint64 = 41
 const inception uint64 = 25
 const header uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
-const name = "Vida 🌱🐝🌻"
+const name = "Vida 🌿 🐝 🌻"
 
 func Name() string {
 	return name

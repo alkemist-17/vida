@@ -98,14 +98,14 @@ func PrintTokens(path string) error {
 	}
 	l := lexer.New(src, path)
 	hadError := false
-	fmt.Printf("%4v %-15v %-2v\n\n", "line", "token", "repr")
+	fmt.Printf("%5v   %-15v   %-2v\n\n", "Line", "Token", "Value")
 	for {
 		line, tok, lit := l.Next()
 		if l.LexicalError.Message != "" {
 			hadError = true
 			break
 		}
-		fmt.Printf("%4v %-15v %-2v\n", line, tok, lit)
+		fmt.Printf("%5v   %-15v   %-2v\n", line, tok, lit)
 		if tok == token.EOF {
 			fmt.Println()
 			break
@@ -144,9 +144,9 @@ func (i *Interpreter) MeasureRunTime() (Result, error) {
 	init := time.Now()
 	r, err := i.vm.run()
 	end := time.Since(init)
-	fmt.Printf("\n\nThe interpreter has finished.\n\n")
-	fmt.Printf("Time = %vs\n", end.Seconds())
-	fmt.Printf("Time = %v\n\n", end)
+	fmt.Printf("\n\n\n   The interpreter has finished its work\n\n\n\n")
+	fmt.Printf("   Time : %vs\n", end.Seconds())
+	fmt.Printf("   Time : %v\n\n\n\n", end)
 	return r, err
 }
 

@@ -106,7 +106,7 @@ func time(args []string) {
 			printError(err)
 			i.PrintCallStack()
 		}
-		fmt.Println(r)
+		fmt.Printf("   Interpretation Result : %v\n\n\n\n", r)
 	} else {
 		printVersion()
 		handleError(errorNoArgsGivenTo(TIME))
@@ -160,7 +160,7 @@ func printMachineCode(args []string) {
 
 func handleError(err error) {
 	if err != nil {
-		fmt.Printf("\n\n%v\n\n\n", err)
+		fmt.Printf("   ❌ %v\n\n\n\n", err.Error())
 		os.Exit(0)
 	}
 }
@@ -182,32 +182,35 @@ func parseCMD(cmd string) string {
 }
 
 func errorNoArgsGivenTo(cmd string) error {
-	return fmt.Errorf("no arguments given to the option %v", cmd)
+	return fmt.Errorf("no arguments given to the command '%v'", cmd)
 }
 
 func printVersion() {
-	fmt.Printf("\n\n%v %v\n\n\n", vida.Name(), vida.Version())
+	fmt.Printf("\n\n\n   %v\n   %v\n\n\n\n", vida.Name(), vida.Version())
 }
 
 func printHelp() {
 	clear()
 	printVersion()
-	fmt.Println("CLI")
+	fmt.Println("   CLI Tool")
 	fmt.Println()
-	fmt.Println("Usage: vida [command] [...arguments]")
+	fmt.Println("   Usage: vida [command] [...arguments]")
 	fmt.Println()
-	fmt.Println("Command list")
+	fmt.Println("   Where [command]:")
 	fmt.Println()
-	fmt.Printf("%-11v compile and run Vida script\n", RUN)
-	fmt.Printf("%-11v compile and run Vida scripts step by step\n", DEGUG)
-	fmt.Printf("%-11v compile and run Vida scripts measuring their runtime\n", TIME)
-	fmt.Printf("%-11v show the token list\n", TOKENS)
-	fmt.Printf("%-11v show the syntax tree\n", AST)
-	fmt.Printf("%-11v show this message\n", HELP)
-	fmt.Printf("%-11v show the language version\n", VERSION)
-	fmt.Printf("%-11v compile and show the compiled code\n", CODE)
-	fmt.Printf("%-11v show information about the Vida corelib\n", CORELIB)
-	fmt.Printf("%-11v show some information about Vida\n", ABOUT)
+	fmt.Printf("   %-11v compile and run Vida script\n", RUN)
+	fmt.Printf("   %-11v compile and run Vida scripts step by step\n", DEGUG)
+	fmt.Printf("   %-11v compile and run Vida scripts measuring their runtime\n", TIME)
+	fmt.Printf("   %-11v show the token list\n", TOKENS)
+	fmt.Printf("   %-11v show the syntax tree\n", AST)
+	fmt.Printf("   %-11v show this message\n", HELP)
+	fmt.Printf("   %-11v show the language version\n", VERSION)
+	fmt.Printf("   %-11v compile and show the compiled code\n", CODE)
+	fmt.Printf("   %-11v show information about the Vida corelib\n", CORELIB)
+	fmt.Printf("   %-11v show some information about Vida\n", ABOUT)
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
 	fmt.Println()
 }
 

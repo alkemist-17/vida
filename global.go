@@ -571,7 +571,7 @@ var coreLibDescription = []string{
 }
 
 func PrintCoreLibInformation() {
-	fmt.Printf("Core:\n\n")
+	fmt.Printf("Vida Core Library\nIncluded by default in every Vida script\n\n\n")
 	for i := 1; i < len(coreLibNames); i++ {
 		fmt.Printf("  %v %v\n\n", coreLibNames[i], coreLibDescription[i])
 	}
