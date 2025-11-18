@@ -7,11 +7,11 @@ import (
 
 func loadFoundationNetworkIO() Value {
 	m := &Object{Value: make(map[string]Value)}
-	m.Value["listen"] = GFn(networkListen)
+	m.Value["listen"] = GFn(netListen)
 	return m
 }
 
-func networkListen(args ...Value) (Value, error) {
+func netListen(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if network, ok := args[0].(*String); ok {
 			if address, ok := args[1].(*String); ok {
