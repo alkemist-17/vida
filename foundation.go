@@ -11,12 +11,12 @@ func loadFoundationException() Value {
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
 	m := &Object{Value: make(map[string]Value)}
-	m.Value["raise"] = GFn(raiseException)
-	m.Value["protected"] = GFn(catchException)
+	m.Value["raise"] = GFn(exceptionRaise)
+	m.Value["protected"] = GFn(exceptionCatch)
 	return m
 }
 
-func raiseException(args ...Value) (Value, error) {
+func exceptionRaise(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n   Message : %v\n\n", verror.ExceptionErrType, args[0].String()))
 		return NilValue, err
@@ -25,7 +25,7 @@ func raiseException(args ...Value) (Value, error) {
 	return NilValue, err
 }
 
-func catchException(args ...Value) (Value, error) {
+func exceptionCatch(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if fn, ok := args[0].(*Function); ok {
 			th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
