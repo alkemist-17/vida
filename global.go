@@ -124,23 +124,23 @@ var coreLibNames = []string{
 func loadCoreLib(store *[]Value) *[]Value {
 	*store = append(*store,
 		NilValue,
-		GFn(gfnPrint),
-		GFn(gfnLen),
-		GFn(gfnAppend),
-		GFn(gfnMakeArray),
-		GFn(gfnLoadLib),
-		GFn(gfnType),
-		GFn(gfnAssert),
-		GFn(gfnFormat),
-		GFn(gfnReadLine),
-		GFn(gfnClone),
-		GFn(gfnError),
-		GFn(gfnIsError),
+		GFn(corePrint),
+		GFn(coreLen),
+		GFn(coreAppend),
+		GFn(coreMakeArray),
+		GFn(coreLoadLib),
+		GFn(coreType),
+		GFn(coreAssert),
+		GFn(coreFormat),
+		GFn(coreReadLine),
+		GFn(coreClone),
+		GFn(coreError),
+		GFn(coreIsError),
 	)
 	return store
 }
 
-func gfnPrint(args ...Value) (Value, error) {
+func corePrint(args ...Value) (Value, error) {
 	var s []any
 	for _, v := range args {
 		s = append(s, v)
@@ -149,7 +149,7 @@ func gfnPrint(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnLen(args ...Value) (Value, error) {
+func coreLen(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *Array:
@@ -178,14 +178,14 @@ func gfnLen(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnType(args ...Value) (Value, error) {
+func coreType(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].Type()}, nil
 	}
 	return NilValue, nil
 }
 
-func gfnFormat(args ...Value) (Value, error) {
+func coreFormat(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch v := args[0].(type) {
 		case *String:
@@ -196,7 +196,7 @@ func gfnFormat(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnAssert(args ...Value) (Value, error) {
+func coreAssert(args ...Value) (Value, error) {
 	argsLength := len(args)
 	if argsLength == 1 {
 		if args[0].Boolean() {
@@ -216,7 +216,7 @@ func gfnAssert(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnAppend(args ...Value) (Value, error) {
+func coreAppend(args ...Value) (Value, error) {
 	if len(args) >= 2 {
 		switch v := args[0].(type) {
 		case *Array:
@@ -234,7 +234,7 @@ func gfnAppend(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnMakeArray(args ...Value) (Value, error) {
+func coreMakeArray(args ...Value) (Value, error) {
 	largs := len(args)
 	if largs > 0 {
 		switch v := args[0].(type) {
@@ -271,7 +271,7 @@ func gfnMakeArray(args ...Value) (Value, error) {
 	return &Array{}, nil
 }
 
-func gfnReadLine(args ...Value) (Value, error) {
+func coreReadLine(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		fmt.Print(args[0])
 	} else {
@@ -287,14 +287,14 @@ func gfnReadLine(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnClone(args ...Value) (Value, error) {
+func coreClone(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return args[0].Clone(), nil
 	}
 	return NilValue, nil
 }
 
-func gfnLoadLib(args ...Value) (Value, error) {
+func coreLoadLib(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
 			if strings.HasPrefix(v.Value, foundationInterfaceName) {
@@ -338,14 +338,14 @@ func gfnLoadLib(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnError(args ...Value) (Value, error) {
+func coreError(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return Error{Message: args[0]}, nil
 	}
 	return Error{Message: NilValue}, nil
 }
 
-func gfnIsError(args ...Value) (Value, error) {
+func coreIsError(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		_, ok := args[0].(Error)
 		return Bool(ok), nil
@@ -353,7 +353,7 @@ func gfnIsError(args ...Value) (Value, error) {
 	return Bool(false), nil
 }
 
-func gfnCopy(args ...Value) (Value, error) {
+func coreCopy(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch dst := args[0].(type) {
 		case *Array:
