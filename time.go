@@ -104,7 +104,7 @@ func loadFoundationTime() Value {
 	m.Value["getLocation"] = GFn(timeGetLocation)
 	m.Value["toUnixNano"] = GFn(timeToUnixNano)
 	// Time Sleep
-	m.Value["sleep"] = GFn(sleep)
+	m.Value["sleep"] = GFn(timeSleep)
 	// Time Units
 	m.Value["millisecond"] = Integer(time.Millisecond)
 	m.Value["nanosecond"] = Integer(time.Nanosecond)
@@ -134,7 +134,7 @@ func loadFoundationTime() Value {
 	m.Value["TimeOnly"] = &String{Value: time.TimeOnly}
 	// Time ops with TimeZones
 	m.Value["nowIn"] = GFn(timeIn)
-	m.Value["dateIn"] = GFn(dateIn)
+	m.Value["dateIn"] = GFn(timeDateIn)
 	// Basic TimeZones
 	m.Value["Local"] = &String{Value: time.Local.String()}
 	m.Value["UTC"] = &String{Value: time.UTC.String()}
@@ -149,7 +149,7 @@ func loadFoundationTime() Value {
 	return m
 }
 
-func sleep(args ...Value) (Value, error) {
+func timeSleep(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		val, ok := args[0].(Integer)
 		if ok {
@@ -332,7 +332,7 @@ func timeIn(args ...Value) (Value, error) {
 	return Time(time.Now().UTC()), nil
 }
 
-func dateIn(args ...Value) (Value, error) {
+func timeDateIn(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if zone, ok := args[1].(*String); ok {
@@ -374,7 +374,7 @@ func timeParse(args ...Value) (Value, error) {
 func timeSince(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
-			return createDuration(time.Since(time.Time(t))), nil
+			return timeCreateDuration(time.Since(time.Time(t))), nil
 		}
 	}
 	return NilValue, nil
@@ -396,7 +396,7 @@ func timeSub(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if u, ok := args[1].(Time); ok {
-				return createDuration(time.Time(t).Sub(time.Time(u))), nil
+				return timeCreateDuration(time.Time(t).Sub(time.Time(u))), nil
 			}
 		}
 	}
@@ -425,7 +425,7 @@ func timeBefore(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func createDuration(v time.Duration) *Object {
+func timeCreateDuration(v time.Duration) *Object {
 	o := &Object{Value: make(map[string]Value)}
 	o.Value["hours"] = Float(v.Hours())
 	o.Value["minutes"] = Float(v.Minutes())
