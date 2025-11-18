@@ -33,7 +33,7 @@ func generateFileHandlerObject(file *os.File) Value {
 }
 
 // File API
-func openFile(args ...Value) (Value, error) {
+func fileOpen(args ...Value) (Value, error) {
 	l := len(args)
 	if l == 1 {
 		if fname, ok := args[0].(*String); ok {
@@ -62,7 +62,7 @@ func openFile(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func createFile(args ...Value) (Value, error) {
+func fileCreate(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if fname, ok := args[0].(*String); ok {
 			file, err := os.Create(fname.Value)
@@ -77,7 +77,7 @@ func createFile(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func exists(args ...Value) (Value, error) {
+func fileExists(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			_, err := os.Stat(path.Value)
@@ -91,7 +91,7 @@ func exists(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func remove(args ...Value) (Value, error) {
+func fileRemove(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			err := os.Remove(path.Value)
@@ -105,7 +105,7 @@ func remove(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func fsize(args ...Value) (Value, error) {
+func fileSize(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			fileInfo, err := os.Stat(path.Value)
@@ -119,7 +119,7 @@ func fsize(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func isFile(args ...Value) (Value, error) {
+func fileIsFile(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if _, ok := args[0].(*FileHandler); ok {
 			return Bool(ok), nil
@@ -129,7 +129,7 @@ func isFile(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func tempfile(args ...Value) (Value, error) {
+func fileCreateTemp(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if dir, ok := args[0].(*String); ok {
 			if pattern, ok := args[1].(*String); ok {
