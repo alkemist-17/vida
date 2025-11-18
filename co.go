@@ -6,19 +6,19 @@ import (
 
 func loadFoundationCoroutine() Value {
 	m := &Object{Value: make(map[string]Value)}
-	m.Value["new"] = GFn(gfnNewThread)
-	m.Value["run"] = GFn(gfnRunThread)
-	m.Value["suspend"] = GFn(gfnSuspendThread)
-	m.Value["complete"] = GFn(gfnCompleteThread)
-	m.Value["isActive"] = GFn(gfnIsActive)
-	m.Value["isCompleted"] = GFn(gfnIsCompleted)
-	m.Value["recycle"] = GFn(gfnRecycleThread)
-	m.Value["state"] = GFn(gfnGetThreadState)
-	m.Value["running"] = GFn(gfnGetCurrentRunningThread)
+	m.Value["new"] = GFn(coNewThread)
+	m.Value["run"] = GFn(coRunThread)
+	m.Value["suspend"] = GFn(coSuspendThread)
+	m.Value["complete"] = GFn(coCompleteThread)
+	m.Value["isActive"] = GFn(coIsActive)
+	m.Value["isCompleted"] = GFn(coIsCompleted)
+	m.Value["recycle"] = GFn(coRecycleThread)
+	m.Value["state"] = GFn(coGetThreadState)
+	m.Value["running"] = GFn(coGetCurrentRunningThread)
 	return m
 }
 
-func gfnNewThread(args ...Value) (Value, error) {
+func coNewThread(args ...Value) (Value, error) {
 	l := len(args)
 	if l == 1 {
 		if fn, ok := args[0].(*Function); ok {
@@ -40,7 +40,7 @@ func gfnNewThread(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnGetThreadState(args ...Value) (Value, error) {
+func coGetThreadState(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return &String{Value: th.State.String()}, nil
@@ -51,7 +51,7 @@ func gfnGetThreadState(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnRunThread(args ...Value) (Value, error) {
+func coRunThread(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok && (th.State == Suspended || th.State == Ready) {
 			var signal error
@@ -76,7 +76,7 @@ func gfnRunThread(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnSuspendThread(args ...Value) (Value, error) {
+func coSuspendThread(args ...Value) (Value, error) {
 	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
 		return NilValue, verror.ErrSuspendingMainThread
 	}
@@ -90,11 +90,11 @@ func gfnSuspendThread(args ...Value) (Value, error) {
 	return NilValue, verror.ErrSuspendThreadSignal
 }
 
-func gfnGetCurrentRunningThread(args ...Value) (Value, error) {
+func coGetCurrentRunningThread(args ...Value) (Value, error) {
 	return ((*clbu)[globalStateIndex].(*GlobalState)).Current, nil
 }
 
-func gfnRecycleThread(args ...Value) (Value, error) {
+func coRecycleThread(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if th, ok := args[0].(*Thread); ok && th.State == Completed {
 			if fn, okfn := args[1].(*Function); okfn {
@@ -111,7 +111,7 @@ func gfnRecycleThread(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnCompleteThread(args ...Value) (Value, error) {
+func coCompleteThread(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			if th.State == Ready || th.State == Suspended {
@@ -126,7 +126,7 @@ func gfnCompleteThread(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnIsActive(args ...Value) (Value, error) {
+func coIsActive(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State != Completed), nil
@@ -137,7 +137,7 @@ func gfnIsActive(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func gfnIsCompleted(args ...Value) (Value, error) {
+func coIsCompleted(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State == Completed), nil

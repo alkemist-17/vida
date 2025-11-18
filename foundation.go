@@ -31,7 +31,7 @@ func exceptionCatch(args ...Value) (Value, error) {
 			th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
 			th.State = Ready
 			th.Script.MainFunction = fn
-			v, err := gfnRunThread(th)
+			v, err := coRunThread(th)
 			vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 			if err != nil {
 				switch err {

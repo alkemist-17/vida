@@ -987,7 +987,7 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 	var A []Value
 	A = append(A, o)
 	A = append(A, args...)
-	v, err := gfnRunThread(th)
+	v, err := coRunThread(th)
 	if err != nil {
 		vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 		switch err {

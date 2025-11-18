@@ -231,7 +231,7 @@ func arraySortObjects(args ...Value) (Value, error) {
 					th.State = Ready
 					th.Script.MainFunction = fn
 					A[0], A[1] = l, r
-					_, err := gfnRunThread(th)
+					_, err := coRunThread(th)
 					vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 					if err != nil {
 						switch err {
