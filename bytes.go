@@ -4,11 +4,11 @@ import "github.com/alkemist-17/vida/verror"
 
 func loadFoundationBinary() Value {
 	m := &Object{Value: make(map[string]Value)}
-	m.Value["bytes"] = GFn(createBytes)
+	m.Value["bytes"] = GFn(binNewBytesBuffer)
 	return m
 }
 
-func createBytes(args ...Value) (Value, error) {
+func binNewBytesBuffer(args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		switch v := args[0].(type) {
