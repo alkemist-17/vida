@@ -44,6 +44,7 @@ func main() {
 		case HELP:
 			printHelp()
 		case VERSION:
+			clear()
 			printVersion()
 		case ABOUT:
 			printAbout()
@@ -52,7 +53,7 @@ func main() {
 		case CORELIB:
 			printCoreLib()
 		case TEST:
-			test()
+			test(args)
 		default:
 			handleError(fmt.Errorf("unknown command '%v'. Type 'vida help' for assistance", parseCMD(args[1])))
 		}
@@ -63,8 +64,8 @@ func main() {
 
 func runDebug(args []string) {
 	clear()
-	extensions := extension.LoadExtensions()
 	if len(args) > 2 {
+		extensions := extension.LoadExtensions()
 		printVersion()
 		i, err := vida.NewDebugger(args[2], extensions)
 		handleError(err)
@@ -139,7 +140,6 @@ func printAST(args []string) {
 
 func printMachineCode(args []string) {
 	clear()
-	printVersion()
 	largs := len(args)
 	if largs > 2 {
 		for i := 2; i < largs; i++ {
@@ -151,19 +151,30 @@ func printMachineCode(args []string) {
 	}
 }
 
-func test() {
+func test(args []string) {
 	clear()
 	printVersion()
 	count := 0
 	basePath := "./"
 	scripts, err := os.ReadDir(basePath)
 	handleTestError(err, basePath)
-	for _, v := range scripts {
-		if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
-			count++
-			fmt.Printf("🧪 Running tests from '%v'\n", v.Name())
-			executeScript(v.Name())
-			fmt.Printf("\n\n\n")
+	if len(args) > 2 {
+		for _, v := range args[2:] {
+			if strings.HasSuffix(v, vida.VidaFileExtension) {
+				count++
+				fmt.Printf("🧪 Running tests from '%v'\n", v)
+				executeScript(v)
+				fmt.Printf("\n\n\n")
+			}
+		}
+	} else {
+		for _, v := range scripts {
+			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
+				count++
+				fmt.Printf("🧪 Running tests from '%v'\n", v.Name())
+				executeScript(v.Name())
+				fmt.Printf("\n\n\n")
+			}
 		}
 	}
 	fmt.Printf("🧪  All tests were ok!\n    Total files run: %v\n\n\n\n\n\n\n", count)
@@ -237,7 +248,7 @@ func printHelp() {
 	fmt.Println("   Where [command]:")
 	fmt.Println()
 	fmt.Printf("   %-11v compile and run a script\n", RUN)
-	fmt.Printf("   %-11v run all scripts in the current working directory\n", TEST)
+	fmt.Printf("   %-11v run focused or all scripts in the current working directory\n", TEST)
 	fmt.Printf("   %-11v compile and run a script step by step\n", DEGUG)
 	fmt.Printf("   %-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("   %-11v show the token list\n", TOKENS)
