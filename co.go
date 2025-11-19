@@ -15,6 +15,7 @@ func loadFoundationCoroutine() Value {
 	m.Value["recycle"] = GFn(coRecycleThread)
 	m.Value["state"] = GFn(coGetThreadState)
 	m.Value["running"] = GFn(coGetCurrentRunningThread)
+	m.Value["isMain"] = GFn(coIsMain)
 	return m
 }
 
@@ -146,4 +147,11 @@ func coIsCompleted(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func coIsMain(args ...Value) (Value, error) {
+	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
+		return Bool(true), nil
+	}
+	return Bool(false), nil
 }
