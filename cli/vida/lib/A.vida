@@ -189,6 +189,17 @@ lib.tail = fun A {
 
 
 
+// Head
+lib.head = fun A {
+    if len(A) == 0 {
+        ret nil
+    }
+    ret A[0]
+}
+
+
+
+
 // Init
 lib.init = fun A {
     if len(A) == 0 {
@@ -254,7 +265,7 @@ lib.compact = fun A {
 
 
 // IsArray
-lib.isArray = fun A => ret type(A) == "array"
+lib.isArray = fun A => type(A) == "array"
 
 
 
