@@ -186,7 +186,6 @@ func executeScript(path string) {
 	r, err := i.MeasureRunTime()
 	handleTestFailure(r, err)
 	fmt.Printf("   Interpretation Result : %v ✅\n\n\n\n", r)
-
 }
 
 func handleTestFailure(r vida.Result, err error) {
