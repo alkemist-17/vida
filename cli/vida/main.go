@@ -247,7 +247,7 @@ func printHelp() {
 	fmt.Println("   Where [command]:")
 	fmt.Println()
 	fmt.Printf("   %-11v compile and run a script\n", RUN)
-	fmt.Printf("   %-11v run focused or all scripts in the current working directory\n", TEST)
+	fmt.Printf("   %-11v run focused or all scripts in the cwd\n", TEST)
 	fmt.Printf("   %-11v compile and run a script step by step\n", DEGUG)
 	fmt.Printf("   %-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("   %-11v show the token list\n", TOKENS)
