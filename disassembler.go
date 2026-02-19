@@ -9,7 +9,7 @@ import (
 
 func PrintBytecode(script *Script, name string) string {
 	clear()
-	fmt.Println("Compiled Code for", name)
+	fmt.Println("Machine Code for", name)
 	var sb strings.Builder
 	sb.WriteString(printHeader())
 	var s string
@@ -19,7 +19,7 @@ func PrintBytecode(script *Script, name string) string {
 	}
 	for idx, v := range *script.Konstants {
 		if f, ok := v.(*CoreFunction); ok {
-			sb.WriteString(fmt.Sprintf("\n\n\n\nFunction %v/%v/%v", idx, f.Arity, f.Free))
+			fmt.Fprintf(&sb, "\n\n\n\nFunction %v/%v/%v", idx, f.Arity, f.Free)
 			var s string
 			for i := 0; i < len(f.Code); i++ {
 				s = printInstr(f.Code[i], uint64(i), false)
@@ -33,7 +33,10 @@ func PrintBytecode(script *Script, name string) string {
 
 func printHeader() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%v\n%v", Name(), Version()))
+	sb.WriteRune(10)
+	sb.WriteRune(10)
+	sb.WriteRune(10)
+	fmt.Fprintf(&sb, "%v\n%v", Name(), Version())
 	sb.WriteRune(10)
 	sb.WriteRune(10)
 	sb.WriteRune(10)
@@ -46,7 +49,7 @@ func printKonstants(konst []Value) string {
 	var sb strings.Builder
 	sb.WriteString("\n\n\n\nKonstants\n")
 	for i, v := range konst {
-		sb.WriteString(fmt.Sprintf("  %4v  [%4v]  %v\n", i+1, i, v))
+		fmt.Fprintf(&sb, "  %4v  [%4v]  %v\n", i+1, i, v)
 	}
 	sb.WriteRune(10)
 	sb.WriteRune(10)
@@ -62,8 +65,8 @@ func printInstr(instr, ip uint64, isRunningDebug bool) string {
 	P = instr >> shift32 & clean24
 	if !isRunningDebug {
 		sb.WriteRune(10)
-		sb.WriteString(fmt.Sprintf("  [%3v]  ", ip))
-		sb.WriteString(fmt.Sprintf("%7v", opcodes[op]))
+		fmt.Fprintf(&sb, "  [%3v]  ", ip)
+		fmt.Fprintf(&sb, "%7v", opcodes[op])
 	} else {
 		sb.WriteString(opcodes[op])
 	}
@@ -71,19 +74,19 @@ func printInstr(instr, ip uint64, isRunningDebug bool) string {
 	case end:
 		return sb.String()
 	case array, slice, iForSet, check, load:
-		sb.WriteString(fmt.Sprintf(" %3v %3v %3v", P, A, B))
+		fmt.Fprintf(&sb, " %3v %3v %3v", P, A, B)
 	case forSet, forLoop, iForLoop, fun, ret:
-		sb.WriteString(fmt.Sprintf(" %3v %3v", A, B))
+		fmt.Fprintf(&sb, " %3v %3v", A, B)
 	case prefix:
-		sb.WriteString(fmt.Sprintf(" %3v %3v %3v", token.Token(P).String(), A, B))
+		fmt.Fprintf(&sb, " %3v %3v %3v", token.Token(P).String(), A, B)
 	case binopG, binop, binopK, binopQ:
-		sb.WriteString(fmt.Sprintf(" %3v %3v %3v %3v", token.Token(P>>shift16).String(), P&clean16, A, B))
+		fmt.Fprintf(&sb, " %3v %3v %3v %3v", token.Token(P>>shift16).String(), P&clean16, A, B)
 	case call, store:
-		sb.WriteString(fmt.Sprintf(" %3v %3v %3v %3v", P>>shift16, P&clean16, A, B))
+		fmt.Fprintf(&sb, " %3v %3v %3v %3v", P>>shift16, P&clean16, A, B)
 	case object, jump:
-		sb.WriteString(fmt.Sprintf(" %3v", B))
+		fmt.Fprintf(&sb, " %3v", B)
 	case iSet, iGet:
-		sb.WriteString(fmt.Sprintf(" %3v %3v %3v %3v %3v", (P>>shift16)>>shift4, P>>shift16&clean8, P&clean16, A, B))
+		fmt.Fprintf(&sb, " %3v %3v %3v %3v %3v", (P>>shift16)>>shift4, P>>shift16&clean8, P&clean16, A, B)
 	case eq:
 		var op token.Token
 		var s byte = byte(P >> shift16)
@@ -94,7 +97,7 @@ func printInstr(instr, ip uint64, isRunningDebug bool) string {
 		}
 		l := s >> shift2 & clean2bits
 		r := s & clean2bits
-		sb.WriteString(fmt.Sprintf(" %3v %3v %3v %3v %3v %3v", op.String(), l, r, P&clean16, A, B))
+		fmt.Fprintf(&sb, " %3v %3v %3v %3v %3v %3v", op.String(), l, r, P&clean16, A, B)
 	}
 	return sb.String()
 }

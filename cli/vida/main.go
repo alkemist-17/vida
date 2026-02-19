@@ -104,7 +104,7 @@ func time(args []string) {
 			printError(err)
 			i.PrintCallStack()
 		}
-		fmt.Printf("   Interpretation Result : %v\n\n\n\n", r)
+		fmt.Printf("\tResult : %v ✅\n\n\n\n", r)
 	} else {
 		handleError(errorNoArgsGivenTo(TIME))
 	}
@@ -160,7 +160,7 @@ func test(args []string) {
 	handleTestError(err, basePath)
 	if len(args) > 2 {
 		for _, v := range args[2:] {
-			if strings.HasSuffix(v, vida.VidaFileExtension) {
+			if strings.HasSuffix(v, vida.VidaTestFileExtension) {
 				count++
 				fmt.Printf("🧪 Running tests from '%v'\n", v)
 				executeScript(v)
@@ -169,7 +169,7 @@ func test(args []string) {
 		}
 	} else {
 		for _, v := range scripts {
-			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
+			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaTestFileExtension) {
 				count++
 				fmt.Printf("🧪 Running tests from '%v'\n", v.Name())
 				executeScript(v.Name())
@@ -177,7 +177,11 @@ func test(args []string) {
 			}
 		}
 	}
-	fmt.Printf("🧪  All tests were ok!\n    Total files run: %v\n\n\n\n\n\n\n", count)
+	if count > 0 {
+		fmt.Printf("🧪  All tests were ok!\n    Total files run: %v\n\n\n\n\n\n\n", count)
+	} else {
+		fmt.Printf("🦖  No tests files were found!\n    Total files run: %v\n\n\n\n\n\n\n", count)
+	}
 }
 
 func executeScript(path string) {
@@ -185,12 +189,12 @@ func executeScript(path string) {
 	handleTestError(err, path)
 	r, err := i.MeasureRunTime()
 	handleTestFailure(r, err)
-	fmt.Printf("   Interpretation Result : %v ✅\n\n\n\n", r)
+	fmt.Printf("\tTest result : %v ✅\n\n\n\n", r)
 }
 
 func handleTestFailure(r vida.Result, err error) {
 	if err != nil {
-		fmt.Printf("   Interpretation Result : %v ❌\n\n", r)
+		fmt.Printf("\tTest result : %v ❌\n\n", r)
 		fmt.Println(err)
 		os.Exit(0)
 	}
@@ -234,29 +238,26 @@ func errorNoArgsGivenTo(cmd string) error {
 }
 
 func printVersion() {
-	fmt.Printf("\n\n\n   %v\n   %v\n\n\n\n", vida.Name(), vida.Version())
+	fmt.Printf("\n\n\n   %v\n   %v\n\n\n", vida.Name(), vida.Version())
 }
 
 func printHelp() {
 	clear()
 	printVersion()
-	fmt.Println("   CLI Tool")
-	fmt.Println()
-	fmt.Println("   Usage: vida [command] [...arguments]")
-	fmt.Println()
-	fmt.Println("   Where [command]:")
-	fmt.Println()
-	fmt.Printf("   %-11v compile and run a script\n", RUN)
-	fmt.Printf("   %-11v run focused or all scripts in the cwd\n", TEST)
-	fmt.Printf("   %-11v compile and run a script step by step\n", DEGUG)
-	fmt.Printf("   %-11v compile and run a script measuring their runtime\n", TIME)
-	fmt.Printf("   %-11v show the token list\n", TOKENS)
-	fmt.Printf("   %-11v show the syntax tree\n", AST)
-	fmt.Printf("   %-11v show this message\n", HELP)
-	fmt.Printf("   %-11v show the language version\n", VERSION)
-	fmt.Printf("   %-11v compile and show the compiled code\n", CODE)
-	fmt.Printf("   %-11v show information about the corelib\n", CORELIB)
-	fmt.Printf("   %-11v show the description of Vida\n", ABOUT)
+	fmt.Printf("\tCLI Tool\n")
+	fmt.Println("\tUsage:  vida  [command]  [script]")
+	fmt.Printf("\n\n")
+	fmt.Printf("\t%-11v compile and run a script\n", RUN)
+	fmt.Printf("\t%-11v run all or focused test in the cwd\n", TEST)
+	fmt.Printf("\t%-11v compile and run a script step by step\n", DEGUG)
+	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
+	fmt.Printf("\t%-11v show the token list\n", TOKENS)
+	fmt.Printf("\t%-11v show the syntax tree\n", AST)
+	fmt.Printf("\t%-11v show this message\n", HELP)
+	fmt.Printf("\t%-11v show the language version\n", VERSION)
+	fmt.Printf("\t%-11v compile and show the compiled code\n", CODE)
+	fmt.Printf("\t%-11v show information about the corelib\n", CORELIB)
+	fmt.Printf("\t%-11v show the description of Vida\n", ABOUT)
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()

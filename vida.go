@@ -12,27 +12,31 @@ const minor uint64 = 3
 const patch uint64 = 42
 const inception uint64 = 25
 const header uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
-const name = "Vida 🌿 🐝 🌻"
+const name = "	Vida 🌿 🐝 🌻 🦖"
 
 func Name() string {
 	return name
 }
 
 func Version() string {
-	return fmt.Sprintf("Version %v.%v.%v", major, minor, patch)
+	return fmt.Sprintf("	Version %v.%v.%v", major, minor, patch)
 }
 
 func About() string {
-	return "\n\n\t" + name + "\n\t" + Version() + `
+	return "\n\n\n" + name + "\n" + Version() + `
 	
 	
 	Welcome to Vida!
 
+
 	Vida is a simple and elegant computer language.
-	It features a minimal set of constructs that makes it 
-	easy to learn and suitable for most common programming tasks.
-	Vida can be seamlessly extended and embedded in host environments 
-	or used as a standalone language.
+	It features a minimal set of constructs
+	that makes it easy to learn and 
+	suitable for most common programming tasks.
+	Vida can be seamlessly extended and
+	embedded in host environments or
+	used as a standalone language.
+	
 	
 	Happy Vida coding!
 
