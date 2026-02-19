@@ -9,7 +9,7 @@ const (
 	FileErrType        = "File"
 	LexicalErrType     = "Lexical"
 	SyntaxErrType      = "Syntax"
-	CompilationErrType = "Compilation"
+	CompilationErrType = "Build"
 	RunTimeErrType     = "Runtime"
 	AssertionErrType   = "Assertion Failure"
 	ExceptionErrType   = "Exception"
@@ -26,12 +26,12 @@ type VidaError struct {
 func (e VidaError) Error() string {
 	switch e.ErrType {
 	case ExceptionErrType, AssertionErrType:
-		return fmt.Sprintf("\n\n  [%v]\n   Script    : %v\n   Near line : %v\n   Message   : %v\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v]\n\tScript    : %v\n\tNear line : %v\n\tMessage   : %v\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
 	default:
 		if e.Line == 0 {
-			return fmt.Sprintf("\n\n  [%v Error]\n   Script  : %v\n   Message : %v\n\n", e.ErrType, e.ScriptName, e.Message)
+			return fmt.Sprintf("\n\n\t[%v Error]\n\tScript  : %v\n\tMessage : %v\n\n", e.ErrType, e.ScriptName, e.Message)
 		}
-		return fmt.Sprintf("\n\n  [%v Error]\n   Script    : %v\n   Near line : %v\n   Message   : %v\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v Error]\n\tScript    : %v\n\tNear line : %v\n\tMessage   : %v\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
 	}
 }
 
@@ -57,7 +57,7 @@ func NewStackFrameInfo(scriptName string, line uint) StackFrameInfo {
 }
 
 func (sfi StackFrameInfo) Error() string {
-	return fmt.Sprintf("   Script    : %v\n   Near line : %v\n", sfi.ScriptName, sfi.Line)
+	return fmt.Sprintf("\tScript    : %v\n\tNear line : %v\n", sfi.ScriptName, sfi.Line)
 }
 
 var (

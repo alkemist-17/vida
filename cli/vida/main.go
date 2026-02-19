@@ -212,7 +212,7 @@ func handleError(err error) {
 	if err != nil {
 		clear()
 		printVersion()
-		fmt.Printf("   ❌ %v\n\n\n\n", err.Error())
+		fmt.Printf("\t❌ %v\n\n\n\n", err.Error())
 		os.Exit(0)
 	}
 }
@@ -248,7 +248,7 @@ func printHelp() {
 	fmt.Println("\tUsage:  vida  [command]  [script]")
 	fmt.Printf("\n\n")
 	fmt.Printf("\t%-11v compile and run a script\n", RUN)
-	fmt.Printf("\t%-11v run all or focused test in the cwd\n", TEST)
+	fmt.Printf("\t%-11v run focused or all test scripts in the cwd\n", TEST)
 	fmt.Printf("\t%-11v compile and run a script step by step\n", DEGUG)
 	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("\t%-11v show the token list\n", TOKENS)
