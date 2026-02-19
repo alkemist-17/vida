@@ -5,35 +5,60 @@
 //
 
 
+let message = "Global asignment test failure"
+let localShadowMessage = "Local shadow asignment test failure"
+let blockLocalMessage = "Block local variable failure"
+
 let v1 = 21
-assert(v1 == 21, "Global asignment test failure")
+assert(v1 == 21, message)
 
 let v2 = v1
-assert(v2 == v1 and v1 == 21, "Global asignment test failure")
+assert(v2 == 21 and v1 == 21 and v1 == v2, message)
 
 let v3 = v2
-assert(v3 == v2 and v2 == v1 and v1 == 21, "Global asignment test failure")
+assert(v3 == v2 and v2 == v1 and v3 == v1 and v1 == 21, message)
 
 v1 = v1 + 2
-assert(v1 == 23, "Global asignment test failure")
+assert(v1 == 23 and v2 == 21 and v3 == v2, message)
 
 v2 = v2 + 2
-assert(v2 == v1 and v1 == 23, "Global asignment test failure")
+assert(v2 == v1 and v1 == 23 and v2 != v3, message)
 
 v3 = v3
-assert(v3 == v2 - 2 and v3 == v1 - 2, "Global asignment test failure")
+assert(v3 == v2 - 2 and v3 == v1 - 2, message)
 
 let v1 = 52
-assert(
-    v1 == 52 and v1 == v1, "Global asignment test failure")
+assert(v1 == 52 and v1 == v1 and v1 != v2, message)
 
 var v1 = "local asignment"
-assert(v1 == "local asignment", "Local shadow asignment test failure")
+assert(v1 == "local asignment", localShadowMessage)
 
 var v2 = v1
-assert(v1 == "local asignment" and v2 == "local asignment", "Local shadow asignment test failure")
+assert(v1 == "local asignment" and v2 == "local asignment", localShadowMessage)
 
 var v3 = v2
-assert(v1 == "local asignment" and v2 == "local asignment" and v2 == "local asignment", "Local shadow asignment test failure")
+assert(v1 == "local asignment" and v2 == "local asignment" and v2 == "local asignment", localShadowMessage)
+
+var v2 = 42
+assert(v2 == 42, localShadowMessage)
+
+{
+    var v2 = 100
+    assert(v2 == 100, blockLocalMessage)
+    {
+        var v2 = blockLocalMessage
+        assert(v2 == blockLocalMessage, blockLocalMessage)
+        {
+            assert(v2 == blockLocalMessage, blockLocalMessage)
+            let unknown = 1200
+        }
+    }
+    assert(v2 == 100, blockLocalMessage)
+}
+
+assert(v2 == 42, localShadowMessage)
+
+assert(unknown == 1200, message)
+
 
 

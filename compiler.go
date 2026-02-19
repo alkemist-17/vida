@@ -77,7 +77,7 @@ func (c *compiler) compileScript() (*Script, error) {
 	for i = range len(c.ast.Statement) {
 		c.compileStmt(c.ast.Statement[i])
 		if c.hadError {
-			return nil, verror.New(c.script.MainFunction.CoreFn.ScriptName, c.errMsg, verror.CompilationErrType, c.lineErr)
+			return nil, verror.New(c.script.MainFunction.CoreFn.ScriptName, c.errMsg, verror.BuildErrType, c.lineErr)
 		}
 	}
 	c.script.Konstants = c.kb.Konstants
@@ -90,7 +90,7 @@ func (c *compiler) compileSubScript() (*Script, error) {
 	for i := range len(c.ast.Statement) {
 		c.compileStmt(c.ast.Statement[i])
 		if c.hadError {
-			return nil, verror.New(c.script.MainFunction.CoreFn.ScriptName, c.errMsg, verror.CompilationErrType, c.lineErr)
+			return nil, verror.New(c.script.MainFunction.CoreFn.ScriptName, c.errMsg, verror.BuildErrType, c.lineErr)
 		}
 	}
 	return c.script, nil

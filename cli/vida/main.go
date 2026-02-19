@@ -160,7 +160,7 @@ func test(args []string) {
 	handleTestError(err, basePath)
 	if len(args) > 2 {
 		for _, v := range args[2:] {
-			if strings.HasSuffix(v, vida.VidaTestFileExtension) {
+			if strings.HasSuffix(v, vida.VidaFileExtension) {
 				count++
 				fmt.Printf("🧪 Running tests from '%v'\n", v)
 				executeScript(v)
@@ -169,7 +169,7 @@ func test(args []string) {
 		}
 	} else {
 		for _, v := range scripts {
-			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaTestFileExtension) {
+			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
 				count++
 				fmt.Printf("🧪 Running tests from '%v'\n", v.Name())
 				executeScript(v.Name())
@@ -203,7 +203,7 @@ func handleTestFailure(r vida.Result, err error) {
 func handleTestError(err error, path string) {
 	if err != nil {
 		fmt.Println(err)
-		fmt.Println(path)
+		//fmt.Println(path)
 		os.Exit(0)
 	}
 }

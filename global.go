@@ -202,14 +202,14 @@ func coreAssert(args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return NilValue, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n   Message : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
 		return NilValue, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
 			return NilValue, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n   Message : %v\n\n", verror.AssertionErrType, args[1].String()))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
 		return NilValue, err
 
 	}

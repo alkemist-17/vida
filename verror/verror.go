@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	FileErrType        = "File"
-	LexicalErrType     = "Lexical"
-	SyntaxErrType      = "Syntax"
-	CompilationErrType = "Build"
-	RunTimeErrType     = "Runtime"
-	AssertionErrType   = "Assertion Failure"
-	ExceptionErrType   = "Exception"
-	MaxMemSize         = 0x7FFF_FFFF
+	FileErrType      = "File"
+	LexicalErrType   = "Lexical"
+	SyntaxErrType    = "Syntax"
+	BuildErrType     = "Build"
+	RunTimeErrType   = "Runtime"
+	AssertionErrType = "Assertion Failure"
+	ExceptionErrType = "Exception"
+	MaxMemSize       = 0x7FFF_FFFF
 )
 
 type VidaError struct {

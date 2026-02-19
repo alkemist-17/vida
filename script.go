@@ -9,7 +9,6 @@ import (
 )
 
 const VidaFileExtension = ".vida"
-const VidaTestFileExtension = ".test.vida"
 
 type Script struct {
 	Store        *[]Value
