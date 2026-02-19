@@ -1,0 +1,74 @@
+var A = import("A")
+
+var X = [1,2,3,4,5]
+var s = 3
+var r = nil
+
+assert(X and len(X) == 5, "Ontological truth and length assertion failure")
+
+var R = A.chunk(X, s)
+
+print(R)
+
+var h = A.head(X)
+var t = A.tail(X)
+
+print(h)
+print(t)
+
+h = A.first(X)
+print(h)
+
+h = A.firstN(X, 0)
+assert(not h, "Assertion failure when N is zero in firstN")
+
+h = A.firstN(X, -1)
+assert(not h, "Assertion failure when N is negative in firstN")
+
+h = A.firstN(X, len(X))
+print(len(h) == len(X), "Assertion failure when N is the length of the array in firstN")
+
+h = A.firstN(X, len(X)+len(X))
+print(len(h) == len(X), "Assertion failure when N is the gt the length of the array in firstN")
+
+r = A.map(X, fun x => x * x * x)
+print(r)
+
+r = A.filter(X, fun x => x % 2 == 0)
+print(r)
+
+r = A.exclude(X, fun x => x % 2 == 0)
+print(r)
+
+r = A.all(X, fun x => type(x) == "int")
+print(r)
+
+r = A.any(X, fun x => x == 3)
+print(r)
+
+r = A.reduce(X, fun x, y => (x + y) * (x - y), 0)
+print(r)
+
+r = A.takeWhile(X, fun x => x <= 3)
+print(r)
+
+r = A.zip(X, A.map(X, fun x => x * x * x))
+print(r)
+
+r = A.unzip(A.zip(X, A.map(X, fun x => x * x * x)))
+print(r)
+
+r = A.drop(X, 2)
+print(r)
+
+r = A.excludeNil(X + [true, false, nil, error(42)])
+print(r)
+
+r = A.compact(X + [true, false, nil, error(42)])
+print(r)
+
+r = A.difference(X, [2, 3])
+print(r)
+
+r = A.difference([fun x => x + 2], [fun x => x + 3])
+print(r, r[0](90))

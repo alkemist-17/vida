@@ -169,6 +169,19 @@ lib.first = fun A {
 
 
 
+// First N
+lib.firstN = fun A, n {
+    if len(A) == 0 {
+        ret nil
+    }
+    if n <= 0 {
+        ret nil
+    }
+    ret A[..n]
+}
+
+
+
 // Last
 lib.last = fun A {
     if len(A) == 0 {
@@ -190,13 +203,7 @@ lib.tail = fun A {
 
 
 // Head
-lib.head = fun A {
-    if len(A) == 0 {
-        ret nil
-    }
-    ret A[0]
-}
-
+lib.head = lib.first
 
 
 
