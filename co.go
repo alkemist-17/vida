@@ -16,8 +16,8 @@ func loadFoundationCoroutine() Value {
 	m.Value["state"] = GFn(coGetThreadState)
 	m.Value["running"] = GFn(coGetCurrentRunningThread)
 	m.Value["isMain"] = GFn(coIsMain)
-	m.Value["min"] = Integer(8)
-	m.Value["max"] = Integer(1014)
+	m.Value["min"] = Integer(femtoStack)
+	m.Value["max"] = Integer(fullStack)
 	return m
 }
 
