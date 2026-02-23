@@ -9,9 +9,7 @@ import (
 func loadFoundationTask() Value {
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["concepts"] = GFn(taksConcepts)
-	m.Value["par"] = GFn(taskParallel)
-	m.Value["parMax"] = GFn(taskParallelMax)
-	m.Value["parMin"] = GFn(taskParallelMin)
+	m.Value["par"] = GFn(taskRunParallel)
 	return m
 }
 
@@ -52,22 +50,8 @@ func taksConcepts(args ...Value) (Value, error) {
 	return &String{Value: c}, nil
 }
 
-func taskParallelMax(args ...Value) (Value, error) {
+func taskRunParallel(args ...Value) (Value, error) {
 	var wg sync.WaitGroup
-	return runParallel(&wg, fullStack, args...)
-}
-
-func taskParallelMin(args ...Value) (Value, error) {
-	var wg sync.WaitGroup
-	return runParallel(&wg, femtoStack, args...)
-}
-
-func taskParallel(args ...Value) (Value, error) {
-	var wg sync.WaitGroup
-	return runParallel(&wg, defaultThreadStackSize, args...)
-}
-
-func runParallel(wg *sync.WaitGroup, size int, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 1 {
 		result := &Array{Value: make([]Value, l)}
@@ -76,7 +60,7 @@ func runParallel(wg *sync.WaitGroup, size int, args ...Value) (Value, error) {
 				switch fn := arr.Value[0].(type) {
 				case *Function:
 					wg.Go(func() {
-						th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, size)
+						th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
 						vm := &VM{th}
 						_, err := vm.runThread(vm.fp, 0, true, arr.Value[1:]...)
 						if err == nil {
