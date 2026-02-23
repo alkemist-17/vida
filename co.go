@@ -16,6 +16,8 @@ func loadFoundationCoroutine() Value {
 	m.Value["state"] = GFn(coGetThreadState)
 	m.Value["running"] = GFn(coGetCurrentRunningThread)
 	m.Value["isMain"] = GFn(coIsMain)
+	m.Value["min"] = Integer(8)
+	m.Value["max"] = Integer(1014)
 	return m
 }
 
@@ -24,19 +26,16 @@ func coNewThread(args ...Value) (Value, error) {
 	if l == 1 {
 		if fn, ok := args[0].(*Function); ok {
 			return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, defaultThreadStackSize), nil
-		} else {
-			return NilValue, verror.ErrNotAFunction
 		}
+		return NilValue, verror.ErrNotAFunction
 	} else if l > 1 {
 		if fn, ok := args[0].(*Function); ok {
 			if s, ok := args[1].(Integer); ok && femtoStack <= s && s <= fullStack {
 				return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, int(s)), nil
-			} else {
-				return NilValue, verror.ErrStackSize
 			}
-		} else {
-			return NilValue, verror.ErrNotAFunction
+			return NilValue, verror.ErrStackSize
 		}
+		return NilValue, verror.ErrNotAFunction
 	}
 	return NilValue, nil
 }
@@ -45,9 +44,8 @@ func coGetThreadState(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return &String{Value: th.State.String()}, nil
-		} else {
-			return NilValue, verror.ErrNotThread
 		}
+		return NilValue, verror.ErrNotThread
 	}
 	return NilValue, nil
 }
@@ -120,9 +118,8 @@ func coCompleteThread(args ...Value) (Value, error) {
 			} else {
 				return NilValue, verror.ErrClosingAThread
 			}
-		} else {
-			return NilValue, verror.ErrNotThread
 		}
+		return NilValue, verror.ErrNotThread
 	}
 	return NilValue, nil
 }
@@ -131,9 +128,8 @@ func coIsActive(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State != Completed), nil
-		} else {
-			return NilValue, verror.ErrNotThread
 		}
+		return NilValue, verror.ErrNotThread
 	}
 	return NilValue, nil
 }
@@ -142,9 +138,8 @@ func coIsCompleted(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State == Completed), nil
-		} else {
-			return NilValue, verror.ErrNotThread
 		}
+		return NilValue, verror.ErrNotThread
 	}
 	return NilValue, nil
 }
