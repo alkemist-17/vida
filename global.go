@@ -329,6 +329,8 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadFoundationJSON(), nil
 				case "core":
 					return loadFoundationCorelib(), nil
+				case "task":
+					return loadFoundationTask(), nil
 				}
 			} else if l, isPresent := extensionlibsLoader[v.Value]; isPresent {
 				return l(), nil
