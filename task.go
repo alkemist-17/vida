@@ -51,49 +51,47 @@ func taksConcepts(args ...Value) (Value, error) {
 }
 
 func taskRunParallel(args ...Value) (Value, error) {
-	var wg sync.WaitGroup
-	l := len(args)
-	if l > 1 {
-		result := &Array{Value: make([]Value, l)}
-		for i := range args {
-			if arr, ok := args[i].(*Array); ok && len(arr.Value) > 0 {
-				switch fn := arr.Value[0].(type) {
-				case *Function:
-					wg.Go(func() {
-						th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
-						vm := &VM{th}
-						_, err := vm.runThread(vm.fp, 0, true, arr.Value[1:]...)
-						if err == nil {
-							result.Value[i] = vm.Channel
-						} else {
-							result.Value[i] = Error{Message: &String{Value: err.Error()}}
-						}
-					})
-				case GFn:
-					wg.Go(func() {
-						val, err := fn.Call(arr.Value[1:]...)
-						if err == nil {
-							result.Value[i] = val
-						} else {
-							result.Value[i] = Error{Message: &String{Value: err.Error()}}
-						}
-					})
-				default:
+	if len(args) > 0 {
+		if A, ok := args[0].(*Array); ok && len(A.Value) > 0 {
+			var wg sync.WaitGroup
+			result := &Array{Value: make([]Value, len(A.Value))}
+			for i := range A.Value {
+				if T, ok := A.Value[i].(*Array); ok && len(T.Value) > 0 {
+					switch fn := T.Value[0].(type) {
+					case *Function:
+						wg.Go(func() {
+							th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
+							vm := &VM{th}
+							_, err := vm.runThread(vm.fp, 0, true, T.Value[1:]...)
+							if err == nil {
+								result.Value[i] = vm.Channel
+							} else {
+								result.Value[i] = Error{Message: &String{Value: err.Error()}}
+							}
+						})
+					case GFn:
+						wg.Go(func() {
+							val, err := fn.Call(T.Value[1:]...)
+							if err == nil {
+								result.Value[i] = val
+							} else {
+								result.Value[i] = Error{Message: &String{Value: err.Error()}}
+							}
+						})
+					default:
+						wg.Wait()
+						result = nil
+						return NilValue, verror.ErrParallelFn
+					}
+				} else {
 					wg.Wait()
 					result = nil
-					return NilValue, verror.ErrParallelFn
+					return NilValue, verror.ErrParallelArgs
 				}
-			} else {
-				wg.Wait()
-				result = nil
-				return NilValue, verror.ErrParallelArgs
 			}
+			wg.Wait()
+			return result, nil
 		}
-		wg.Wait()
-		return result, nil
-	}
-	if l == 1 {
-		return NilValue, verror.ErrOneParallelTask
 	}
 	return NilValue, nil
 }

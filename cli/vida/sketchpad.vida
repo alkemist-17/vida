@@ -1,0 +1,50 @@
+var task = load("std/task")
+var rand = load("std/rand")
+
+
+var N = 10_000
+var limit = N * 10
+
+var genMatrix = fun {
+	var xs = array(N)
+	for i, _ in xs {
+		xs[i] = array(N)
+		for j, _ in xs[i] {
+			xs[i][j] = rand.nextI(limit)
+		}
+	}
+	ret xs
+}
+
+var genVector = fun {
+	var vector = array(N)
+	for i, _ in vector {
+		vector[i] = rand.nextI(limit)
+	}
+	ret vector
+}
+
+
+var M = genMatrix()
+var V = genVector()
+
+
+var multiply = fun V, W {
+	var result = array(N)
+	for i, _ in result {
+		result[i] = V[i] * W[i]
+	}
+	ret result
+}
+
+var genTasks = fun {
+	var r = array(N)
+	for i, v in M {
+		r[i] = [multiply, v, V]
+	}
+	ret r
+}
+
+var R = task.par(genTasks())
+
+print(len(R))
