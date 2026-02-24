@@ -9,7 +9,7 @@ import (
 func loadFoundationTask() Value {
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["concepts"] = GFn(taksConcepts)
-	m.Value["par"] = GFn(taskRunParallel)
+	m.Value["parallel"] = GFn(taskRunInParallel)
 	return m
 }
 
@@ -50,10 +50,11 @@ func taksConcepts(args ...Value) (Value, error) {
 	return &String{Value: c}, nil
 }
 
-func taskRunParallel(args ...Value) (Value, error) {
+func taskRunInParallel(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if A, ok := args[0].(*Array); ok && len(A.Value) > 0 {
 			var wg sync.WaitGroup
+			var e error
 			result := &Array{Value: make([]Value, len(A.Value))}
 			for i := range A.Value {
 				if T, ok := A.Value[i].(*Array); ok && len(T.Value) > 0 {
@@ -66,7 +67,7 @@ func taskRunParallel(args ...Value) (Value, error) {
 							if err == nil {
 								result.Value[i] = vm.Channel
 							} else {
-								result.Value[i] = Error{Message: &String{Value: err.Error()}}
+								e = err
 							}
 						})
 					case GFn:
@@ -75,7 +76,7 @@ func taskRunParallel(args ...Value) (Value, error) {
 							if err == nil {
 								result.Value[i] = val
 							} else {
-								result.Value[i] = Error{Message: &String{Value: err.Error()}}
+								e = err
 							}
 						})
 					default:
@@ -90,7 +91,7 @@ func taskRunParallel(args ...Value) (Value, error) {
 				}
 			}
 			wg.Wait()
-			return result, nil
+			return result, e
 		}
 	}
 	return NilValue, nil
