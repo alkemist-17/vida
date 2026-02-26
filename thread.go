@@ -91,7 +91,7 @@ func (th *Thread) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(th, rhs)
+		return Bool(false), nil
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
