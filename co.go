@@ -115,6 +115,7 @@ func coCompleteThread(args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			if th.State == Ready || th.State == Suspended {
 				th.State = Completed
+				return th, nil
 			} else {
 				return NilValue, verror.ErrClosingAThread
 			}
