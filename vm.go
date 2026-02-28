@@ -12,10 +12,7 @@ const Success Result = "Success"
 const Failure Result = "Failure"
 
 const frameSize = 1024
-const fullStack = 1024
-const primeStack = 23
-const femtoStack = 8
-const defaultThreadStackSize = primeStack
+const stacksize = 1024
 
 type frame struct {
 	code   []uint64

@@ -82,7 +82,6 @@ var (
 	ErrNotThread                        = errors.New("value is not a thread value")
 	ErrResumingNotSuspendedThread       = errors.New("cannot run a completed, running or waiting thread")
 	ErrNotAFunction                     = errors.New("threads must be build from function values")
-	ErrStackSize                        = errors.New("thread stack size out of limits")
 	ErrSuspendingMainThread             = errors.New("cannot suspend the main thread")
 	ErrClosingAThread                   = errors.New("cannot complete a running, waiting or completed thread")
 	ErrStartThreadSignal                = errors.New("start thread signal")

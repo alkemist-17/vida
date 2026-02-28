@@ -63,7 +63,7 @@ func taskRunInParallel(args ...Value) (Value, error) {
 					switch fn := T.Value[0].(type) {
 					case *Function:
 						wg.Go(func() {
-							th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, fullStack)
+							th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script)
 							vm := &VM{th}
 							_, err := vm.runThread(vm.fp, 0, true, T.Value[1:]...)
 							if err == nil {

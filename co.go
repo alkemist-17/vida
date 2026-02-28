@@ -16,24 +16,13 @@ func loadFoundationCoroutine() Value {
 	m.Value["state"] = GFn(coGetThreadState)
 	m.Value["running"] = GFn(coGetCurrentRunningThread)
 	m.Value["isMain"] = GFn(coIsMain)
-	m.Value["min"] = Integer(femtoStack)
-	m.Value["max"] = Integer(fullStack)
 	return m
 }
 
 func coNewThread(args ...Value) (Value, error) {
-	l := len(args)
-	if l == 1 {
+	if len(args) > 0 {
 		if fn, ok := args[0].(*Function); ok {
-			return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, defaultThreadStackSize), nil
-		}
-		return NilValue, verror.ErrNotAFunction
-	} else if l > 1 {
-		if fn, ok := args[0].(*Function); ok {
-			if s, ok := args[1].(Integer); ok && femtoStack <= s && s <= fullStack {
-				return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script, int(s)), nil
-			}
-			return NilValue, verror.ErrStackSize
+			return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script), nil
 		}
 		return NilValue, verror.ErrNotAFunction
 	}

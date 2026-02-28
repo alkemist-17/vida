@@ -88,7 +88,7 @@ func (tp *threadPool) getThread() *Thread {
 		tp.Key++
 		return t
 	}
-	t := newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script, defaultThreadStackSize)
+	t := newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script)
 	tp.ThreadMap[tp.Key] = t
 	tp.Key++
 	return t

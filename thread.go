@@ -51,14 +51,14 @@ func newMainThread(script *Script, extensionlibsloader LibsLoader) (*Thread, err
 	extensionlibsLoader, clbu = extensionlibsloader, script.Store
 	th := &Thread{
 		Frames: make([]frame, frameSize),
-		Stack:  make([]Value, fullStack),
+		Stack:  make([]Value, stacksize),
 		Script: script,
 		State:  Running,
 	}
 	return th, nil
 }
 
-func newThread(fn *Function, script *Script, size int) *Thread {
+func newThread(fn *Function, script *Script) *Thread {
 	return &Thread{
 		Script: &Script{
 			Konstants:    script.Konstants,
@@ -66,8 +66,8 @@ func newThread(fn *Function, script *Script, size int) *Thread {
 			ErrorInfo:    script.ErrorInfo,
 			MainFunction: fn,
 		},
-		Frames: make([]frame, size),
-		Stack:  make([]Value, size),
+		Frames: make([]frame, frameSize),
+		Stack:  make([]Value, stacksize),
 	}
 }
 
