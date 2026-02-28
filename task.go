@@ -18,7 +18,7 @@ func taksConcepts(args ...Value) (Value, error) {
 	c = `
 	
 
-	Standing on the shoulders of giants:
+	Standing on the shoulders of Haskell giants:
 	
 	Parallelism means running a program on multiple processors, 
 	with the goal of improving performance.
