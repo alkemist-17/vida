@@ -20,7 +20,7 @@ func taksConcepts(args ...Value) (Value, error) {
 
 	Standing on the shoulders of Haskell giants:
 	
-	Parallelism means running a program on multiple processors, 
+	Parallelism means running a Haskell program on multiple processors, 
 	with the goal of improving performance.
 	Ideally, this should be done invisibly, 
 	and with no semantic changes.

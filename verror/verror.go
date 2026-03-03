@@ -89,6 +89,6 @@ var (
 	ErrSuspendThreadSignal              = errors.New("suspend thread signal")
 	ErrRecyclingThread                  = errors.New("cannot recycle an active thread")
 	ErrSoringMixedTypes                 = errors.New("cannot sort mixed value types")
-	ErrParallelArgs                     = errors.New("arguments for parallel tasks must be a non empty array")
+	ErrParallelArgs                     = errors.New("arguments for parallel tasks must be non empty arrays")
 	ErrParallelFn                       = errors.New("first argument of a parallel argument must be a function")
 )
