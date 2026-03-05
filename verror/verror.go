@@ -91,4 +91,6 @@ var (
 	ErrSoringMixedTypes                 = errors.New("cannot sort mixed value types")
 	ErrParallelArgs                     = errors.New("arguments for parallel tasks must be non empty arrays")
 	ErrParallelFn                       = errors.New("first argument of a parallel argument must be a function")
+	ErrNonNegativeIntegerTimeout        = errors.New("timeout must be a non negative integer milliseconds")
+	ErrNonEmptyTaskArray                = errors.New("parallel tasks must be inside a non empty array")
 )

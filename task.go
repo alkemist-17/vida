@@ -18,7 +18,7 @@ func taksConcepts(args ...Value) (Value, error) {
 	c = `
 	
 
-	Standing on the shoulders of Haskell giants:
+	Standing on the shoulders of the Haskell giants:
 	
 	Parallelism means running a Haskell program on multiple processors, 
 	with the goal of improving performance.
@@ -53,7 +53,7 @@ func taksConcepts(args ...Value) (Value, error) {
 }
 
 func taskRunInParallel(args ...Value) (Value, error) {
-	if len(args) > 0 {
+	if len(args) == 1 {
 		if A, ok := args[0].(*Array); ok && len(A.Value) > 0 {
 			var wg sync.WaitGroup
 			var e error
@@ -94,6 +94,8 @@ func taskRunInParallel(args ...Value) (Value, error) {
 			}
 			wg.Wait()
 			return result, e
+		} else {
+			return NilValue, verror.ErrNonEmptyTaskArray
 		}
 	}
 	return NilValue, nil
