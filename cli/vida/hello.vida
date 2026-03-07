@@ -1,4 +1,0 @@
-
-var lib = import("world")
-
-print(lib)
