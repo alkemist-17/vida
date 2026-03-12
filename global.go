@@ -253,8 +253,7 @@ func coreMakeArray(args ...Value) (Value, error) {
 		case *Object:
 			if f, ok := v.Value["from"]; ok && f.Type() == "int" {
 				if t, ok := v.Value["to"]; ok && t.Type() == "int" {
-					from := f.(Integer)
-					to := t.(Integer)
+					from, to := f.(Integer), t.(Integer)
 					if from < to {
 						l := to - from
 						xs := make([]Value, l)
@@ -321,8 +320,6 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadFoundationOS(), nil
 				case "exception":
 					return loadFoundationException(), nil
-				case "net":
-					return loadFoundationNetworkIO(), nil
 				case "co":
 					return loadFoundationCoroutine(), nil
 				case "json":
