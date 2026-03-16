@@ -11,7 +11,7 @@ var shuffle = fun xs {
     var N = len(xs)
     var r = nil
     for i in 0, N {
-        r = rand.nextI(i + 1)
+        r = rand.I(i + 1)
         swap(xs, i, r)
     }
     ret xs
@@ -40,5 +40,5 @@ for in 10 {
 }
 
 for in 10 {
-    print(format("%032b", rand.nextU32()))
+    print(format("%032b", rand.U32()))
 }

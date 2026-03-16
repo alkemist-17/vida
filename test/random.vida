@@ -1,0 +1,16 @@
+var rand = load("std/rand")
+
+var N = 20
+
+for in N {print(rand.N())}
+for in N {print(rand.I())}
+for in N {print(rand.U32())}
+for in N {print(rand.F())}
+for in N {print(rand.norm())}
+for in N {print(rand.exp())}
+for in N {print(rand.perm(10))}
+for in N {print(rand.zipf())}
+for in N {print(rand.pcg())}
+for in N {print(rand.CC8())}
+for in N {print(rand.bytes(16))}
+for in N {print(rand.text())}

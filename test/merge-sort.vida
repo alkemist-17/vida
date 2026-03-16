@@ -121,6 +121,6 @@ var mergeSort = fun comparables {
 
 var N = 250_000
 var upperLimit = N*5
-var xs = makeData(N, rand.nextI, upperLimit)
+var xs = makeData(N, rand.I, upperLimit)
 mergeSort(xs)
 p(isSorted(xs, 0, N))

@@ -13,7 +13,7 @@ let indexOf = fun cp, s {
     }
 }
 
-let getK = fun => rand.nextI(mod)
+let getK = fun => rand.I(mod)
 
 let encode = fun k, m, alpha {
     var r = ""

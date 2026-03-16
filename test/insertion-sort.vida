@@ -68,7 +68,7 @@ let upperLimit = N
 let numbers = array(N)
 
 for i, _ in numbers {
-    numbers[i] = newNumber(rand.nextI(N))
+    numbers[i] = newNumber(rand.I(N))
 }
 
 let r = insertionSort(numbers)
@@ -76,7 +76,7 @@ let r = insertionSort(numbers)
 assert(isSorted(r))
 
 for i, _ in numbers {
-    numbers[i] = newNumber(rand.nextF()*N)
+    numbers[i] = newNumber(rand.F()*N)
 }
 
 r = insertionSort(numbers)

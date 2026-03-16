@@ -3,7 +3,7 @@ var N = 1_000_000
 
 var randRange = fun a, b {
     assert(b > a)
-    ret rand.nextI(b - a) + a
+    ret rand.I(b - a) + a
 }
 
 var makeArray = fun N, a, b {

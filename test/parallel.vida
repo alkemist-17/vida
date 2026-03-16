@@ -10,7 +10,7 @@ var genMatrix = fun N {
 	for i, _ in xs {
 		xs[i] = array(N)
 		for j, _ in xs[i] {
-			xs[i][j] = rand.nextF()
+			xs[i][j] = rand.F()
 		}
 	}
 	ret xs
@@ -20,7 +20,7 @@ var genMatrix = fun N {
 var genVector = fun N {
 	var vec = array(N)
 	for i, _ in vec {
-		vec[i] = rand.nextF()
+		vec[i] = rand.F()
 	}
 	ret vec
 }
