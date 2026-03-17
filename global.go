@@ -328,6 +328,8 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadFoundationCorelib(), nil
 				case "task":
 					return loadFoundationTask(), nil
+				case "re":
+					return loadFoundationRegexp(), nil
 				}
 			} else if l, isPresent := extensionlibsLoader[v.Value]; isPresent {
 				return l(), nil
