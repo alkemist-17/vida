@@ -29,7 +29,7 @@ func binNewBytesBuffer(args ...Value) (Value, error) {
 		case *String:
 			return &Bytes{Value: []byte(v.Value)}, nil
 		case *Bytes:
-			return v, nil
+			return v.Clone(), nil
 		case *Array:
 			var bts []byte
 			for _, val := range v.Value {
