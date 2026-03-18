@@ -25,6 +25,8 @@ var __meta string
 const (
 	globalStateIndex = 0
 
+	errorMessageFieldName = "message"
+
 	DefaultInputPrompt = "Input > "
 
 	foundationInterfaceName = "std/"

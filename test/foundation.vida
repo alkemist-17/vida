@@ -13,3 +13,37 @@ assert(exception)
 
 var core = load("std/core")
 assert(core)
+
+var text = load("std/text")
+assert(text)
+
+var math = load("std/math")
+assert(math)
+
+var object = load("std/object")
+assert(object)
+
+var a = load("std/array")
+assert(a)
+
+var rand = load("std/rand")
+assert(rand)
+
+var io = load("std/io")
+assert(io)
+
+var os = load("std/os")
+assert(os)
+
+var co = load("std/co")
+assert(co)
+
+var json = load("std/json")
+assert(json)
+
+var task = load("std/task")
+assert(task)
+
+var re = load("std/re")
+assert(re)
+

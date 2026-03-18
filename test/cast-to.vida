@@ -1,0 +1,184 @@
+
+var cast = load("std/cast")
+var bin = load("std/bin")
+
+assert(cast.toBool("true") == true)
+assert(cast.toBool("false") == false)
+assert(not cast.toBool("") == not "")
+assert(not cast.toBool())
+assert(cast.toBool() == nil)
+assert(cast.toBool([1,2,3,4,5]))
+assert(cast.toBool({}))
+assert(not cast.toBool(error(42)))
+
+assert(cast.toFloat("1.42") == 1.42)
+assert(cast.toFloat("1e-5") == 1e-5)
+assert(cast.toFloat("-1e5") == -1e5)
+assert(cast.toFloat("0.0") == 0.0)
+assert(cast.toFloat("-0.0") == -0.0)
+assert(cast.toFloat(12.4) == 12.4)
+assert(cast.toFloat(1200) == 1200.00)
+assert(cast.toFloat(nil) == 0.0)
+assert(cast.toFloat(true) == 1.0)
+assert(cast.toFloat(false) == cast.toFloat(nil))
+
+assert(cast.toInt("-42") == -42)
+assert(cast.toInt("42") == 42)
+assert(cast.toInt("42.25") == nil)
+assert(cast.toInt("0xFF") == 0xFF)
+assert(cast.toInt("0b1010") == 0b1010)
+assert(cast.toInt(42) == 42)
+assert(cast.toInt(true) == 1)
+assert(cast.toInt(false) == 0)
+assert(cast.toInt(nil) == cast.toInt(false))
+assert(cast.toInt(nil) == 0)
+assert(cast.toInt() == nil)
+assert(cast.toInt(42.23456) == 42)
+assert(cast.toInt("100", 16) == cast.toInt("0x100"))
+assert(cast.toInt("1010", 2) == cast.toInt("0b1010"))
+
+assert(cast.toString(90) == "90")
+assert(cast.toString(true) == "true")
+assert(cast.toString(false) == "false")
+assert(cast.toString(nil) == "nil")
+assert(cast.toString(45.899) == "45.899")
+assert(cast.toString("h3llo") == "h3llo")
+assert(cast.toString(error(42)) == "Error(42)")
+
+assert(not cast.toArray())
+assert(cast.toArray() == nil)
+assert(len(cast.toArray([[], [], []])) == len([[], [], []]))
+var A = [[[[[]]]]]
+assert(type(cast.toArray(A)) == type(A))
+assert(not (cast.toArray(A) == A))
+assert(not (cast.toArray(A)[0] == A[0]))
+assert(not (cast.toArray(A)[0][0] == A[0][0]))
+assert(not (cast.toArray(A)[0][0][0] == A[0][0][0]))
+assert(not (cast.toArray(A)[0][0][0][0] == A[0][0][0][0]))
+
+var N = 10
+var K = 0xFF
+var B = bin.bytes(N)
+A = array(N, 0)
+
+for i in N {
+    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+}
+
+B = bin.bytes(N, K)
+A = array(N, K)
+
+for i in N {
+    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+}
+
+B = bin.bytes("hello, world")
+A = [0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x2C, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64]
+
+for i in len(B) {
+    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+}
+
+B = bin.bytes(B)
+A = cast.toArray(B)
+
+for i in len(B) {
+    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+}
+
+A = array({from = 10, to = 21})
+B = cast.toArray(bin.bytes(A))
+
+assert(type(A) == type(B) and type(B) == type([]))
+
+for i in len(B) {
+    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+}
+
+assert(len(cast.toArray({})) == len(cast.toArray([])))
+assert(type(cast.toArray({})) == type(cast.toArray([])))
+
+assert(len(cast.toArray({hello = 42})) == len(cast.toArray(["hello", 42])))
+assert(type(cast.toArray({hello = 42})) == type(array()))
+
+B = {hello = cast.toInt("42"), world = cast.toInt("43", 10), lang = clone("vida")}
+
+N = cast.toArray(B)
+assert(len(N) == len(B)*2)
+assert(type(N) == type(array()))
+assert("hello" in N and 42 in N and "world" in N and 43 in N and "lang" in N and "vida" in N)
+
+B = enum { hello world }
+assert(B)
+
+N = cast.toArray(B)
+assert(type(N) == type(array()))
+assert("hello" in N and 0 in N and "world" in N and 1 in N and not ("lang" in N) and not ("vida" in N))
+
+B = error(B)
+N = cast.toArray(B)
+assert(type(N) == type(array()))
+assert(type(N[0]) == type("") and N[0] == "message")
+assert(type(N[1]) == type(enum{hello}) and N[1].hello == 0 and N[1].world == 1)
+
+assert(not cast.toObject())
+assert(cast.toObject() == nil)
+
+A = {hello = 42}
+B = cast.toObject(A)
+
+assert(type(B) == type(A))
+assert(A != B)
+assert(A.hello == B.hello and B.hello == 42)
+
+A = [1,2,3,4,5]
+B = cast.toObject(A)
+
+assert(type(B) == type({}))
+
+
+for i, v in A {
+    assert(B[i] == v)
+}
+
+A = bin.bytes(A)
+B = cast.toObject(A)
+
+assert(type(B) == type({}))
+
+for i, v in A {
+    assert(B[i] == v)
+}
+
+A = error(42)
+B = cast.toObject(A)
+
+assert(type(B) == type({}))
+assert(B.message and B.message == A.message and A.message == 42)
+
+A = enum { hello world }
+B = cast.toObject(A)
+
+assert(type(B) == type({}))
+
+assert(B.hello and B.world and B.hello == 0 and B.world == 1)
+
+A = true
+B = cast.toObject(A)
+
+assert(type(B) == type({}))
+
+assert(B.value and B.value == true)
+
+A = "hello"
+B = cast.toObject(A)
+
+assert(type(B) == type({}))
+
+assert(B.value and B.value == "hello")
+
+
+
+
+
+

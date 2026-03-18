@@ -1334,7 +1334,7 @@ func (e Error) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (e Error) IGet(index Value) (Value, error) {
-	if val, ok := index.(*String); ok && val.Value == "message" {
+	if val, ok := index.(*String); ok && val.Value == errorMessageFieldName {
 		return e.Message, nil
 	}
 	return NilValue, nil
