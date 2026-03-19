@@ -1,8 +1,8 @@
 var task = load("std/task")
-var rand = load("std/rand")
 
 
 var N = 10
+var Val = 100
 
 
 var genMatrix = fun N {
@@ -10,7 +10,7 @@ var genMatrix = fun N {
 	for i, _ in xs {
 		xs[i] = array(N)
 		for j, _ in xs[i] {
-			xs[i][j] = rand.F()
+			xs[i][j] = Val
 		}
 	}
 	ret xs
@@ -20,7 +20,7 @@ var genMatrix = fun N {
 var genVector = fun N {
 	var vec = array(N)
 	for i, _ in vec {
-		vec[i] = rand.F()
+		vec[i] = 1
 	}
 	ret vec
 }
@@ -47,16 +47,20 @@ var genTasks = fun M, V, N, f {
 var R = task.parallel(genTasks(genMatrix(N), genVector(N), N, multiply))
 
 
-for _, v in R[0] {
-	print(v)
+for _, v in R {
+	for _, w in v {
+		assert(w == Val)
+	}
 }
 
 
-print("len = ", len(R))
+print("len R    = ", len(R))
+print("len R[0] = ", len(R[0]))
 
 
 
 var time = load("std/time")
+
 
 var f = fun s {
     time.sleep(s * time.second)
@@ -65,12 +69,42 @@ var f = fun s {
 
 var s = [1, 2]
 
+print("Waiting ... ")
+
 var r = task.parallel([
     [f, s[0]], [f, s[1]]
 ])
 
 print(s[0], s[1])
 print(r[0], r[1])
+print("Done")
 
 assert(r[0] == s[0] and s[1] == r[1])
+
+
+N = 10_000_000
+
+Val = [0, 0, 0, 0, 0]
+
+let Rec = fun lim, A, i {
+	if A[i] >= lim {
+		ret A[i]
+	}
+	A[i] = A[i] + 1
+	ret Rec(lim, A, i)
+}
+
+task.parallel(
+	[
+		[Rec, N, Val, 0],
+		[Rec, N, Val, 1],
+		[Rec, N, Val, 2],
+		[Rec, N, Val, 3],
+		[Rec, N, Val, 4]
+	]
+)
+
+print(Val)
+
+assert(Val[0] == N and Val[1] == N)
 
