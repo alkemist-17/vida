@@ -162,25 +162,25 @@ func test(args []string) {
 		for _, v := range args[2:] {
 			if strings.HasSuffix(v, vida.VidaFileExtension) {
 				count++
-				fmt.Printf("🧪 Running tests from '%v'\n", v)
+				fmt.Printf("\t🧪 Running '%v'\n\n\n", v)
 				executeScript(v)
-				fmt.Printf("\n\n\n")
+				fmt.Printf("\n\n\n\n")
 			}
 		}
 	} else {
 		for _, v := range scripts {
 			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
 				count++
-				fmt.Printf("🧪 Running tests from '%v'\n", v.Name())
+				fmt.Printf("\t🧪 Running '%v'\n\n\n", v.Name())
 				executeScript(v.Name())
-				fmt.Printf("\n\n\n")
+				fmt.Printf("\n\n\n\n")
 			}
 		}
 	}
 	if count > 0 {
-		fmt.Printf("🧪  All tests were ok!\n    Total files run: %v\n\n\n\n\n\n\n", count)
+		fmt.Printf("\t🧪\tAll tests were ok!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", count)
 	} else {
-		fmt.Printf("🦖  No tests files were found!\n    Total files run: %v\n\n\n\n\n\n\n", count)
+		fmt.Printf("\t🤪\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", count)
 	}
 }
 
@@ -189,12 +189,12 @@ func executeScript(path string) {
 	handleTestError(err, path)
 	r, err := i.MeasureRunTime()
 	handleTestFailure(r, err)
-	fmt.Printf("\tTest result : %v ✅\n\n\n\n", r)
+	fmt.Printf("\tResult : %v ✅\n\n\n\n", r)
 }
 
 func handleTestFailure(r vida.Result, err error) {
 	if err != nil {
-		fmt.Printf("\tTest result : %v ❌\n\n", r)
+		fmt.Printf("\tResult : %v ❌\n\n", r)
 		fmt.Println(err)
 		os.Exit(0)
 	}
