@@ -1,4 +1,4 @@
-package extension
+package extensions
 
 import "github.com/alkemist-17/vida"
 
