@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/alkemist-17/vida"
-	"github.com/alkemist-17/vida/extension"
+	"github.com/alkemist-17/vida/extensions"
 )
 
 const (
@@ -65,9 +65,9 @@ func main() {
 func runDebug(args []string) {
 	clear()
 	if len(args) > 2 {
-		extensions := extension.LoadExtensions()
+		extLoader := extensions.GetLoader()
 		printVersion()
-		i, err := vida.NewDebugger(args[2], extensions)
+		i, err := vida.NewDebugger(args[2], extLoader)
 		handleError(err)
 		r, err := i.Debug()
 		handleError(err)
@@ -78,9 +78,9 @@ func runDebug(args []string) {
 }
 
 func run(args []string) {
-	extensions := extension.LoadExtensions()
+	extLoader := extensions.GetLoader()
 	if len(args) > 2 {
-		i, err := vida.NewInterpreter(args[2], extensions)
+		i, err := vida.NewInterpreter(args[2], extLoader)
 		handleError(err)
 		_, err = i.Run()
 		if err != nil {
@@ -95,9 +95,9 @@ func run(args []string) {
 func time(args []string) {
 	clear()
 	printVersion()
-	extensions := extension.LoadExtensions()
+	extLoader := extensions.GetLoader()
 	if len(args) > 2 {
-		i, err := vida.NewInterpreter(args[2], extensions)
+		i, err := vida.NewInterpreter(args[2], extLoader)
 		handleError(err)
 		r, err := i.MeasureRunTime()
 		if err != nil {
@@ -185,7 +185,7 @@ func test(args []string) {
 }
 
 func executeScript(path string) {
-	i, err := vida.NewInterpreter(path, extension.LoadExtensions())
+	i, err := vida.NewInterpreter(path, extensions.GetLoader())
 	handleTestError(err, path)
 	r, err := i.MeasureRunTime()
 	handleTestFailure(r, err)
