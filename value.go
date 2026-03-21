@@ -60,29 +60,9 @@ func (n Nil) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (n Nil) IGet(index Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
-}
-
-func (n Nil) ISet(index, val Value) error {
-	return verror.ErrValueNotIndexable
-}
-
 func (n Nil) Equals(other Value) Bool {
 	_, ok := other.(Nil)
 	return Bool(ok)
-}
-
-func (n Nil) IsIterable() Bool {
-	return false
-}
-
-func (n Nil) IsCallable() Bool {
-	return false
-}
-
-func (n Nil) Iterator() Value {
-	return NilValue
 }
 
 func (n Nil) String() string {
