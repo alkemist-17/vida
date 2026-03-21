@@ -266,8 +266,8 @@ func Sprint256(fg, bg int, a ...any) string {
 func generateColorInterface(color *Color) Value {
 	o := &Object{Value: make(map[string]Value)}
 	o.Value[colorName] = color
-	o.Value["string"] = colorString()
-	o.Value["format"] = colorFormat()
+	o.Value["string"] = GFn(colorString)
+	o.Value["format"] = GFn(colorFormat)
 	o.Value["bg"] = GFn(colorSetBG)
 	o.Value["fg"] = GFn(colorSetFG)
 	o.Value["reset"] = GFn(colorSetReset)
@@ -275,33 +275,29 @@ func generateColorInterface(color *Color) Value {
 	return o
 }
 
-func colorString() GFn {
-	return func(args ...Value) (Value, error) {
-		if len(args) > 1 {
-			if obj, ok := args[0].(*Object); ok {
-				if c, ok := obj.Value[colorName].(*Color); ok {
-					return &String{Value: c.Sprint(args[1])}, nil
-				}
+func colorString(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if obj, ok := args[0].(*Object); ok {
+			if c, ok := obj.Value[colorName].(*Color); ok {
+				return &String{Value: c.Sprint(args[1])}, nil
 			}
 		}
-		return NilValue, nil
 	}
+	return NilValue, nil
 }
 
-func colorFormat() GFn {
-	return func(args ...Value) (Value, error) {
-		if len(args) > 2 {
-			if obj, ok := args[0].(*Object); ok {
-				if c, ok := obj.Value[colorName].(*Color); ok {
-					if format, ok := args[1].(*String); ok {
-						message, e := FormatValue(format.Value, args[2:]...)
-						return &String{Value: c.Sprint(message)}, e
-					}
+func colorFormat(args ...Value) (Value, error) {
+	if len(args) > 2 {
+		if obj, ok := args[0].(*Object); ok {
+			if c, ok := obj.Value[colorName].(*Color); ok {
+				if format, ok := args[1].(*String); ok {
+					message, e := FormatValue(format.Value, args[2:]...)
+					return &String{Value: c.Sprint(message)}, e
 				}
 			}
 		}
-		return NilValue, nil
 	}
+	return NilValue, nil
 }
 
 func colorSetBG(args ...Value) (Value, error) {
