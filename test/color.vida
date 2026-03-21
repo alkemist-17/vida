@@ -1,0 +1,132 @@
+var color = load("std/color")
+
+color.printPaletteChart()
+
+var bg = 39
+var fg = 15
+
+var red = color.new({bg = bg, fg = fg})
+
+for in 10 {
+    print(red:string("Hello, World!"))
+    print(red:format("This is the answer: %v", 42))
+}
+
+
+var message = "     Quick Alert!     "
+var fmt = "     Here is the answer of everytyhing: %v     " 
+
+print(color.string({fg = 196, bg = 236}, message))
+print(color.string({fg = nil, bg = 236}, message))
+print(color.string({bg = nil, fg = 226}, message))
+
+print(color.format({bg = 196, fg = 236}, fmt, 42))
+print(color.format({bg = 196, fg = 236}, fmt, 42))
+print(color.format({bg = 196, fg = 236}, fmt, 42))
+
+print(color.new():string("color object with no args"))
+
+var cow = `
+
+
+
+
+                                .a@@@@@a.     ,a@@@@@@@@a,     .a@@@@@a. 
+                              .@@@@@@@@@@@a,a@@@@@@@@@@@@@@a,a@@@@@@@@@@@. 
+                              @@@@@@@@@@@@a@@@@@@@@@@@@@@@@@@a@@@@@@@@@@@@ 
+                               @@@@'    '@a@@@@@@@@@@@@@@@@@@@@a@'   '@@@@ 
+                               '@'        @@@@@@@@@@@@@@@@@@@@@@       '@' 
+              .########################## @@@@@@@@@"@@@"@@@@@@@@ 
+           .##############################'@@@@@@@@a@@@a@@@@@@@' 
+         .#####################;;#########,@@@@@@@@@@@@@@@@@@@@, 
+       ,;;;;;######;;;;#####;;;;;;;##;;;,@@@@@@@@@@@@@@@@@@@@@@@@, 
+     ,;;;;;;;;;;;;;;;;;;###;;;;;;;;;;;;;@@@@@( )@@@@@@@@@@( )@@@@@ 
+    ;;';;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;'@@@@@@@@@@@@@@@@@@@@@@@@' 
+   ;;';;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;'@@@@@@@@@@@@@@@@@@@@', 
+  ;;' ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; """""""""""""",;;  ', 
+ ;;'  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    ', 
+;;;;  ###;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;####;;;;;;;;;;;;;;      ; 
+';;'  ####;;;##;;;;;;;;;;;;;;;;;;;;;;;;;;###########;;;;;;;;;;;    ,' 
+  '   ##########;;;;;;;'''''''''''''''''''''''''''###;;;;;;;;;;    ; 
+      #############;;'                            #;;;;;;;;;;;;     ', 
+      #############                               ;;;;;;;;;;;;;     () 
+      #############                               ;;;;;;;;;;;;; 
+      #oOOOOOOOOOo#                               ;oOOOOOOOOOo; 
+    oOOOOOOOOOOOOOOOo                           oOOOOOOOOOOOOOOOo 
+   OOOOOOOOOOOOOOOOOOO                         OOOOOOOOOOOOOOOOOOO 
+   OOOOOOO () OOOOOOOO                         OOOOOOOO () OOOOOOO 
+   'OOOOOOOooOOOOOOOO'                         'OOOOOOOOooOOOOOOO' 
+     'OOOOOOOOOOOOO'                             'OOOOOOOOOOOOO' 
+        """""""""                                   """""""""
+
+
+
+`
+
+
+print(red:string(cow))
+
+red:bg(35)
+
+print(red:string(cow))
+
+red:bg(161)
+
+print(red:string(cow))
+
+print(red:resets())
+
+var cows = `
+
+
+(__)          (__)          (__)          (__)      (__)
+(@@)_____     (OO)_____     (UU)_____     (XX)      (/\)
+(oo)    /|\   (oo)    /|\   (oo)    /|\   (oo)\     (oo)____
+  | |--/ | *    | |--/ | *    | |--/ | *   /   \    /  \    )\
+  w w w  w      w w w  w      w w w  w    w  £__)   \  /  e_\ *
+                                                     ww
+  Cow         Wow...!        Napping       Dead      Despairing
+
+
+(__)           __           (__)          (__)      (__)
+(**)_____    /(--)\____     (¬¬)_____     (-@)      (&&)
+(oo)    /|\   (oo)    /|\   (oo)    /|\   (oo)\     (oo)____
+  | |--/ | *    | |--/ | *    | |--/ | *   /   \    /  \    )\
+  w w w  w      w w w  w      w w w  w    w  £__)   \  /  e_\ *
+                                                     ww
+Sun-Glasses     Old           Sly         Winking    Redeyed
+
+
+(__)          (__)          (__)          (__)      (__)
+(++)_____     (-+)_____     (@@)_____     (@@)      (??)
+(oo)    /|\   (oo)    /|\   (OO)    /|\   (OO)\     (oo)____
+  | |--/ | *    | |--/ | *    | |--/ | *   /   \    /  \    )\
+  w w w  w      w w w  w      w w w  w    w  £__)   \  /  e_\ *
+                                                     ww
+ Witless      Halfwitted     Bull       SittingBull  Puzzled
+
+
+(__)          (__)          (__)          (__)      (__)
+(%%)_____     ($$)_____     (==)_____     (@~)      (@#)
+(oo)    /|\   (oo)    /|\   (oo)    /|\   (oo)\     (oo)____
+  | |--/ | *    | |--/ | *    | |--/ | *   /   \    /  \    )\
+  w w w  w      w w w  w      w w w  w    w  £__)   \  /  e_\ *
+                                                     ww
+Martian Cow?   Money-mad    Chinese Cow    Wink#2    Black eye
+
+
+(__)          (__)          (__)          (__)      (__)
+(##)_____     (!!)_____     (..)_____     (66)      (@@)
+(oo)    /|\   (oo)    /|\   (oo)    /|\   (oo)\     (oo)____
+  | |--/ | *    | |--/ | *    | |--/ | *   /   \    /  \    )\
+  w w w  w      w w w  w      w w w  w    w  £__)   \  /  e_\ *
+                                                     ww
+ Crazy        Surprised      Bored        Staring    Cow
+
+
+`
+
+
+red:bg(194):fg(0)
+
+print(red:string(cows))

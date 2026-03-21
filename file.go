@@ -23,12 +23,12 @@ const (
 func generateFileHandlerObject(file *os.File) Value {
 	o := &Object{Value: make(map[string]Value)}
 	o.Value[fileHandlerName] = &FileHandler{Handler: file}
-	o.Value["close"] = GFn(fileClose())
-	o.Value["isClosed"] = GFn(fileIsClosed())
-	o.Value["name"] = GFn(fileName())
-	o.Value["write"] = GFn(fileWrite())
-	o.Value["lines"] = GFn(fileReadLines())
-	o.Value["read"] = GFn(fileRead())
+	o.Value["close"] = fileClose()
+	o.Value["isClosed"] = fileIsClosed()
+	o.Value["name"] = fileName()
+	o.Value["write"] = fileWrite()
+	o.Value["lines"] = fileReadLines()
+	o.Value["read"] = fileRead()
 	return o
 }
 
@@ -180,14 +180,6 @@ func (file *FileHandler) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (file *FileHandler) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
-}
-
-func (file *FileHandler) ISet(Value, Value) error {
-	return verror.ErrValueIsConstant
-}
-
 func (file *FileHandler) Equals(other Value) Bool {
 	if v, ok := other.(*FileHandler); ok {
 		return v.Handler.Fd() == file.Handler.Fd()
@@ -195,27 +187,12 @@ func (file *FileHandler) Equals(other Value) Bool {
 	return Bool(false)
 }
 
-func (file *FileHandler) IsIterable() Bool {
-	return false
-}
-
-func (file *FileHandler) Iterator() Value {
-	return NilValue
-}
-
-func (file *FileHandler) IsCallable() Bool {
-	return false
-}
-
 func (file *FileHandler) String() string {
-	if file.IsClosed {
-		return "fileHandler(closed)"
-	}
-	return fmt.Sprintf("fileHandler(Fd=%v)", file.Handler.Fd())
+	return fmt.Sprintf("file(%v)", file.Handler.Fd())
 }
 
 func (file *FileHandler) Type() string {
-	return "std/io/fileHandler"
+	return "file"
 }
 
 func (file *FileHandler) Clone() Value {

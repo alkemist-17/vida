@@ -47,3 +47,6 @@ assert(task)
 var re = load("std/re")
 assert(re)
 
+var color = load("std/color")
+assert(color)
+

@@ -55,7 +55,7 @@ func main() {
 		case TEST:
 			test(args)
 		default:
-			handleError(fmt.Errorf("unknown command '%v'. Type 'vida help' for assistance", parseCMD(args[1])))
+			handleError(fmt.Errorf("unknown command '%v'.\n\tType 'vida help' for assistance.", parseCMD(args[1])))
 		}
 	} else {
 		printHelp()
@@ -65,9 +65,8 @@ func main() {
 func runDebug(args []string) {
 	clear()
 	if len(args) > 2 {
-		extLoader := extensions.GetLoader()
 		printVersion()
-		i, err := vida.NewDebugger(args[2], extLoader)
+		i, err := vida.NewDebugger(args[2], extensions.GetLoader())
 		handleError(err)
 		r, err := i.Debug()
 		handleError(err)
@@ -78,9 +77,8 @@ func runDebug(args []string) {
 }
 
 func run(args []string) {
-	extLoader := extensions.GetLoader()
 	if len(args) > 2 {
-		i, err := vida.NewInterpreter(args[2], extLoader)
+		i, err := vida.NewInterpreter(args[2], extensions.GetLoader())
 		handleError(err)
 		_, err = i.Run()
 		if err != nil {
@@ -95,9 +93,8 @@ func run(args []string) {
 func time(args []string) {
 	clear()
 	printVersion()
-	extLoader := extensions.GetLoader()
 	if len(args) > 2 {
-		i, err := vida.NewInterpreter(args[2], extLoader)
+		i, err := vida.NewInterpreter(args[2], extensions.GetLoader())
 		handleError(err)
 		r, err := i.MeasureRunTime()
 		if err != nil {
