@@ -62,4 +62,26 @@ assert(re.replaceAll(pattern, src, "$1W") == "---")
 assert(re.replaceAll(pattern, src, "${1}W") == "-W-xxW-")
 
 
+pattern = `[0-9]+`
+
+assert(re.replaceAll(pattern, `hello837987342`, ``) == "hello")
+assert(re.replaceAll(pattern, `5234523452345hel345345lo837987342`, ``) == "hello")
+assert(re.replaceAll(pattern, `hello`, ``) == "hello")
+assert(re.replaceAll(pattern, `345345345h345345345e345345345l345345345l345345345o837987342`, ``) == "hello")
+
+pattern = `ab?`
+
+var R = re.findIndex(pattern, `tablet`)
+
+assert(R[0] == 1 and R[1] == 3)
+assert(`tablet`[R[0]..R[1]] == `ab`)
+assert(re.findIndex(pattern, `foo`) == nil)
+
+pattern = `hello`
+R = re.findIndex(pattern, `hello world`)
+assert(R[0] == 0 and R[1] == 5)
+
+pattern = `o`
+assert(re.replaceAll(pattern, `hello world`, "a") == "hella warld")
+
 
