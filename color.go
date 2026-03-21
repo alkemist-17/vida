@@ -23,32 +23,14 @@ func loadFoundationColor() Value {
 func colorQuickSprint(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
-			fgval, okfgval := obj.Value[fg]
-			bgval, okbgval := obj.Value[bg]
-			if okfgval && okbgval {
-				fg, fgok := fgval.(Integer)
-				bg, bgok := bgval.(Integer)
-				message, sok := args[1].(*String)
-				if fgok && bgok && sok {
-					return &String{Value: Sprint256(int(fg), int(bg), message)}, nil
-				}
-				_, fgok = fgval.(Nil)
-				_, bgok = bgval.(Nil)
-				message, sok = args[1].(*String)
-				if fgok && bgok && sok {
-					return &String{Value: Sprint256(-1, -1, message)}, nil
-				}
-				fg, fgok = fgval.(Integer)
-				_, bgok = bgval.(Nil)
-				message, sok = args[1].(*String)
-				if fgok && bgok && sok {
-					return &String{Value: Sprint256(int(fg), -1, message)}, nil
-				}
-				_, fgok = fgval.(Nil)
-				bg, bgok = bgval.(Integer)
-				message, sok = args[1].(*String)
-				if fgok && bgok && sok {
-					return &String{Value: Sprint256(-1, int(bg), message)}, nil
+			fgval, okfg := obj.Value[fg]
+			bgval, okbg := obj.Value[bg]
+			message, okMsg := args[1].(*String)
+			if okfg && okbg && okMsg {
+				fgColor, fgok := colorValue(fgval)
+				bgColor, bgok := colorValue(bgval)
+				if fgok && bgok {
+					return &String{Value: Sprint256(fgColor, bgColor, message)}, nil
 				}
 			}
 		}
@@ -59,36 +41,15 @@ func colorQuickSprint(args ...Value) (Value, error) {
 func colorFormatQuickSprint(args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if obj, ok := args[0].(*Object); ok {
-			fgval, okfgval := obj.Value[fg]
-			bgval, okbgval := obj.Value[bg]
-			if okbgval && okfgval {
-				fg, fgok := fgval.(Integer)
-				bg, bgok := bgval.(Integer)
-				format, sok := args[1].(*String)
-				if fgok && bgok && sok {
-					message, e := FormatValue(format.Value, args[2:]...)
-					return &String{Value: Sprint256(int(fg), int(bg), message)}, e
-				}
-				_, fgok = fgval.(Nil)
-				_, bgok = bgval.(Nil)
-				format, sok = args[1].(*String)
-				if fgok && bgok && sok {
-					message, e := FormatValue(format.Value, args[2:]...)
-					return &String{Value: Sprint256(-1, -1, message)}, e
-				}
-				fg, fgok = fgval.(Integer)
-				_, bgok = bgval.(Nil)
-				format, sok = args[1].(*String)
-				if fgok && bgok && sok {
-					message, e := FormatValue(format.Value, args[2:]...)
-					return &String{Value: Sprint256(int(fg), -1, message)}, e
-				}
-				_, fgok = fgval.(Nil)
-				bg, bgok = bgval.(Integer)
-				format, sok = args[1].(*String)
-				if fgok && bgok && sok {
-					message, e := FormatValue(format.Value, args[2:]...)
-					return &String{Value: Sprint256(-1, int(bg), message)}, e
+			fgval, okfg := obj.Value[fg]
+			bgval, okbg := obj.Value[bg]
+			format, okFmt := args[1].(*String)
+			if okfg && okbg && okFmt {
+				fgColor, fgok := colorValue(fgval)
+				bgColor, bgok := colorValue(bgval)
+				if fgok && bgok {
+					msg, e := FormatValue(format.Value, args[2:]...)
+					return &String{Value: Sprint256(fgColor, bgColor, msg)}, e
 				}
 			}
 		}
@@ -99,23 +60,13 @@ func colorFormatQuickSprint(args ...Value) (Value, error) {
 func colorNew(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if obj, ok := args[0].(*Object); ok {
-			fgval, okfgval := obj.Value[fg]
-			bgval, okbgval := obj.Value[bg]
-			if okfgval && okbgval {
-				fg, fgok := fgval.(Integer)
-				bg, bgok := bgval.(Integer)
+			fgval, okfg := obj.Value[fg]
+			bgval, okbg := obj.Value[bg]
+			if okfg && okbg {
+				fgColor, fgok := colorValue(fgval)
+				bgColor, bgok := colorValue(bgval)
 				if fgok && bgok {
-					return generateColorInterface(NewColor().Bg(int(bg)).Fg(int(fg))), nil
-				}
-				fg, fgok = fgval.(Integer)
-				_, bgok = bgval.(Nil)
-				if fgok && bgok {
-					return generateColorInterface(NewColor().Fg(int(fg))), nil
-				}
-				_, fgok = fgval.(Nil)
-				bg, bgok = bgval.(Integer)
-				if fgok && bgok {
-					return generateColorInterface(NewColor().Bg(int(fg))), nil
+					return generateColorInterface(NewColor().Bg(bgColor).Fg(fgColor)), nil
 				}
 			}
 		}
@@ -443,4 +394,15 @@ func printSection(title string, start, end int) {
 
 	// Reset after section
 	fmt.Print(Sprint256(-1, -1, ""))
+}
+
+func colorValue(val Value) (int, bool) {
+	switch val := val.(type) {
+	case Integer:
+		return int(val), true
+	case Nil:
+		return -1, true
+	default:
+		return 0, false
+	}
 }
