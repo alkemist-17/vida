@@ -1,0 +1,96 @@
+var cast = load("std/cast")
+
+
+assert(true)
+
+assert(not false)
+
+assert(false == not not nil)
+
+assert(true == not not 42)
+
+assert(cast.toString(true) == "true")
+
+assert(cast.toString(false) == "false")
+
+assert(type(true) == type(not nil))
+
+if true {
+    assert(true)
+} else {
+    assert(false)
+}
+
+if not true {
+    assert(false)
+} else {
+    assert(true)
+}
+
+if false {
+    assert(false)
+} else {
+    assert(true)
+}
+
+assert((true and true) == true)
+assert((true and false) == false)
+assert((false and true) == false)
+assert((false and false) == false)
+
+assert((true or true) == true)
+assert((true or false) == true)
+assert((false or true) == true)
+assert((false or false) == false)
+
+assert((not true) == false)
+assert((not false) == true)
+assert(not not true)
+assert(not not not false)
+
+
+var cond = fun a, b => not a or b
+
+assert(not cond(true, false))
+assert(cond(true, true))
+assert(cond(false, true))
+assert(cond(false, false))
+
+var bicon = fun a, b => (a and b) or (not a and not b)
+var xor = fun a, b => not bicon(a, b)
+
+assert(bicon(true, true))
+assert(bicon(false, false))
+assert(not bicon(true, false))
+assert(not bicon(false, true))
+
+assert(not xor(true, true))
+assert(not xor(false, false))
+assert(xor(true, false))
+assert(xor(false, true))
+
+assert(((true or false) or true) == (true or (false or true)))
+assert(((true and false) and true) == (true and (false and true)))
+assert((true or false) == (false or true))
+assert((true and false) == (false and true))
+
+assert((42 or false) == 42)
+assert((1.5 or false) == 1.5)
+assert((`hello` or false) == `hello`)
+assert((nil or false) == false)
+assert((true or false) == true)
+assert((false or false) == false)
+
+assert((42 and true) == true)
+assert((1.5 and true) == true)
+assert(("hello" and true) == cast.toBool(cast.toString(true)))
+assert((error(42) and true) == error(42))
+assert((error(42) and false) == error(42))
+assert((error(42) or 42) == 42)
+assert((error(42) or false) == false)
+assert((error(42) or true) == true)
+assert((42 and false) == false)
+assert((1.5 and false) == false)
+assert(("hello" and false) == false)
+assert((42 or true) == 42)
+assert((1.5 or true) >= 1.5 and (1.5 or true) <= 1.5)

@@ -1,0 +1,77 @@
+var cast = load("std/cast")
+
+assert(nil == nil)
+
+assert(not nil)
+
+assert(not nil == true)
+
+assert(cast.toBool(nil) == false)
+
+assert(cast.toString(nil) == type(nil) and type(nil) == "nil")
+
+if nil {
+    assert(false)
+} else {
+    assert(true)
+}
+
+if not nil {
+    assert(true)
+} else {
+    assert(false)
+}
+
+assert(nil in [1,2,nil,3,4,5])
+
+// OR
+// nil or something should be equal to something
+assert((nil or true) == true)
+assert((nil or 42) == 42)
+assert((nil or false) == false)
+assert((nil or nil) == nil)
+
+// something or nil should be equal to something
+assert((true or nil) == true)
+assert((42 or nil) == 42)
+assert(("true" or nil) == cast.toString(true))
+assert((1.5 or nil) >= 1.5 and (1.5 or nil) <= 1.5)
+
+assert((nil and true) == nil)
+assert((nil and false) == nil)
+assert((nil or true) == true)
+assert((nil or false) == false)
+
+assert(nil != 42)
+assert(nil != 0.0)
+assert(type(nil) == type(nil and true))
+assert(type(nil) == type(nil and false))
+
+var M = {}
+M[nil] = 42
+assert(M[nil] == 42)
+M[nil] = nil
+assert(M[nil] == nil)
+
+assert(clone(nil) == nil)
+
+while not nil {
+    assert(true)
+    break
+}
+
+
+assert((nil or true) == true and type(nil or true) == type(true))
+assert((nil or false) == false and type(nil or false) == type(false))
+
+// AND
+// nil and something should be nil
+assert((nil and 42) == nil)
+assert((nil and 1.5) == nil)
+assert((nil and "hello") == nil)
+
+// something and nil should be nil
+assert((42 and nil) == nil)
+assert((1.5 and nil) == nil)
+assert(("hello" and nil) == nil)
+
