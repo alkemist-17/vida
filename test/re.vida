@@ -1,0 +1,65 @@
+var re = load("std/re")
+
+var pattern = `^[a-z]+\[[0-9]+\]$`
+
+var input = [
+	"adam[23]",
+	"eve[7]",
+	"job[48]",
+	"snakey[120]"
+]
+
+
+for _, v in input {
+    assert(re.match(pattern, v))
+}
+
+
+input = [
+    "345hjel",
+    "Algo[2]",
+    "Go[42]"
+]
+
+for _, v in input {
+    assert(not re.match(pattern, v))
+}
+
+
+pattern = `(gopher){2}`
+
+input = [
+	"gophergopher",
+	"gophergophergopher",
+	"gophergophergophergopher"
+]
+
+for _, v in input {
+    assert(re.match(pattern, v))
+}
+
+
+input = [
+	"gopher",
+	"gophergophe",
+	"gophergophegophegophe"
+]
+
+
+for _, v in input {
+    assert(not re.match(pattern, v))
+}
+
+
+pattern = `a(x*)b`
+var src = "-ab-axxb-"
+
+var repl = ["T", "$1", "$1W", "${1}W"]
+
+assert(re.replaceAll(pattern, src, "T") == "-T-T-")
+assert(re.replaceAll(pattern, src, "$1") == "--xx-")
+assert(re.replaceAll(pattern, src, "$1W") == "---")
+assert(re.replaceAll(pattern, src, "${1}W") == "-W-xxW-")
+
+
+
