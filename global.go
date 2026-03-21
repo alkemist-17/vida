@@ -202,20 +202,20 @@ func coreAssert(args ...Value) (Value, error) {
 	argsLength := len(args)
 	if argsLength == 1 {
 		if args[0].Boolean() {
-			return NilValue, nil
+			return Bool(true), nil
 		}
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
 		return NilValue, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
-			return NilValue, nil
+			return Bool(true), nil
 		}
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
 		return NilValue, err
-
 	}
-	return NilValue, nil
+	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
+	return NilValue, err
 }
 
 func coreAppend(args ...Value) (Value, error) {
