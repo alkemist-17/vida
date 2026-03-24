@@ -71,17 +71,46 @@ assert(re.replaceAll(pattern, `345345345h345345345e345345345l345345345l345345345
 
 pattern = `ab?`
 
-var R = re.findIndex(pattern, `tablet`)
+var R = re.findFirstIndex(pattern, `tablet`)
 
 assert(R[0] == 1 and R[1] == 3)
 assert(`tablet`[R[0]..R[1]] == `ab`)
-assert(re.findIndex(pattern, `foo`) == nil)
+assert(re.findFirstIndex(pattern, `foo`) == nil)
 
 pattern = `hello`
-R = re.findIndex(pattern, `hello world`)
+R = re.findFirstIndex(pattern, `hello world`)
 assert(R[0] == 0 and R[1] == 5)
 
 pattern = `o`
 assert(re.replaceAll(pattern, `hello world`, "a") == "hella warld")
+
+pattern = `1.5`
+
+input = `
+	invoice 1.5
+	invoice 1.5
+	invoice 1.5
+`
+
+R = re.replaceAll(pattern, input, "0.5")
+
+pattern = `0.5`
+
+R = re.findAllStrings(pattern, R, -1)
+
+assert(len(R) == 3)
+
+
+pattern = `hello.`
+
+input = `hello.world!`
+
+R = re.escape(pattern)
+
+assert(R == `hello\.`)
+
+assert(re.match(R, input))
+
+assert(re.findString(R, input) == pattern)
 
 
