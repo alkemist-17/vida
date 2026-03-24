@@ -28,6 +28,7 @@ func loadObjectLib() Value {
 	m.Value["has"] = GFn(objectHasValue)
 	m.Value["keys"] = GFn(objectGetKeys)
 	m.Value["values"] = GFn(objectGetValues)
+	m.Value["getOrInsert"] = GFn(objectGetOrInsert)
 	return m
 }
 
@@ -115,6 +116,7 @@ func objectDeleteProperty(args ...Value) (Value, error) {
 			for _, prop := range args[1:] {
 				delete(self.Value, prop.ObjectKey())
 			}
+			return self, nil
 		}
 	}
 	return NilValue, nil
@@ -195,21 +197,34 @@ func objectGetValue(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
+func objectSetValue(args ...Value) (Value, error) {
+	if len(args) > 2 {
+		if self, ok := args[0].(*Object); ok {
+			self.Value[args[1].ObjectKey()] = args[2]
+		}
+	}
+	return NilValue, nil
+}
+
+func objectGetOrInsert(args ...Value) (Value, error) {
+	if len(args) > 2 {
+		if self, ok := args[0].(*Object); ok {
+			if val, ok := self.Value[args[1].ObjectKey()]; ok {
+				return val, nil
+			}
+			self.Value[args[1].ObjectKey()] = args[2]
+			return self, nil
+		}
+	}
+	return NilValue, nil
+}
+
 func objectSearchValueInProtoChain(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if proto, ok := self.Value[__proto]; ok {
 				return proto.IGet(args[1])
 			}
-		}
-	}
-	return NilValue, nil
-}
-
-func objectSetValue(args ...Value) (Value, error) {
-	if len(args) > 2 {
-		if self, ok := args[0].(*Object); ok {
-			self.Value[args[1].ObjectKey()] = args[2]
 		}
 	}
 	return NilValue, nil

@@ -172,3 +172,9 @@ assert(not object.extract(void, empty).alpha)
 assert(not object.extract(void, empty).gamma)
 assert(not object.extract(void, empty).theta)
 
+void = {}
+empty = object.getOrInsert(void, "hello", 42)
+
+assert(void == empty)
+assert(object.has(empty, "hello"))
+assert(empty.hello == 42)
