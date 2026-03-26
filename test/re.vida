@@ -56,10 +56,15 @@ var src = "-ab-axxb-"
 
 var repl = ["T", "$1", "$1W", "${1}W"]
 
-assert(re.replaceAll(pattern, src, "T") == "-T-T-")
-assert(re.replaceAll(pattern, src, "$1") == "--xx-")
-assert(re.replaceAll(pattern, src, "$1W") == "---")
-assert(re.replaceAll(pattern, src, "${1}W") == "-W-xxW-")
+assert(re.replaceAll(pattern, src, repl[0]) == "-T-T-")
+assert(re.replaceAll(pattern, src, repl[1]) == "--xx-")
+assert(re.replaceAll(pattern, src, repl[2]) == "---")
+assert(re.replaceAll(pattern, src, repl[3]) == "-W-xxW-")
+
+assert(re.replaceAllLiteral(pattern, src, repl[0]) == "-T-T-")
+assert(re.replaceAllLiteral(pattern, src, repl[1]) == "-$1-$1-")
+assert(re.replaceAllLiteral(pattern, src, repl[2]) == "-$1W-$1W-")
+assert(re.replaceAllLiteral(pattern, src, repl[3]) == "-${1}W-${1}W-")
 
 
 pattern = `[0-9]+`
@@ -96,7 +101,7 @@ R = re.replaceAll(pattern, input, "0.5")
 
 pattern = `0.5`
 
-R = re.findAllStrings(pattern, R, -1)
+R = re.findAll(pattern, R, -1)
 
 assert(len(R) == 3)
 
@@ -111,6 +116,59 @@ assert(R == `hello\.`)
 
 assert(re.match(R, input))
 
-assert(re.findString(R, input) == pattern)
+assert(re.find(R, input) == pattern)
 
 
+pattern = `ox`
+input = "Fox box roxx cox brox"
+R = re.findAllIndex(pattern, input, -1)
+
+
+for _, pair in R {
+	assert(input[pair[0]..pair[1]] == pattern)
+}
+
+
+pattern = `\d+`
+
+input = "Look43453452at534543534534524the45554500542numbers7593847983745"
+
+R = re.split(pattern, input, -1)
+
+assert(R[0] == "Look")
+assert(R[1] == "at")
+assert(R[2] == "the")
+assert(R[3] == "numbers")
+
+
+pattern = `\-+`
+
+input = "Look----at-the-----numbers------"
+
+R = re.split(pattern, input, -1)
+
+assert(R[0] == "Look")
+assert(R[1] == "at")
+assert(R[2] == "the")
+assert(R[3] == "numbers")
+
+
+pattern = `(\+|\-)?\d+\.\d+`
+
+input = [
+	"12.124",
+	"+1.35",
+	"-2.34",
+	"+2."
+]
+
+R = re.findSubMatch(pattern, input[0])
+assert(R[0] == "12.124" and R[1] == "")
+
+R = re.findSubMatch(pattern, input[1])
+assert(R[0] == "+1.35" and R[1] == "+")
+
+R = re.findSubMatch(pattern, input[2])
+assert(R[0] == "-2.34" and R[1] == "-")
+
+assert(re.findSubMatch(pattern, input[3]) == nil)

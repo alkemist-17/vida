@@ -178,3 +178,21 @@ empty = object.getOrInsert(void, "hello", 42)
 assert(void == empty)
 assert(object.has(empty, "hello"))
 assert(empty.hello == 42)
+
+
+void = { hello = 42, world = 91 }
+
+empty = { hi = fun self => self.hello }
+
+empty = object.extends(empty, void)
+
+assert(empty:hi() == 42)
+
+void = { hello = 42, world = 91 }
+
+empty = { hi = fun self => self.hello }
+
+void = object.extends(void, empty)
+
+assert(void:hi() == 42)
+

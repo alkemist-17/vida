@@ -6,6 +6,6 @@ var Success = vida.Bool(true)
 
 func GetLoader() vida.LibsLoader {
 	l := make(map[string]func() vida.Value)
-	l["hello"] = loadHelloExtension
+	l["example"] = loadExampleExtension
 	return l
 }

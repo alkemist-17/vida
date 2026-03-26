@@ -14,6 +14,7 @@ func loadObjectLib() Value {
 	__proto = fmt.Sprint(__proto, rand.Uint64())
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["inject"] = GFn(objectInjectProperties)
+	m.Value["extends"] = GFn(objectSetPrototype)
 	m.Value["extract"] = GFn(objectExtractProperties)
 	m.Value["override"] = GFn(objectInjectAndOverrideProperties)
 	m.Value["conforms"] = GFn(objectCheckProperties)

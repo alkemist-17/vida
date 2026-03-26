@@ -6,6 +6,10 @@ import (
 	"math/rand/v2"
 )
 
+const nanoIDDefaultAlphabet = "_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const nanoIDDefaultSize = 21
+const nanoIDMaxSize = 36
+
 func loadFoundationRandom() Value {
 	m := &Object{Value: make(map[string]Value)}
 	m.Value["N"] = GFn(randN)
@@ -21,6 +25,9 @@ func loadFoundationRandom() Value {
 	m.Value["CC8"] = randNewChaCha8()
 	m.Value["bytes"] = GFn(randBytes)
 	m.Value["text"] = GFn(randText)
+	m.Value["nanoid"] = GFn(randNanoID)
+	m.Value["nanoidWithCustomAlpha"] = GFn(randNanoIDCustomAlphabeth)
+	m.Value["nanoidDefaultSize"] = Integer(nanoIDDefaultSize)
 	return m
 }
 
@@ -163,4 +170,72 @@ func randBytes(args ...Value) (Value, error) {
 
 func randText(args ...Value) (Value, error) {
 	return &String{Value: cryptoRand.Text()}, nil
+}
+
+func randNanoID(args ...Value) (Value, error) {
+	switch len(args) {
+	case 0:
+		b := make([]byte, nanoIDDefaultSize)
+		r := []rune(nanoIDDefaultAlphabet)
+		cryptoRand.Read(b)
+		nanoid := make([]rune, nanoIDDefaultSize)
+		for i := range nanoIDDefaultSize {
+			nanoid[i] = r[b[i]&63]
+		}
+		return &String{Value: string(nanoid), Runes: nanoid}, nil
+	case 1:
+		if size, ok := args[0].(Integer); ok && 0 < size && size <= nanoIDMaxSize {
+			b := make([]byte, size)
+			r := []rune(nanoIDDefaultAlphabet)
+			cryptoRand.Read(b)
+			nanoid := make([]rune, size)
+			for i := range size {
+				nanoid[i] = r[b[i]&63]
+			}
+			return &String{Value: string(nanoid), Runes: nanoid}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		alpha, okAlpha := args[0].(*String)
+		size, oksize := args[1].(Integer)
+		if okAlpha && oksize && 0 < len(alpha.Value) && len(alpha.Value) < 256 && size > 0 {
+			mask := generateMask(len(alpha.Value))
+			steps := int(math.Ceil(1.6 * float64(mask*size) / float64(len(alpha.Value))))
+			nanoid := make([]rune, size)
+			b := make([]byte, steps)
+			r := []rune(alpha.Value)
+			lenr := len(r)
+			return GFn(func(args ...Value) (Value, error) {
+				for {
+					cryptoRand.Read(b)
+					var j int
+					for i := range steps {
+						idx := int(b[i] & byte(mask))
+						if idx < lenr {
+							nanoid[j] = r[idx]
+							j++
+							if j == int(size) {
+								return &String{Value: string(nanoid), Runes: nanoid}, nil
+							}
+						}
+					}
+				}
+			}), nil
+		}
+	}
+	return NilValue, nil
+}
+
+func generateMask(length int) Integer {
+	for i := range 9 {
+		mask := (2 << uint(i)) - 1
+		if mask >= length-1 {
+			return Integer(mask)
+		}
+	}
+	return 0
 }

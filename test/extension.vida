@@ -1,8 +1,8 @@
-var hello = load("hello")
+var example = load("example")
 
-assert(hello)
+assert(example)
 
-var r = hello.sayHello()
+var r = example.sayHello()
 
 assert(r)
-assert(type(r) == "string")
+assert(type(r) == type("string"))

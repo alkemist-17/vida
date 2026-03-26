@@ -14,3 +14,15 @@ for in N {print(rand.pcg())}
 for in N {print(rand.CC8())}
 for in N {print(rand.bytes(16))}
 for in N {print(rand.text())}
+for in N {print(rand.nanoid())}
+for in N {assert(len(rand.nanoid()) == rand.nanoidDefaultSize)}
+
+var size = 31
+for in N {print(rand.nanoid(size))}
+for in N {assert(len(rand.nanoid(size)) == size)}
+
+size = 119
+var nanoid = rand.nanoidWithCustomAlpha("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321", size)
+
+for in N {print(nanoid())}
+for in N {assert(len(nanoid()) == size)}
