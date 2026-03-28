@@ -22,7 +22,15 @@ for in N {print(rand.nanoid(size))}
 for in N {assert(len(rand.nanoid(size)) == size)}
 
 size = 119
-var nanoid = rand.nanoidWithCustomAlpha("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321", size)
+var nanoid = rand.customNanoid(rand.numeric, size)
 
+for in N {print(nanoid())}
+for in N {assert(len(nanoid()) == size)}
+
+nanoid = rand.customNanoid(rand.password, size)
+for in N {print(nanoid())}
+for in N {assert(len(nanoid()) == size)}
+
+nanoid = rand.customNanoid(rand.alpha, size)
 for in N {print(nanoid())}
 for in N {assert(len(nanoid()) == size)}

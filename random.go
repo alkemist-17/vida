@@ -26,8 +26,12 @@ func loadFoundationRandom() Value {
 	m.Value["bytes"] = GFn(randBytes)
 	m.Value["text"] = GFn(randText)
 	m.Value["nanoid"] = GFn(randNanoID)
-	m.Value["nanoidWithCustomAlpha"] = GFn(randNanoIDCustomAlphabeth)
+	m.Value["customNanoid"] = GFn(randNanoIDCustomAlphabeth)
 	m.Value["nanoidDefaultSize"] = Integer(nanoIDDefaultSize)
+	m.Value["alphanumeric"] = &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+	m.Value["numeric"] = &String{Value: "0123456789"}
+	m.Value["alpha"] = &String{Value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+	m.Value["password"] = &String{Value: " !#$%&'()*+,-./:;<=>?@[\\]^_`{|}~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
 	return m
 }
 

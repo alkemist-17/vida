@@ -7,7 +7,7 @@ var randRange = fun a, b {
 }
 
 var makeArray = fun N, a, b {
-    var xs = array(N)
+    var xs = newArray(N)
     for i in 0, N {
         xs[i] = randRange(a, b)
     }

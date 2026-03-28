@@ -65,7 +65,7 @@ let newNumber = fun x {
 
 let N = 1_000
 let upperLimit = N
-let numbers = array(N)
+let numbers = newArray(N)
 
 for i, _ in numbers {
     numbers[i] = newNumber(rand.I(N))

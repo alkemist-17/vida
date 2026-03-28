@@ -26,10 +26,10 @@ h = A.firstN(X, -1)
 assert(not h, "Assertion failure when N is negative in firstN")
 
 h = A.firstN(X, len(X))
-print(len(h) == len(X), "Assertion failure when N is the length of the array in firstN")
+assert(len(h) == len(X), "Assertion failure when N is the length of the array in firstN")
 
 h = A.firstN(X, len(X)+len(X))
-print(len(h) == len(X), "Assertion failure when N is the gt the length of the array in firstN")
+assert(len(h) == len(X), "Assertion failure when N is the gt the length of the array in firstN")
 
 r = A.map(X, fun x => x * x * x)
 print(r)
@@ -66,9 +66,3 @@ print(r)
 
 r = A.compact(X + [true, false, nil, error(42)])
 print(r)
-
-r = A.difference(X, [2, 3])
-print(r)
-
-r = A.difference([fun x => x + 2], [fun x => x + 3])
-print(r, r[0](90))

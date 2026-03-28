@@ -6,9 +6,9 @@ var Val = 100
 
 
 var genMatrix = fun N {
-	var xs = array(N)
+	var xs = newArray(N)
 	for i, _ in xs {
-		xs[i] = array(N)
+		xs[i] = newArray(N)
 		for j, _ in xs[i] {
 			xs[i][j] = Val
 		}
@@ -18,7 +18,7 @@ var genMatrix = fun N {
 
 
 var genVector = fun N {
-	var vec = array(N)
+	var vec = newArray(N)
 	for i, _ in vec {
 		vec[i] = 1
 	}
@@ -27,7 +27,7 @@ var genVector = fun N {
 
 
 var multiply = fun Row, Vec, N {
-	var result = array(N)
+	var result = newArray(N)
 	for i, _ in result {
 		result[i] = Row[i] * Vec[i]
 	}

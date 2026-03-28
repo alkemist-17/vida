@@ -59,14 +59,14 @@ assert(not (cast.toArray(A)[0][0][0][0] == A[0][0][0][0]))
 var N = 10
 var K = 0xFF
 var B = bin.bytes(N)
-A = array(N, 0)
+A = newArray(N, 0)
 
 for i in N {
     assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
 }
 
 B = bin.bytes(N, K)
-A = array(N, K)
+A = newArray(N, K)
 
 for i in N {
     assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
@@ -86,7 +86,7 @@ for i in len(B) {
     assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
 }
 
-A = array({from = 10, to = 21})
+A = newArray({from = 10, to = 21})
 B = cast.toArray(bin.bytes(A))
 
 assert(type(A) == type(B) and type(B) == type([]))
@@ -99,25 +99,25 @@ assert(len(cast.toArray({})) == len(cast.toArray([])))
 assert(type(cast.toArray({})) == type(cast.toArray([])))
 
 assert(len(cast.toArray({hello = 42})) == len(cast.toArray(["hello", 42])))
-assert(type(cast.toArray({hello = 42})) == type(array()))
+assert(type(cast.toArray({hello = 42})) == type(newArray()))
 
 B = {hello = cast.toInt("42"), world = cast.toInt("43", 10), lang = clone("vida")}
 
 N = cast.toArray(B)
 assert(len(N) == len(B)*2)
-assert(type(N) == type(array()))
+assert(type(N) == type(newArray()))
 assert("hello" in N and 42 in N and "world" in N and 43 in N and "lang" in N and "vida" in N)
 
 B = enum { hello world }
 assert(B)
 
 N = cast.toArray(B)
-assert(type(N) == type(array()))
+assert(type(N) == type(newArray()))
 assert("hello" in N and 0 in N and "world" in N and 1 in N and not ("lang" in N) and not ("vida" in N))
 
 B = error(B)
 N = cast.toArray(B)
-assert(type(N) == type(array()))
+assert(type(N) == type(newArray()))
 assert(type(N[0]) == type("") and N[0] == "message")
 assert(type(N[1]) == type(enum{hello}) and N[1].hello == 0 and N[1].world == 1)
 

@@ -13,7 +13,7 @@ var lib = {}
 
 // Map 
 lib.map = fun A, f {
-    var R = array(len(A))
+    var R = newArray(len(A))
     for i, v in A {
         R[i] = f(v)
     }
@@ -106,7 +106,7 @@ lib.zip = fun l, r {
     } else {
         length = lr
     }
-    var R = array(length)
+    var R = newArray(length)
     for i in length {
         R[i] = [l[i], r[i]]
     }
@@ -118,8 +118,8 @@ lib.zip = fun l, r {
 // UnZip
 lib.unzip = fun zipped {
     var l = len(zipped)
-    var A = array(l)
-    var B = array(l)
+    var A = newArray(l)
+    var B = newArray(l)
     for i, v in zipped {
         A[i] = v[0]
         B[i] = v[1]
@@ -240,22 +240,6 @@ lib.excludeNil = fun A {
 	}
 	ret R
 }
-
-
-
-// Difference
-lib.difference = fun A, B {
-	var map = load("std/array").toMap
-	var setB = map(B)
-	var R = []
-	for _, v in A {
-		if not setB[v] {
-			append(R, v)
-		}
-	}
-	ret R
-}
-
 
 
 // Compact

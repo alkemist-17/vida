@@ -19,7 +19,6 @@ const (
 	VERSION = "version"
 	ABOUT   = "about"
 	CODE    = "code"
-	CORELIB = "corelib"
 	TEST    = "test"
 )
 
@@ -50,8 +49,6 @@ func main() {
 			printAbout()
 		case CODE:
 			printMachineCode(args)
-		case CORELIB:
-			printCoreLib()
 		case TEST:
 			test(args)
 		default:
@@ -100,6 +97,8 @@ func time(args []string) {
 		if err != nil {
 			printError(err)
 			i.PrintCallStack()
+			fmt.Printf("\tResult : %v ❌\n\n\n\n", r)
+			return
 		}
 		fmt.Printf("\tResult : %v ✅\n\n\n\n", r)
 	} else {
@@ -152,7 +151,8 @@ func test(args []string) {
 	clear()
 	printVersion()
 	count := 0
-	basePath := "./"
+	basePath, err := os.Getwd()
+	handleTestError(err, basePath)
 	scripts, err := os.ReadDir(basePath)
 	handleTestError(err, basePath)
 	if len(args) > 2 {
@@ -191,7 +191,7 @@ func executeScript(path string) {
 
 func handleTestFailure(r vida.Result, err error) {
 	if err != nil {
-		fmt.Printf("\tResult : %v ❌\n\n", r)
+		fmt.Printf("\tResult : %v ❌\n\n\n\n", r)
 		fmt.Println(err)
 		os.Exit(0)
 	}
@@ -200,7 +200,6 @@ func handleTestFailure(r vida.Result, err error) {
 func handleTestError(err error, path string) {
 	if err != nil {
 		fmt.Println(err)
-		//fmt.Println(path)
 		os.Exit(0)
 	}
 }
@@ -223,7 +222,7 @@ func printError(err error) {
 func parseCMD(cmd string) string {
 	cmd = strings.ToLower(cmd)
 	switch cmd {
-	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, CORELIB:
+	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME:
 		return cmd
 	default:
 		return cmd
@@ -253,7 +252,6 @@ func printHelp() {
 	fmt.Printf("\t%-11v show this message\n", HELP)
 	fmt.Printf("\t%-11v show the language version\n", VERSION)
 	fmt.Printf("\t%-11v compile and show the compiled code\n", CODE)
-	fmt.Printf("\t%-11v show information about the corelib\n", CORELIB)
 	fmt.Printf("\t%-11v show the description of Vida\n", ABOUT)
 	fmt.Println()
 	fmt.Println()
@@ -264,12 +262,6 @@ func printHelp() {
 func printAbout() {
 	clear()
 	fmt.Println(vida.About())
-}
-
-func printCoreLib() {
-	clear()
-	printVersion()
-	vida.PrintCoreLibInformation()
 }
 
 func clear() {

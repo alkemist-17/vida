@@ -76,8 +76,8 @@ let fillList = fun xs, N {
 }
 
 
-let randomInt = fillList(array(N), N)
-let data = array(N)
+let randomInt = fillList(newArray(N), N)
+let data = newArray(N)
 
 for i, v in randomInt {
     var val = clone(number)

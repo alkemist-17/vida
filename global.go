@@ -3,6 +3,7 @@ package vida
 import (
 	"bufio"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"reflect"
 	"strings"
@@ -112,7 +113,7 @@ var coreLibNames = []string{
 	"print",
 	"len",
 	"append",
-	"array",
+	"newArray",
 	"load",
 	"type",
 	"assert",
@@ -253,20 +254,108 @@ func coreMakeArray(args ...Value) (Value, error) {
 				return &Array{Value: arr}, nil
 			}
 		case *Object:
-			if f, ok := v.Value["from"]; ok && f.Type() == "int" {
-				if t, ok := v.Value["to"]; ok && t.Type() == "int" {
-					from, to := f.(Integer), t.(Integer)
-					if from < to {
-						l := to - from
-						xs := make([]Value, l)
-						for i := range l {
-							xs[i] = Integer(from)
-							from++
+			if from, ok := v.Value["from"].(Integer); ok {
+				if to, ok := v.Value["to"].(Integer); ok {
+					if step, ok := v.Value["step"].(Integer); ok && step > 0 {
+						if from < to {
+							var xs []Value
+							for i := from; i <= to; i += step {
+								xs = append(xs, i)
+							}
+							return &Array{Value: xs}, nil
 						}
-						return &Array{Value: xs}, nil
+					} else {
+						if from < to {
+							l := to - from
+							l++
+							xs := make([]Value, l)
+							for i := range l {
+								xs[i] = Integer(from)
+								from++
+							}
+							return &Array{Value: xs}, nil
+						}
 					}
 				}
+				goto common
+			} else if size, ok := v.Value["len"].(Integer); ok && size > 0 && size < verror.MaxMemSize {
+				if val, ok := v.Value["val"]; ok {
+					if clone, ok := v.Value["clone"].(Bool); ok {
+						A := make([]Value, size)
+						if clone {
+							for i := range size {
+								A[i] = val.Clone()
+							}
+						} else {
+							for i := range size {
+								A[i] = val
+							}
+						}
+						return &Array{Value: A}, nil
+					}
+				} else if random, ok := v.Value["random"].(*String); ok {
+					A := make([]Value, size)
+					switch random.Value {
+					case (&String{}).Type():
+						for i := range size {
+							nanoid, _ := randNanoID(Integer(nanoIDMaxSize))
+							A[i] = nanoid
+						}
+					case Integer(0).Type():
+						for i := range size {
+							n, _ := randN()
+							A[i] = n
+						}
+					case Float(0).Type():
+						for i := range size {
+							A[i] = Float(rand.Float64())
+						}
+					case Bool(true).Type():
+						for i := range size {
+							n, _ := randN()
+							if n.(Integer)%2 == 0 {
+								A[i] = Bool(true)
+							} else {
+								A[i] = Bool(false)
+							}
+						}
+					default:
+						for i := range size {
+							A[i] = NilValue
+						}
+					}
+					return &Array{Value: A}, nil
+				}
 			}
+		common:
+			var i int
+			it := v.Iterator().(Iterator)
+			A := make([]Value, len(v.Value))
+			for it.Next() {
+				B := make([]Value, 2)
+				B[0] = it.Key()
+				B[1] = it.Value()
+				A[i] = &Array{Value: B}
+				i++
+			}
+			return &Array{Value: A}, nil
+		case *String:
+			var i int
+			it := v.Iterator().(Iterator)
+			A := make([]Value, StringLength(v))
+			for it.Next() {
+				A[i] = it.Value()
+				i++
+			}
+			return &Array{Value: A}, nil
+		case *Bytes:
+			A := make([]Value, len(v.Value))
+			for i, v := range v.Value {
+				A[i] = Integer(v)
+			}
+			return &Array{Value: A}, nil
+		case *Array:
+			return v.Clone(), nil
 		}
 	}
 	return &Array{}, nil
@@ -479,109 +568,6 @@ func IsMemberOf(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
-}
-
-var coreLibDescription = []string{
-	``,
-	`
-	Print one or more values.
-	Commas between values are optional.
-	Examples: print(v0 v1 v2), print(a, b, c) -> nil
-	`,
-	`
-	Return an integer representing the length of arrays, 
-	objects, bytes or strings. In case of a string value, 
-	the function returns the number of unicode codepoints.
-	Example: len(value) -> int
-	`,
-	`
-	Add one of more values at the end of an array.
-	Return the array passed as first argument.
-	Examples: let xs be an array, then 
-	append(xs, value), append(xs a b c) -> xs
-	If the array is an array of bytes, only convert
-	integer values to uint8 bits values.
-	`,
-	`
-	Create an array. 
-	Receive 0, 1 or 2 arguments. 
-	Whith zero arguments, return an empty array. 
-	With 1 argument n of type intenger,
-	return an array of n elements all initialized to nil.
-	With 2 argumeents (n, m), with n of type integer,
-	and m of type T, return an array of n elements all 
-	initialized to the m value.
-	Examples: 
-		array() -> [],
-		array(10) -> [nil, ... , nil],
-		array(n, v) -> [v, v, ... , v]
-	`,
-	`
-	Load a library from the package lib.
-	Those librarires are written in go, and they are
-	intended to extend the functionality of the language.
-	Receive an argument s of type string, and return an object
-	containing the lib functionality.
-	If the library denoted by s does not exist, return nil.
-	Example: load("math"), load("random")
-	`,
-	`
-	Return the type of a value as string.
-	Example: type(123) -> "int".
-	A suggested convention to avoid type name clashes,
-	is to name types other than the built-in ones,
-	with this pattern {lib name} + . + {type name}.
-	Example: type(43) -> "int" (Built-in type)
-	type(file) -> "io.file" (From the io library) 
-	`,
-	`
-	Make an assertion about an expression.
-	If the expression represents a false value, then
-	It fails and returns a run time error.
-	Otherwise, it returns a nil value.
-	Example: assert(false), assert(true), assert(not nil)
-	`,
-	`
-	Return a string with the given format. String interpolation
-	can be done very well with it.
-	The most common verb formats are: %v, %T, %f, %d, %b, %x
-	Example: format("This is the number %v", 15)
-	`,
-	`
-	Show a prompt and wait for the input from the user.
-	It is a blocking function.
-	If no prompt is given, it shows a default one.
-	Return a string representing the user input.
-	Example: input("Write something here") -> string
-	`,
-	`
-	Make a copy of value-semantics values or a deep copy 
-	of reference-semantics values.
-	Example: clone(someValue)
-	`,
-	`
-	Create an error value. An error value may be used to signal
-	some behavior considered an error. The boolean value of an
-	error value is always false. When an argument is given, it will
-	be the printable message for the client of the functionality
-	with the unexpected behavior.
-	Example: 
-		ret error(message)
-	        let result = f()
-		if not result {handle the error} or
-		if result {handle the returned value}
-	`,
-	`
-	Help to explicitly check for an error value.
-	Example: if isError(value) {handle the error here}
-	`,
-}
-
-func PrintCoreLibInformation() {
-	fmt.Printf("Vida Core Library\nIncluded by default in every Vida script\n\n\n")
-	for i := 1; i < len(coreLibNames); i++ {
-		fmt.Printf("  %v %v\n\n", coreLibNames[i], coreLibDescription[i])
-	}
 }
 
 func pauseExecution(message string) {
