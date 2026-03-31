@@ -436,14 +436,14 @@ func coreLoadLib(args ...Value) (Value, error) {
 
 func coreError(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return Error{Message: args[0]}, nil
+		return VidaError{Message: args[0]}, nil
 	}
-	return Error{Message: NilValue}, nil
+	return VidaError{Message: NilValue}, nil
 }
 
 func coreIsError(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		_, ok := args[0].(Error)
+		_, ok := args[0].(VidaError)
 		return Bool(ok), nil
 	}
 	return Bool(false), nil

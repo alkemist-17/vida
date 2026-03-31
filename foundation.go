@@ -41,7 +41,7 @@ func exceptionCatch(args ...Value) (Value, error) {
 					if threadError != nil {
 						switch e := threadError.(type) {
 						case verror.VidaError:
-							return Error{Message: &String{Value: e.Message}}, nil
+							return VidaError{Message: &String{Value: e.Message}}, nil
 						}
 					}
 					switch vm.State {
@@ -59,7 +59,7 @@ func exceptionCatch(args ...Value) (Value, error) {
 					if threadError != nil {
 						switch e := threadError.(type) {
 						case verror.VidaError:
-							return Error{Message: &String{Value: e.Message}}, nil
+							return VidaError{Message: &String{Value: e.Message}}, nil
 						}
 					}
 					switch vm.State {
@@ -74,7 +74,7 @@ func exceptionCatch(args ...Value) (Value, error) {
 				default:
 					switch e := err.(type) {
 					case verror.VidaError:
-						return Error{Message: &String{Value: e.Message}}, nil
+						return VidaError{Message: &String{Value: e.Message}}, nil
 					}
 				}
 			}

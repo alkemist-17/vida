@@ -24,7 +24,7 @@ func regexpMatch(args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(re.MatchString(input.Value)), nil
 		}
@@ -40,7 +40,7 @@ func regexpReplaceAll(args ...Value) (Value, error) {
 		if okPatt && okIn && okRepl {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &String{Value: re.ReplaceAllString(source.Value, replacement.Value)}, nil
 		}
@@ -56,7 +56,7 @@ func regexpReplaceAllLit(args ...Value) (Value, error) {
 		if okPatt && okIn && okRepl {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &String{Value: re.ReplaceAllLiteralString(source.Value, replacement.Value)}, nil
 		}
@@ -72,7 +72,7 @@ func regexpSplit(args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.Split(input.Value, int(n))
 			if result == nil {
@@ -95,7 +95,7 @@ func regexpFindFirstIndex(args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			res := re.FindStringIndex(input.Value)
 			if res == nil {
@@ -118,7 +118,7 @@ func regexpFindAllIndex(args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindAllStringIndex(input.Value, int(n))
 			if result == nil {
@@ -154,7 +154,7 @@ func regexpFindString(args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &String{Value: re.FindString(input.Value)}, nil
 		}
@@ -170,7 +170,7 @@ func regexpFindAllString(args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindAllString(input.Value, int(n))
 			if result == nil {
@@ -193,7 +193,7 @@ func regexpFindSubmatch(args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindStringSubmatch(input.Value)
 			if result == nil {

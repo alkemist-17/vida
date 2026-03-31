@@ -40,7 +40,7 @@ func fileOpen(args ...Value) (Value, error) {
 			file, err := os.OpenFile(fname.Value, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 			if err != nil {
 				file.Close()
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return generateFileHandlerObject(file), nil
 		}
@@ -52,7 +52,7 @@ func fileOpen(args ...Value) (Value, error) {
 				file, err := os.OpenFile(path.Value, int(mode), 0666)
 				if err != nil {
 					file.Close()
-					return Error{Message: &String{Value: err.Error()}}, nil
+					return VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return generateFileHandlerObject(file), nil
 			}
@@ -68,7 +68,7 @@ func fileCreate(args ...Value) (Value, error) {
 			file, err := os.Create(fname.Value)
 			if err != nil {
 				file.Close()
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return generateFileHandlerObject(file), nil
 		}
@@ -96,7 +96,7 @@ func fileRemove(args ...Value) (Value, error) {
 		if path, ok := args[0].(*String); ok {
 			err := os.Remove(path.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
@@ -110,7 +110,7 @@ func fileSize(args ...Value) (Value, error) {
 		if path, ok := args[0].(*String); ok {
 			fileInfo, err := os.Stat(path.Value)
 			if errors.Is(err, os.ErrNotExist) {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(fileInfo.Size()), nil
 		}
@@ -136,7 +136,7 @@ func fileCreateTemp(args ...Value) (Value, error) {
 				f, err := os.CreateTemp(dir.Value, pattern.Value)
 				if err != nil {
 					f.Close()
-					return Error{Message: &String{Value: err.Error()}}, nil
+					return VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return generateFileHandlerObject(f), nil
 			}
@@ -208,19 +208,19 @@ func fileClose() GFn {
 					if file.Handler.Fd() == os.Stdout.Fd() ||
 						file.Handler.Fd() == os.Stdin.Fd() ||
 						file.Handler.Fd() == os.Stderr.Fd() {
-						return Error{Message: &String{Value: "cannot close file open system files"}}, nil
+						return VidaError{Message: &String{Value: "cannot close file open system files"}}, nil
 					}
 					if file.IsClosed {
-						return Error{Message: &String{Value: fileAlreadyClosed}}, nil
+						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					err := file.Handler.Close()
 					file.IsClosed = true
 					if err != nil {
-						return Error{Message: &String{Value: err.Error()}}, nil
+						return VidaError{Message: &String{Value: err.Error()}}, nil
 					}
 					return Bool(true), nil
 				}
-				return Error{Message: &String{Value: argIsNotFileHandler}}, nil
+				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return NilValue, nil
@@ -234,7 +234,7 @@ func fileIsClosed() GFn {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					return Bool(file.IsClosed), nil
 				}
-				return Error{Message: &String{Value: argIsNotFileHandler}}, nil
+				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return NilValue, nil
@@ -248,7 +248,7 @@ func fileName() GFn {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					return &String{Value: file.Handler.Name()}, nil
 				}
-				return Error{Message: &String{Value: argIsNotFileHandler}}, nil
+				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return NilValue, nil
@@ -261,7 +261,7 @@ func fileReadLines() GFn {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return Error{Message: &String{Value: fileAlreadyClosed}}, nil
+						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					scanner := bufio.NewScanner(file.Handler)
 					var data []string
@@ -271,7 +271,7 @@ func fileReadLines() GFn {
 					if err := scanner.Err(); err != nil {
 						file.IsClosed = true
 						file.Handler.Close()
-						return Error{Message: &String{Value: err.Error()}}, nil
+						return VidaError{Message: &String{Value: err.Error()}}, nil
 					}
 					xs := &Array{}
 					for _, v := range data {
@@ -279,7 +279,7 @@ func fileReadLines() GFn {
 					}
 					return xs, nil
 				}
-				return Error{Message: &String{Value: argIsNotFileHandler}}, nil
+				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return NilValue, nil
@@ -292,20 +292,20 @@ func fileRead() GFn {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return Error{Message: &String{Value: fileAlreadyClosed}}, nil
+						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					if b, ok := args[1].(*Bytes); ok {
 						n, err := file.Handler.Read(b.Value)
 						if err != nil && !errors.Is(err, io.EOF) {
 							file.Handler.Close()
 							file.IsClosed = true
-							return Error{Message: &String{Value: err.Error()}}, nil
+							return VidaError{Message: &String{Value: err.Error()}}, nil
 						}
 						return Integer(n), nil
 					}
-					return Error{Message: &String{Value: expectedBytes}}, nil
+					return VidaError{Message: &String{Value: expectedBytes}}, nil
 				}
-				return Error{Message: &String{Value: argIsNotFileHandler}}, nil
+				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return NilValue, nil
@@ -318,14 +318,14 @@ func fileWrite() GFn {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return Error{Message: &String{Value: fileAlreadyClosed}}, nil
+						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					if data, ok := args[1].(*String); ok {
 						i, err := file.Handler.WriteString(data.Value)
 						if err != nil {
 							file.IsClosed = true
 							file.Handler.Close()
-							return Error{Message: &String{Value: err.Error()}}, nil
+							return VidaError{Message: &String{Value: err.Error()}}, nil
 						}
 						return Integer(i), nil
 					} else if data, ok := args[1].(*Bytes); ok {
@@ -333,14 +333,14 @@ func fileWrite() GFn {
 						if err != nil {
 							file.IsClosed = true
 							file.Handler.Close()
-							return Error{Message: &String{Value: err.Error()}}, nil
+							return VidaError{Message: &String{Value: err.Error()}}, nil
 						}
 						return Integer(i), nil
 					} else {
-						return Error{Message: &String{Value: "expected data of type string"}}, nil
+						return VidaError{Message: &String{Value: "expected data of type string"}}, nil
 					}
 				}
-				return Error{Message: &String{Value: argIsNotFileHandler}}, nil
+				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return NilValue, nil

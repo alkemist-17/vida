@@ -362,7 +362,7 @@ func timeParse(args ...Value) (Value, error) {
 			if dt, ok := args[1].(*String); ok {
 				t, err := time.Parse(f.Value, dt.Value)
 				if err != nil {
-					return Error{Message: &String{Value: err.Error()}}, nil
+					return VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return Time(t), nil
 			}

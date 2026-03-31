@@ -43,7 +43,7 @@ func httpRequest(args ...Value) (Value, error) {
 			options := httpCreateDefaultRequestOptions(url)
 			response, err := defaultClient.RequestWithDefaultOptions(options)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return response, nil
 		}
@@ -81,20 +81,20 @@ func httpCreateDefaultRequestOptions(url *String) *Object {
 func (c *HttpClient) RequestWithDefaultOptions(options *Object) (Value, error) {
 	upperMethod := strings.ToUpper(options.Value["method"].(*String).Value)
 	if !validMethods[upperMethod] {
-		return Error{Message: &String{Value: fmt.Errorf("invalid HTTP method: %q", options.Value["method"]).Error()}}, nil
+		return VidaError{Message: &String{Value: fmt.Errorf("invalid HTTP method: %q", options.Value["method"]).Error()}}, nil
 	}
 	var fullURL string
 	if c.BaseURL != "" {
 		var err error
 		fullURL, err = url.JoinPath(c.BaseURL, options.Value["url"].(*String).Value)
 		if err != nil {
-			return Error{Message: &String{Value: err.Error()}}, nil
+			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	} else if options.Value["baseURL"].(*String).Value != "" {
 		var err error
 		fullURL, err = url.JoinPath(options.Value["baseURL"].(*String).Value, options.Value["url"].(*String).Value)
 		if err != nil {
-			return Error{Message: &String{Value: err.Error()}}, nil
+			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	} else {
 		fullURL = options.Value["url"].(*String).Value
@@ -103,7 +103,7 @@ func (c *HttpClient) RequestWithDefaultOptions(options *Object) (Value, error) {
 	if len(options.Value["params"].(*Object).Value) > 0 {
 		parsedURL, err := url.Parse(fullURL)
 		if err != nil {
-			return Error{Message: &String{Value: err.Error()}}, nil
+			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 		q := parsedURL.Query()
 		for k, v := range options.Value["params"].(*Object).Value {
@@ -128,19 +128,19 @@ func (c *HttpClient) RequestWithDefaultOptions(options *Object) (Value, error) {
 	default:
 		jsonBody, err := json.Marshal(options.Value["body"])
 		if err != nil {
-			return Error{Message: &String{Value: err.Error()}}, nil
+			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 		bodyReader = bytes.NewBuffer(jsonBody)
 		bodyLength = int64(len(jsonBody))
 	}
 	if options.Value["maxBodyLength"].(Integer) > 0 && Integer(bodyLength) > options.Value["maxBodyLength"].(Integer) {
-		return Error{Message: &String{Value: errors.New("request body length exceeded maxBodyLength").Error()}}, nil
+		return VidaError{Message: &String{Value: errors.New("request body length exceeded maxBodyLength").Error()}}, nil
 	}
 
 	req, err := http.NewRequest(options.Value["method"].(*String).Value, fullURL, bodyReader)
 
 	if err != nil {
-		return Error{Message: &String{Value: err.Error()}}, nil
+		return VidaError{Message: &String{Value: err.Error()}}, nil
 	}
 
 	headers, _ := options.Value["headers"].(*Object)
@@ -170,7 +170,7 @@ func (c *HttpClient) RequestWithDefaultOptions(options *Object) (Value, error) {
 	resp, err := httpClient.Do(req)
 
 	if err != nil {
-		return Error{Message: &String{Value: err.Error()}}, nil
+		return VidaError{Message: &String{Value: err.Error()}}, nil
 	}
 
 	defer func() {
@@ -187,11 +187,11 @@ func (c *HttpClient) RequestWithDefaultOptions(options *Object) (Value, error) {
 	limitedReader := io.LimitReader(resp.Body, int64(options.Value["maxContentLength"].(Integer))+1)
 	responseBody, err = io.ReadAll(limitedReader)
 	if err != nil {
-		return Error{Message: &String{Value: err.Error()}}, nil
+		return VidaError{Message: &String{Value: err.Error()}}, nil
 	}
 
 	if Integer(len(responseBody)) > options.Value["maxContentLength"].(Integer) {
-		return Error{Message: &String{Value: errors.New("response content length exceeded maxContentLength").Error()}}, nil
+		return VidaError{Message: &String{Value: errors.New("response content length exceeded maxContentLength").Error()}}, nil
 	}
 
 	return httpCreateResponseObject(Integer(resp.StatusCode), httpCreateObjectFromHeader(resp.Header), responseBody), err

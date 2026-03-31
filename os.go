@@ -70,7 +70,7 @@ func osGetWD(args ...Value) (Value, error) {
 	if d, e := os.Getwd(); e == nil {
 		return &String{Value: d}, nil
 	} else {
-		return Error{Message: &String{Value: e.Error()}}, nil
+		return VidaError{Message: &String{Value: e.Error()}}, nil
 	}
 }
 
@@ -78,7 +78,7 @@ func osHostname(args ...Value) (Value, error) {
 	if h, e := os.Hostname(); e == nil {
 		return &String{Value: h}, nil
 	} else {
-		return Error{Message: &String{Value: e.Error()}}, nil
+		return VidaError{Message: &String{Value: e.Error()}}, nil
 	}
 }
 
@@ -87,7 +87,7 @@ func osMkdir(args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.Mkdir(d.Value, 0660)
 			if err != nil && !os.IsExist(err) {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
@@ -100,7 +100,7 @@ func osMkdirAll(args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.MkdirAll(d.Value, 0660)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
@@ -113,7 +113,7 @@ func osRemove(args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.Remove(d.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
@@ -126,7 +126,7 @@ func osRemoveAll(args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.RemoveAll(d.Value)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
@@ -158,7 +158,7 @@ func osRunCMD(args ...Value) (Value, error) {
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(true), nil
 		}
