@@ -58,6 +58,26 @@ func jsonParse(args ...Value) (Value, error) {
 			} else {
 				return NilValue, err
 			}
+		case *Bytes:
+			var value any
+			if err := json.Unmarshal(t.Value, &value); err == nil {
+				switch v := value.(type) {
+				case nil:
+					return NilValue, nil
+				case bool:
+					return Bool(v), nil
+				case string:
+					return &String{Value: v}, nil
+				case float64:
+					return Float(v), nil
+				case map[string]any:
+					return parseObject(v), nil
+				case []any:
+					return parseArray(v), nil
+				}
+			} else {
+				return NilValue, err
+			}
 		}
 	}
 	return NilValue, nil

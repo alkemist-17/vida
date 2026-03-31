@@ -413,6 +413,8 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadFoundationException(), nil
 				case "co":
 					return loadFoundationCoroutine(), nil
+				case "http":
+					return loadFoundationHttpClient(), nil
 				case "json":
 					return loadFoundationJSON(), nil
 				case "core":
