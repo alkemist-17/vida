@@ -72,8 +72,8 @@ func httpCreateDefaultRequestOptions(url *String) *Object {
 	reqOps.Value["responseType"] = &String{Value: "json"}
 	reqOps.Value["responseEncoding"] = &String{Value: "utf8"}
 	reqOps.Value["maxRedirects"] = Integer(21)
-	reqOps.Value["maxContentLength"] = Integer(160 * 1024)
-	reqOps.Value["maxBodyLength"] = Integer(160 * 1024)
+	reqOps.Value["maxContentLength"] = Integer(192 * 1024)
+	reqOps.Value["maxBodyLength"] = Integer(192 * 1024)
 	reqOps.Value["decompress"] = Bool(true)
 	return reqOps
 }
