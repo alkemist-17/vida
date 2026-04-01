@@ -2,24 +2,25 @@ package vida
 
 import (
 	"encoding/json"
-	"errors"
+
+	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationJSON() Value {
 	m := &Object{Value: make(map[string]Value, 4)}
-	m.Value["stringify"] = GFn(jsonStringEncoding)
+	m.Value["stringify"] = GFn(jsonValueToJsonString)
 	m.Value["parse"] = GFn(jsonParse)
 	m.Value["isValid"] = GFn(jsonIsValid)
 	m.Value["pretty"] = GFn(jsonPretty)
 	return m
 }
 
-func jsonStringEncoding(args ...Value) (Value, error) {
+func jsonValueToJsonString(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.Marshal(args[0]); err == nil {
 			return &String{Value: string(b)}, nil
 		} else {
-			return NilValue, err
+			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
 	b, _ := json.Marshal(NilValue)
@@ -31,10 +32,10 @@ func jsonParse(args ...Value) (Value, error) {
 		valid, _ := jsonIsValid(args[0])
 		switch t := valid.(type) {
 		case Nil:
-			return NilValue, errors.New("invalid json")
+			return VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 		case Bool:
 			if !t {
-				return NilValue, errors.New("invalid json")
+				return VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 			}
 		}
 		switch t := args[0].(type) {
@@ -56,7 +57,7 @@ func jsonParse(args ...Value) (Value, error) {
 					return parseArray(v), nil
 				}
 			} else {
-				return NilValue, err
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 		case *Bytes:
 			var value any
@@ -76,7 +77,7 @@ func jsonParse(args ...Value) (Value, error) {
 					return parseArray(v), nil
 				}
 			} else {
-				return NilValue, err
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 		}
 	}
@@ -100,7 +101,7 @@ func jsonPretty(args ...Value) (Value, error) {
 		if b, err := json.MarshalIndent(args[0], "", "  "); err == nil {
 			return &String{Value: string(b)}, nil
 		} else {
-			return NilValue, err
+			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
 	return NilValue, nil
