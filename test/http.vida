@@ -1,0 +1,79 @@
+var http = load("std/http")
+var json = load("std/json")
+var text = load("std/text")
+var task = load("std/task")
+var cast = load("std/cast")
+var array = load("std/array")
+
+assert(http and json and text and task and cast and array)
+
+var res = http.request("https://restcountries.com/v3.1/name/mexico")
+
+if isError(res) {
+    assert(not res)
+} else {
+    assert(res.statusCode == 200)
+    assert(res.headers)
+    assert(res.body)
+}
+
+if text.contains(res.headers["Content-Type"], "json") {
+	if json.isValid(res.body) {
+        assert(json.isValid(res.body))
+		assert(json.parse(res.body))
+	} else {
+        assert(not json.isValid(res.body))
+    }
+}
+
+
+var R = task.parallel([
+	[http.request, "https://restcountries.com/v3.1/name/peru"],
+	[http.request, "https://restcountries.com/v3.1/name/colombia"],
+	[http.request, "https://restcountries.com/v3.1/name/brasil"],
+	[http.request, "https://restcountries.com/v3.1/name/chile"],
+	[http.request, "https://restcountries.com/v3.1/name/argentina"],
+	[http.request, "https://restcountries.com/v3.1/name/venezuela"],
+	[http.request, "https://restcountries.com/v3.1/name/ecuador"],
+	[http.request, "https://restcountries.com/v3.1/name/bolivia"],
+	[http.request, "https://restcountries.com/v3.1/name/uruguay"],
+	[http.request, "https://restcountries.com/v3.1/name/paraguay"]
+])
+
+
+var A = []
+
+
+for i, res in R {
+	assert(res.statusCode)
+    assert(res.headers)
+	if text.contains(res.headers["Content-Type"], "json") {
+		if json.isValid(res.body) {
+			assert(json.isValid(res.body))
+			var data = json.parse(res.body)[0]
+            assert(data)
+            assert(data.cioc)
+            assert(data.population)
+			append(A, {country = data.cioc, population = cast.toInt(data.population)})
+		}
+	}
+}
+
+array.sortBy(A, fun a, b => a.population > b.population)
+
+var total = 0
+
+for k, v in A {
+	total = total + v.population
+}
+
+assert(total != 0)
+
+for k, v in A {
+	print(format("%3v %5v %10v %6.2f %%", k + 1, v.country, v.population, (v.population * 100.0) / cast.toFloat(total)))
+}
+
+print(format("%9v %10v", "SUM", total))
+
+print("\n\n\n")
+
