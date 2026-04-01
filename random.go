@@ -11,7 +11,7 @@ const nanoIDDefaultSize = 21
 const nanoIDMaxSize = 36
 
 func loadFoundationRandom() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 20)}
 	m.Value["N"] = GFn(randN)
 	m.Value["I"] = GFn(randNextI)
 	m.Value["U32"] = GFn(randNextU32)

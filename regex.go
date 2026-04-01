@@ -3,7 +3,7 @@ package vida
 import "regexp"
 
 func loadFoundationRegexp() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 10)}
 	m.Value["match"] = GFn(regexpMatch)
 	m.Value["replaceAll"] = GFn(regexpReplaceAll)
 	m.Value["replaceAllLiteral"] = GFn(regexpReplaceAllLit)

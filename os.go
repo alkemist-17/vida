@@ -7,7 +7,7 @@ import (
 )
 
 func loadFoundationOS() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 17)}
 	m.Value["args"] = GFn(osArgs)
 	m.Value["env"] = GFn(osEnviron)
 	m.Value["exit"] = GFn(osExit)

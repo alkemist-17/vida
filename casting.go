@@ -5,7 +5,7 @@ import (
 )
 
 func loadFoundationCasting() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 6)}
 	m.Value["toString"] = GFn(castToString)
 	m.Value["toInt"] = GFn(castToInt)
 	m.Value["toFloat"] = GFn(casttoFloat)

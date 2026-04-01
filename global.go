@@ -518,7 +518,7 @@ func DeepEqual(args ...Value) (Value, error) {
 }
 
 func loadFoundationCorelib() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, len((*clbu)))}
 	for i := 0; i < len((*clbu)); i++ {
 		m.Value[coreLibNames[i]] = (*clbu)[i]
 	}

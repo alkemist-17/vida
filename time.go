@@ -83,7 +83,7 @@ func (t Time) Clone() Value {
 }
 
 func loadFoundationTime() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 51)}
 	// Unix Time
 	m.Value["unixNano"] = GFn(timestampNano)
 	m.Value["unixMilli"] = GFn(timestampMilli)
@@ -426,7 +426,7 @@ func timeBefore(args ...Value) (Value, error) {
 }
 
 func timeCreateDuration(v time.Duration) *Object {
-	o := &Object{Value: make(map[string]Value)}
+	o := &Object{Value: make(map[string]Value, 7)}
 	o.Value["hours"] = Float(v.Hours())
 	o.Value["minutes"] = Float(v.Minutes())
 	o.Value["seconds"] = Float(v.Seconds())

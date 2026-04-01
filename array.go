@@ -7,7 +7,7 @@ import (
 )
 
 func loadFoundationArray() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 22)}
 	m.Value["concat"] = GFn(arrayConcat)
 	m.Value["clear"] = GFn(arrayClear)
 	m.Value["index"] = GFn(arrayIndex)

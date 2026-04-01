@@ -3,7 +3,7 @@ package vida
 import "github.com/alkemist-17/vida/verror"
 
 func loadFoundationBinary() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 1)}
 	m.Value["bytes"] = GFn(binNewBytesBuffer)
 	return m
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func loadFoundationIO() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 23)}
 	// fmt
 	m.Value["write"] = GFn(ioWrite)
 	m.Value["fwrite"] = GFn(ioFWrite)

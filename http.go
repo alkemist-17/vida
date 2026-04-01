@@ -19,7 +19,7 @@ const (
 )
 
 func loadFoundationHttpClient() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 4)}
 	m.Value["request"] = GFn(httpRequest)
 	m.Value["get"] = GFn(httpRequest)
 	m.Value["header"] = GFn(responseHeaderHelper)

@@ -10,7 +10,7 @@ import (
 )
 
 func loadFoundationColor() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 5)}
 	m.Value["string"] = GFn(colorQuickSprint)
 	m.Value["format"] = GFn(colorFormatQuickSprint)
 	m.Value["reset"] = GFn(colorReset)

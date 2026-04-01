@@ -9,7 +9,7 @@ import (
 )
 
 func loadFoundationText() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 28)}
 	m.Value["hasPrefix"] = GFn(textHasPrefix)
 	m.Value["hasSuffix"] = GFn(textHasSuffix)
 	m.Value["fromCodePoint"] = GFn(textFromCodepoint)

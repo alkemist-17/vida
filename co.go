@@ -5,7 +5,7 @@ import (
 )
 
 func loadFoundationCoroutine() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 10)}
 	m.Value["new"] = GFn(coNewThread)
 	m.Value["run"] = GFn(coRunThread)
 	m.Value["suspend"] = GFn(coSuspendThread)

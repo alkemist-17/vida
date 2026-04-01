@@ -5,7 +5,7 @@ import (
 )
 
 func loadFoundationMath() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 28)}
 	m.Value["pi"] = Float(math.Pi)
 	m.Value["tau"] = Float(math.Pi * 2)
 	m.Value["phi"] = Float(math.Phi)

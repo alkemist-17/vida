@@ -6,7 +6,7 @@ import (
 )
 
 func loadFoundationJSON() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 4)}
 	m.Value["stringify"] = GFn(jsonStringEncoding)
 	m.Value["parse"] = GFn(jsonParse)
 	m.Value["isValid"] = GFn(jsonIsValid)

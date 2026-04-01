@@ -10,7 +10,7 @@ func loadFoundationException() Value {
 	if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 2)}
 	m.Value["raise"] = GFn(exceptionRaise)
 	m.Value["protected"] = GFn(exceptionCatch)
 	return m
