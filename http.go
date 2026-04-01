@@ -27,14 +27,6 @@ func loadFoundationHttpClient() Value {
 	return m
 }
 
-type Response struct {
-	StatusCode int
-	Headers    map[string]string
-	Body       []byte
-	URL        string
-	Elapsed    time.Duration
-}
-
 func request(rawURL string) (*http.Response, []byte, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
