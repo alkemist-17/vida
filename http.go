@@ -54,6 +54,7 @@ func loadFoundationHttpClient() Value {
 	m.Value["head"] = GFn(httpHead)
 	m.Value["options"] = GFn(httpOptions)
 	m.Value["getHeader"] = GFn(httpResponseGetHeader)
+	m.Value["statusText"] = GFn(httpStatusCodeText)
 	return m
 }
 
@@ -312,4 +313,13 @@ func httpHead(args ...Value) (Value, error) {
 
 func httpOptions(args ...Value) (Value, error) {
 	return httpRequestWithMethod(httpOPTIONS, args...)
+}
+
+func httpStatusCodeText(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if code, ok := args[0].(Integer); ok {
+			return &String{Value: http.StatusText(int(code))}, nil
+		}
+	}
+	return NilValue, nil
 }
