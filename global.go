@@ -397,8 +397,8 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadObjectLib(), nil
 				case "array":
 					return loadFoundationArray(), nil
-				case "bin":
-					return loadFoundationBinary(), nil
+				case "bytes":
+					return loadFoundationBytes(), nil
 				case "time":
 					return loadFoundationTime(), nil
 				case "cast":

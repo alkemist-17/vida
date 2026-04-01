@@ -1,6 +1,6 @@
 
-var bin = load("std/bin")
-assert(bin)
+var bytes = load("std/bytes")
+assert(bytes)
 
 var time = load("std/time")
 assert(time)

@@ -2,13 +2,14 @@ package vida
 
 import "github.com/alkemist-17/vida/verror"
 
-func loadFoundationBinary() Value {
-	m := &Object{Value: make(map[string]Value, 1)}
-	m.Value["bytes"] = GFn(binNewBytesBuffer)
+func loadFoundationBytes() Value {
+	m := &Object{Value: make(map[string]Value, 2)}
+	m.Value["new"] = GFn(bytesCreateNewBytesBuffer)
+	m.Value["from"] = GFn(bytesFromValue)
 	return m
 }
 
-func binNewBytesBuffer(args ...Value) (Value, error) {
+func bytesCreateNewBytesBuffer(args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		switch v := args[0].(type) {
@@ -26,6 +27,26 @@ func binNewBytesBuffer(args ...Value) (Value, error) {
 				}
 				return &Bytes{Value: b}, nil
 			}
+		case *String:
+			return &Bytes{Value: []byte(v.Value)}, nil
+		case *Bytes:
+			return v.Clone(), nil
+		case *Array:
+			var bts []byte
+			for _, val := range v.Value {
+				if i, ok := val.(Integer); ok {
+					bts = append(bts, byte(i))
+				}
+			}
+			return &Bytes{Value: bts}, nil
+		}
+	}
+	return &Bytes{}, nil
+}
+
+func bytesFromValue(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		switch v := args[0].(type) {
 		case *String:
 			return &Bytes{Value: []byte(v.Value)}, nil
 		case *Bytes:
