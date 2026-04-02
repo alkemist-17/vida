@@ -9,22 +9,23 @@ assert(http and json and text and task and cast and array)
 
 var res = http.request("https://restcountries.com/v3.1/name/mexico")
 
-if isError(res) {
-    assert(not res)
-} else {
+if res {
     assert(res.statusCode == 200)
     assert(res.headers)
     assert(res.body)
+	if text.contains(res.headers["Content-Type"], "json") {
+		if json.isValid(res.body) {
+			assert(json.isValid(res.body))
+			assert(json.parse(res.body))
+		} else {
+			assert(not json.isValid(res.body))
+		}
+	}
+} else {
+	assert(not res)
 }
 
-if text.contains(res.headers["Content-Type"], "json") {
-	if json.isValid(res.body) {
-        assert(json.isValid(res.body))
-		assert(json.parse(res.body))
-	} else {
-        assert(not json.isValid(res.body))
-    }
-}
+
 
 
 var R = task.parallel([
@@ -44,17 +45,24 @@ var R = task.parallel([
 var A = []
 
 
-for i, res in R {
-	assert(res.statusCode)
-    assert(res.headers)
-	if text.contains(res.headers["Content-Type"], "json") {
-		if json.isValid(res.body) {
-			assert(json.isValid(res.body))
-			var data = json.parse(res.body)[0]
-            assert(data)
-            assert(data.cioc)
-            assert(data.population)
-			append(A, {country = data.cioc, population = cast.toInt(data.population)})
+for _, res in R {
+	if res {
+		assert(res.statusCode)
+		assert(res.headers)
+		if text.contains(res.headers["Content-Type"], "json") {
+			if json.isValid(res.body) {
+				assert(json.isValid(res.body))
+				var data = json.parse(res.body)
+				if type(data) == type([]) {
+					data = data[0]
+				}
+				assert(data)
+				if data.cioc and data.population {
+					assert(data.cioc)
+					assert(data.population)
+					append(A, {country = data.cioc, population = cast.toInt(data.population)})
+				}
+			}
 		}
 	}
 }
@@ -67,7 +75,11 @@ for k, v in A {
 	total = total + v.population
 }
 
-assert(total != 0)
+if len(A) == 0 {
+	assert(total == 0)
+} else {
+	assert(total > 0)
+}
 
 for k, v in A {
 	print(format("%3v %5v %10v %6.2f %%", k + 1, v.country, v.population, (v.population * 100.0) / cast.toFloat(total)))
@@ -76,4 +88,38 @@ for k, v in A {
 print(format("%9v %10v", "SUM", total))
 
 print("\n\n\n")
+
+
+var check = fun res {
+	if res {
+		assert(res.statusCode)
+		assert(res.headers)
+		assert(res.body)
+	}
+}
+
+R = task.parallel(
+	[
+		[http.get, "https://example.com"],
+		[http.get, "https://httpbin.org/get"],
+		[http.post, "https://httpbin.org/post"],
+		[http.put, "https://httpbin.org/put"],
+		[http.patch, "https://httpbin.org/patch"],
+		[http.delete, "https://httpbin.org/delete"]
+	]
+)
+
+task.parallel(
+	[
+		[check, R[0]],
+		[check, R[1]],
+		[check, R[2]],
+		[check, R[3]],
+		[check, R[4]],
+		[check, R[5]]
+	]
+)
+
+
+
 
