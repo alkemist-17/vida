@@ -230,18 +230,16 @@ func arraySortObjects(args ...Value) (Value, error) {
 				if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
 					((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 				}
-				A := make([]Value, 2)
 				slices.SortFunc(xs.Value, func(l, r Value) int {
 					th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
 					th.State = Ready
 					th.Script.MainFunction = fn
-					A[0], A[1] = l, r
 					_, err := coRunThread(th)
 					vm := (*clbu)[globalStateIndex].(*GlobalState).VM
 					if err != nil {
 						switch err {
 						case verror.ErrResumeThreadSignal:
-							_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, A...)
+							_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, l, r)
 							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 							if threadError != nil {
 								return 0
@@ -262,7 +260,7 @@ func arraySortObjects(args ...Value) (Value, error) {
 								}
 							}
 						case verror.ErrStartThreadSignal:
-							_, threadError := vm.runThread(vm.fp, 0, true, A...)
+							_, threadError := vm.runThread(vm.fp, 0, true, l, r)
 							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 							if threadError != nil {
 								return 0
