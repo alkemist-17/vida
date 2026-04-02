@@ -50,3 +50,5 @@ assert(re)
 var color = load("std/color")
 assert(color)
 
+var http = load("std/http")
+assert(http)
