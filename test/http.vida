@@ -7,7 +7,7 @@ var array = load("std/array")
 
 assert(http and json and text and task and cast and array)
 
-var res = http.request("https://restcountries.com/v3.1/name/mexico")
+var res = http.request("https://restcountries.com/v3.1/name/china")
 
 if res {
     assert(res.statusCode == 200)

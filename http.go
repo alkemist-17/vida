@@ -41,7 +41,7 @@ const (
 	httpContentTypeAppJSON = "application/json"
 	httpContentType        = "Content-Type"
 	httpKind               = "kind"
-	httpMessage            = "cause"
+	httpCauseMessage       = "cause"
 	httpMaxBodySize        = 10 << 20
 	httpDefaultTimeout     = 30 * time.Second
 )
@@ -68,8 +68,8 @@ func httpRequest(args ...Value) (Value, error) {
 			if err != nil {
 				errObject := &Object{
 					Value: map[string]Value{
-						httpKind:    &String{Value: httpInvalidURLErr},
-						httpMessage: &String{Value: fmt.Sprintf("failed to parse URL %q: %v", rawURL, err)},
+						httpKind:         &String{Value: httpInvalidURLErr},
+						httpCauseMessage: &String{Value: fmt.Sprintf("failed to parse URL %q: %v", rawURL, err)},
 					},
 				}
 				return VidaError{Message: errObject}, nil
@@ -97,8 +97,8 @@ func httpRequest(args ...Value) (Value, error) {
 				if reqErr, ok := err.(*RequestError); ok {
 					errObj := &Object{
 						Value: map[string]Value{
-							httpKind:    &String{Value: reqErr.Kind},
-							httpMessage: &String{Value: reqErr.Message},
+							httpKind:         &String{Value: reqErr.Kind},
+							httpCauseMessage: &String{Value: reqErr.Cause},
 						},
 					}
 					return VidaError{Message: errObj}, nil
@@ -147,12 +147,12 @@ func httpResponseGetHeader(args ...Value) (Value, error) {
 }
 
 type RequestError struct {
-	Kind    string
-	Message string
+	Kind  string
+	Cause string
 }
 
 func (e *RequestError) Error() string {
-	return fmt.Sprintf("[%s] %s", e.Kind, e.Message)
+	return fmt.Sprintf("[%s] %s", e.Kind, e.Cause)
 }
 
 type requestOptions struct {
@@ -222,7 +222,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 		case *Object:
 			jsonBody, err := json.Marshal(v)
 			if err != nil {
-				return nil, nil, 0, &RequestError{Kind: httpJsonEncodeErr, Message: fmt.Sprintf("failed to json encode body: %v", err)}
+				return nil, nil, 0, &RequestError{Kind: httpJsonEncodeErr, Cause: fmt.Sprintf("failed to json encode body: %v", err)}
 			}
 			bodyReader = bytes.NewBuffer(jsonBody)
 			contentType = httpContentTypeAppJSON
@@ -232,7 +232,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	req, err := http.NewRequestWithContext(ctx, opts.Method, rawURL, bodyReader)
 
 	if err != nil {
-		return nil, nil, 0, &RequestError{Kind: httpInvalidReqErr, Message: fmt.Sprintf("failed to create request: %v", err)}
+		return nil, nil, 0, &RequestError{Kind: httpInvalidReqErr, Cause: fmt.Sprintf("failed to create request: %v", err)}
 	}
 
 	if opts.Body != nil {
@@ -258,7 +258,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 				kind = httpTemporary
 			}
 		}
-		return nil, nil, 0, &RequestError{Kind: kind, Message: fmt.Sprintf("request to %q failed: %v", rawURL, err)}
+		return nil, nil, 0, &RequestError{Kind: kind, Cause: fmt.Sprintf("request to %q failed: %v", rawURL, err)}
 	}
 
 	defer resp.Body.Close()
@@ -266,11 +266,11 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	body, err := io.ReadAll(io.LimitReader(resp.Body, httpMaxBodySize+1))
 
 	if err != nil {
-		return nil, nil, 0, &RequestError{Kind: httpBodyReadErr, Message: fmt.Sprintf("failed to read response: %v", err)}
+		return nil, nil, 0, &RequestError{Kind: httpBodyReadErr, Cause: fmt.Sprintf("failed to read response: %v", err)}
 	}
 
 	if int64(len(body)) > httpMaxBodySize {
-		return nil, nil, 0, &RequestError{Kind: httpLargeBodyErr, Message: fmt.Sprintf("response exceeds %d bytes", httpMaxBodySize)}
+		return nil, nil, 0, &RequestError{Kind: httpLargeBodyErr, Cause: fmt.Sprintf("response exceeds %d bytes", httpMaxBodySize)}
 	}
 
 	return resp, body, elapsed, nil
