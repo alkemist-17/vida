@@ -109,7 +109,7 @@ func httpRequest(args ...Value) (Value, error) {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
 			defer cancel()
-			resp, body, elapsed, err := httpExecuteRequest(ctx, parsedURL.String(), options)
+			resp, body, err := httpExecuteRequest(ctx, parsedURL.String(), options)
 			if err != nil {
 				if reqErr, ok := err.(*RequestError); ok {
 					errObj := &Object{
@@ -122,13 +122,13 @@ func httpRequest(args ...Value) (Value, error) {
 				}
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return httpResponseToObject(resp, body, elapsed), nil
+			return httpResponseToObject(resp, body), nil
 		}
 	}
 	return NilValue, nil
 }
 
-func httpResponseToObject(resp *http.Response, body []byte, elapsed int64) *Object {
+func httpResponseToObject(resp *http.Response, body []byte) *Object {
 	headersObj := &Object{Value: make(map[string]Value)}
 	for k, v := range resp.Header {
 		if len(v) > 0 {
@@ -140,8 +140,6 @@ func httpResponseToObject(resp *http.Response, body []byte, elapsed int64) *Obje
 			httpStatusCodeField: Integer(resp.StatusCode),
 			httpHeadersField:    headersObj,
 			httpBodyField:       &Bytes{Value: body},
-			httpURLField:        &String{Value: resp.Request.URL.String()},
-			httpElapsedField:    Integer(elapsed),
 		},
 	}
 }
@@ -224,7 +222,7 @@ func httpParseOptions(opts *Object) *requestOptions {
 	return options
 }
 
-func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions) (*http.Response, []byte, int64, error) {
+func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions) (*http.Response, []byte, error) {
 	var bodyReader io.Reader
 	var contentType string
 
@@ -239,7 +237,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 		case *Object:
 			jsonBody, err := json.Marshal(v)
 			if err != nil {
-				return nil, nil, 0, &RequestError{Kind: httpJsonEncodeErr, Cause: fmt.Sprintf("failed to json encode body: %v", err)}
+				return nil, nil, &RequestError{Kind: httpJsonEncodeErr, Cause: fmt.Sprintf("failed to json encode body: %v", err)}
 			}
 			bodyReader = bytes.NewBuffer(jsonBody)
 			contentType = httpContentTypeAppJSON
@@ -249,7 +247,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	req, err := http.NewRequestWithContext(ctx, opts.Method, rawURL, bodyReader)
 
 	if err != nil {
-		return nil, nil, 0, &RequestError{Kind: httpInvalidReqErr, Cause: fmt.Sprintf("failed to create request: %v", err)}
+		return nil, nil, &RequestError{Kind: httpInvalidReqErr, Cause: fmt.Sprintf("failed to create request: %v", err)}
 	}
 
 	if opts.Body != nil {
@@ -262,9 +260,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 		req.Header.Set(k, v)
 	}
 
-	start := time.Now()
 	resp, err := http.DefaultClient.Do(req)
-	elapsed := time.Since(start).Milliseconds()
 
 	if err != nil {
 		kind := httpNetworkErr
@@ -275,7 +271,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 				kind = httpTemporaryErr
 			}
 		}
-		return nil, nil, 0, &RequestError{Kind: kind, Cause: fmt.Sprintf("request to %q failed: %v", rawURL, err)}
+		return nil, nil, &RequestError{Kind: kind, Cause: fmt.Sprintf("request to %q failed: %v", rawURL, err)}
 	}
 
 	defer resp.Body.Close()
@@ -283,14 +279,14 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	body, err := io.ReadAll(io.LimitReader(resp.Body, httpMaxBodySize+1))
 
 	if err != nil {
-		return nil, nil, 0, &RequestError{Kind: httpBodyReadErr, Cause: fmt.Sprintf("failed to read response: %v", err)}
+		return nil, nil, &RequestError{Kind: httpBodyReadErr, Cause: fmt.Sprintf("failed to read response: %v", err)}
 	}
 
 	if int64(len(body)) > httpMaxBodySize {
-		return nil, nil, 0, &RequestError{Kind: httpLargeBodyErr, Cause: fmt.Sprintf("response exceeds %d bytes", httpMaxBodySize)}
+		return nil, nil, &RequestError{Kind: httpLargeBodyErr, Cause: fmt.Sprintf("response exceeds %d bytes", httpMaxBodySize)}
 	}
 
-	return resp, body, elapsed, nil
+	return resp, body, nil
 }
 
 func httpRequestWithMethod(method string, args ...Value) (Value, error) {
