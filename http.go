@@ -3,47 +3,64 @@ package vida
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
+	"slices"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
-	httpGET                = "GET"
-	httpPOST               = "POST"
-	httpPUT                = "PUT"
-	httpDELETE             = "DELETE"
-	httpPATCH              = "PATCH"
-	httpHEAD               = "HEAD"
-	httpOPTIONS            = "OPTIONS"
-	httpInvalidURLErr      = "invalid-url"
-	httpNetworkErr         = "network"
-	httpTimeoutErr         = "timeout"
-	httpTemporary          = "temporary"
-	httpBodyReadErr        = "body-read"
-	httpLargeBodyErr       = "body-size"
-	httpInvalidReqErr      = "invalid-request"
-	httpJsonEncodeErr      = "json-encode"
-	httpDefaultSchema      = "https"
-	httpMethodField        = "method"
-	httpTimeoutField       = "timeout"
-	httpHeadersField       = "headers"
-	httpBodyField          = "body"
-	httpURLField           = "url"
-	httpStatusCodeField    = "statusCode"
-	httpElapsedField       = "elapsed"
-	httpContentTypeText    = "text/plain"
-	httpContentTypeBinary  = "application/octet-stream"
-	httpContentTypeAppJSON = "application/json"
-	httpContentType        = "Content-Type"
-	httpKind               = "kind"
-	httpCauseMessage       = "cause"
-	httpMaxBodySize        = 10 << 20
-	httpDefaultTimeout     = 30 * time.Second
+	httpGET                        = "GET"
+	httpPOST                       = "POST"
+	httpPUT                        = "PUT"
+	httpDELETE                     = "DELETE"
+	httpPATCH                      = "PATCH"
+	httpHEAD                       = "HEAD"
+	httpOPTIONS                    = "OPTIONS"
+	httpInvalidURLErr              = "invalid-url"
+	httpNetworkErr                 = "network"
+	httpTimeoutErr                 = "timeout"
+	httpTemporaryErr               = "temporary"
+	httpBodyReadErr                = "body-read"
+	httpLargeBodyErr               = "body-size"
+	httpInvalidReqErr              = "invalid-request"
+	httpJsonEncodeErr              = "json-encode"
+	httpDefaultSchema              = "https"
+	httpMethodField                = "method"
+	httpTimeoutField               = "timeout"
+	httpHeadersField               = "headers"
+	httpBodyField                  = "body"
+	httpURLField                   = "url"
+	httpStatusCodeField            = "statusCode"
+	httpElapsedField               = "elapsed"
+	httpContentTypeText            = "text/plain"
+	httpContentTypeBinary          = "application/octet-stream"
+	httpContentTypeAppJSON         = "application/json"
+	httpContentType                = "Content-Type"
+	httpKind                       = "kind"
+	httpCauseMessage               = "cause"
+	httpMaxBodySize                = 10 << 20
+	httpDefaultTimeout             = 30 * time.Second
+	httpMaxRetryAttempts           = 3
+	httpInitialDelay               = 100 * time.Millisecond
+	httpMaxDelay                   = 10 * time.Second
+	httpDelayMultiplier            = 2.0
+	httpDefaultTTL                 = 5 * time.Minute
+	httpMaxCacheEntries            = 1000
+	httpMaxIdleConnections         = 100
+	httpMaxIdleConnectionsPerHost  = 10
+	httpDefaultIdleConnTimeout     = 90 * time.Second
+	httpDefaultTLSHandshakeTimeout = 10 * time.Second
+	httpDefaultJitter              = true
 )
 
 func loadFoundationHttpClient() Value {
@@ -255,7 +272,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 			if urlErr.Timeout() {
 				kind = httpTimeoutErr
 			} else if urlErr.Temporary() {
-				kind = httpTemporary
+				kind = httpTemporaryErr
 			}
 		}
 		return nil, nil, 0, &RequestError{Kind: kind, Cause: fmt.Sprintf("request to %q failed: %v", rawURL, err)}
@@ -326,4 +343,236 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+type requestInterceptor func(*http.Request) (*http.Request, error)
+
+type responseInterceptor func(*http.Response, []byte) (*http.Response, []byte, error)
+
+type interceptorChain struct {
+	requestInterceptors  []requestInterceptor
+	responseInterceptors []responseInterceptor
+	mu                   sync.RWMutex
+}
+
+func (c *interceptorChain) dddRequest(fn requestInterceptor) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.requestInterceptors = append(c.requestInterceptors, fn)
+}
+
+func (c *interceptorChain) dddResponse(fn responseInterceptor) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.responseInterceptors = append(c.responseInterceptors, fn)
+}
+
+func (c *interceptorChain) executeRequest(req *http.Request) (*http.Request, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var err error
+	for _, fn := range c.requestInterceptors {
+		req, err = fn(req)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return req, nil
+}
+
+func (c *interceptorChain) executeResponse(resp *http.Response, body []byte) (*http.Response, []byte, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var err error
+	for i := len(c.responseInterceptors) - 1; i >= 0; i-- {
+		resp, body, err = c.responseInterceptors[i](resp, body)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return resp, body, nil
+}
+
+type retryConfig struct {
+	MaxAttempts     int           // Max retry attempts (default: 3)
+	InitialDelay    time.Duration // Initial backoff delay (default: 100ms)
+	MaxDelay        time.Duration // Max backoff delay cap (default: 10s)
+	Multiplier      float64       // Backoff multiplier (default: 2.0 for exponential)
+	Jitter          bool          // Add randomness to backoff (default: true)
+	RetryableCodes  []int         // HTTP status codes to retry (default: [429, 500, 502, 503, 504])
+	RetryableErrors []string      // Error kinds to retry (default: ["network", "timeout", "temporary"])
+}
+
+func defaultRetryConfig() *retryConfig {
+	return &retryConfig{
+		MaxAttempts:     httpMaxRetryAttempts,
+		InitialDelay:    httpInitialDelay,
+		MaxDelay:        httpMaxDelay,
+		Multiplier:      httpDelayMultiplier,
+		Jitter:          httpDefaultJitter,
+		RetryableCodes:  []int{429, 500, 502, 503, 504},
+		RetryableErrors: []string{httpNetworkErr, httpTimeoutErr, httpTemporaryErr},
+	}
+}
+
+func (rc *retryConfig) shouldRetry(err error, statusCode int) bool {
+	if slices.Contains(rc.RetryableCodes, statusCode) {
+		return true
+	}
+
+	if err != nil {
+		if reqErr, ok := err.(*RequestError); ok {
+			if strings.Contains(err.Error(), reqErr.Kind) {
+				return true
+			}
+		}
+
+		errMsg := err.Error()
+		for _, kind := range rc.RetryableErrors {
+			if strings.Contains(errMsg, kind+":") {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (rc *retryConfig) calculateBackoff(attempt int) time.Duration {
+	delay := float64(rc.InitialDelay) * math.Pow(rc.Multiplier, float64(attempt-1))
+	if delay > float64(rc.MaxDelay) {
+		delay = float64(rc.MaxDelay)
+	}
+	// Add random value in [0.5*delay, 1.5*delay]
+	if rc.Jitter {
+		jitter := 0.5 + (0.5 * float64(time.Now().UnixNano()%1000) / 1000.0)
+		delay *= jitter
+	}
+	return time.Duration(delay)
+}
+
+type cacheEntry struct {
+	Body       []byte
+	StatusCode int
+	Headers    http.Header
+	CreatedAt  time.Time
+	TTL        time.Duration
+}
+
+func (ce *cacheEntry) isExpired() bool {
+	if ce.TTL <= 0 {
+		return false // Infinite TTL
+	}
+	return time.Since(ce.CreatedAt) > ce.TTL
+}
+
+type cacheConfig struct {
+	Enabled    bool
+	DefaultTTL time.Duration
+	MaxEntries int // 0 = unlimited
+	cache      map[string]*cacheEntry
+	mu         sync.RWMutex
+}
+
+func newCacheConfig() *cacheConfig {
+	return &cacheConfig{
+		Enabled:    true,
+		DefaultTTL: httpDefaultTTL,
+		MaxEntries: httpMaxCacheEntries,
+		cache:      make(map[string]*cacheEntry),
+	}
+}
+
+func (cc *cacheConfig) get(key string) *cacheEntry {
+	if !cc.Enabled {
+		return nil
+	}
+
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
+
+	entry, exists := cc.cache[key]
+	if !exists || entry.isExpired() {
+		if exists {
+			delete(cc.cache, key)
+		}
+		return nil
+	}
+
+	return entry
+}
+
+func (cc *cacheConfig) set(key string, entry *cacheEntry) {
+	if !cc.Enabled {
+		return
+	}
+
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	if cc.MaxEntries > 0 && len(cc.cache) >= cc.MaxEntries {
+		for k := range cc.cache {
+			delete(cc.cache, k)
+			break
+		}
+	}
+
+	cc.cache[key] = entry
+}
+
+func (cc *cacheConfig) clear() {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	cc.cache = nil
+	cc.cache = make(map[string]*cacheEntry)
+}
+
+func generateCacheKey(method, rawURL string, headers map[string]string, body []byte) string {
+	hash := sha256.New()
+	hash.Write([]byte(method))
+	hash.Write([]byte(rawURL))
+
+	keys := make([]string, 0, len(headers))
+	for k := range headers {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	for _, k := range keys {
+		hash.Write([]byte(k))
+		hash.Write([]byte(headers[k]))
+	}
+
+	if len(body) > 0 {
+		hash.Write(body)
+	}
+
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+type localHttpClient struct {
+	httpClient     *http.Client // Reused for connection pooling
+	interceptors   *interceptorChain
+	retryConfig    *retryConfig
+	cacheConfig    *cacheConfig
+	baseURL        string
+	defaultHeaders map[string]string
+}
+
+func newClient() *localHttpClient {
+	return &localHttpClient{
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:        httpMaxIdleConnections,
+				MaxIdleConnsPerHost: httpMaxIdleConnectionsPerHost,
+				IdleConnTimeout:     httpDefaultIdleConnTimeout,
+				TLSHandshakeTimeout: httpDefaultTLSHandshakeTimeout,
+			},
+			Timeout: httpDefaultTimeout,
+		},
+		interceptors:   &interceptorChain{},
+		retryConfig:    defaultRetryConfig(),
+		cacheConfig:    newCacheConfig(),
+		defaultHeaders: make(map[string]string),
+	}
 }
