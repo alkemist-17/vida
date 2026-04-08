@@ -370,7 +370,8 @@ func (vm *VM) debug() (Result, error) {
 					return vm.createError(ip, verror.ErrStackOverflow)
 				}
 				if P != 0 {
-					if P == ellipsisFirst {
+					switch P {
+					case ellipsisFirst:
 						if xs, ok := vm.Frame.stack[B+F].(*Array); ok {
 							nargs = len(xs.Value) + int(F) - 1
 							for i, v := range xs.Value {
@@ -379,7 +380,7 @@ func (vm *VM) debug() (Result, error) {
 						} else {
 							return vm.createError(ip, verror.ErrVariadicArgs)
 						}
-					} else if P == ellipsisLast {
+					case ellipsisLast:
 						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok {
 							nargs += len(xs.Value) - 1
 							for i, v := range xs.Value {
