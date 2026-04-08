@@ -22,23 +22,23 @@ if res {
 		}
 	}
 } else {
-	assert(not res)
+	assert(not res and isError(res))
 }
 
 
 
 
 var R = task.parallel([
-	[http.request, "https://restcountries.com/v3.1/name/peru"],
-	[http.request, "https://restcountries.com/v3.1/name/colombia"],
+	[http.request, "https://restcountries.com/v3.1/name/france"],
+	[http.request, "https://restcountries.com/v3.1/name/russia"],
 	[http.request, "https://restcountries.com/v3.1/name/brasil"],
 	[http.request, "https://restcountries.com/v3.1/name/chile"],
-	[http.request, "https://restcountries.com/v3.1/name/argentina"],
-	[http.request, "https://restcountries.com/v3.1/name/venezuela"],
+	[http.request, "https://restcountries.com/v3.1/name/mexico"],
+	[http.request, "https://restcountries.com/v3.1/name/spain"],
 	[http.request, "https://restcountries.com/v3.1/name/ecuador"],
-	[http.request, "https://restcountries.com/v3.1/name/bolivia"],
-	[http.request, "https://restcountries.com/v3.1/name/uruguay"],
-	[http.request, "https://restcountries.com/v3.1/name/paraguay"]
+	[http.request, "https://restcountries.com/v3.1/name/canada"],
+	[http.request, "https://restcountries.com/v3.1/name/japan"],
+	[http.request, "https://restcountries.com/v3.1/name/germany"]
 ])
 
 
@@ -95,7 +95,9 @@ var check = fun res {
 		assert(res.statusCode)
 		assert(res.headers)
 		assert(res.body)
+		ret nil
 	}
+	assert(not res and isError(res))
 }
 
 R = task.parallel(
@@ -105,7 +107,9 @@ R = task.parallel(
 		[http.post, "https://httpbin.org/post"],
 		[http.put, "https://httpbin.org/put"],
 		[http.patch, "https://httpbin.org/patch"],
-		[http.delete, "https://httpbin.org/delete"]
+		[http.delete, "https://httpbin.org/delete"],
+		[http.head, "https://httpbin.org/head"],
+		[http.options, "https://httpbin.org/options"]
 	]
 )
 
@@ -116,7 +120,9 @@ task.parallel(
 		[check, R[2]],
 		[check, R[3]],
 		[check, R[4]],
-		[check, R[5]]
+		[check, R[5]],
+		[check, R[6]],
+		[check, R[7]]
 	]
 )
 
