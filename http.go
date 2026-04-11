@@ -87,16 +87,11 @@ func loadFoundationHttpClient() Value {
 
 func httpRequest(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if rawURL, ok := args[0].(*String); ok {
-			parsedURL, err := url.Parse(rawURL.Value)
+		switch v := args[0].(type) {
+		case *String:
+			parsedURL, err := url.Parse(v.Value)
 			if err != nil {
-				errObject := &Object{
-					Value: map[string]Value{
-						httpKind:         &String{Value: httpInvalidURLErr},
-						httpCauseMessage: &String{Value: fmt.Sprintf("failed to parse URL %q: %v", rawURL, err)},
-					},
-				}
-				return VidaError{Message: errObject}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			if parsedURL.Scheme == "" {
 				parsedURL.Scheme = httpDefaultSchema
@@ -118,25 +113,18 @@ func httpRequest(args ...Value) (Value, error) {
 			defer cancel()
 			resp, body, err := httpExecuteRequest(ctx, parsedURL.String(), options)
 			if err != nil {
-				if reqErr, ok := err.(*RequestError); ok {
-					errObj := &Object{
-						Value: map[string]Value{
-							httpKind:         &String{Value: reqErr.Kind},
-							httpCauseMessage: &String{Value: reqErr.Cause},
-						},
-					}
-					return VidaError{Message: errObj}, nil
-				}
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return httpResponseToObject(resp, body), nil
+		case *Object:
+
 		}
 	}
 	return NilValue, nil
 }
 
 func httpResponseToObject(resp *http.Response, body []byte) *Object {
-	headersObj := &Object{Value: make(map[string]Value)}
+	headersObj := &Object{Value: make(map[string]Value, len(resp.Header))}
 	for k, v := range resp.Header {
 		if len(v) > 0 {
 			headersObj.Value[k] = &String{Value: v[0]}
@@ -149,15 +137,6 @@ func httpResponseToObject(resp *http.Response, body []byte) *Object {
 			httpBodyField:       &Bytes{Value: body},
 		},
 	}
-}
-
-type RequestError struct {
-	Kind  string
-	Cause string
-}
-
-func (e *RequestError) Error() string {
-	return fmt.Sprintf("[%s] %s", e.Kind, e.Cause)
 }
 
 type requestOptions struct {
@@ -198,11 +177,7 @@ func httpParseOptions(opts *Object) *requestOptions {
 
 	if bodyVal, exists := opts.Value[httpBodyField]; exists {
 		switch v := bodyVal.(type) {
-		case *String:
-			options.Body = v
-		case *Bytes:
-			options.Body = v
-		case *Object:
+		case *String, *Object, *Bytes:
 			options.Body = v
 		default:
 			options.Body = NilValue
@@ -227,7 +202,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 		case *Object:
 			jsonBody, err := json.Marshal(v)
 			if err != nil {
-				return nil, nil, &RequestError{Kind: httpJsonEncodeErr, Cause: fmt.Sprintf("failed to json encode body: %v", err)}
+				return nil, nil, err
 			}
 			bodyReader = bytes.NewBuffer(jsonBody)
 			contentType = httpContentTypeAppJSON
@@ -237,7 +212,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	req, err := http.NewRequestWithContext(ctx, opts.Method, rawURL, bodyReader)
 
 	if err != nil {
-		return nil, nil, &RequestError{Kind: httpInvalidReqErr, Cause: fmt.Sprintf("failed to create request: %v", err)}
+		return nil, nil, err
 	}
 
 	if opts.Body != nil {
@@ -253,15 +228,7 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		kind := httpNetworkErr
-		if urlErr, ok := err.(*url.Error); ok {
-			if urlErr.Timeout() {
-				kind = httpTimeoutErr
-			} else if urlErr.Temporary() {
-				kind = httpTemporaryErr
-			}
-		}
-		return nil, nil, &RequestError{Kind: kind, Cause: err.Error()}
+		return nil, nil, err
 	}
 
 	defer resp.Body.Close()
@@ -269,11 +236,11 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 	body, err := io.ReadAll(io.LimitReader(resp.Body, httpMaxBodySize+1))
 
 	if err != nil {
-		return nil, nil, &RequestError{Kind: httpBodyReadErr, Cause: fmt.Sprintf("failed to read response: %v", err)}
+		return nil, nil, err
 	}
 
 	if int64(len(body)) > httpMaxBodySize {
-		return nil, nil, &RequestError{Kind: httpLargeBodyErr, Cause: fmt.Sprintf("response exceeds %d bytes", httpMaxBodySize)}
+		return nil, nil, fmt.Errorf("response exceeds %d bytes", httpMaxBodySize)
 	}
 
 	return resp, body, nil
@@ -331,6 +298,7 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
+// Interceptors, retry logic and cache.
 type requestInterceptor func(*http.Request) (*http.Request, error)
 
 type responseInterceptor func(*http.Response, []byte) (*http.Response, []byte, error)
@@ -407,12 +375,6 @@ func (rc *retryConfig) shouldRetry(err error, statusCode int) bool {
 	}
 
 	if err != nil {
-		if reqErr, ok := err.(*RequestError); ok {
-			if strings.Contains(err.Error(), reqErr.Kind) {
-				return true
-			}
-		}
-
 		errMsg := err.Error()
 		for _, kind := range rc.RetryableErrors {
 			if strings.Contains(errMsg, kind+":") {
