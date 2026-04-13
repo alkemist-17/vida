@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -26,14 +27,11 @@ const (
 	httpPATCH                      = "PATCH"
 	httpHEAD                       = "HEAD"
 	httpOPTIONS                    = "OPTIONS"
-	httpInvalidURLErr              = "invalid-url"
 	httpNetworkErr                 = "network"
 	httpTimeoutErr                 = "timeout"
 	httpTemporaryErr               = "temporary"
-	httpBodyReadErr                = "body-read"
-	httpLargeBodyErr               = "body-size"
-	httpInvalidReqErr              = "invalid-request"
-	httpJsonEncodeErr              = "json-encode"
+	httpURLField                   = "url"
+	httpBaseField                  = "base"
 	httpDefaultSchema              = "https"
 	httpMethodField                = "method"
 	httpTimeoutField               = "timeout"
@@ -51,8 +49,6 @@ const (
 	httpContentTypeBinary          = "application/octet-stream"
 	httpContentTypeAppJSON         = "application/json"
 	httpContentType                = "Content-Type"
-	httpKind                       = "kind"
-	httpCauseMessage               = "cause"
 	httpMaxBodySize                = 10 << 20
 	httpDefaultTimeout             = 30 * time.Second
 	httpMaxRetryAttempts           = 3
@@ -89,21 +85,23 @@ func httpRequest(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *String:
-			parsedURL, err := url.Parse(v.Value)
-			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			if parsedURL.Scheme == "" {
-				parsedURL.Scheme = httpDefaultSchema
-			}
 			var options *requestOptions
+			var err error
 			if len(args) > 1 {
-				if optsObj, ok := args[1].(*Object); ok {
-					options = httpParseOptions(optsObj)
+				if userOptions, ok := args[1].(*Object); ok {
+					options, err = httpParseUserOptions(userOptions, &v.Value)
+					if err != nil {
+						return VidaError{Message: &String{Value: err.Error()}}, nil
+					}
 				}
 			}
 			if options == nil {
+				parsedURL, err := url.Parse(v.Value)
+				if err != nil {
+					return nil, err
+				}
 				options = &requestOptions{
+					Url:     parsedURL,
 					Method:  httpGET,
 					Timeout: httpDefaultTimeout,
 					Headers: make(map[string]string),
@@ -111,13 +109,25 @@ func httpRequest(args ...Value) (Value, error) {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
 			defer cancel()
-			resp, body, err := httpExecuteRequest(ctx, parsedURL.String(), options)
+			resp, body, err := httpExecuteRequest(ctx, options)
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return httpResponseToObject(resp, body), nil
 		case *Object:
-
+			var options *requestOptions
+			var err error
+			options, err = httpParseUserOptions(v, nil)
+			if err != nil {
+				return VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+			defer cancel()
+			resp, body, err := httpExecuteRequest(ctx, options)
+			if err != nil {
+				return VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			return httpResponseToObject(resp, body), nil
 		}
 	}
 	return NilValue, nil
@@ -141,42 +151,44 @@ func httpResponseToObject(resp *http.Response, body []byte) *Object {
 
 type requestOptions struct {
 	Method  string
-	Headers map[string]string
 	Body    Value
+	Url     *url.URL
+	Base    *url.URL
 	Timeout time.Duration
+	Headers map[string]string
 }
 
-func httpParseOptions(opts *Object) *requestOptions {
+func httpParseUserOptions(userOptions *Object, userRawURL *string) (*requestOptions, error) {
 	options := &requestOptions{
 		Method:  httpGET,
 		Timeout: httpDefaultTimeout,
 		Headers: make(map[string]string),
 	}
 
-	if methodVal, exists := opts.Value[httpMethodField]; exists {
-		if methodStr, ok := methodVal.(*String); ok {
-			options.Method = strings.ToUpper(methodStr.Value)
+	if m, exists := userOptions.Value[httpMethodField]; exists {
+		if method, ok := m.(*String); ok {
+			options.Method = strings.ToUpper(method.Value)
 		}
 	}
 
-	if timeoutVal, exists := opts.Value[httpTimeoutField]; exists {
-		if timeoutInt, ok := timeoutVal.(Integer); ok {
-			options.Timeout = time.Duration(timeoutInt) * time.Millisecond
+	if t, exists := userOptions.Value[httpTimeoutField]; exists {
+		if timeout, ok := t.(Integer); ok {
+			options.Timeout = time.Duration(timeout) * time.Millisecond
 		}
 	}
 
-	if headersVal, exists := opts.Value[httpHeadersField]; exists {
-		if headersObj, ok := headersVal.(*Object); ok {
-			for k, v := range headersObj.Value {
-				if strVal, ok := v.(*String); ok {
-					options.Headers[k] = strVal.Value
+	if h, exists := userOptions.Value[httpHeadersField]; exists {
+		if headers, ok := h.(*Object); ok {
+			for k, v := range headers.Value {
+				if s, ok := v.(*String); ok {
+					options.Headers[k] = s.Value
 				}
 			}
 		}
 	}
 
-	if bodyVal, exists := opts.Value[httpBodyField]; exists {
-		switch v := bodyVal.(type) {
+	if body, exists := userOptions.Value[httpBodyField]; exists {
+		switch v := body.(type) {
 		case *String, *Object, *Bytes:
 			options.Body = v
 		default:
@@ -184,15 +196,87 @@ func httpParseOptions(opts *Object) *requestOptions {
 		}
 	}
 
-	return options
+	var parsedURL *url.URL
+	var err error
+
+	if userRawURL == nil {
+		u, uOK := userOptions.Value[httpURLField].(*String)
+		b, bOK := userOptions.Value[httpBaseField].(*String)
+		switch {
+		case uOK && bOK:
+			if parsedURL, err = url.Parse(u.Value); err != nil {
+				return nil, err
+			}
+			if parsedURL.IsAbs() {
+				options.Url = parsedURL
+				return options, nil
+			}
+			var base *url.URL
+			if base, err = url.Parse(b.Value); err != nil {
+				return nil, err
+			}
+			if base.Scheme == "" {
+				base.Scheme = httpDefaultSchema
+			}
+			options.Url = base.JoinPath(parsedURL.String())
+			return options, nil
+		case uOK:
+			if parsedURL, err = url.Parse(u.Value); err != nil {
+				return nil, err
+			}
+			if parsedURL.Scheme == "" {
+				parsedURL.Scheme = httpDefaultSchema
+			}
+			options.Url = parsedURL
+			return options, nil
+		case bOK:
+			if parsedURL, err = url.Parse(b.Value); err != nil {
+				return nil, err
+			}
+			if parsedURL.Scheme == "" {
+				parsedURL.Scheme = httpDefaultSchema
+			}
+			options.Url = parsedURL
+			return options, nil
+		default:
+			return nil, errors.New("Http client must have an url")
+		}
+	}
+
+	if parsedURL, err = url.Parse(*userRawURL); err != nil {
+		return nil, err
+	}
+
+	if parsedURL.IsAbs() {
+		options.Url = parsedURL
+		return options, nil
+	}
+
+	if b, bOK := userOptions.Value[httpBaseField].(*String); bOK {
+		var base *url.URL
+		if base, err = url.Parse(b.Value); err != nil {
+			return nil, err
+		}
+		if base.Scheme == "" {
+			base.Scheme = httpDefaultSchema
+		}
+		options.Url = base.JoinPath(parsedURL.String())
+		return options, nil
+	}
+
+	if parsedURL.Scheme == "" {
+		parsedURL.Scheme = httpDefaultSchema
+	}
+	options.Url = parsedURL
+	return options, nil
 }
 
-func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions) (*http.Response, []byte, error) {
+func httpExecuteRequest(ctx context.Context, userOptions *requestOptions) (*http.Response, []byte, error) {
 	var bodyReader io.Reader
 	var contentType string
 
-	if opts.Body != nil {
-		switch v := opts.Body.(type) {
+	if userOptions.Body != nil {
+		switch v := userOptions.Body.(type) {
 		case *String:
 			bodyReader = strings.NewReader(v.Value)
 			contentType = httpContentTypeText
@@ -209,19 +293,19 @@ func httpExecuteRequest(ctx context.Context, rawURL string, opts *requestOptions
 		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, opts.Method, rawURL, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, userOptions.Method, userOptions.Url.String(), bodyReader)
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if opts.Body != nil {
-		if _, exists := opts.Headers[httpContentType]; !exists && contentType != "" {
-			opts.Headers[httpContentType] = contentType
+	if userOptions.Body != nil {
+		if _, exists := userOptions.Headers[httpContentType]; !exists && contentType != "" {
+			userOptions.Headers[httpContentType] = contentType
 		}
 	}
 
-	for k, v := range opts.Headers {
+	for k, v := range userOptions.Headers {
 		req.Header.Set(k, v)
 	}
 
@@ -529,7 +613,7 @@ func (c *localHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawU
 	var lastErr error
 
 	for attempt := 1; attempt <= retryCfg.MaxAttempts; attempt++ {
-		resp, body, err := httpExecuteRequest(ctx, rawURL, opts)
+		resp, body, err := httpExecuteRequest(ctx, opts)
 		if err == nil {
 			if retryCfg.shouldRetry(nil, resp.StatusCode) {
 				lastErr = fmt.Errorf("retryable_status: %d", resp.StatusCode)
@@ -646,7 +730,7 @@ func (c *localHttpClient) request(args ...Value) (Value, error) {
 }
 
 func httpParseRetryAndCacheOptions(opts *Object) (*requestOptions, *retryConfig, *cacheConfig) {
-	reqOpts := httpParseOptions(opts)
+	reqOpts, _ := httpParseUserOptions(opts, nil)
 
 	var retryCfg *retryConfig
 	var cacheCfg *cacheConfig
