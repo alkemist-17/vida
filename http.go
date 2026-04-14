@@ -125,6 +125,10 @@ func resolveRequestOptions(rawURL string, args ...Value) (*requestOptions, error
 		return nil, err
 	}
 
+	if parsedURL.Scheme == "" {
+		parsedURL.Scheme = httpDefaultSchema
+	}
+
 	return &requestOptions{
 		Url:     parsedURL,
 		Method:  httpGET,
@@ -333,16 +337,17 @@ func httpDoRequest(req *http.Request) (*http.Response, []byte, error) {
 func httpRequestWithMethod(method string, args ...Value) (Value, error) {
 	switch len(args) {
 	case 1:
-		optsObj := &Object{
+		userOptions := &Object{
 			Value: map[string]Value{
 				httpMethodField: &String{Value: method},
 			},
 		}
-		return httpRequest(args[0], optsObj)
+		return httpRequest(args[0], userOptions)
 	case 2:
-		if optsObj, ok := args[1].(*Object); ok {
-			optsObj.Value[httpMethodField] = &String{Value: method}
-			return httpRequest(args[0], optsObj)
+		if userOptions, ok := args[1].(*Object); ok {
+			newUO := userOptions.Clone()
+			newUO.(*Object).Value[httpMethodField] = &String{Value: method}
+			return httpRequest(args[0], newUO)
 		}
 		return httpRequest(args[0])
 	}
