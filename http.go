@@ -37,6 +37,7 @@ const (
 	httpTimeoutField               = "timeout"
 	httpHeadersField               = "headers"
 	httpBodyField                  = "body"
+	httpQueryParamsField           = "params"
 	httpStatusCodeField            = "statusCode"
 	httpRetryField                 = "retry"
 	httpCacheField                 = "cache"
@@ -113,14 +114,14 @@ func httpRequest(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func resolveRequestOptions(rawURL string, args ...Value) (*requestOptions, error) {
+func resolveRequestOptions(userRawURL string, args ...Value) (*requestOptions, error) {
 	if len(args) > 1 {
 		if userOptions, ok := args[1].(*Object); ok {
-			return httpParseUserOptions(userOptions, &rawURL)
+			return httpParseUserOptions(userOptions, &userRawURL)
 		}
 	}
 
-	parsedURL, err := url.Parse(rawURL)
+	parsedURL, err := url.Parse(userRawURL)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +185,8 @@ func httpParseUserOptions(userOptions *Object, userRawURL *string) (*requestOpti
 		return nil, err
 	}
 
+	httpParseQueryParams(userOptions, options.Url)
+
 	return options, nil
 }
 
@@ -219,6 +222,16 @@ func httpParseBody(userOptions *Object, options *requestOptions) {
 		options.Body = v
 	default:
 		options.Body = NilValue
+	}
+}
+
+func httpParseQueryParams(userOptions *Object, parsedURL *url.URL) {
+	if queryParams, ok := userOptions.Value[httpQueryParamsField].(*Object); ok {
+		q := url.Values{}
+		for k, v := range queryParams.Value {
+			q.Add(k, v.String())
+		}
+		parsedURL.RawQuery = q.Encode()
 	}
 }
 
