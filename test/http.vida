@@ -13,7 +13,7 @@ if res {
     assert(res.statusCode == 200)
     assert(res.headers)
     assert(res.body)
-	if text.contains(res.headers["Content-Type"], "json") {
+	if text.contains(res.headers["Content-Type"], "application/json") {
 		if json.isValid(res.body) {
 			assert(json.isValid(res.body))
 			assert(json.parse(res.body))
@@ -49,7 +49,7 @@ for _, res in R {
 	if res {
 		assert(res.statusCode)
 		assert(res.headers)
-		if text.contains(res.headers["Content-Type"], "json") {
+		if text.contains(res.headers["Content-Type"], "application/json") {
 			if json.isValid(res.body) {
 				assert(json.isValid(res.body))
 				var data = json.parse(res.body)
@@ -127,5 +127,63 @@ task.parallel(
 )
 
 
+var options = {
+	base = "https://restcountries.com/v3.1"
+	url = ""
+}
+
+A = 
+[
+	"norway",
+	"iceland",
+	"vietnam",
+	"australia",
+	"scotland",
+	"ireland",
+	"denmark",
+	"greece",
+	"iran",
+	"mongolia"
+]
+
+
+R = task.parallel([
+	[http.get, format("/name/%v", A[0]), options],
+	[http.get, format("/name/%v", A[1]), options],
+	[http.get, format("/name/%v", A[2]), options],
+	[http.get, format("/name/%v", A[3]), options],
+	[http.get, format("/name/%v", A[4]), options],
+	[http.get, format("/name/%v", A[5]), options],
+	[http.get, format("/name/%v", A[6]), options],
+	[http.get, format("/name/%v", A[7]), options],
+	[http.get, format("/name/%v", A[8]), options],
+	[http.get, format("/name/%v", A[9]), options]]
+)
+
+
+task.parallel(
+	[
+		[check, R[0]],
+		[check, R[1]],
+		[check, R[2]],
+		[check, R[3]],
+		[check, R[4]],
+		[check, R[5]],
+		[check, R[6]],
+		[check, R[7]],
+		[check, R[8]],
+		[check, R[9]]
+	]
+)
+
+options.url = "/name/ecuador"
+res = http.get(options)
+
+check(res)
+
+
+options.timeout = 0
+res = http.get(options)
+assert(not res and isError(res))
 
 
