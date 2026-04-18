@@ -39,6 +39,7 @@ const (
 	httpBodyField                  = "body"
 	httpQueryParamsField           = "params"
 	httpStatusCodeField            = "statusCode"
+	httpMaxBodySizeField           = "maxBodySize"
 	httpRetryField                 = "retry"
 	httpCacheField                 = "cache"
 	httpMaxField                   = "max"
@@ -155,25 +156,28 @@ func httpResponseToObject(resp *http.Response, body []byte) *Object {
 }
 
 type requestOptions struct {
-	Method  string
-	Body    Value
-	Url     *url.URL
-	Base    *url.URL
-	Timeout time.Duration
-	Headers map[string]string
+	Method      string
+	Body        Value
+	Url         *url.URL
+	Base        *url.URL
+	Timeout     time.Duration
+	MaxBodySize int64
+	Headers     map[string]string
 }
 
 func httpParseUserOptions(userOptions *Object, userRawURL *string) (*requestOptions, error) {
 	options := &requestOptions{
-		Method:  httpGET,
-		Timeout: httpDefaultTimeout,
-		Headers: make(map[string]string),
+		Method:      httpGET,
+		Timeout:     httpDefaultTimeout,
+		MaxBodySize: httpMaxBodySize,
+		Headers:     make(map[string]string),
 	}
 
 	httpParseMethod(userOptions, options)
 	httpParseTimeout(userOptions, options)
 	httpParseHeaders(userOptions, options)
 	httpParseBody(userOptions, options)
+	httpParseBodySize(userOptions, options)
 
 	rawURL, err := httpResolveRawURL(userOptions, userRawURL)
 	if err != nil {
@@ -222,6 +226,12 @@ func httpParseBody(userOptions *Object, options *requestOptions) {
 		options.Body = v
 	default:
 		options.Body = NilValue
+	}
+}
+
+func httpParseBodySize(userOptions *Object, options *requestOptions) {
+	if mbs, ok := userOptions.Value[httpMaxBodySizeField].(Integer); ok {
+		options.MaxBodySize = int64(mbs)
 	}
 }
 
@@ -294,7 +304,7 @@ func httpExecuteRequest(ctx context.Context, userOptions *requestOptions) (*http
 	}
 
 	httpSetHeaders(req, userOptions.Headers, contentType)
-	return httpDoRequest(req)
+	return httpDoRequest(req, userOptions)
 }
 
 func httpBuildBodyReader(body Value) (io.Reader, string, error) {
@@ -328,20 +338,20 @@ func httpSetHeaders(req *http.Request, headers map[string]string, contentType st
 	}
 }
 
-func httpDoRequest(req *http.Request) (*http.Response, []byte, error) {
+func httpDoRequest(req *http.Request, userOptions *requestOptions) (*http.Response, []byte, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, httpMaxBodySize+1))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, userOptions.MaxBodySize+1))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if int64(len(body)) > httpMaxBodySize {
-		return nil, nil, fmt.Errorf("response exceeds %d bytes", httpMaxBodySize)
+	if int64(len(body)) > userOptions.MaxBodySize {
+		return nil, nil, fmt.Errorf("response exceeds %d bytes", userOptions.MaxBodySize)
 	}
 
 	return resp, body, nil
