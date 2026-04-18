@@ -9,7 +9,7 @@ import (
 )
 
 func loadFoundationText() Value {
-	m := &Object{Value: make(map[string]Value, 28)}
+	m := &Object{Value: make(map[string]Value, 29)}
 	m.Value["hasPrefix"] = GFn(textHasPrefix)
 	m.Value["hasSuffix"] = GFn(textHasSuffix)
 	m.Value["fromCodePoint"] = GFn(textFromCodepoint)
@@ -38,6 +38,7 @@ func loadFoundationText() Value {
 	m.Value["isSpace"] = GFn(textIsSpace)
 	m.Value["codePoint"] = GFn(textCodepoint)
 	m.Value["byteslen"] = GFn(textBytesLen)
+	m.Value["equalFold"] = GFn(textEqualFold)
 	return m
 }
 
@@ -438,4 +439,15 @@ func textStringSliceToArray(slice []string) Value {
 		xs[i] = &String{Value: slice[i]}
 	}
 	return &Array{Value: xs}
+}
+
+func textEqualFold(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		s, oks := args[0].(*String)
+		t, okt := args[1].(*String)
+		if oks && okt {
+			return Bool(strings.EqualFold(s.Value, t.Value)), nil
+		}
+	}
+	return NilValue, nil
 }
