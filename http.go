@@ -87,19 +87,19 @@ func httpRequest(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *String:
-			options, err := resolveRequestOptions(v.Value, args...)
+			config, err := resolveRequestConfig(v.Value, args...)
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
 			defer cancel()
-			resp, body, err := httpExecuteRequest(ctx, options)
+			resp, body, err := httpExecuteRequest(ctx, config)
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return httpResponseToObject(resp, body), nil
 		case *Object:
-			options, err := httpParseUserOptions(v, nil)
+			options, err := httpParseUserConfig(v, nil)
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
@@ -115,10 +115,10 @@ func httpRequest(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func resolveRequestOptions(userRawURL string, args ...Value) (*requestOptions, error) {
+func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, error) {
 	if len(args) > 1 {
 		if userOptions, ok := args[1].(*Object); ok {
-			return httpParseUserOptions(userOptions, &userRawURL)
+			return httpParseUserConfig(userOptions, &userRawURL)
 		}
 	}
 
@@ -131,7 +131,7 @@ func resolveRequestOptions(userRawURL string, args ...Value) (*requestOptions, e
 		parsedURL.Scheme = httpDefaultSchema
 	}
 
-	return &requestOptions{
+	return &requestConfig{
 		Url:     parsedURL,
 		Method:  httpGET,
 		Timeout: httpDefaultTimeout,
@@ -155,7 +155,7 @@ func httpResponseToObject(resp *http.Response, body []byte) *Object {
 	}
 }
 
-type requestOptions struct {
+type requestConfig struct {
 	Method      string
 	Body        Value
 	Url         *url.URL
@@ -165,101 +165,101 @@ type requestOptions struct {
 	Headers     map[string]string
 }
 
-func httpParseUserOptions(userOptions *Object, userRawURL *string) (*requestOptions, error) {
-	options := &requestOptions{
+func httpParseUserConfig(userConfig *Object, userRawURL *string) (*requestConfig, error) {
+	reqConfig := &requestConfig{
 		Method:      httpGET,
 		Timeout:     httpDefaultTimeout,
 		MaxBodySize: httpMaxBodySize,
 		Headers:     make(map[string]string),
 	}
 
-	httpParseMethod(userOptions, options)
-	httpParseTimeout(userOptions, options)
-	httpParseHeaders(userOptions, options)
-	httpParseBody(userOptions, options)
-	httpParseBodySize(userOptions, options)
+	httpParseMethod(userConfig, reqConfig)
+	httpParseTimeout(userConfig, reqConfig)
+	httpParseHeaders(userConfig, reqConfig)
+	httpParseBody(userConfig, reqConfig)
+	httpParseBodySize(userConfig, reqConfig)
 
-	rawURL, err := httpResolveRawURL(userOptions, userRawURL)
+	rawURL, err := httpResolveRawURL(userConfig, userRawURL)
 	if err != nil {
 		return nil, err
 	}
 
-	options.Url, err = httpResolveURL(rawURL, httpParseBase(userOptions))
+	reqConfig.Url, err = httpResolveURL(rawURL, httpParseBase(userConfig))
 	if err != nil {
 		return nil, err
 	}
 
-	httpParseQueryParams(userOptions, options.Url)
+	httpParseQueryParams(userConfig, reqConfig.Url)
 
-	return options, nil
+	return reqConfig, nil
 }
 
-func httpParseMethod(userOptions *Object, options *requestOptions) {
-	if m, ok := userOptions.Value[httpMethodField].(*String); ok {
-		options.Method = strings.ToUpper(m.Value)
+func httpParseMethod(userConfig *Object, reqConfig *requestConfig) {
+	if m, ok := userConfig.Value[httpMethodField].(*String); ok {
+		reqConfig.Method = strings.ToUpper(m.Value)
 	}
 }
 
-func httpParseTimeout(userOptions *Object, options *requestOptions) {
-	if t, ok := userOptions.Value[httpTimeoutField].(Integer); ok {
-		options.Timeout = time.Duration(t) * time.Millisecond
+func httpParseTimeout(userConfig *Object, reqConfig *requestConfig) {
+	if t, ok := userConfig.Value[httpTimeoutField].(Integer); ok {
+		reqConfig.Timeout = time.Duration(t) * time.Millisecond
 	}
 }
 
-func httpParseHeaders(userOptions *Object, options *requestOptions) {
-	if headers, ok := userOptions.Value[httpHeadersField].(*Object); ok {
+func httpParseHeaders(userConfig *Object, reqConfig *requestConfig) {
+	if headers, ok := userConfig.Value[httpHeadersField].(*Object); ok {
 		for k, v := range headers.Value {
 			if s, ok := v.(*String); ok {
-				options.Headers[k] = s.Value
+				reqConfig.Headers[k] = s.Value
 			}
 		}
 	}
 }
 
-func httpParseBody(userOptions *Object, options *requestOptions) {
-	body, exists := userOptions.Value[httpBodyField]
+func httpParseBody(userConfig *Object, reqConfig *requestConfig) {
+	body, exists := userConfig.Value[httpBodyField]
 	if !exists {
 		return
 	}
 	switch v := body.(type) {
 	case *String, *Object, *Bytes:
-		options.Body = v
+		reqConfig.Body = v
 	default:
-		options.Body = NilValue
+		reqConfig.Body = NilValue
 	}
 }
 
-func httpParseBodySize(userOptions *Object, options *requestOptions) {
-	if mbs, ok := userOptions.Value[httpMaxBodySizeField].(Integer); ok {
-		options.MaxBodySize = int64(mbs)
+func httpParseBodySize(userConfig *Object, reqConfig *requestConfig) {
+	if mbs, ok := userConfig.Value[httpMaxBodySizeField].(Integer); ok {
+		reqConfig.MaxBodySize = int64(mbs)
 	}
 }
 
-func httpParseQueryParams(userOptions *Object, parsedURL *url.URL) {
-	if queryParams, ok := userOptions.Value[httpQueryParamsField].(*Object); ok {
+func httpParseQueryParams(userConfig *Object, reqConfig *url.URL) {
+	if queryParams, ok := userConfig.Value[httpQueryParamsField].(*Object); ok {
 		q := url.Values{}
 		for k, v := range queryParams.Value {
 			q.Add(k, v.String())
 		}
-		parsedURL.RawQuery = q.Encode()
+		reqConfig.RawQuery = q.Encode()
 	}
 }
 
-func httpResolveRawURL(userOptions *Object, userRawURL *string) (string, error) {
+func httpResolveRawURL(userConfig *Object, userRawURL *string) (string, error) {
 	if userRawURL != nil {
 		return *userRawURL, nil
 	}
-	if u, ok := userOptions.Value[httpURLField].(*String); ok {
+	if u, ok := userConfig.Value[httpURLField].(*String); ok {
 		return u.Value, nil
 	}
-	if b, ok := userOptions.Value[httpBaseField].(*String); ok {
+	if b, ok := userConfig.Value[httpBaseField].(*String); ok {
 		return b.Value, nil
 	}
 	return "", errors.New("http client must have an url")
 }
 
-func httpParseBase(userOptions *Object) string {
-	if b, ok := userOptions.Value[httpBaseField].(*String); ok {
+func httpParseBase(userConfig *Object) string {
+	if b, ok := userConfig.Value[httpBaseField].(*String); ok {
 		return b.Value
 	}
 	return ""
@@ -292,19 +292,19 @@ func httpResolveURL(rawURL, base string) (*url.URL, error) {
 	return parsed, nil
 }
 
-func httpExecuteRequest(ctx context.Context, userOptions *requestOptions) (*http.Response, []byte, error) {
-	bodyReader, contentType, err := httpBuildBodyReader(userOptions.Body)
+func httpExecuteRequest(ctx context.Context, requestConfig *requestConfig) (*http.Response, []byte, error) {
+	bodyReader, contentType, err := httpBuildBodyReader(requestConfig.Body)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, userOptions.Method, userOptions.Url.String(), bodyReader)
+	req, err := http.NewRequestWithContext(ctx, requestConfig.Method, requestConfig.Url.String(), bodyReader)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	httpSetHeaders(req, userOptions.Headers, contentType)
-	return httpDoRequest(req, userOptions)
+	httpSetHeaders(req, requestConfig.Headers, contentType)
+	return httpDoRequest(req, requestConfig)
 }
 
 func httpBuildBodyReader(body Value) (io.Reader, string, error) {
@@ -338,20 +338,20 @@ func httpSetHeaders(req *http.Request, headers map[string]string, contentType st
 	}
 }
 
-func httpDoRequest(req *http.Request, userOptions *requestOptions) (*http.Response, []byte, error) {
+func httpDoRequest(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, userOptions.MaxBodySize+1))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, requestConfig.MaxBodySize+1))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if int64(len(body)) > userOptions.MaxBodySize {
-		return nil, nil, fmt.Errorf("response exceeds %d bytes", userOptions.MaxBodySize)
+	if int64(len(body)) > requestConfig.MaxBodySize {
+		return nil, nil, fmt.Errorf("response exceeds %d bytes", requestConfig.MaxBodySize)
 	}
 
 	return resp, body, nil
@@ -637,7 +637,7 @@ func newLocalHttpClient() *localHttpClient {
 	}
 }
 
-func (c *localHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawURL string, opts *requestOptions, retryCfg *retryConfig) (*http.Response, []byte, error) {
+func (c *localHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawURL string, opts *requestConfig, retryCfg *retryConfig) (*http.Response, []byte, error) {
 	var lastErr error
 
 	for attempt := 1; attempt <= retryCfg.MaxAttempts; attempt++ {
@@ -682,7 +682,7 @@ func (c *localHttpClient) request(args ...Value) (Value, error) {
 		return NilValue, fmt.Errorf("http.request: first argument must be *String, got %T", args[0])
 	}
 
-	var opts *requestOptions = &requestOptions{}
+	var opts *requestConfig = &requestConfig{}
 	var retryCfg *retryConfig = c.retryConfig
 	var cacheCfg *cacheConfig = c.cacheConfig
 
@@ -757,8 +757,8 @@ func (c *localHttpClient) request(args ...Value) (Value, error) {
 	return httpResponseToObject(resp, body), nil
 }
 
-func httpParseRetryAndCacheOptions(opts *Object) (*requestOptions, *retryConfig, *cacheConfig) {
-	reqOpts, _ := httpParseUserOptions(opts, nil)
+func httpParseRetryAndCacheOptions(opts *Object) (*requestConfig, *retryConfig, *cacheConfig) {
+	reqOpts, _ := httpParseUserConfig(opts, nil)
 
 	var retryCfg *retryConfig
 	var cacheCfg *cacheConfig
