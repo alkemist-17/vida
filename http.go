@@ -83,7 +83,7 @@ func loadFoundationHttpClient() Value {
 	m.Value["head"] = GFn(httpHead)
 	m.Value["options"] = GFn(httpOptions)
 	m.Value["statusText"] = GFn(httpStatusCodeText)
-	m.Value["interceptors"] = httpGenerateInterceptorsObject()
+	// m.Value["interceptors"] = httpGenerateInterceptorsObject()
 	return m
 }
 

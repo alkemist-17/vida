@@ -11,12 +11,7 @@ assert(
 	text and 
 	task and 
 	cast and 
-	array and 
-	http.interceptors and 
-	http.interceptors.request and 
-	http.interceptors.response and
-	http.interceptors.request.use and
-	http.interceptors.response.use
+	array
 )
 
 var res = http.request("https://restcountries.com/v3.1/name/china")
