@@ -5,7 +5,19 @@ var task = load("std/task")
 var cast = load("std/cast")
 var array = load("std/array")
 
-assert(http and json and text and task and cast and array)
+assert(
+	http and 
+	json and 
+	text and 
+	task and 
+	cast and 
+	array and 
+	http.interceptors and 
+	http.interceptors.request and 
+	http.interceptors.response and
+	http.interceptors.request.use and
+	http.interceptors.response.use
+)
 
 var res = http.request("https://restcountries.com/v3.1/name/china")
 
