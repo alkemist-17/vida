@@ -59,17 +59,18 @@ const (
 	httpDelayMultiplier            = 2.0
 	httpDefaultTTL                 = 5 * time.Minute
 	httpMaxCacheEntries            = 1000
-	httpMaxIdleConnections         = 100
-	httpMaxIdleConnectionsPerHost  = 10
+	httpMaxIdleConnections         = 0
+	httpMaxConnsPerHost            = 0
+	httpMaxIdleConnectionsPerHost  = 200
 	httpDefaultIdleConnTimeout     = 90 * time.Second
 	httpDefaultTLSHandshakeTimeout = 10 * time.Second
 	httpDefaultJitter              = true
 )
 
-var httpDefaultClient *localHttpClient
+var httpDefaultVidaHttpClient *vidaHttpClient
 
 func loadFoundationHttpClient() Value {
-	httpDefaultClient = newLocalHttpClient()
+	httpDefaultVidaHttpClient = newVidaHttpClient()
 	m := &Object{Value: make(map[string]Value, 10)}
 	m.Value["request"] = GFn(httpRequest)
 	m.Value["get"] = GFn(httpRequest)
@@ -341,7 +342,7 @@ func httpSetHeaders(req *http.Request, headers map[string]string, contentType st
 }
 
 func httpDoRequest(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpDefaultVidaHttpClient.httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -623,7 +624,7 @@ func httpGenerateCacheKey(method, rawURL string, headers map[string]string, body
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-type localHttpClient struct {
+type vidaHttpClient struct {
 	httpClient     *http.Client
 	interceptors   *interceptorChain
 	retryConfig    *retryConfig
@@ -632,25 +633,26 @@ type localHttpClient struct {
 	defaultHeaders map[string]string
 }
 
-func newLocalHttpClient() *localHttpClient {
-	return &localHttpClient{
+func newVidaHttpClient() *vidaHttpClient {
+	return &vidaHttpClient{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
 				MaxIdleConns:        httpMaxIdleConnections,
 				MaxIdleConnsPerHost: httpMaxIdleConnectionsPerHost,
+				MaxConnsPerHost:     httpMaxConnsPerHost,
 				IdleConnTimeout:     httpDefaultIdleConnTimeout,
 				TLSHandshakeTimeout: httpDefaultTLSHandshakeTimeout,
 			},
 			Timeout: httpDefaultTimeout,
 		},
-		interceptors:   &interceptorChain{},
-		retryConfig:    defaultRetryConfig(),
-		cacheConfig:    newCacheConfig(),
-		defaultHeaders: make(map[string]string),
+		// interceptors:   &interceptorChain{},
+		// retryConfig:    defaultRetryConfig(),
+		// cacheConfig:    newCacheConfig(),
+		// defaultHeaders: make(map[string]string),
 	}
 }
 
-func (c *localHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawURL string, opts *requestConfig, retryCfg *retryConfig) (*http.Response, []byte, error) {
+func (c *vidaHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawURL string, opts *requestConfig, retryCfg *retryConfig) (*http.Response, []byte, error) {
 	var lastErr error
 
 	for attempt := 1; attempt <= retryCfg.MaxAttempts; attempt++ {
@@ -685,7 +687,7 @@ func (c *localHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawU
 	return nil, nil, fmt.Errorf("max_retries_exceeded: %v", lastErr)
 }
 
-func (c *localHttpClient) request(args ...Value) (Value, error) {
+func (c *vidaHttpClient) request(args ...Value) (Value, error) {
 	if len(args) < 1 {
 		return NilValue, fmt.Errorf("http.request: expected at least 1 argument (url string)")
 	}
@@ -848,7 +850,7 @@ func httpRegisterInterceptor(args ...Value) (Value, error) {
 
 	if args[0] != NilValue {
 		if reqFn, ok := args[0].(Value); Bool(ok) && reqFn.IsCallable() {
-			httpDefaultClient.interceptors.addRequest(func(req *http.Request) (*http.Request, error) {
+			httpDefaultVidaHttpClient.interceptors.addRequest(func(req *http.Request) (*http.Request, error) {
 				reqObj := httpRequestToObject(req)
 				_, err := reqFn.Call(reqObj)
 				if err != nil {
@@ -862,7 +864,7 @@ func httpRegisterInterceptor(args ...Value) (Value, error) {
 
 	if len(args) > 1 && args[1] != NilValue {
 		if resFn, ok := args[1].(Value); Bool(ok) && resFn.IsCallable() {
-			httpDefaultClient.interceptors.addResponse(func(resp *http.Response, body []byte) (*http.Response, []byte, error) {
+			httpDefaultVidaHttpClient.interceptors.addResponse(func(resp *http.Response, body []byte) (*http.Response, []byte, error) {
 				respObj := httpResponseToObject(resp, body)
 				_, err := resFn.Call(respObj)
 				if err != nil {
@@ -906,13 +908,13 @@ func httpCacheControl(args ...Value) (Value, error) {
 
 	switch action.Value {
 	case "clear":
-		httpDefaultClient.cacheConfig.clear()
+		httpDefaultVidaHttpClient.cacheConfig.clear()
 		return NilValue, nil
 	case "stats":
 		// Return simple stats object
 		stats := &Object{
 			Value: map[string]Value{
-				"enabled": Bool(httpDefaultClient.cacheConfig.Enabled),
+				"enabled": Bool(httpDefaultVidaHttpClient.cacheConfig.Enabled),
 				// Add more stats as needed
 			},
 		}
@@ -923,7 +925,7 @@ func httpCacheControl(args ...Value) (Value, error) {
 }
 
 func httpCreateClient(args ...Value) (Value, error) {
-	client := newLocalHttpClient()
+	client := newVidaHttpClient()
 
 	if len(args) > 0 && args[0] != NilValue {
 		if config, ok := args[0].(*Object); ok {
