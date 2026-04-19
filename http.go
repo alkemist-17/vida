@@ -59,11 +59,13 @@ const (
 	httpDelayMultiplier            = 2.0
 	httpDefaultTTL                 = 5 * time.Minute
 	httpMaxCacheEntries            = 1000
-	httpMaxIdleConnections         = 0
+	httpMaxIdleConnections         = 200
 	httpMaxConnsPerHost            = 0
 	httpMaxIdleConnectionsPerHost  = 100
 	httpDefaultIdleConnTimeout     = 90 * time.Second
 	httpDefaultTLSHandshakeTimeout = 10 * time.Second
+	httpResponseHeaderTimeout      = 15 * time.Second
+	httpExpectContinueTimeout      = 1 * time.Second
 	httpDefaultJitter              = true
 )
 
@@ -638,11 +640,13 @@ func newVidaHttpClient() *vidaHttpClient {
 	return &vidaHttpClient{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
-				MaxIdleConns:        httpMaxIdleConnections,
-				MaxIdleConnsPerHost: httpMaxIdleConnectionsPerHost,
-				MaxConnsPerHost:     httpMaxConnsPerHost,
-				IdleConnTimeout:     httpDefaultIdleConnTimeout,
-				TLSHandshakeTimeout: httpDefaultTLSHandshakeTimeout,
+				MaxIdleConns:          httpMaxIdleConnections,
+				MaxIdleConnsPerHost:   httpMaxIdleConnectionsPerHost,
+				MaxConnsPerHost:       httpMaxConnsPerHost,
+				IdleConnTimeout:       httpDefaultIdleConnTimeout,
+				TLSHandshakeTimeout:   httpDefaultTLSHandshakeTimeout,
+				ResponseHeaderTimeout: httpResponseHeaderTimeout,
+				ExpectContinueTimeout: httpExpectContinueTimeout,
 			},
 			Timeout: httpDefaultTimeout,
 		},
