@@ -240,13 +240,13 @@ func httpParseBodySize(userConfig *Object, reqConfig *requestConfig) {
 	}
 }
 
-func httpParseQueryParams(userConfig *Object, reqConfig *url.URL) {
+func httpParseQueryParams(userConfig *Object, reqConfigURL *url.URL) {
 	if queryParams, ok := userConfig.Value[httpQueryParamsField].(*Object); ok {
 		q := url.Values{}
 		for k, v := range queryParams.Value {
 			q.Add(k, v.String())
 		}
-		reqConfig.RawQuery = q.Encode()
+		reqConfigURL.RawQuery = q.Encode()
 	}
 }
 
@@ -417,9 +417,9 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 }
 
 func httpGenerateInterceptorsObject() *Object {
-	interceptors := &Object{Value: make(map[string]Value)}
-	req := &Object{Value: make(map[string]Value)}
-	res := &Object{Value: make(map[string]Value)}
+	interceptors := &Object{Value: make(map[string]Value, 2)}
+	req := &Object{Value: make(map[string]Value, 1)}
+	res := &Object{Value: make(map[string]Value, 1)}
 	req.Value["use"] = GFn(httpRegisterRequestInterceptor)
 	res.Value["use"] = GFn(httpRegisterResponseInterceptor)
 	interceptors.Value["request"] = req
