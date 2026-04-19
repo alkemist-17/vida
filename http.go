@@ -61,7 +61,7 @@ const (
 	httpMaxCacheEntries            = 1000
 	httpMaxIdleConnections         = 0
 	httpMaxConnsPerHost            = 0
-	httpMaxIdleConnectionsPerHost  = 200
+	httpMaxIdleConnectionsPerHost  = 100
 	httpDefaultIdleConnTimeout     = 90 * time.Second
 	httpDefaultTLSHandshakeTimeout = 10 * time.Second
 	httpDefaultJitter              = true
@@ -347,6 +347,7 @@ func httpDoRequest(req *http.Request, requestConfig *requestConfig) (*http.Respo
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
+	defer io.Copy(io.Discard, resp.Body)
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, requestConfig.MaxBodySize+1))
 	if err != nil {
