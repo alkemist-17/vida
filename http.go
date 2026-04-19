@@ -70,7 +70,7 @@ var httpDefaultClient *localHttpClient
 
 func loadFoundationHttpClient() Value {
 	httpDefaultClient = newLocalHttpClient()
-	m := &Object{Value: make(map[string]Value, 9)}
+	m := &Object{Value: make(map[string]Value, 10)}
 	m.Value["request"] = GFn(httpRequest)
 	m.Value["get"] = GFn(httpRequest)
 	m.Value["post"] = GFn(httpPost)
@@ -80,6 +80,7 @@ func loadFoundationHttpClient() Value {
 	m.Value["head"] = GFn(httpHead)
 	m.Value["options"] = GFn(httpOptions)
 	m.Value["statusText"] = GFn(httpStatusCodeText)
+	m.Value["interceptors"] = httpGenerateInterceptorsObject()
 	return m
 }
 
@@ -132,10 +133,11 @@ func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, err
 	}
 
 	return &requestConfig{
-		Url:     parsedURL,
-		Method:  httpGET,
-		Timeout: httpDefaultTimeout,
-		Headers: make(map[string]string),
+		Url:         parsedURL,
+		Method:      httpGET,
+		Timeout:     httpDefaultTimeout,
+		MaxBodySize: httpMaxBodySize,
+		Headers:     make(map[string]string),
 	}, nil
 }
 
@@ -408,6 +410,17 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func httpGenerateInterceptorsObject() *Object {
+	interceptors := &Object{Value: make(map[string]Value)}
+	req := &Object{Value: make(map[string]Value)}
+	res := &Object{Value: make(map[string]Value)}
+	req.Value["use"] = GFn(httpRegisterRequestInterceptor)
+	res.Value["use"] = GFn(httpRegisterResponseInterceptor)
+	interceptors.Value["request"] = req
+	interceptors.Value["response"] = res
+	return interceptors
 }
 
 // Interceptors, retry logic and cache.
@@ -818,6 +831,14 @@ func httpParseCacheConfig(obj *Object) *cacheConfig {
 	}
 
 	return cfg
+}
+
+func httpRegisterRequestInterceptor(args ...Value) (Value, error) {
+	return NilValue, nil
+}
+
+func httpRegisterResponseInterceptor(args ...Value) (Value, error) {
+	return NilValue, nil
 }
 
 func httpRegisterInterceptor(args ...Value) (Value, error) {
