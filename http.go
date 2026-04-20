@@ -407,8 +407,6 @@ func httpDoSimpleRequest(req *http.Request, requestConfig *requestConfig) (*http
 
 func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
 	// Should handle body, context and idempotency
-	var lastError error
-
 	for attemp := 0; attemp < requestConfig.Retry.MaxAttempts; attemp++ {
 		res, body, err := httpDoSimpleRequest(req, requestConfig)
 		if err != nil {
@@ -420,7 +418,6 @@ func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*h
 		if !requestConfig.Retry.shouldRetry(res.StatusCode) {
 			return res, body, nil
 		}
-		lastError = err
 
 		clonedReq := req.Clone(req.Context())
 		if body != nil {
@@ -438,18 +435,25 @@ func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*h
 		case <-time.After(delay):
 		}
 	}
-	return nil, nil, fmt.Errorf("max retries exceeded: %v", lastError)
+	return nil, nil, fmt.Errorf("max retries exceeded: max attempts: %v", requestConfig.Retry.MaxAttempts)
 }
 
 func httpRequestWithMethod(method string, args ...Value) (Value, error) {
 	switch len(args) {
 	case 1:
-		userOptions := &Object{
-			Value: map[string]Value{
-				httpMethodField: &String{Value: method},
-			},
+		switch v := args[0].(type) {
+		case *String:
+			userOptions := &Object{
+				Value: map[string]Value{
+					httpMethodField: &String{Value: method},
+				},
+			}
+			return httpRequest(v, userOptions)
+		case *Object:
+			newUO := v.Clone()
+			newUO.(*Object).Value[httpMethodField] = &String{Value: method}
+			return httpRequest(newUO)
 		}
-		return httpRequest(args[0], userOptions)
 	case 2:
 		if userOptions, ok := args[1].(*Object); ok {
 			newUO := userOptions.Clone()
