@@ -314,7 +314,7 @@ func httpExecuteRequest(ctx context.Context, requestConfig *requestConfig) (*htt
 
 func httpBuildBodyReader(body Value) (io.Reader, string, error) {
 	if body == nil {
-		return nil, "", nil
+		return http.NoBody, "", nil
 	}
 	switch v := body.(type) {
 	case *String:
