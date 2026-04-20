@@ -142,6 +142,46 @@ task.parallel(
 	]
 )
 
+R = task.parallel(
+	[
+		[http.get, {url = "https://httpbin.org/anything"}],
+		[http.post, {url = "https://httpbin.org/anything"}],
+		[http.put, {url = "https://httpbin.org/anything"}],
+		[http.patch, {url = "https://httpbin.org/anything"}],
+		[http.delete, {url = "https://httpbin.org/anything"}]
+	]
+)
+
+task.parallel(
+	[
+		[checkMethod, R[0], "get"],
+		[checkMethod, R[1], "post"],
+		[checkMethod, R[2], "put"],
+		[checkMethod, R[3], "patch"],
+		[checkMethod, R[4], "delete"]
+	]
+)
+
+R = task.parallel(
+	[
+		[http.get, {base = "https://httpbin.org", url = "/anything"}],
+		[http.post, {base = "https://httpbin.org", url = "/anything"}],
+		[http.put, {base = "https://httpbin.org", url = "/anything"}],
+		[http.patch, {base = "https://httpbin.org", url = "/anything"}],
+		[http.delete, {base = "https://httpbin.org", url = "/anything"}]
+	]
+)
+
+task.parallel(
+	[
+		[checkMethod, R[0], "get"],
+		[checkMethod, R[1], "post"],
+		[checkMethod, R[2], "put"],
+		[checkMethod, R[3], "patch"],
+		[checkMethod, R[4], "delete"]
+	]
+)
+
 
 var options = {
 	base = "https://restcountries.com/v3.1"
