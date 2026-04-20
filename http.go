@@ -41,10 +41,11 @@ const (
 	httpStatusCodeField            = "statusCode"
 	httpMaxBodySizeField           = "maxBodySize"
 	httpRetryField                 = "retry"
+	httpMaxAttemptsField           = "max"
+	httpInitialBackoffField        = "backoff"
+	httpMaxBackoffField            = "maxBackoff"
+	httpRetryableCodesField        = "statusCodes"
 	httpCacheField                 = "cache"
-	httpMaxField                   = "max"
-	httpBackoffField               = "backoff"
-	httpJitterField                = "jitter"
 	httpEnabledField               = "enabled"
 	httpTTLField                   = "ttl"
 	httpContentTypeText            = "text/plain"
@@ -167,6 +168,7 @@ type requestConfig struct {
 	Timeout     time.Duration
 	MaxBodySize int64
 	Headers     map[string]string
+	Retry       *retryConfig
 }
 
 func httpParseUserConfig(userConfig *Object, userRawURL *string) (*requestConfig, error) {
@@ -182,6 +184,7 @@ func httpParseUserConfig(userConfig *Object, userRawURL *string) (*requestConfig
 	httpParseHeaders(userConfig, reqConfig)
 	httpParseBody(userConfig, reqConfig)
 	httpParseBodySize(userConfig, reqConfig)
+	httpParseRetry(userConfig, reqConfig)
 
 	rawURL, err := httpResolveRawURL(userConfig, userRawURL)
 	if err != nil {
@@ -237,6 +240,39 @@ func httpParseBodySize(userConfig *Object, reqConfig *requestConfig) {
 	if mbs, ok := userConfig.Value[httpMaxBodySizeField].(Integer); ok {
 		reqConfig.MaxBodySize = int64(mbs)
 	}
+}
+
+func httpParseRetry(userConfig *Object, reqConfig *requestConfig) {
+	retry, ok := userConfig.Value[httpRetryField].(*Object)
+	if !ok || len(retry.Value) == 0 {
+		return
+	}
+	httpParseRetryFields(retry, reqConfig)
+}
+
+func httpParseRetryFields(userRetryConfig *Object, reqConfig *requestConfig) {
+	retry := defaultRetryConfig()
+	if maxAttempts, ok := userRetryConfig.Value[httpMaxAttemptsField].(Integer); ok && maxAttempts > 0 {
+		retry.MaxAttempts = int(maxAttempts)
+	}
+	if backoff, ok := userRetryConfig.Value[httpInitialBackoffField].(Integer); ok && backoff > 0 {
+		retry.InitialDelay = time.Duration(backoff) * time.Millisecond
+	}
+	if maxDelay, ok := userRetryConfig.Value[httpMaxBackoffField].(Integer); ok && maxDelay > 0 {
+		retry.MaxDelay = time.Duration(maxDelay) * time.Millisecond
+	}
+	if codes, ok := userRetryConfig.Value[httpRetryableCodesField].(*Array); ok && len(codes.Value) > 0 {
+		var c []int
+		for _, v := range codes.Value {
+			if code, ok := v.(Integer); ok && 100 <= code && code <= 599 {
+				c = append(c, int(code))
+			}
+		}
+		if len(c) > 0 {
+			reqConfig.Retry.RetryableCodes = c
+		}
+	}
+	reqConfig.Retry = retry
 }
 
 func httpParseQueryParams(userConfig *Object, reqConfigURL *url.URL) {
@@ -343,6 +379,13 @@ func httpSetHeaders(req *http.Request, headers map[string]string, contentType st
 }
 
 func httpDoRequest(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
+	if requestConfig.Retry == nil {
+		return httpDoSimpleRequest(req, requestConfig)
+	}
+	return httpDoRequestWithRetry(req, requestConfig)
+}
+
+func httpDoSimpleRequest(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
 	resp, err := httpDefaultVidaHttpClient.httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err
@@ -360,6 +403,42 @@ func httpDoRequest(req *http.Request, requestConfig *requestConfig) (*http.Respo
 	}
 
 	return resp, body, nil
+}
+
+func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
+	// Should handle body, context and idempotency
+	var lastError error
+
+	for attemp := 0; attemp < requestConfig.Retry.MaxAttempts; attemp++ {
+		res, body, err := httpDoSimpleRequest(req, requestConfig)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := req.Context().Err(); err != nil {
+			return nil, nil, err
+		}
+		if !requestConfig.Retry.shouldRetry(res.StatusCode) {
+			return res, body, nil
+		}
+		lastError = err
+
+		clonedReq := req.Clone(req.Context())
+		if body != nil {
+			clonedReq.Body = io.NopCloser(bytes.NewReader(body))
+			clonedReq.ContentLength = int64(len(body))
+			clonedReq.GetBody = func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewReader(body)), nil
+			}
+		}
+
+		delay := requestConfig.Retry.calculateBackoff(attemp)
+		select {
+		case <-req.Context().Done():
+			return nil, nil, req.Context().Err()
+		case <-time.After(delay):
+		}
+	}
+	return nil, nil, fmt.Errorf("max retries exceeded: %v", lastError)
 }
 
 func httpRequestWithMethod(method string, args ...Value) (Value, error) {
@@ -426,7 +505,44 @@ func httpGenerateInterceptorsObject() *Object {
 	return interceptors
 }
 
-// Interceptors, retry logic and cache.
+type retryConfig struct {
+	MaxAttempts    int           // Max retry attempts
+	InitialDelay   time.Duration // Initial backoff delay in milliseconds
+	MaxDelay       time.Duration // Max backoff delay cap in milliseconds
+	Multiplier     float64       // Backoff multiplier
+	Jitter         bool          // Add randomness to backoff
+	RetryableCodes []int         // HTTP status codes to retry
+}
+
+func defaultRetryConfig() *retryConfig {
+	return &retryConfig{
+		MaxAttempts:    httpMaxRetryAttempts,
+		InitialDelay:   httpInitialDelay,
+		MaxDelay:       httpMaxDelay,
+		Multiplier:     httpDelayMultiplier,
+		Jitter:         httpDefaultJitter,
+		RetryableCodes: []int{429, 500, 502, 503, 504},
+	}
+}
+
+func (rc *retryConfig) shouldRetry(statusCode int) bool {
+	return slices.Contains(rc.RetryableCodes, statusCode)
+}
+
+func (rc *retryConfig) calculateBackoff(attempt int) time.Duration {
+	delay := float64(rc.InitialDelay) * math.Pow(rc.Multiplier, float64(attempt))
+	if delay > float64(rc.MaxDelay) {
+		delay = float64(rc.MaxDelay)
+	}
+	// Add random value in [0.5*delay, 1.5*delay]
+	if rc.Jitter {
+		jitter := 0.5 + (0.5 * float64(time.Now().UnixNano()%1000) / 1000.0)
+		delay *= jitter
+	}
+	return time.Duration(delay)
+}
+
+// Interceptors and cache.
 type requestInterceptor func(*http.Request) (*http.Request, error)
 
 type responseInterceptor func(*http.Response, []byte) (*http.Response, []byte, error)
@@ -473,46 +589,6 @@ func (c *interceptorChain) executeResponse(resp *http.Response, body []byte) (*h
 		}
 	}
 	return resp, body, nil
-}
-
-type retryConfig struct {
-	MaxAttempts    int           // Max retry attempts (default: 3)
-	InitialDelay   time.Duration // Initial backoff delay (default: 100ms)
-	MaxDelay       time.Duration // Max backoff delay cap (default: 10s)
-	Multiplier     float64       // Backoff multiplier (default: 2.0 for exponential)
-	Jitter         bool          // Add randomness to backoff (default: true)
-	RetryableCodes []int         // HTTP status codes to retry (default: [429, 500, 502, 503, 504])
-}
-
-func defaultRetryConfig() *retryConfig {
-	return &retryConfig{
-		MaxAttempts:    httpMaxRetryAttempts,
-		InitialDelay:   httpInitialDelay,
-		MaxDelay:       httpMaxDelay,
-		Multiplier:     httpDelayMultiplier,
-		Jitter:         httpDefaultJitter,
-		RetryableCodes: []int{429, 500, 502, 503, 504},
-	}
-}
-
-func (rc *retryConfig) shouldRetry(statusCode int) bool {
-	if slices.Contains(rc.RetryableCodes, statusCode) {
-		return true
-	}
-	return false
-}
-
-func (rc *retryConfig) calculateBackoff(attempt int) time.Duration {
-	delay := float64(rc.InitialDelay) * math.Pow(rc.Multiplier, float64(attempt-1))
-	if delay > float64(rc.MaxDelay) {
-		delay = float64(rc.MaxDelay)
-	}
-	// Add random value in [0.5*delay, 1.5*delay]
-	if rc.Jitter {
-		jitter := 0.5 + (0.5 * float64(time.Now().UnixNano()%1000) / 1000.0)
-		delay *= jitter
-	}
-	return time.Duration(delay)
 }
 
 type cacheEntry struct {
@@ -615,10 +691,7 @@ func httpGenerateCacheKey(method, rawURL string, headers map[string]string, body
 }
 
 type vidaHttpClient struct {
-	httpClient   *http.Client
-	retryConfig  *retryConfig
-	cacheConfig  *cacheConfig
-	interceptors *interceptorChain
+	httpClient *http.Client
 }
 
 func newVidaHttpClient() *vidaHttpClient {
@@ -635,169 +708,7 @@ func newVidaHttpClient() *vidaHttpClient {
 			},
 			Timeout: httpDefaultTimeout,
 		},
-		// interceptors:   &interceptorChain{},
-		// retryConfig:    defaultRetryConfig(),
-		// cacheConfig:    newCacheConfig(),
 	}
-}
-
-func (c *vidaHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawURL string, opts *requestConfig, retryCfg *retryConfig) (*http.Response, []byte, error) {
-	var lastErr error
-
-	for attempt := 1; attempt <= retryCfg.MaxAttempts; attempt++ {
-		resp, body, err := httpExecuteRequest(ctx, opts)
-		if err == nil {
-			if retryCfg.shouldRetry(resp.StatusCode) {
-				lastErr = fmt.Errorf("retryable_status: %d", resp.StatusCode)
-				resp.Body.Close()
-			} else {
-				return resp, body, nil
-			}
-		}
-
-		// Wait before retry (if not last attempt)
-		if attempt < retryCfg.MaxAttempts {
-			delay := retryCfg.calculateBackoff(attempt)
-			select {
-			case <-time.After(delay):
-				continue
-			case <-ctx.Done():
-				return nil, nil, ctx.Err()
-			}
-		}
-	}
-
-	return nil, nil, fmt.Errorf("max_retries_exceeded: %v", lastErr)
-}
-
-func (c *vidaHttpClient) request(args ...Value) (Value, error) {
-	if len(args) < 1 {
-		return NilValue, fmt.Errorf("http.request: expected at least 1 argument (url string)")
-	}
-
-	urlVal, ok := args[0].(*String)
-	if !ok {
-		return NilValue, fmt.Errorf("http.request: first argument must be *String, got %T", args[0])
-	}
-
-	var opts *requestConfig = &requestConfig{}
-	var retryCfg *retryConfig = c.retryConfig
-	var cacheCfg *cacheConfig = c.cacheConfig
-
-	if len(args) > 1 && args[1] != NilValue {
-		if optsObj, ok := args[1].(*Object); ok {
-			parsed, rCfg, cCfg := httpParseRetryAndCacheOptions(optsObj)
-			opts = parsed
-			if rCfg != nil {
-				retryCfg = rCfg
-			}
-			if cCfg != nil {
-				cacheCfg = cCfg
-			}
-		}
-	}
-
-	// Generate cache key if caching enabled
-	var cacheKey string
-	if cacheCfg.Enabled {
-		cacheKey = httpGenerateCacheKey(opts.Method, urlVal.Value, opts.Headers, nil)
-		if entry := cacheCfg.get(cacheKey); entry != nil {
-			return httpResponseToObject(&http.Response{
-				StatusCode: entry.StatusCode,
-				Header:     entry.Headers,
-				Request:    &http.Request{URL: &url.URL{Path: urlVal.Value}},
-			}, entry.Body), nil
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
-	defer cancel()
-
-	resp, body, err := c.executeRequestWithRetryLogic(ctx, urlVal.Value, opts, retryCfg)
-	if err != nil {
-		errMsg := err.Error()
-		var kind, message string
-		if _, err := fmt.Sscanf(errMsg, "%s: %s", &kind, &message); err != nil {
-			kind = "unknown"
-			message = errMsg
-		}
-		errObj := &Object{
-			Value: map[string]Value{
-				"kind":    &String{Value: kind},
-				"message": &String{Value: message},
-			},
-		}
-		return VidaError{Message: errObj}, nil
-	}
-
-	// Apply response interceptors
-	resp, body, err = c.interceptors.executeResponse(resp, body)
-	if err != nil {
-		return NilValue, err
-	}
-
-	// Cache successful GET responses
-	if cacheCfg.Enabled && opts.Method == httpGET && resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		ttl := cacheCfg.DefaultTTL
-		// Allow per-request TTL override
-		if cacheCfg.DefaultTTL > 0 {
-			ttl = cacheCfg.DefaultTTL
-		}
-		cacheCfg.set(cacheKey, &cacheEntry{
-			Body:       body,
-			StatusCode: resp.StatusCode,
-			Headers:    resp.Header.Clone(),
-			CreatedAt:  time.Now(),
-			TTL:        ttl,
-		})
-	}
-
-	return httpResponseToObject(resp, body), nil
-}
-
-func httpParseRetryAndCacheOptions(opts *Object) (*requestConfig, *retryConfig, *cacheConfig) {
-	reqOpts, _ := httpParseUserConfig(opts, nil)
-
-	var retryCfg *retryConfig
-	var cacheCfg *cacheConfig
-
-	if retryVal, exists := opts.Value[httpRetryField]; exists {
-		if retryObj, ok := retryVal.(*Object); ok {
-			retryCfg = httpParseRetryConfig(retryObj)
-		}
-	}
-
-	if cacheVal, exists := opts.Value[httpCacheField]; exists {
-		if cacheObj, ok := cacheVal.(*Object); ok {
-			cacheCfg = httpParseCacheConfig(cacheObj)
-		}
-	}
-
-	return reqOpts, retryCfg, cacheCfg
-}
-
-func httpParseRetryConfig(obj *Object) *retryConfig {
-	cfg := defaultRetryConfig()
-
-	if maxVal, exists := obj.Value[httpMaxField]; exists {
-		if intVal, ok := maxVal.(Integer); ok {
-			cfg.MaxAttempts = int(intVal)
-		}
-	}
-
-	if backoffVal, exists := obj.Value[httpBackoffField]; exists {
-		if intVal, ok := backoffVal.(Integer); ok {
-			cfg.InitialDelay = time.Duration(intVal) * time.Millisecond
-		}
-	}
-
-	if jitterVal, exists := obj.Value[httpJitterField]; exists {
-		if boolVal, ok := jitterVal.(Bool); ok {
-			cfg.Jitter = bool(boolVal)
-		}
-	}
-
-	return cfg
 }
 
 func httpParseCacheConfig(obj *Object) *cacheConfig {
@@ -826,41 +737,41 @@ func httpRegisterResponseInterceptor(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func httpRegisterInterceptor(args ...Value) (Value, error) {
-	if len(args) == 0 {
-		return NilValue, fmt.Errorf("http.use: expected at least 1 interceptor function")
-	}
+// func httpRegisterInterceptor(args ...Value) (Value, error) {
+// 	if len(args) == 0 {
+// 		return NilValue, fmt.Errorf("http.use: expected at least 1 interceptor function")
+// 	}
 
-	if args[0] != NilValue {
-		if reqFn, ok := args[0].(Value); Bool(ok) && reqFn.IsCallable() {
-			httpDefaultVidaHttpClient.interceptors.addRequest(func(req *http.Request) (*http.Request, error) {
-				reqObj := httpRequestToObject(req)
-				_, err := reqFn.Call(reqObj)
-				if err != nil {
-					return nil, err
-				}
-				// Convert back to http.Request (simplified: assume same request)
-				return req, nil
-			})
-		}
-	}
+// 	if args[0] != NilValue {
+// 		if reqFn, ok := args[0].(Value); Bool(ok) && reqFn.IsCallable() {
+// 			httpDefaultVidaHttpClient.interceptors.addRequest(func(req *http.Request) (*http.Request, error) {
+// 				reqObj := httpRequestToObject(req)
+// 				_, err := reqFn.Call(reqObj)
+// 				if err != nil {
+// 					return nil, err
+// 				}
+// 				// Convert back to http.Request (simplified: assume same request)
+// 				return req, nil
+// 			})
+// 		}
+// 	}
 
-	if len(args) > 1 && args[1] != NilValue {
-		if resFn, ok := args[1].(Value); Bool(ok) && resFn.IsCallable() {
-			httpDefaultVidaHttpClient.interceptors.addResponse(func(resp *http.Response, body []byte) (*http.Response, []byte, error) {
-				respObj := httpResponseToObject(resp, body)
-				_, err := resFn.Call(respObj)
-				if err != nil {
-					return nil, nil, err
-				}
-				// Convert back (simplified)
-				return resp, body, nil
-			})
-		}
-	}
+// 	if len(args) > 1 && args[1] != NilValue {
+// 		if resFn, ok := args[1].(Value); Bool(ok) && resFn.IsCallable() {
+// 			httpDefaultVidaHttpClient.interceptors.addResponse(func(resp *http.Response, body []byte) (*http.Response, []byte, error) {
+// 				respObj := httpResponseToObject(resp, body)
+// 				_, err := resFn.Call(respObj)
+// 				if err != nil {
+// 					return nil, nil, err
+// 				}
+// 				// Convert back (simplified)
+// 				return resp, body, nil
+// 			})
+// 		}
+// 	}
 
-	return NilValue, nil
-}
+// 	return NilValue, nil
+// }
 
 func httpRequestToObject(req *http.Request) *Object {
 	headers := &Object{Value: make(map[string]Value)}
@@ -891,13 +802,13 @@ func httpCacheControl(args ...Value) (Value, error) {
 
 	switch action.Value {
 	case "clear":
-		httpDefaultVidaHttpClient.cacheConfig.clear()
+		// httpDefaultVidaHttpClient.cacheConfig.clear()
 		return NilValue, nil
 	case "stats":
 		// Return simple stats object
 		stats := &Object{
 			Value: map[string]Value{
-				"enabled": Bool(httpDefaultVidaHttpClient.cacheConfig.Enabled),
+				// "enabled": Bool(httpDefaultVidaHttpClient.cacheConfig.Enabled),
 				// Add more stats as needed
 			},
 		}
@@ -905,29 +816,4 @@ func httpCacheControl(args ...Value) (Value, error) {
 	default:
 		return NilValue, fmt.Errorf("http.cache: unknown action %q", action.Value)
 	}
-}
-
-func httpCreateClient(args ...Value) (Value, error) {
-	client := newVidaHttpClient()
-
-	if len(args) > 0 && args[0] != NilValue {
-		if config, ok := args[0].(*Object); ok {
-			if maxConnsVal, exists := config.Value["maxConns"]; exists {
-				if intVal, ok := maxConnsVal.(Integer); ok {
-					if transport, ok := client.httpClient.Transport.(*http.Transport); ok {
-						transport.MaxIdleConns = int(intVal)
-					}
-				}
-			}
-			// Add more config options as needed
-		}
-	}
-
-	clientObj := &Object{Value: make(map[string]Value)}
-	clientObj.Value["request"] = GFn(client.request)
-	clientObj.Value["use"] = GFn(func(args ...Value) (Value, error) {
-		return httpRegisterInterceptor(args...)
-	})
-
-	return clientObj, nil
 }
