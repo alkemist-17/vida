@@ -73,7 +73,7 @@ var httpDefaultVidaHttpClient *vidaHttpClient
 
 func loadFoundationHttpClient() Value {
 	httpDefaultVidaHttpClient = newVidaHttpClient()
-	m := &Object{Value: make(map[string]Value, 10)}
+	m := &Object{Value: make(map[string]Value, 9)}
 	m.Value["request"] = GFn(httpRequest)
 	m.Value["get"] = GFn(httpRequest)
 	m.Value["post"] = GFn(httpPost)
@@ -83,7 +83,6 @@ func loadFoundationHttpClient() Value {
 	m.Value["head"] = GFn(httpHead)
 	m.Value["options"] = GFn(httpOptions)
 	m.Value["statusText"] = GFn(httpStatusCodeText)
-	// m.Value["interceptors"] = httpGenerateInterceptorsObject()
 	return m
 }
 
@@ -477,41 +476,29 @@ func (c *interceptorChain) executeResponse(resp *http.Response, body []byte) (*h
 }
 
 type retryConfig struct {
-	MaxAttempts     int           // Max retry attempts (default: 3)
-	InitialDelay    time.Duration // Initial backoff delay (default: 100ms)
-	MaxDelay        time.Duration // Max backoff delay cap (default: 10s)
-	Multiplier      float64       // Backoff multiplier (default: 2.0 for exponential)
-	Jitter          bool          // Add randomness to backoff (default: true)
-	RetryableCodes  []int         // HTTP status codes to retry (default: [429, 500, 502, 503, 504])
-	RetryableErrors []string      // Error kinds to retry (default: ["network", "timeout", "temporary"])
+	MaxAttempts    int           // Max retry attempts (default: 3)
+	InitialDelay   time.Duration // Initial backoff delay (default: 100ms)
+	MaxDelay       time.Duration // Max backoff delay cap (default: 10s)
+	Multiplier     float64       // Backoff multiplier (default: 2.0 for exponential)
+	Jitter         bool          // Add randomness to backoff (default: true)
+	RetryableCodes []int         // HTTP status codes to retry (default: [429, 500, 502, 503, 504])
 }
 
 func defaultRetryConfig() *retryConfig {
 	return &retryConfig{
-		MaxAttempts:     httpMaxRetryAttempts,
-		InitialDelay:    httpInitialDelay,
-		MaxDelay:        httpMaxDelay,
-		Multiplier:      httpDelayMultiplier,
-		Jitter:          httpDefaultJitter,
-		RetryableCodes:  []int{429, 500, 502, 503, 504},
-		RetryableErrors: []string{httpNetworkErr, httpTimeoutErr, httpTemporaryErr},
+		MaxAttempts:    httpMaxRetryAttempts,
+		InitialDelay:   httpInitialDelay,
+		MaxDelay:       httpMaxDelay,
+		Multiplier:     httpDelayMultiplier,
+		Jitter:         httpDefaultJitter,
+		RetryableCodes: []int{429, 500, 502, 503, 504},
 	}
 }
 
-func (rc *retryConfig) shouldRetry(err error, statusCode int) bool {
+func (rc *retryConfig) shouldRetry(statusCode int) bool {
 	if slices.Contains(rc.RetryableCodes, statusCode) {
 		return true
 	}
-
-	if err != nil {
-		errMsg := err.Error()
-		for _, kind := range rc.RetryableErrors {
-			if strings.Contains(errMsg, kind+":") {
-				return true
-			}
-		}
-	}
-
 	return false
 }
 
@@ -628,12 +615,11 @@ func httpGenerateCacheKey(method, rawURL string, headers map[string]string, body
 }
 
 type vidaHttpClient struct {
-	httpClient     *http.Client
-	interceptors   *interceptorChain
-	retryConfig    *retryConfig
-	cacheConfig    *cacheConfig
-	baseURL        string
-	defaultHeaders map[string]string
+	baseURL      string
+	httpClient   *http.Client
+	interceptors *interceptorChain
+	retryConfig  *retryConfig
+	cacheConfig  *cacheConfig
 }
 
 func newVidaHttpClient() *vidaHttpClient {
@@ -653,7 +639,6 @@ func newVidaHttpClient() *vidaHttpClient {
 		// interceptors:   &interceptorChain{},
 		// retryConfig:    defaultRetryConfig(),
 		// cacheConfig:    newCacheConfig(),
-		// defaultHeaders: make(map[string]string),
 	}
 }
 
@@ -663,17 +648,11 @@ func (c *vidaHttpClient) executeRequestWithRetryLogic(ctx context.Context, rawUR
 	for attempt := 1; attempt <= retryCfg.MaxAttempts; attempt++ {
 		resp, body, err := httpExecuteRequest(ctx, opts)
 		if err == nil {
-			if retryCfg.shouldRetry(nil, resp.StatusCode) {
+			if retryCfg.shouldRetry(resp.StatusCode) {
 				lastErr = fmt.Errorf("retryable_status: %d", resp.StatusCode)
 				resp.Body.Close()
 			} else {
 				return resp, body, nil
-			}
-		} else {
-			if retryCfg.shouldRetry(err, 0) {
-				lastErr = err
-			} else {
-				return nil, nil, err
 			}
 		}
 
