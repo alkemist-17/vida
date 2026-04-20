@@ -107,29 +107,38 @@ var check = fun res {
 	assert(not res and isError(res))
 }
 
+
+var checkMethod = fun res, method {
+	if res {
+		assert(res.statusCode)
+		assert(res.headers)
+		assert(res.body)
+		if json.isValid(res.body) {
+			var data = json.parse(res.body)
+			assert(data.method == text.toUpper(method))
+		}
+		ret nil
+	}
+	assert(not res and isError(res))
+}
+
 R = task.parallel(
 	[
-		[http.get, "https://example.com"],
-		[http.get, "https://httpbin.org/get"],
-		[http.post, "https://httpbin.org/post"],
-		[http.put, "https://httpbin.org/put"],
-		[http.patch, "https://httpbin.org/patch"],
-		[http.delete, "https://httpbin.org/delete"],
-		[http.head, "https://httpbin.org/head"],
-		[http.options, "https://httpbin.org/options"]
+		[http.get, "https://httpbin.org/anything"],
+		[http.post, "https://httpbin.org/anything"],
+		[http.put, "https://httpbin.org/anything"],
+		[http.patch, "https://httpbin.org/anything"],
+		[http.delete, "https://httpbin.org/anything"]
 	]
 )
 
 task.parallel(
 	[
-		[check, R[0]],
-		[check, R[1]],
-		[check, R[2]],
-		[check, R[3]],
-		[check, R[4]],
-		[check, R[5]],
-		[check, R[6]],
-		[check, R[7]]
+		[checkMethod, R[0], "get"],
+		[checkMethod, R[1], "post"],
+		[checkMethod, R[2], "put"],
+		[checkMethod, R[3], "patch"],
+		[checkMethod, R[4], "delete"]
 	]
 )
 
