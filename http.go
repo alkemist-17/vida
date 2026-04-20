@@ -102,13 +102,13 @@ func httpRequest(args ...Value) (Value, error) {
 			}
 			return httpResponseToObject(resp, body), nil
 		case *Object:
-			options, err := httpParseUserConfig(v, nil)
+			config, err := httpParseUserConfig(v, nil)
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
 			defer cancel()
-			resp, body, err := httpExecuteRequest(ctx, options)
+			resp, body, err := httpExecuteRequest(ctx, config)
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
@@ -615,11 +615,10 @@ func httpGenerateCacheKey(method, rawURL string, headers map[string]string, body
 }
 
 type vidaHttpClient struct {
-	baseURL      string
 	httpClient   *http.Client
-	interceptors *interceptorChain
 	retryConfig  *retryConfig
 	cacheConfig  *cacheConfig
+	interceptors *interceptorChain
 }
 
 func newVidaHttpClient() *vidaHttpClient {
