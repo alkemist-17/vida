@@ -413,15 +413,12 @@ func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*h
 	for attemp := 0; attemp < requestConfig.Retry.MaxAttempts; attemp++ {
 		res, body, err := httpDoSimpleRequest(req, requestConfig)
 		if err != nil {
-			println("DEBUG ERR")
 			return nil, nil, err
 		}
 		if err := req.Context().Err(); err != nil {
-			println("DEBUG CONTEXT ERR")
 			return nil, nil, err
 		}
 		if !requestConfig.Retry.shouldRetry(res.StatusCode) {
-			println("DEBUG OK NOT SHOULD RETRY ANYMORE")
 			return res, body, nil
 		}
 
@@ -438,7 +435,6 @@ func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*h
 		delay := httpCalculateDelayWithServerHint(res, requestConfig.Retry.calculateBackoff(attemp))
 		select {
 		case <-req.Context().Done():
-			println("DEBUG CONTEXT DONE IN SELECT STMT")
 			return nil, nil, req.Context().Err()
 		case <-time.After(delay):
 		}
@@ -539,17 +535,6 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func httpGenerateInterceptorsObject() *Object {
-	interceptors := &Object{Value: make(map[string]Value, 2)}
-	req := &Object{Value: make(map[string]Value, 1)}
-	res := &Object{Value: make(map[string]Value, 1)}
-	req.Value["use"] = GFn(httpRegisterRequestInterceptor)
-	res.Value["use"] = GFn(httpRegisterResponseInterceptor)
-	interceptors.Value["request"] = req
-	interceptors.Value["response"] = res
-	return interceptors
-}
-
 type retryConfig struct {
 	MaxAttempts    int           // Max retry attempts
 	InitialDelay   time.Duration // Initial backoff delay in milliseconds
@@ -576,22 +561,30 @@ func (rc *retryConfig) shouldRetry(statusCode int) bool {
 
 func (rc *retryConfig) calculateBackoff(attempt int) time.Duration {
 	delay := float64(rc.InitialDelay) * math.Pow(rc.Multiplier, float64(attempt))
-	println("DEBUGO ATTEMPT", attempt)
-	println("DEBUG DELAY INIT", delay)
 	if delay > float64(rc.MaxDelay) {
 		delay = float64(rc.MaxDelay)
 	}
 	// Add random value in range [0.5*delay, 1.5*delay]
 	if rc.Jitter {
 		jitter := 0.5 + (0.5 * float64(time.Now().UnixNano()%1000) / 1000.0)
-		println("DEBUG JITTER", jitter)
 		delay *= jitter
 	}
-	println("DEBUG DELAY END", time.Duration(delay))
 	return time.Duration(delay)
 }
 
+// TODO
 // Interceptors and cache.
+func httpGenerateInterceptorsObject() *Object {
+	interceptors := &Object{Value: make(map[string]Value, 2)}
+	req := &Object{Value: make(map[string]Value, 1)}
+	res := &Object{Value: make(map[string]Value, 1)}
+	req.Value["use"] = GFn(httpRegisterRequestInterceptor)
+	res.Value["use"] = GFn(httpRegisterResponseInterceptor)
+	interceptors.Value["request"] = req
+	interceptors.Value["response"] = res
+	return interceptors
+}
+
 type requestInterceptor func(*http.Request) (*http.Request, error)
 
 type responseInterceptor func(*http.Response, []byte) (*http.Response, []byte, error)
