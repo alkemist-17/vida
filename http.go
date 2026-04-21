@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,6 +46,8 @@ const (
 	httpInitialBackoffField        = "backoff"
 	httpMaxBackoffField            = "maxBackoff"
 	httpRetryableCodesField        = "statusCodes"
+	httpRetryAfterHeader           = "Retry-After"
+	httpXRateLimitResetHeader      = "X-RateLimit-Reset"
 	httpCacheField                 = "cache"
 	httpEnabledField               = "enabled"
 	httpTTLField                   = "ttl"
@@ -269,7 +272,7 @@ func httpParseRetryFields(userRetryConfig *Object, reqConfig *requestConfig) {
 			}
 		}
 		if len(c) > 0 {
-			reqConfig.Retry.RetryableCodes = c
+			retry.RetryableCodes = c
 		}
 	}
 	reqConfig.Retry = retry
@@ -410,12 +413,15 @@ func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*h
 	for attemp := 0; attemp < requestConfig.Retry.MaxAttempts; attemp++ {
 		res, body, err := httpDoSimpleRequest(req, requestConfig)
 		if err != nil {
+			println("DEBUG ERR")
 			return nil, nil, err
 		}
 		if err := req.Context().Err(); err != nil {
+			println("DEBUG CONTEXT ERR")
 			return nil, nil, err
 		}
 		if !requestConfig.Retry.shouldRetry(res.StatusCode) {
+			println("DEBUG OK NOT SHOULD RETRY ANYMORE")
 			return res, body, nil
 		}
 
@@ -427,15 +433,50 @@ func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*h
 				return io.NopCloser(bytes.NewReader(body)), nil
 			}
 		}
+		req = clonedReq
 
-		delay := requestConfig.Retry.calculateBackoff(attemp)
+		delay := httpCalculateDelayWithServerHint(res, requestConfig.Retry.calculateBackoff(attemp))
 		select {
 		case <-req.Context().Done():
+			println("DEBUG CONTEXT DONE IN SELECT STMT")
 			return nil, nil, req.Context().Err()
 		case <-time.After(delay):
 		}
 	}
 	return nil, nil, fmt.Errorf("max retries exceeded: max attempts: %v", requestConfig.Retry.MaxAttempts)
+}
+
+func httpCalculateDelayWithServerHint(res *http.Response, internalDelay time.Duration) time.Duration {
+	serverDelay := parseRetryAfter(res)
+	if serverDelay > internalDelay {
+		return serverDelay
+	}
+	return internalDelay
+}
+
+func parseRetryAfter(res *http.Response) time.Duration {
+	if ra := res.Header.Get(httpRetryAfterHeader); ra != "" {
+		if secs, err := strconv.Atoi(ra); err == nil {
+			return time.Duration(secs) * time.Second
+		}
+		if t, err := http.ParseTime(ra); err == nil {
+			d := time.Until(t)
+			if d > 0 {
+				return d
+			}
+		}
+	}
+
+	if reset := res.Header.Get(httpXRateLimitResetHeader); reset != "" {
+		if unix, err := strconv.ParseInt(reset, 10, 64); err == nil {
+			d := time.Until(time.Unix(unix, 0))
+			if d > 0 {
+				return d
+			}
+		}
+	}
+
+	return 0
 }
 
 func httpRequestWithMethod(method string, args ...Value) (Value, error) {
@@ -535,14 +576,18 @@ func (rc *retryConfig) shouldRetry(statusCode int) bool {
 
 func (rc *retryConfig) calculateBackoff(attempt int) time.Duration {
 	delay := float64(rc.InitialDelay) * math.Pow(rc.Multiplier, float64(attempt))
+	println("DEBUGO ATTEMPT", attempt)
+	println("DEBUG DELAY INIT", delay)
 	if delay > float64(rc.MaxDelay) {
 		delay = float64(rc.MaxDelay)
 	}
-	// Add random value in [0.5*delay, 1.5*delay]
+	// Add random value in range [0.5*delay, 1.5*delay]
 	if rc.Jitter {
 		jitter := 0.5 + (0.5 * float64(time.Now().UnixNano()%1000) / 1000.0)
+		println("DEBUG JITTER", jitter)
 		delay *= jitter
 	}
+	println("DEBUG DELAY END", time.Duration(delay))
 	return time.Duration(delay)
 }
 
