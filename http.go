@@ -77,7 +77,7 @@ var httpDefaultVidaHttpClient *vidaHttpClient
 
 func loadFoundationHttpClient() Value {
 	httpDefaultVidaHttpClient = newVidaHttpClient()
-	m := &Object{Value: make(map[string]Value, 9)}
+	m := &Object{Value: make(map[string]Value, 11)}
 	m.Value["request"] = GFn(httpRequest)
 	m.Value["get"] = GFn(httpRequest)
 	m.Value["post"] = GFn(httpPost)
@@ -87,6 +87,8 @@ func loadFoundationHttpClient() Value {
 	m.Value["head"] = GFn(httpHead)
 	m.Value["options"] = GFn(httpOptions)
 	m.Value["statusText"] = GFn(httpStatusCodeText)
+	m.Value["urlEncode"] = GFn(httpURLEncode)
+	m.Value["detectContentType"] = GFn(httpDetectContentType)
 	return m
 }
 
@@ -530,6 +532,28 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if code, ok := args[0].(Integer); ok {
 			return &String{Value: http.StatusText(int(code))}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func httpURLEncode(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if data, ok := args[0].(*Object); ok && len(data.Value) > 0 {
+			values := url.Values{}
+			for k, v := range data.Value {
+				values.Add(k, v.ObjectKey())
+			}
+			return &String{Value: values.Encode()}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func httpDetectContentType(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if data, ok := args[0].(*Bytes); ok && len(data.Value) > 0 {
+			return &String{Value: http.DetectContentType(data.Value)}, nil
 		}
 	}
 	return NilValue, nil
