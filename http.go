@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"slices"
 	"sort"
@@ -18,6 +20,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 const (
@@ -57,6 +61,8 @@ const (
 	httpContentType                = "Content-Type"
 	httpMaxBodySize                = 10 << 20
 	httpDefaultTimeout             = 30 * time.Second
+	httpDialerTimeout              = 10 * time.Second
+	httpKeepAlive                  = 30 * time.Second
 	httpMaxRetryAttempts           = 3
 	httpInitialDelay               = 100 * time.Millisecond
 	httpMaxDelay                   = 10 * time.Second
@@ -761,6 +767,12 @@ type vidaHttpClient struct {
 }
 
 func newVidaHttpClient() *vidaHttpClient {
+	jar, err := cookiejar.New(&cookiejar.Options{
+		PublicSuffixList: publicsuffix.List,
+	})
+	if err != nil {
+		jar = nil
+	}
 	return &vidaHttpClient{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -771,8 +783,13 @@ func newVidaHttpClient() *vidaHttpClient {
 				TLSHandshakeTimeout:   httpDefaultTLSHandshakeTimeout,
 				ResponseHeaderTimeout: httpResponseHeaderTimeout,
 				ExpectContinueTimeout: httpExpectContinueTimeout,
+				DialContext: (&net.Dialer{
+					Timeout:   httpDialerTimeout,
+					KeepAlive: httpKeepAlive,
+				}).DialContext,
 			},
 			Timeout: httpDefaultTimeout,
+			Jar:     jar,
 		},
 	}
 }
