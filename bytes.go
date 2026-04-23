@@ -18,7 +18,7 @@ const (
 )
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 8)}
+	m := &Object{Value: make(map[string]Value, 9)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
 	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
@@ -27,6 +27,7 @@ func loadFoundationBytes() Value {
 	m.Value["decode"] = GFn(bytesDecode)
 	m.Value["encoding"] = bytesEncodings()
 	m.Value["toFile"] = GFn(bytesToFile)
+	m.Value["xor"] = GFn(bytesXOR)
 	return m
 }
 
@@ -125,11 +126,6 @@ func bytesTimingSafeEqual(args ...Value) (Value, error) {
 		if okl && okr {
 			return Bool(subtle.ConstantTimeCompare(lhs.Value, rhs.Value) == 1), nil
 		}
-		sl, oksl := args[0].(*String)
-		sr, oksr := args[1].(*String)
-		if oksl && oksr {
-			return Bool(subtle.ConstantTimeCompare([]byte(sl.Value), []byte(sr.Value)) == 1), nil
-		}
 		return Bool(false), nil
 	}
 	return NilValue, nil
@@ -221,6 +217,20 @@ func bytesToFile(args ...Value) (Value, error) {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesXOR(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		lhs, okl := args[0].(*Bytes)
+		rhs, okr := args[1].(*Bytes)
+		if okl && okr {
+			l := min(len(lhs.Value), len(rhs.Value))
+			dst := make([]byte, l)
+			subtle.XORBytes(dst, lhs.Value, rhs.Value)
+			return &Bytes{Value: dst}, nil
 		}
 	}
 	return NilValue, nil
