@@ -16,10 +16,12 @@ assert(
 var size = 10
 var init = 0xFF
 var s = "This is a string test"
+var u = `/this/path+/this/other/path`
 var A = bytes.new(size)
 var B = nil
 var HEX = "54686973206973206120737472696e672074657374"
 var B64 = "VGhpcyBpcyBhIHN0cmluZyB0ZXN0"
+var B64URL = "L3RoaXMvcGF0aCsvdGhpcy9vdGhlci9wYXRo"
 
 
 assert(len(A) == size)
@@ -102,3 +104,9 @@ assert(format("%s", B) == s)
 B = bytes.decode(B64, bytes.encoding.base64)
 assert(format("%s", B) == s)
 
+
+A = bytes.from(u)
+B = bytes.encode(A, bytes.encoding.base64url)
+assert(B == B64URL)
+
+assert(u == format("%s", bytes.decode(B, bytes.encoding.base64url)))

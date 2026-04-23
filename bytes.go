@@ -6,17 +6,19 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"math"
+	"os"
 
 	"github.com/alkemist-17/vida/verror"
 )
 
 const (
-	bytesBase64 = "base64"
-	bytesHex    = "hex"
+	bytesBase64URL = "base64url"
+	bytesBase64    = "base64"
+	bytesHex       = "hex"
 )
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 7)}
+	m := &Object{Value: make(map[string]Value, 8)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
 	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
@@ -24,6 +26,7 @@ func loadFoundationBytes() Value {
 	m.Value["encode"] = GFn(bytesEncode)
 	m.Value["decode"] = GFn(bytesDecode)
 	m.Value["encoding"] = bytesEncodings()
+	m.Value["toFile"] = GFn(bytesToFile)
 	return m
 }
 
@@ -142,6 +145,8 @@ func bytesEncode(args ...Value) (Value, error) {
 				return &String{Value: base64.StdEncoding.EncodeToString(b.Value)}, nil
 			case bytesHex:
 				return &String{Value: hex.EncodeToString(b.Value)}, nil
+			case bytesBase64URL:
+				return &String{Value: base64.URLEncoding.EncodeToString(b.Value)}, nil
 			default:
 				return b, nil
 			}
@@ -164,12 +169,15 @@ func bytesDecode(args ...Value) (Value, error) {
 			case bytesHex:
 				r, err = hex.DecodeString(s.Value)
 				goto resolve
+			case bytesBase64URL:
+				r, err = base64.URLEncoding.DecodeString(s.Value)
+				goto resolve
 			default:
 				return &Bytes{Value: []byte(s.Value)}, nil
 			}
 		resolve:
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &Bytes{Value: r}, nil
 		}
@@ -178,8 +186,42 @@ func bytesDecode(args ...Value) (Value, error) {
 }
 
 func bytesEncodings() *Object {
-	encodings := make(map[string]Value, 2)
-	encodings[bytesBase64] = &String{Value: bytesBase64}
-	encodings[bytesHex] = &String{Value: bytesHex}
-	return &Object{Value: encodings}
+	e := make(map[string]Value, 3)
+	e[bytesBase64] = &String{Value: bytesBase64}
+	e[bytesHex] = &String{Value: bytesHex}
+	e[bytesBase64URL] = &String{Value: bytesBase64URL}
+	return &Object{Value: e}
+}
+
+func bytesToFile(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		b, okB := args[0].(*Bytes)
+		p, okP := args[1].(*String)
+		if okB && okP {
+			f, err := os.Create(p.Value)
+			if err != nil {
+				return VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			defer f.Close()
+			n, err := f.Write(b.Value)
+			if err != nil {
+				return VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			return Integer(n), nil
+		}
+		s, okS := args[0].(*String)
+		if okS && okP {
+			f, err := os.Create(p.Value)
+			if err != nil {
+				return VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			defer f.Close()
+			n, err := f.WriteString(s.Value)
+			if err != nil {
+				return VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			return Integer(n), nil
+		}
+	}
+	return NilValue, nil
 }
