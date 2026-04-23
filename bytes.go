@@ -1,15 +1,33 @@
 package vida
 
-import "github.com/alkemist-17/vida/verror"
+import (
+	cryptoRand "crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
+	"encoding/hex"
+	"math"
+
+	"github.com/alkemist-17/vida/verror"
+)
+
+const (
+	bytesBase64 = "base64"
+	bytesHex    = "hex"
+)
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 2)}
-	m.Value["new"] = GFn(bytesCreateNewBytesBuffer)
+	m := &Object{Value: make(map[string]Value, 7)}
+	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
+	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
+	m.Value["timingSafeEqual"] = GFn(bytesTimingSafeEqual)
+	m.Value["encode"] = GFn(bytesEncode)
+	m.Value["decode"] = GFn(bytesDecode)
+	m.Value["encoding"] = bytesEncodings()
 	return m
 }
 
-func bytesCreateNewBytesBuffer(args ...Value) (Value, error) {
+func bytesCreateNewBytesValue(args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		switch v := args[0].(type) {
@@ -62,4 +80,106 @@ func bytesFromValue(args ...Value) (Value, error) {
 		}
 	}
 	return &Bytes{}, nil
+}
+
+func bytesCryptoRandom(args ...Value) (Value, error) {
+	switch len(args) {
+	case 1:
+		if inputValue, ok := args[0].(Integer); ok {
+			size := int(inputValue)
+			if 0 < size && size < math.MaxInt32 {
+				b := make([]byte, size)
+				cryptoRand.Read(b)
+				return &Bytes{Value: b}, nil
+			}
+		}
+	case 2:
+		s, okS := args[0].(Integer)
+		e, okE := args[1].(*String)
+		if okS && okE {
+			size := int(s)
+			if 0 < size && size < math.MaxInt32 {
+				b := make([]byte, size)
+				cryptoRand.Read(b)
+				switch e.Value {
+				case bytesBase64:
+					return &String{Value: base64.StdEncoding.EncodeToString(b)}, nil
+				case bytesHex:
+					return &String{Value: hex.EncodeToString(b)}, nil
+				default:
+					return &Bytes{Value: b}, nil
+				}
+			}
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesTimingSafeEqual(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		lhs, okl := args[0].(*Bytes)
+		rhs, okr := args[1].(*Bytes)
+		if okl && okr {
+			return Bool(subtle.ConstantTimeCompare(lhs.Value, rhs.Value) == 1), nil
+		}
+		sl, oksl := args[0].(*String)
+		sr, oksr := args[1].(*String)
+		if oksl && oksr {
+			return Bool(subtle.ConstantTimeCompare([]byte(sl.Value), []byte(sr.Value)) == 1), nil
+		}
+		return Bool(false), nil
+	}
+	return NilValue, nil
+}
+
+func bytesEncode(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		b, okI := args[0].(*Bytes)
+		e, okE := args[1].(*String)
+		if okI && okE {
+			switch e.Value {
+			case bytesBase64:
+				return &String{Value: base64.StdEncoding.EncodeToString(b.Value)}, nil
+			case bytesHex:
+				return &String{Value: hex.EncodeToString(b.Value)}, nil
+			default:
+				return b, nil
+			}
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesDecode(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		s, okS := args[0].(*String)
+		e, okE := args[1].(*String)
+		if okS && okE {
+			var r []byte
+			var err error
+			switch e.Value {
+			case bytesBase64:
+				r, err = base64.StdEncoding.DecodeString(s.Value)
+				goto resolve
+			case bytesHex:
+				r, err = hex.DecodeString(s.Value)
+				goto resolve
+			default:
+				return &Bytes{Value: []byte(s.Value)}, nil
+			}
+		resolve:
+			if err != nil {
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			return &Bytes{Value: r}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesEncodings() *Object {
+	encodings := make(map[string]Value, 2)
+	encodings[bytesBase64] = &String{Value: bytesBase64}
+	encodings[bytesHex] = &String{Value: bytesHex}
+	return &Object{Value: encodings}
 }

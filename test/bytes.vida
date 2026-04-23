@@ -1,0 +1,104 @@
+var bytes = load("std/bytes")
+
+assert(
+    bytes and
+    bytes.new and
+    bytes.from and
+    bytes.cryptoRandom and
+    bytes.timingSafeEqual and
+    bytes.encode and
+    bytes.decode and
+    bytes.encoding
+)
+
+
+
+var size = 10
+var init = 0xFF
+var s = "This is a string test"
+var A = bytes.new(size)
+var B = nil
+var HEX = "54686973206973206120737472696e672074657374"
+var B64 = "VGhpcyBpcyBhIHN0cmluZyB0ZXN0"
+
+
+assert(len(A) == size)
+for _, v in A {
+    assert(v == 0)
+}
+
+
+A = bytes.new(size, init)
+for _, v in A {
+    assert(v == init)
+}
+
+
+A = bytes.new(s)
+B = bytes.new(s)
+assert(len(A) == len(B))
+for i in len(A) {
+    assert(A[i] == B[i])
+}
+
+
+A = bytes.cryptoRandom(8)
+B = bytes.new(A)
+assert(not(A == B))
+assert(len(A) == len(B))
+for i in len(A) {
+    assert(A[i] == B[i])
+}
+
+assert(len(bytes.new()) == 0)
+assert(len(bytes.from()) == 0)
+
+
+A = [0xAA, 0xBB, nil, true, false, 0xFF]
+B = bytes.new(A)
+assert(len(B) == 3 and B[0] == 0xAA and B[1] == 0xBB and B[2] == 0xFF)
+
+
+B = bytes.from(A)
+assert(len(B) == 3 and B[0] == 0xAA and B[1] == 0xBB and B[2] == 0xFF)
+
+
+B = bytes.from(s)
+assert(len(B) == len(s))
+
+A = bytes.from(B)
+assert(not(A == B))
+assert(len(A) == len(B))
+for i in len(A) {
+    assert(A[i] == B[i])
+}
+
+A = bytes.cryptoRandom(size)
+B = bytes.cryptoRandom(size)
+
+assert(
+    not(bytes.timingSafeEqual(A, B)) and
+    bytes.timingSafeEqual(A, A) and
+    bytes.timingSafeEqual(B, B)
+)
+
+assert(bytes.encoding.hex == "hex")
+assert(bytes.encoding.base64 == "base64")
+
+
+A = bytes.from(s)
+B = bytes.encode(A, bytes.encoding.hex)
+assert(B == HEX)
+
+
+B = bytes.encode(A, bytes.encoding.base64)
+assert(B == B64)
+
+
+B = bytes.decode(HEX, bytes.encoding.hex)
+assert(format("%s", B) == s)
+
+
+B = bytes.decode(B64, bytes.encoding.base64)
+assert(format("%s", B) == s)
+
