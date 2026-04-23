@@ -8,7 +8,9 @@ assert(
     bytes.timingSafeEqual and
     bytes.encode and
     bytes.decode and
-    bytes.encoding
+    bytes.encoding and
+    bytes.toFile and
+    bytes.xor
 )
 
 
