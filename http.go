@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -32,9 +31,6 @@ const (
 	httpPATCH                      = "PATCH"
 	httpHEAD                       = "HEAD"
 	httpOPTIONS                    = "OPTIONS"
-	httpNetworkErr                 = "network"
-	httpTimeoutErr                 = "timeout"
-	httpTemporaryErr               = "temporary"
 	httpURLField                   = "url"
 	httpBaseField                  = "base"
 	httpDefaultSchema              = "https"
@@ -61,8 +57,6 @@ const (
 	httpContentType                = "Content-Type"
 	httpMaxBodySize                = 10 << 20
 	httpDefaultTimeout             = 30 * time.Second
-	httpDialerTimeout              = 10 * time.Second
-	httpKeepAlive                  = 30 * time.Second
 	httpMaxRetryAttempts           = 3
 	httpInitialDelay               = 100 * time.Millisecond
 	httpMaxDelay                   = 10 * time.Second
@@ -565,6 +559,37 @@ func httpDetectContentType(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
+type vidaHttpClient struct {
+	httpClient *http.Client
+}
+
+func newVidaHttpClient() *vidaHttpClient {
+	return &vidaHttpClient{
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:          httpMaxIdleConnections,
+				MaxIdleConnsPerHost:   httpMaxIdleConnectionsPerHost,
+				MaxConnsPerHost:       httpMaxConnsPerHost,
+				IdleConnTimeout:       httpDefaultIdleConnTimeout,
+				TLSHandshakeTimeout:   httpDefaultTLSHandshakeTimeout,
+				ResponseHeaderTimeout: httpResponseHeaderTimeout,
+				ExpectContinueTimeout: httpExpectContinueTimeout,
+			},
+			Timeout: httpDefaultTimeout,
+			Jar:     httpNewCookieJar(),
+		},
+	}
+}
+
+func httpNewCookieJar() *cookiejar.Jar {
+	if jar, err := cookiejar.New(&cookiejar.Options{
+		PublicSuffixList: publicsuffix.List,
+	}); err == nil {
+		return jar
+	}
+	return nil
+}
+
 type retryConfig struct {
 	MaxAttempts    int           // Max retry attempts
 	InitialDelay   time.Duration // Initial backoff delay in milliseconds
@@ -760,38 +785,6 @@ func httpGenerateCacheKey(method, rawURL string, headers map[string]string, body
 	}
 
 	return hex.EncodeToString(hash.Sum(nil))
-}
-
-type vidaHttpClient struct {
-	httpClient *http.Client
-}
-
-func newVidaHttpClient() *vidaHttpClient {
-	jar, err := cookiejar.New(&cookiejar.Options{
-		PublicSuffixList: publicsuffix.List,
-	})
-	if err != nil {
-		jar = nil
-	}
-	return &vidaHttpClient{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:          httpMaxIdleConnections,
-				MaxIdleConnsPerHost:   httpMaxIdleConnectionsPerHost,
-				MaxConnsPerHost:       httpMaxConnsPerHost,
-				IdleConnTimeout:       httpDefaultIdleConnTimeout,
-				TLSHandshakeTimeout:   httpDefaultTLSHandshakeTimeout,
-				ResponseHeaderTimeout: httpResponseHeaderTimeout,
-				ExpectContinueTimeout: httpExpectContinueTimeout,
-				DialContext: (&net.Dialer{
-					Timeout:   httpDialerTimeout,
-					KeepAlive: httpKeepAlive,
-				}).DialContext,
-			},
-			Timeout: httpDefaultTimeout,
-			Jar:     jar,
-		},
-	}
 }
 
 func httpParseCacheConfig(obj *Object) *cacheConfig {
