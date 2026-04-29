@@ -24,6 +24,7 @@ var B = nil
 var HEX = "54686973206973206120737472696e672074657374"
 var B64 = "VGhpcyBpcyBhIHN0cmluZyB0ZXN0"
 var B64URL = "L3RoaXMvcGF0aCsvdGhpcy9vdGhlci9wYXRo"
+var dash = "-"
 
 
 assert(len(A) == size)
@@ -112,3 +113,16 @@ B = bytes.encode(A, bytes.encoding.base64url)
 assert(B == B64URL)
 
 assert(u == format("%s", bytes.decode(B, bytes.encoding.base64url)))
+
+A = bytes.uuid(nil)
+assert(A == "00000000-0000-0000-0000-000000000000")
+
+A = bytes.uuid("max")
+assert(A == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
+
+A = bytes.uuid()
+assert(A[8] == dash)
+assert(A[13] == dash)
+assert(A[18] == dash)
+assert(A[23] == dash)
+

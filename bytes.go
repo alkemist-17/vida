@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"os"
 
@@ -18,7 +19,7 @@ const (
 )
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 9)}
+	m := &Object{Value: make(map[string]Value, 10)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
 	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
@@ -28,6 +29,7 @@ func loadFoundationBytes() Value {
 	m.Value["encoding"] = bytesEncodings()
 	m.Value["toFile"] = GFn(bytesToFile)
 	m.Value["xor"] = GFn(bytesXOR)
+	m.Value["uuid"] = GFn(bytesUUID)
 	return m
 }
 
@@ -234,4 +236,16 @@ func bytesXOR(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func bytesUUID(args ...Value) (Value, error) {
+	if len(args) == 1 {
+		if _, ok := args[0].(Nil); ok {
+			return &String{Value: "00000000-0000-0000-0000-000000000000"}, nil
+		}
+		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"}, nil
+	}
+	b := make([]byte, 16)
+	cryptoRand.Read(b)
+	return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])}, nil
 }

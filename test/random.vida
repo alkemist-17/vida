@@ -15,6 +15,7 @@ for in N {print(rand.CC8())}
 for in N {print(rand.bytes(16))}
 for in N {print(rand.text())}
 for in N {print(rand.nanoid())}
+for in N {print(rand.uuid())}
 for in N {assert(len(rand.nanoid()) == rand.nanoidDefaultSize)}
 
 var size = 31
@@ -34,3 +35,14 @@ for in N {assert(len(nanoid()) == size)}
 nanoid = rand.customNanoid(rand.alpha, size)
 for in N {print(nanoid())}
 for in N {assert(len(nanoid()) == size)}
+
+assert(rand.uuid(nil) == "00000000-0000-0000-0000-000000000000")
+assert(rand.uuid(422) == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
+
+var uuid = rand.uuid()
+var dash = "-"
+assert(uuid[8] == dash)
+assert(uuid[13] == dash)
+assert(uuid[18] == dash)
+assert(uuid[23] == dash)
+

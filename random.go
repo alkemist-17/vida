@@ -11,7 +11,7 @@ const nanoIDDefaultSize = 21
 const nanoIDMaxSize = 36
 
 func loadFoundationRandom() Value {
-	m := &Object{Value: make(map[string]Value, 20)}
+	m := &Object{Value: make(map[string]Value, 21)}
 	m.Value["N"] = GFn(randN)
 	m.Value["I"] = GFn(randNextI)
 	m.Value["U32"] = GFn(randNextU32)
@@ -26,6 +26,7 @@ func loadFoundationRandom() Value {
 	m.Value["bytes"] = GFn(randBytes)
 	m.Value["text"] = GFn(randText)
 	m.Value["nanoid"] = GFn(randNanoID)
+	m.Value["uuid"] = GFn(bytesUUID)
 	m.Value["customNanoid"] = GFn(randNanoIDCustomAlphabeth)
 	m.Value["nanoidDefaultSize"] = Integer(nanoIDDefaultSize)
 	m.Value["alphanumeric"] = &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
