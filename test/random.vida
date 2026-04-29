@@ -41,6 +41,7 @@ assert(rand.uuid(422) == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
 
 var uuid = rand.uuid()
 var dash = "-"
+assert(len(uuid) == 36)
 assert(uuid[8] == dash)
 assert(uuid[13] == dash)
 assert(uuid[18] == dash)

@@ -121,8 +121,20 @@ A = bytes.uuid("max")
 assert(A == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
 
 A = bytes.uuid()
+assert(len(A) == 36)
 assert(A[8] == dash)
 assert(A[13] == dash)
 assert(A[18] == dash)
 assert(A[23] == dash)
+
+A = bytes.cryptoRandom(16)
+B = bytes.uuid(A)
+assert(len(B) == 36)
+assert(B[8] == dash)
+assert(B[13] == dash)
+assert(B[18] == dash)
+assert(B[23] == dash)
+
+B = bytes.parseUUID(B)
+assert(bytes.timingSafeEqual(A, B))
 

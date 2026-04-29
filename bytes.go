@@ -16,10 +16,11 @@ const (
 	bytesBase64URL = "base64url"
 	bytesBase64    = "base64"
 	bytesHex       = "hex"
+	bytesUUIDLen   = 16
 )
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 10)}
+	m := &Object{Value: make(map[string]Value, 11)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
 	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
@@ -30,6 +31,7 @@ func loadFoundationBytes() Value {
 	m.Value["toFile"] = GFn(bytesToFile)
 	m.Value["xor"] = GFn(bytesXOR)
 	m.Value["uuid"] = GFn(bytesUUID)
+	m.Value["parseUUID"] = GFn(bytesParseUUID)
 	return m
 }
 
@@ -243,9 +245,24 @@ func bytesUUID(args ...Value) (Value, error) {
 		if _, ok := args[0].(Nil); ok {
 			return &String{Value: "00000000-0000-0000-0000-000000000000"}, nil
 		}
+		if b, ok := args[0].(*Bytes); ok && len(b.Value) == bytesUUIDLen {
+			return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b.Value[0:4], b.Value[4:6], b.Value[6:8], b.Value[8:10], b.Value[10:])}, nil
+		}
 		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"}, nil
 	}
-	b := make([]byte, 16)
+	b := make([]byte, bytesUUIDLen)
 	cryptoRand.Read(b)
 	return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])}, nil
+}
+
+func bytesParseUUID(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if s, ok := args[0].(*String); ok && len(s.Value) == 2*bytesUUIDLen+4 && s.Value[8] == '-' && s.Value[13] == '-' && s.Value[18] == '-' && s.Value[23] == '-' {
+			decoded, err := hex.DecodeString(fmt.Sprintf("%v%v%v%v%v", s.Value[0:8], s.Value[9:13], s.Value[14:18], s.Value[19:23], s.Value[24:36]))
+			if err == nil && len(decoded) == bytesUUIDLen {
+				return &Bytes{Value: decoded}, nil
+			}
+		}
+	}
+	return NilValue, nil
 }
