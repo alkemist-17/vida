@@ -183,7 +183,7 @@ task.parallel(
 )
 
 
-var options = {
+var config = {
 	base = "https://restcountries.com/v3.1"
 	url = ""
 }
@@ -204,16 +204,16 @@ A =
 
 
 R = task.parallel([
-	[http.get, format("/name/%v", A[0]), options],
-	[http.get, format("/name/%v", A[1]), options],
-	[http.get, format("/name/%v", A[2]), options],
-	[http.get, format("/name/%v", A[3]), options],
-	[http.get, format("/name/%v", A[4]), options],
-	[http.get, format("/name/%v", A[5]), options],
-	[http.get, format("/name/%v", A[6]), options],
-	[http.get, format("/name/%v", A[7]), options],
-	[http.get, format("/name/%v", A[8]), options],
-	[http.get, format("/name/%v", A[9]), options]]
+	[http.get, format("/name/%v", A[0]), config],
+	[http.get, format("/name/%v", A[1]), config],
+	[http.get, format("/name/%v", A[2]), config],
+	[http.get, format("/name/%v", A[3]), config],
+	[http.get, format("/name/%v", A[4]), config],
+	[http.get, format("/name/%v", A[5]), config],
+	[http.get, format("/name/%v", A[6]), config],
+	[http.get, format("/name/%v", A[7]), config],
+	[http.get, format("/name/%v", A[8]), config],
+	[http.get, format("/name/%v", A[9]), config]]
 )
 
 
@@ -232,14 +232,13 @@ task.parallel(
 	]
 )
 
-options.url = "/name/ecuador"
-res = http.get(options)
+config.url = "/name/ecuador"
+res = http.get(config)
 
 check(res)
 
-
-options.timeout = 0
-res = http.get(options)
+config.timeout = 0
+res = http.get(config)
 assert(not res and isError(res))
 
 

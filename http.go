@@ -3,8 +3,6 @@ package vida
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,10 +12,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
@@ -48,9 +44,6 @@ const (
 	httpRetryableCodesField        = "statusCodes"
 	httpRetryAfterHeader           = "Retry-After"
 	httpXRateLimitResetHeader      = "X-RateLimit-Reset"
-	httpCacheField                 = "cache"
-	httpEnabledField               = "enabled"
-	httpTTLField                   = "ttl"
 	httpContentTypeText            = "text/plain"
 	httpContentTypeBinary          = "application/octet-stream"
 	httpContentTypeAppJSON         = "application/json"
@@ -61,8 +54,6 @@ const (
 	httpInitialDelay               = 100 * time.Millisecond
 	httpMaxDelay                   = 10 * time.Second
 	httpDelayMultiplier            = 2.0
-	httpDefaultTTL                 = 5 * time.Minute
-	httpMaxCacheEntries            = 1000
 	httpMaxIdleConnections         = 200
 	httpMaxConnsPerHost            = 0
 	httpMaxIdleConnectionsPerHost  = 100
@@ -126,8 +117,8 @@ func httpRequest(args ...Value) (Value, error) {
 
 func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, error) {
 	if len(args) > 1 {
-		if userOptions, ok := args[1].(*Object); ok {
-			return httpParseUserConfig(userOptions, &userRawURL)
+		if userConfig, ok := args[1].(*Object); ok {
+			return httpParseUserConfig(userConfig, &userRawURL)
 		}
 	}
 
@@ -213,7 +204,7 @@ func httpParseMethod(userConfig *Object, reqConfig *requestConfig) {
 }
 
 func httpParseTimeout(userConfig *Object, reqConfig *requestConfig) {
-	if t, ok := userConfig.Value[httpTimeoutField].(Integer); ok {
+	if t, ok := userConfig.Value[httpTimeoutField].(Integer); ok && t >= 0 {
 		reqConfig.Timeout = time.Duration(t) * time.Millisecond
 	}
 }
@@ -242,7 +233,7 @@ func httpParseBody(userConfig *Object, reqConfig *requestConfig) {
 }
 
 func httpParseBodySize(userConfig *Object, reqConfig *requestConfig) {
-	if mbs, ok := userConfig.Value[httpMaxBodySizeField].(Integer); ok {
+	if mbs, ok := userConfig.Value[httpMaxBodySizeField].(Integer); ok && mbs >= 0 {
 		reqConfig.MaxBodySize = int64(mbs)
 	}
 }
@@ -625,271 +616,4 @@ func (rc *retryConfig) calculateBackoff(attempt int) time.Duration {
 		delay *= jitter
 	}
 	return time.Duration(delay)
-}
-
-// TODO
-// Interceptors and cache.
-func httpGenerateInterceptorsObject() *Object {
-	interceptors := &Object{Value: make(map[string]Value, 2)}
-	req := &Object{Value: make(map[string]Value, 1)}
-	res := &Object{Value: make(map[string]Value, 1)}
-	req.Value["use"] = GFn(httpRegisterRequestInterceptor)
-	res.Value["use"] = GFn(httpRegisterResponseInterceptor)
-	interceptors.Value["request"] = req
-	interceptors.Value["response"] = res
-	return interceptors
-}
-
-type requestInterceptor func(*http.Request) (*http.Request, error)
-
-type responseInterceptor func(*http.Response, []byte) (*http.Response, []byte, error)
-
-type interceptorChain struct {
-	requestInterceptors  []requestInterceptor
-	responseInterceptors []responseInterceptor
-	mu                   sync.RWMutex
-}
-
-func (c *interceptorChain) addRequest(fn requestInterceptor) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.requestInterceptors = append(c.requestInterceptors, fn)
-}
-
-func (c *interceptorChain) addResponse(fn responseInterceptor) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.responseInterceptors = append(c.responseInterceptors, fn)
-}
-
-func (c *interceptorChain) executeRequest(req *http.Request) (*http.Request, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	var err error
-	for _, fn := range c.requestInterceptors {
-		req, err = fn(req)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return req, nil
-}
-
-func (c *interceptorChain) executeResponse(resp *http.Response, body []byte) (*http.Response, []byte, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	var err error
-	for i := len(c.responseInterceptors) - 1; i >= 0; i-- {
-		resp, body, err = c.responseInterceptors[i](resp, body)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	return resp, body, nil
-}
-
-type cacheEntry struct {
-	Body       []byte
-	StatusCode int
-	Headers    http.Header
-	CreatedAt  time.Time
-	TTL        time.Duration
-}
-
-func (ce *cacheEntry) isExpired() bool {
-	if ce.TTL <= 0 {
-		return false // Infinite TTL
-	}
-	return time.Since(ce.CreatedAt) > ce.TTL
-}
-
-type cacheConfig struct {
-	Enabled    bool
-	DefaultTTL time.Duration
-	MaxEntries int // 0 = unlimited
-	cache      map[string]*cacheEntry
-	mu         sync.RWMutex
-}
-
-func newCacheConfig() *cacheConfig {
-	return &cacheConfig{
-		Enabled:    true,
-		DefaultTTL: httpDefaultTTL,
-		MaxEntries: httpMaxCacheEntries,
-		cache:      make(map[string]*cacheEntry),
-	}
-}
-
-func (cc *cacheConfig) get(key string) *cacheEntry {
-	if !cc.Enabled {
-		return nil
-	}
-
-	cc.mu.RLock()
-	defer cc.mu.RUnlock()
-
-	entry, exists := cc.cache[key]
-	if !exists || entry.isExpired() {
-		if exists {
-			delete(cc.cache, key)
-		}
-		return nil
-	}
-
-	return entry
-}
-
-func (cc *cacheConfig) set(key string, entry *cacheEntry) {
-	if !cc.Enabled {
-		return
-	}
-
-	cc.mu.Lock()
-	defer cc.mu.Unlock()
-
-	if cc.MaxEntries > 0 && len(cc.cache) >= cc.MaxEntries {
-		for k := range cc.cache {
-			delete(cc.cache, k)
-			break
-		}
-	}
-
-	cc.cache[key] = entry
-}
-
-func (cc *cacheConfig) clear() {
-	cc.mu.Lock()
-	defer cc.mu.Unlock()
-	cc.cache = nil
-	cc.cache = make(map[string]*cacheEntry)
-}
-
-func httpGenerateCacheKey(method, rawURL string, headers map[string]string, body []byte) string {
-	hash := sha256.New()
-	hash.Write([]byte(method))
-	hash.Write([]byte(rawURL))
-
-	keys := make([]string, 0, len(headers))
-	for k := range headers {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-	for _, k := range keys {
-		hash.Write([]byte(k))
-		hash.Write([]byte(headers[k]))
-	}
-
-	if len(body) > 0 {
-		hash.Write(body)
-	}
-
-	return hex.EncodeToString(hash.Sum(nil))
-}
-
-func httpParseCacheConfig(obj *Object) *cacheConfig {
-	cfg := newCacheConfig()
-
-	if enabledVal, exists := obj.Value[httpEnabledField]; exists {
-		if boolVal, ok := enabledVal.(Bool); ok {
-			cfg.Enabled = bool(boolVal)
-		}
-	}
-
-	if ttlVal, exists := obj.Value[httpTTLField]; exists {
-		if intVal, ok := ttlVal.(Integer); ok {
-			cfg.DefaultTTL = time.Duration(intVal) * time.Second
-		}
-	}
-
-	return cfg
-}
-
-func httpRegisterRequestInterceptor(args ...Value) (Value, error) {
-	return NilValue, nil
-}
-
-func httpRegisterResponseInterceptor(args ...Value) (Value, error) {
-	return NilValue, nil
-}
-
-// func httpRegisterInterceptor(args ...Value) (Value, error) {
-// 	if len(args) == 0 {
-// 		return NilValue, fmt.Errorf("http.use: expected at least 1 interceptor function")
-// 	}
-
-// 	if args[0] != NilValue {
-// 		if reqFn, ok := args[0].(Value); Bool(ok) && reqFn.IsCallable() {
-// 			httpDefaultVidaHttpClient.interceptors.addRequest(func(req *http.Request) (*http.Request, error) {
-// 				reqObj := httpRequestToObject(req)
-// 				_, err := reqFn.Call(reqObj)
-// 				if err != nil {
-// 					return nil, err
-// 				}
-// 				// Convert back to http.Request (simplified: assume same request)
-// 				return req, nil
-// 			})
-// 		}
-// 	}
-
-// 	if len(args) > 1 && args[1] != NilValue {
-// 		if resFn, ok := args[1].(Value); Bool(ok) && resFn.IsCallable() {
-// 			httpDefaultVidaHttpClient.interceptors.addResponse(func(resp *http.Response, body []byte) (*http.Response, []byte, error) {
-// 				respObj := httpResponseToObject(resp, body)
-// 				_, err := resFn.Call(respObj)
-// 				if err != nil {
-// 					return nil, nil, err
-// 				}
-// 				// Convert back (simplified)
-// 				return resp, body, nil
-// 			})
-// 		}
-// 	}
-
-// 	return NilValue, nil
-// }
-
-func httpRequestToObject(req *http.Request) *Object {
-	headers := &Object{Value: make(map[string]Value)}
-	for k, v := range req.Header {
-		if len(v) > 0 {
-			headers.Value[k] = &String{Value: v[0]}
-		}
-	}
-
-	return &Object{
-		Value: map[string]Value{
-			"method":  &String{Value: req.Method},
-			"url":     &String{Value: req.URL.String()},
-			"headers": headers,
-		},
-	}
-}
-
-func httpCacheControl(args ...Value) (Value, error) {
-	if len(args) == 0 {
-		return NilValue, nil
-	}
-
-	action, ok := args[0].(*String)
-	if !ok {
-		return NilValue, fmt.Errorf("http.cache: first argument must be action string")
-	}
-
-	switch action.Value {
-	case "clear":
-		// httpDefaultVidaHttpClient.cacheConfig.clear()
-		return NilValue, nil
-	case "stats":
-		// Return simple stats object
-		stats := &Object{
-			Value: map[string]Value{
-				// "enabled": Bool(httpDefaultVidaHttpClient.cacheConfig.Enabled),
-				// Add more stats as needed
-			},
-		}
-		return stats, nil
-	default:
-		return NilValue, fmt.Errorf("http.cache: unknown action %q", action.Value)
-	}
 }
