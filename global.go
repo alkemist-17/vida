@@ -397,8 +397,8 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadObjectLib(), nil
 				case "array":
 					return loadFoundationArray(), nil
-				case "bin":
-					return loadFoundationBinary(), nil
+				case "bytes":
+					return loadFoundationBytes(), nil
 				case "time":
 					return loadFoundationTime(), nil
 				case "cast":
@@ -413,6 +413,8 @@ func coreLoadLib(args ...Value) (Value, error) {
 					return loadFoundationException(), nil
 				case "co":
 					return loadFoundationCoroutine(), nil
+				case "http":
+					return loadFoundationHttpClient(), nil
 				case "json":
 					return loadFoundationJSON(), nil
 				case "core":
@@ -434,14 +436,14 @@ func coreLoadLib(args ...Value) (Value, error) {
 
 func coreError(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return Error{Message: args[0]}, nil
+		return VidaError{Message: args[0]}, nil
 	}
-	return Error{Message: NilValue}, nil
+	return VidaError{Message: NilValue}, nil
 }
 
 func coreIsError(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		_, ok := args[0].(Error)
+		_, ok := args[0].(VidaError)
 		return Bool(ok), nil
 	}
 	return Bool(false), nil
@@ -516,7 +518,7 @@ func DeepEqual(args ...Value) (Value, error) {
 }
 
 func loadFoundationCorelib() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, len((*clbu)))}
 	for i := 0; i < len((*clbu)); i++ {
 		m.Value[coreLibNames[i]] = (*clbu)[i]
 	}

@@ -1,0 +1,244 @@
+var http = load("std/http")
+var json = load("std/json")
+var text = load("std/text")
+var task = load("std/task")
+var cast = load("std/cast")
+var array = load("std/array")
+
+assert(
+	http and 
+	json and 
+	text and 
+	task and 
+	cast and 
+	array
+)
+
+var res = http.request("https://restcountries.com/v3.1/name/china")
+
+if res {
+    assert(res.statusCode == 200)
+    assert(res.headers)
+    assert(res.body)
+	if text.contains(res.headers["Content-Type"], "application/json") {
+		if json.isValid(res.body) {
+			assert(json.isValid(res.body))
+			assert(json.parse(res.body))
+		} else {
+			assert(not json.isValid(res.body))
+		}
+	}
+} else {
+	assert(not res and isError(res))
+}
+
+
+
+
+var R = task.parallel([
+	[http.request, "https://restcountries.com/v3.1/name/france"],
+	[http.request, "https://restcountries.com/v3.1/name/russia"],
+	[http.request, "https://restcountries.com/v3.1/name/brasil"],
+	[http.request, "https://restcountries.com/v3.1/name/chile"],
+	[http.request, "https://restcountries.com/v3.1/name/mexico"],
+	[http.request, "https://restcountries.com/v3.1/name/spain"],
+	[http.request, "https://restcountries.com/v3.1/name/ecuador"],
+	[http.request, "https://restcountries.com/v3.1/name/canada"],
+	[http.request, "https://restcountries.com/v3.1/name/japan"],
+	[http.request, "https://restcountries.com/v3.1/name/germany"]
+])
+
+
+var A = []
+
+
+for _, res in R {
+	if res {
+		assert(res.statusCode)
+		assert(res.headers)
+		if text.contains(res.headers["Content-Type"], "application/json") {
+			if json.isValid(res.body) {
+				assert(json.isValid(res.body))
+				var data = json.parse(res.body)
+				if type(data) == type([]) {
+					data = data[0]
+				}
+				assert(data)
+				if data.cioc and data.population {
+					assert(data.cioc)
+					assert(data.population)
+					append(A, {country = data.cioc, population = cast.toInt(data.population)})
+				}
+			}
+		}
+	}
+}
+
+array.sortBy(A, fun a, b => a.population > b.population)
+
+var total = 0
+
+for k, v in A {
+	total = total + v.population
+}
+
+if len(A) == 0 {
+	assert(total == 0)
+} else {
+	assert(total > 0)
+}
+
+for k, v in A {
+	print(format("%3v %5v %10v %6.2f %%", k + 1, v.country, v.population, (v.population * 100.0) / cast.toFloat(total)))
+}
+
+print(format("%9v %10v", "SUM", total))
+
+print("\n\n\n")
+
+
+var check = fun res {
+	if res {
+		assert(res.statusCode)
+		assert(res.headers)
+		assert(res.body)
+		ret nil
+	}
+	assert(not res and isError(res))
+}
+
+
+var checkMethod = fun res, method {
+	if res {
+		assert(res.statusCode)
+		assert(res.headers)
+		assert(res.body)
+		if json.isValid(res.body) {
+			var data = json.parse(res.body)
+			assert(data.method == text.toUpper(method))
+		}
+		ret nil
+	}
+	assert(not res and isError(res))
+}
+
+R = task.parallel(
+	[
+		[http.get, "https://httpbin.org/anything"],
+		[http.post, "https://httpbin.org/anything"],
+		[http.put, "https://httpbin.org/anything"],
+		[http.patch, "https://httpbin.org/anything"],
+		[http.delete, "https://httpbin.org/anything"]
+	]
+)
+
+task.parallel(
+	[
+		[checkMethod, R[0], "get"],
+		[checkMethod, R[1], "post"],
+		[checkMethod, R[2], "put"],
+		[checkMethod, R[3], "patch"],
+		[checkMethod, R[4], "delete"]
+	]
+)
+
+R = task.parallel(
+	[
+		[http.get, {url = "https://httpbin.org/anything"}],
+		[http.post, {url = "https://httpbin.org/anything"}],
+		[http.put, {url = "https://httpbin.org/anything"}],
+		[http.patch, {url = "https://httpbin.org/anything"}],
+		[http.delete, {url = "https://httpbin.org/anything"}]
+	]
+)
+
+task.parallel(
+	[
+		[checkMethod, R[0], "get"],
+		[checkMethod, R[1], "post"],
+		[checkMethod, R[2], "put"],
+		[checkMethod, R[3], "patch"],
+		[checkMethod, R[4], "delete"]
+	]
+)
+
+R = task.parallel(
+	[
+		[http.get, {base = "https://httpbin.org", url = "/anything"}],
+		[http.post, {base = "https://httpbin.org", url = "/anything"}],
+		[http.put, {base = "https://httpbin.org", url = "/anything"}],
+		[http.patch, {base = "https://httpbin.org", url = "/anything"}],
+		[http.delete, {base = "https://httpbin.org", url = "/anything"}]
+	]
+)
+
+task.parallel(
+	[
+		[checkMethod, R[0], "get"],
+		[checkMethod, R[1], "post"],
+		[checkMethod, R[2], "put"],
+		[checkMethod, R[3], "patch"],
+		[checkMethod, R[4], "delete"]
+	]
+)
+
+
+var config = {
+	base = "https://restcountries.com/v3.1"
+	url = ""
+}
+
+A = 
+[
+	"norway",
+	"iceland",
+	"vietnam",
+	"australia",
+	"scotland",
+	"ireland",
+	"denmark",
+	"greece",
+	"iran",
+	"mongolia"
+]
+
+
+R = task.parallel([
+	[http.get, format("/name/%v", A[0]), config],
+	[http.get, format("/name/%v", A[1]), config],
+	[http.get, format("/name/%v", A[2]), config],
+	[http.get, format("/name/%v", A[3]), config],
+	[http.get, format("/name/%v", A[4]), config],
+	[http.get, format("/name/%v", A[5]), config],
+	[http.get, format("/name/%v", A[6]), config],
+	[http.get, format("/name/%v", A[7]), config],
+	[http.get, format("/name/%v", A[8]), config],
+	[http.get, format("/name/%v", A[9]), config]]
+)
+
+
+task.parallel(
+	[
+		[check, R[0]],
+		[check, R[1]],
+		[check, R[2]],
+		[check, R[3]],
+		[check, R[4]],
+		[check, R[5]],
+		[check, R[6]],
+		[check, R[7]],
+		[check, R[8]],
+		[check, R[9]]
+	]
+)
+
+config.url = "/name/ecuador"
+res = http.get(config)
+
+check(res)
+
+config.timeout = 0
+res = http.get(config)
+assert(not res and isError(res))
+
+

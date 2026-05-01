@@ -7,7 +7,7 @@ import (
 )
 
 func loadFoundationTask() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 2)}
 	m.Value["concepts"] = GFn(taksConcepts)
 	m.Value["parallel"] = GFn(taskRunInParallel)
 	return m

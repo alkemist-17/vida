@@ -5,7 +5,7 @@ import (
 )
 
 func loadFoundationCasting() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 6)}
 	m.Value["toString"] = GFn(castToString)
 	m.Value["toInt"] = GFn(castToInt)
 	m.Value["toFloat"] = GFn(casttoFloat)
@@ -126,7 +126,7 @@ func castToArray(args ...Value) (Value, error) {
 				idx++
 			}
 			return &Array{Value: a}, nil
-		case Error:
+		case VidaError:
 			a := make([]Value, 2)
 			a[0] = &String{Value: errorMessageFieldName}
 			a[1] = v.Message
@@ -153,7 +153,7 @@ func castToObject(args ...Value) (Value, error) {
 				o.Value[Integer(i).String()] = Integer(v)
 			}
 			return o, nil
-		case Error:
+		case VidaError:
 			o := &Object{Value: make(map[string]Value)}
 			o.Value[errorMessageFieldName] = v.Message
 			return o, nil

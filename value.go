@@ -1282,16 +1282,16 @@ func (gfn GFn) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nil)
 }
 
-type Error struct {
+type VidaError struct {
 	ValueSemanticsImpl
 	Message Value
 }
 
-func (e Error) Boolean() Bool {
+func (e VidaError) Boolean() Bool {
 	return false
 }
 
-func (e Error) Prefix(op uint64) (Value, error) {
+func (e VidaError) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return Bool(true), nil
@@ -1300,7 +1300,7 @@ func (e Error) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (e Error) Binop(op uint64, rhs Value) (Value, error) {
+func (e VidaError) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return e, nil
@@ -1313,47 +1313,47 @@ func (e Error) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e Error) IGet(index Value) (Value, error) {
+func (e VidaError) IGet(index Value) (Value, error) {
 	if val, ok := index.(*String); ok && val.Value == errorMessageFieldName {
 		return e.Message, nil
 	}
 	return NilValue, nil
 }
 
-func (e Error) ISet(index, val Value) error {
+func (e VidaError) ISet(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (e Error) Equals(other Value) Bool {
-	v, ok := other.(Error)
+func (e VidaError) Equals(other Value) Bool {
+	v, ok := other.(VidaError)
 	return Bool(ok) && e.Message.Equals(v.Message)
 }
 
-func (e Error) IsIterable() Bool {
+func (e VidaError) IsIterable() Bool {
 	return false
 }
 
-func (e Error) IsCallable() Bool {
+func (e VidaError) IsCallable() Bool {
 	return false
 }
 
-func (e Error) Iterator() Value {
+func (e VidaError) Iterator() Value {
 	return NilValue
 }
 
-func (e Error) String() string {
+func (e VidaError) String() string {
 	return fmt.Sprintf("Error(%v)", e.Message.String())
 }
 
-func (e Error) ObjectKey() string {
+func (e VidaError) ObjectKey() string {
 	return fmt.Sprintf("Error(%v)", e.Message.ObjectKey())
 }
 
-func (e Error) Type() string {
+func (e VidaError) Type() string {
 	return "error"
 }
 
-func (e Error) Clone() Value {
+func (e VidaError) Clone() Value {
 	return e
 }
 

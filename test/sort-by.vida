@@ -1,0 +1,66 @@
+var array = load("std/array")
+var rand = load("std/rand")
+
+
+var model = {
+    stringData
+    intData
+    floatData
+}
+
+
+var N = 10_000
+
+
+var generateData = fun N {
+    var A = array.new({len = N, val = model, clone = true})
+    for i, v in A {
+        v.stringData = rand.text()
+        v.intData = rand.I()
+        v.floatData = rand.F() * N
+    }
+    ret A
+}
+
+
+var check = fun A, field, desc {
+    var f = nil
+    if desc {
+        f = fun a, b => a < b
+    } else {
+        f = fun a, b => a > b
+    }
+    for i in 1, len(A) {
+        if not f(A[i-1][field], A[i][field]) {
+            ret false
+        }
+    }
+    ret true
+}
+
+var byString = fun l, r => l.stringData > r.stringData
+var byStringDesc = fun l, r => l.stringData < r.stringData
+
+var byInt = fun l, r => l.intData > r.intData
+var byIntDesc = fun l, r => l.intData < r.intData
+
+var byFloat = fun l, r => l.floatData > r.floatData
+var byFloatDesc = fun l, r => l.floatData < r.floatData
+
+var F = [
+    [byString, "stringData", false],
+    [byStringDesc, "stringData", true],
+    [byInt, "intData", false],
+    [byIntDesc, "intData", true],
+    [byFloat, "floatData", false],
+    [byFloatDesc, "floatData", true]
+]
+
+
+for _, K in F {
+    assert(check(array.sortBy(generateData(N), K[0]), K[1], K[2]))
+}
+
+
+
+

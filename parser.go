@@ -538,6 +538,10 @@ func (p *parser) operand() ast.Node {
 		p.advance()
 	loop:
 		for p.current.Token != token.RCURLY {
+			if p.current.Token == token.STRING {
+				p.current.Token = token.IDENTIFIER
+				p.current.Lit = p.current.Lit[1 : len(p.current.Lit)-1]
+			}
 			p.expect(token.IDENTIFIER)
 			k := &ast.Property{Value: p.current.Lit}
 			p.advance()

@@ -1,6 +1,6 @@
 
 var cast = load("std/cast")
-var bin = load("std/bin")
+var bytes = load("std/bytes")
 
 assert(cast.toBool("true") == true)
 assert(cast.toBool("false") == false)
@@ -58,28 +58,28 @@ assert(not (cast.toArray(A)[0][0][0][0] == A[0][0][0][0]))
 
 var N = 10
 var K = 0xFF
-var B = bin.bytes(N)
+var B = bytes.new(N)
 A = newArray(N, 0)
 
 for i in N {
     assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
 }
 
-B = bin.bytes(N, K)
+B = bytes.new(N, K)
 A = newArray(N, K)
 
 for i in N {
     assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
 }
 
-B = bin.bytes("hello, world")
+B = bytes.from("hello, world")
 A = [0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x2C, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64]
 
 for i in len(B) {
     assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
 }
 
-B = bin.bytes(B)
+B = bytes.from(B)
 A = cast.toArray(B)
 
 for i in len(B) {
@@ -87,7 +87,7 @@ for i in len(B) {
 }
 
 A = newArray({from = 10, to = 21})
-B = cast.toArray(bin.bytes(A))
+B = cast.toArray(bytes.from(A))
 
 assert(type(A) == type(B) and type(B) == type([]))
 
@@ -141,7 +141,7 @@ for i, v in A {
     assert(B[i] == v)
 }
 
-A = bin.bytes(A)
+A = bytes.from(A)
 B = cast.toObject(A)
 
 assert(type(B) == type({}))

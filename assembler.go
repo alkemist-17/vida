@@ -40,7 +40,6 @@ const (
 	shift4     = 4
 	shift16    = 16
 	shift20    = 20
-	shift24    = 24
 	shift32    = 32
 	shift48    = 48
 	shift56    = 56

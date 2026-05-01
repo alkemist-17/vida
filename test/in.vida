@@ -1,4 +1,4 @@
-var binary = load("std/bin")
+var bytes = load("std/bytes")
 
 var miniList = [1, 2, 3]
 
@@ -10,7 +10,7 @@ var e = error("hello world")
 
 var planet = { mercury venus earth mars }
 
-var b = binary.bytes(100, 0xFF)
+var b = bytes.new(100, 0xFF)
 
 let xs = [
     1, 
@@ -80,7 +80,7 @@ for k, v in data {
     assert(v in data)
 }
 
-data = binary.bytes(10, 0xFF)
+data = bytes.new(10, 0xFF)
 
 for k, v in data {
     assert(v in data)

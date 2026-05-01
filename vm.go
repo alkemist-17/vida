@@ -497,266 +497,118 @@ func (vm *VM) run() (Result, error) {
 	}
 }
 
+func sliceBounds(start, end, length Integer) (Integer, Integer, bool) {
+	if start < 0 {
+		start += length
+	}
+	if end < 0 {
+		end += length
+	}
+	if start < 0 {
+		start = 0
+	}
+	if end > length {
+		end = length
+	}
+	if start > end {
+		return 0, 0, true
+	}
+	if start > length {
+		return 0, 0, true
+	}
+	return start, end, false
+}
+
 func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 	val := vm.Frame.stack[sliceable]
+	var startIdx, endIdx Integer
+	var hasStart, hasEnd bool
+
+	if mode == ecv || mode == ece {
+		e := vm.Frame.stack[sliceable+1]
+		i, ok := e.(Integer)
+		if !ok {
+			return NilValue, verror.ErrSlice
+		}
+		startIdx, hasStart = i, true
+	}
+	if mode == vce {
+		e := vm.Frame.stack[sliceable+1]
+		i, ok := e.(Integer)
+		if !ok {
+			return NilValue, verror.ErrSlice
+		}
+		endIdx, hasEnd = i, true
+	}
+	if mode == ece {
+		e := vm.Frame.stack[sliceable+2]
+		i, ok := e.(Integer)
+		if !ok {
+			return NilValue, verror.ErrSlice
+		}
+		endIdx, hasEnd = i, true
+	}
+
+	resolve := func(length Integer) (Integer, Integer, bool) {
+		s := Integer(0)
+		if hasStart {
+			s = startIdx
+		}
+		e := length
+		if hasEnd {
+			e = endIdx
+		}
+		return sliceBounds(s, e, length)
+	}
+
 	switch v := val.(type) {
 	case *Array:
-		switch mode {
-		case vcv:
-			data := make([]Value, len(v.Value))
+		length := Integer(len(v.Value))
+		if mode == vcv {
+			data := make([]Value, length)
 			copy(data, v.Value)
 			return &Array{Value: data}, nil
-		case vce:
-			e := vm.Frame.stack[sliceable+1]
-			switch ee := e.(type) {
-			case Integer:
-				l := Integer(len(v.Value))
-				if ee < 0 {
-					ee += l
-				}
-				if 0 <= ee && ee <= l {
-					slc := v.Value[:ee]
-					data := make([]Value, len(slc))
-					copy(data, slc)
-					return &Array{Value: data}, nil
-				}
-				if ee > l {
-					data := make([]Value, len(v.Value))
-					copy(data, v.Value)
-					return &Array{Value: data}, nil
-				}
-				return &Array{}, nil
-			}
-		case ecv:
-			e := vm.Frame.stack[sliceable+1]
-			switch ee := e.(type) {
-			case Integer:
-				l := Integer(len(v.Value))
-				if ee < 0 {
-					ee += l
-				}
-				if 0 <= ee && ee <= l {
-					slc := v.Value[ee:]
-					data := make([]Value, len(slc))
-					copy(data, slc)
-					return &Array{Value: data}, nil
-				}
-				if ee < 0 {
-					data := make([]Value, len(v.Value))
-					copy(data, v.Value)
-					return &Array{Value: data}, nil
-				}
-				return &Array{}, nil
-			}
-		case ece:
-			l := vm.Frame.stack[sliceable+1]
-			r := vm.Frame.stack[sliceable+2]
-			switch ll := l.(type) {
-			case Integer:
-				switch rr := r.(type) {
-				case Integer:
-					xslen := Integer(len(v.Value))
-					if ll < 0 {
-						ll += xslen
-					}
-					if rr < 0 {
-						rr += xslen
-					}
-					if 0 <= ll && ll <= xslen && 0 <= rr && rr <= xslen {
-						slc := v.Value[ll:rr]
-						data := make([]Value, len(slc))
-						copy(data, slc)
-						return &Array{Value: data}, nil
-					}
-					if ll < 0 {
-						if 0 <= rr && rr <= xslen {
-							slc := v.Value[:rr]
-							data := make([]Value, len(slc))
-							copy(data, slc)
-							return &Array{Value: data}, nil
-						}
-						if rr > xslen {
-							data := make([]Value, len(v.Value))
-							copy(data, v.Value)
-							return &Array{Value: data}, nil
-						}
-					} else if rr > xslen {
-						if 0 <= ll && ll <= xslen {
-							slc := v.Value[ll:]
-							data := make([]Value, len(slc))
-							copy(data, slc)
-							return &Array{Value: data}, nil
-						}
-					}
-				}
-				return &Array{}, nil
-			}
 		}
+		s, e, empty := resolve(length)
+		if empty {
+			return &Array{}, nil
+		}
+		slc := v.Value[s:e]
+		data := make([]Value, len(slc))
+		copy(data, slc)
+		return &Array{Value: data}, nil
+
 	case *String:
 		if v.Runes == nil {
 			v.Runes = []rune(v.Value)
 		}
-		switch mode {
-		case vcv:
+		length := Integer(len(v.Runes))
+		if mode == vcv {
 			return v, nil
-		case vce:
-			e := vm.Frame.stack[sliceable+1]
-			switch ee := e.(type) {
-			case Integer:
-				l := Integer(len(v.Value))
-				if ee < 0 {
-					ee += l
-				}
-				if 0 <= ee && ee <= l {
-					return &String{Value: string(v.Runes[:ee])}, nil
-				}
-				if ee > l {
-					return v, nil
-				}
-				return &String{}, nil
-			}
-		case ecv:
-			e := vm.Frame.stack[sliceable+1]
-			switch ee := e.(type) {
-			case Integer:
-				l := Integer(len(v.Value))
-				if ee < 0 {
-					ee += l
-				}
-				if 0 <= ee && ee <= l {
-					return &String{Value: string(v.Runes[ee:])}, nil
-				}
-				if ee < 0 {
-					return v, nil
-				}
-				return &String{}, nil
-			}
-		case ece:
-			l := vm.Frame.stack[sliceable+1]
-			r := vm.Frame.stack[sliceable+2]
-			switch ll := l.(type) {
-			case Integer:
-				switch rr := r.(type) {
-				case Integer:
-					xslen := Integer(len(v.Value))
-					if ll < 0 {
-						ll += xslen
-					}
-					if rr < 0 {
-						rr += xslen
-					}
-					if 0 <= ll && ll <= xslen && 0 <= rr && rr <= xslen {
-						return &String{Value: string(v.Runes[ll:rr])}, nil
-					}
-					if ll < 0 {
-						if 0 <= rr && rr <= xslen {
-							return &String{Value: string(v.Runes[:rr])}, nil
-						}
-						if rr > xslen {
-							return v, nil
-						}
-					} else if rr > xslen {
-						if 0 <= ll && ll <= xslen {
-							return &String{Value: string(v.Runes[ll:])}, nil
-						}
-					}
-				}
-				return &String{}, nil
-			}
 		}
+		s, e, empty := resolve(length)
+		if empty {
+			return &String{}, nil
+		}
+		return &String{Value: string(v.Runes[s:e])}, nil
+
 	case *Bytes:
-		switch mode {
-		case vcv:
-			data := make([]byte, len(v.Value))
+		length := Integer(len(v.Value))
+		if mode == vcv {
+			data := make([]byte, length)
 			copy(data, v.Value)
 			return &Bytes{Value: data}, nil
-		case vce:
-			e := vm.Frame.stack[sliceable+1]
-			switch ee := e.(type) {
-			case Integer:
-				l := Integer(len(v.Value))
-				if ee < 0 {
-					ee += l
-				}
-				if 0 <= ee && ee <= l {
-					slc := v.Value[:ee]
-					data := make([]byte, len(slc))
-					copy(data, slc)
-					return &Bytes{Value: data}, nil
-				}
-				if ee > l {
-					data := make([]byte, len(v.Value))
-					copy(data, v.Value)
-					return &Bytes{Value: data}, nil
-				}
-				return &Bytes{}, nil
-			}
-		case ecv:
-			e := vm.Frame.stack[sliceable+1]
-			switch ee := e.(type) {
-			case Integer:
-				l := Integer(len(v.Value))
-				if ee < 0 {
-					ee += l
-				}
-				if 0 <= ee && ee <= l {
-					slc := v.Value[ee:]
-					data := make([]byte, len(slc))
-					copy(data, slc)
-					return &Bytes{Value: data}, nil
-				}
-				if ee < 0 {
-					data := make([]byte, len(v.Value))
-					copy(data, v.Value)
-					return &Bytes{Value: data}, nil
-				}
-				return &Bytes{}, nil
-			}
-		case ece:
-			l := vm.Frame.stack[sliceable+1]
-			r := vm.Frame.stack[sliceable+2]
-			switch ll := l.(type) {
-			case Integer:
-				switch rr := r.(type) {
-				case Integer:
-					xslen := Integer(len(v.Value))
-					if ll < 0 {
-						ll += xslen
-					}
-					if rr < 0 {
-						rr += xslen
-					}
-					if 0 <= ll && ll <= xslen && 0 <= rr && rr <= xslen {
-						slc := v.Value[ll:rr]
-						data := make([]byte, len(slc))
-						copy(data, slc)
-						return &Bytes{Value: data}, nil
-					}
-					if ll < 0 {
-						if 0 <= rr && rr <= xslen {
-							slc := v.Value[:rr]
-							data := make([]byte, len(slc))
-							copy(data, slc)
-							return &Bytes{Value: data}, nil
-						}
-						if rr > xslen {
-							data := make([]byte, len(v.Value))
-							copy(data, v.Value)
-							return &Bytes{Value: data}, nil
-						}
-					} else if rr > xslen {
-						if 0 <= ll && ll <= xslen {
-							slc := v.Value[ll:]
-							data := make([]byte, len(slc))
-							copy(data, slc)
-							return &Bytes{Value: data}, nil
-						}
-					}
-				}
-				return &Bytes{}, nil
-			}
 		}
+		s, e, empty := resolve(length)
+		if empty {
+			return &Bytes{}, nil
+		}
+		slc := v.Value[s:e]
+		data := make([]byte, len(slc))
+		copy(data, slc)
+		return &Bytes{Value: data}, nil
 	}
+
 	return NilValue, verror.ErrSlice
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 func loadFoundationIO() Value {
-	m := &Object{Value: make(map[string]Value)}
+	m := &Object{Value: make(map[string]Value, 23)}
 	// fmt
 	m.Value["write"] = GFn(ioWrite)
 	m.Value["fwrite"] = GFn(ioFWrite)
@@ -50,14 +50,14 @@ func ioFWrite(args ...Value) (Value, error) {
 				if err != nil {
 					fileHandler.IsClosed = true
 					fileHandler.Handler.Close()
-					return Error{Message: &String{Value: err.Error()}}, nil
+					return VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return Integer(n), nil
 			}
-			return Error{Message: &String{Value: noOrClosedFH}}, nil
+			return VidaError{Message: &String{Value: noOrClosedFH}}, nil
 		case *FileHandler:
 			if handler.IsClosed {
-				return Error{Message: &String{Value: fileAlreadyClosed}}, nil
+				return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 			}
 			var s []any
 			for _, v := range args[1:] {
@@ -67,7 +67,7 @@ func ioFWrite(args ...Value) (Value, error) {
 			if err != nil {
 				handler.IsClosed = true
 				handler.Handler.Close()
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
@@ -89,17 +89,17 @@ func ioFPrintF(args ...Value) (Value, error) {
 					if err != nil {
 						fileHandler.IsClosed = true
 						fileHandler.Handler.Close()
-						return Error{Message: &String{Value: err.Error()}}, nil
+						return VidaError{Message: &String{Value: err.Error()}}, nil
 					}
 					return Integer(n), nil
 				}
-				return Error{Message: &String{Value: noStringFormat}}, nil
+				return VidaError{Message: &String{Value: noStringFormat}}, nil
 			}
-			return Error{Message: &String{Value: noOrClosedFH}}, nil
+			return VidaError{Message: &String{Value: noOrClosedFH}}, nil
 		case *FileHandler:
 			if formatstr, ok := args[1].(*String); ok {
 				if handler.IsClosed {
-					return Error{Message: &String{Value: fileAlreadyClosed}}, nil
+					return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 				}
 				var s []any
 				for _, v := range args[2:] {
@@ -109,11 +109,11 @@ func ioFPrintF(args ...Value) (Value, error) {
 				if err != nil {
 					handler.IsClosed = true
 					handler.Handler.Close()
-					return Error{Message: &String{Value: err.Error()}}, nil
+					return VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return Integer(n), nil
 			}
-			return Error{Message: &String{Value: noStringFormat}}, nil
+			return VidaError{Message: &String{Value: noStringFormat}}, nil
 		}
 	}
 	return NilValue, nil
@@ -137,11 +137,11 @@ func ioPrintF(args ...Value) (Value, error) {
 			}
 			n, err := fmt.Fprintf(os.Stdout, formatstr.Value, s...)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
-		return Error{Message: &String{Value: noStringFormat}}, nil
+		return VidaError{Message: &String{Value: noStringFormat}}, nil
 	}
 	return NilValue, nil
 }
@@ -155,11 +155,11 @@ func ioErrorf(args ...Value) (Value, error) {
 			}
 			n, err := fmt.Fprintf(os.Stderr, formatstr.Value, s...)
 			if err != nil {
-				return Error{Message: &String{Value: err.Error()}}, nil
+				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
-		return Error{Message: &String{Value: noStringFormat}}, nil
+		return VidaError{Message: &String{Value: noStringFormat}}, nil
 	}
 	return NilValue, nil
 }
