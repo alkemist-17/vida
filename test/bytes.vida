@@ -4,13 +4,18 @@ assert(
     bytes and
     bytes.new and
     bytes.from and
-    bytes.cryptoRandom and
+    bytes.genCryptoRand and
     bytes.timingSafeEqual and
     bytes.encode and
     bytes.decode and
     bytes.encoding and
     bytes.toFile and
-    bytes.xor
+    bytes.xor and
+    bytes.toString and
+    bytes.uuid and
+    bytes.parseUUID and
+    bytes.bitLen and
+    bytes.hexdump
 )
 
 
@@ -47,7 +52,7 @@ for i in len(A) {
 }
 
 
-A = bytes.cryptoRandom(8)
+A = bytes.genCryptoRand(8)
 B = bytes.new(A)
 assert(not(A == B))
 assert(len(A) == len(B))
@@ -78,17 +83,14 @@ for i in len(A) {
     assert(A[i] == B[i])
 }
 
-A = bytes.cryptoRandom(size)
-B = bytes.cryptoRandom(size)
+A = bytes.genCryptoRand(size)
+B = bytes.genCryptoRand(size)
 
 assert(
     not(bytes.timingSafeEqual(A, B)) and
     bytes.timingSafeEqual(A, A) and
     bytes.timingSafeEqual(B, B)
 )
-
-assert(bytes.encoding.hex == "hex")
-assert(bytes.encoding.base64 == "base64")
 
 
 A = bytes.from(s)
@@ -127,7 +129,7 @@ assert(A[13] == dash)
 assert(A[18] == dash)
 assert(A[23] == dash)
 
-A = bytes.cryptoRandom(16)
+A = bytes.genCryptoRand(16)
 B = bytes.uuid(A)
 assert(len(B) == 36)
 assert(B[8] == dash)
@@ -138,3 +140,51 @@ assert(B[23] == dash)
 B = bytes.parseUUID(B)
 assert(bytes.timingSafeEqual(A, B))
 
+
+var i = "random-data"
+var k = bytes.from(i)
+
+assert(len(i) == len(k))
+assert(bytes.encode(k, bytes.encoding.base64) == "cmFuZG9tLWRhdGE=")
+assert(bytes.encode(k, bytes.encoding.hex) == "72616e646f6d2d64617461")
+assert(bytes.encode(k, bytes.encoding.HEX) == "72616E646F6D2D64617461")
+assert(bytes.encode(k, bytes.encoding.base64url) == "cmFuZG9tLWRhdGE=")
+assert(bytes.encode(k, bytes.encoding.binary) == "0111001001100001011011100110010001101111011011010010110101100100011000010111010001100001")
+
+assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.base64), bytes.encoding.base64)) == i)
+assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.hex), bytes.encoding.hex)) == i)
+assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.HEX), bytes.encoding.HEX)) == i)
+assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.base64url), bytes.encoding.base64url)) == i)
+assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.binary), bytes.encoding.binary)) == i)
+
+
+
+
+var encodeHex = fun b => bytes.encode(b, bytes.encoding.hex)
+A = ["Marcus Aurelius", "Plato", "Aristotle", "Pythagoras", "Anaximandrus"]
+
+var crypto = fun {
+	for _, v in A {
+		var i = bytes.from(v)
+		var k = bytes.genCryptoRand(len(i))
+		print("I =", encodeHex(i))
+		print("K =", encodeHex(k))
+		var c = bytes.xor(i, k)
+		print("C =", encodeHex(c))
+		var p = bytes.xor(c, k)
+		print("P =", encodeHex(p))
+        assert(bytes.timingSafeEqual(i, p))
+        assert(bytes.toString(p) == v)
+	}
+}
+
+crypto()
+
+
+A = bytes.from("hello, world!")
+B = 13*8
+assert(bytes.bitLen(A) == B)
+
+A = bytes.genCryptoRand(1024)
+assert(len(A) == 1024)
+print(bytes.hexdump(A))

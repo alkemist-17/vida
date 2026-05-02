@@ -8,22 +8,41 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/alkemist-17/vida/verror"
 )
 
+type byteOrd int
+type bitOrd int
+type encodingType int
+
 const (
-	bytesBase64URL = "base64url"
-	bytesBase64    = "base64"
-	bytesHex       = "hex"
-	bytesUUIDLen   = 16
+	bytesLittleEndian byteOrd = iota
+	bytesBigEndian
+	bytesNativeEndian
 )
 
+const (
+	bytesMFirst bitOrd = iota
+	bytesLFirst
+)
+
+const (
+	bytesEncodingHex encodingType = iota
+	bytesEncodingHEX
+	bytesEncodingBase64
+	bytesEncodingBase64URL
+	bytesEncodingBinary
+)
+
+const bytesUUIDLen = 16
+
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 12)}
+	m := &Object{Value: make(map[string]Value, 14)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
-	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
+	m.Value["genCryptoRand"] = GFn(bytesGenerateCryptoRand)
 	m.Value["timingSafeEqual"] = GFn(bytesTimingSafeEqual)
 	m.Value["encode"] = GFn(bytesEncode)
 	m.Value["decode"] = GFn(bytesDecode)
@@ -33,6 +52,8 @@ func loadFoundationBytes() Value {
 	m.Value["uuid"] = GFn(bytesUUID)
 	m.Value["parseUUID"] = GFn(bytesParseUUID)
 	m.Value["toString"] = GFn(bytesToString)
+	m.Value["bitLen"] = GFn(bytesBitLen)
+	m.Value["hexdump"] = GFn(bytesDump)
 	return m
 }
 
@@ -91,7 +112,7 @@ func bytesFromValue(args ...Value) (Value, error) {
 	return &Bytes{}, nil
 }
 
-func bytesCryptoRandom(args ...Value) (Value, error) {
+func bytesGenerateCryptoRand(args ...Value) (Value, error) {
 	switch len(args) {
 	case 1:
 		if inputValue, ok := args[0].(Integer); ok {
@@ -104,17 +125,21 @@ func bytesCryptoRandom(args ...Value) (Value, error) {
 		}
 	case 2:
 		s, okS := args[0].(Integer)
-		e, okE := args[1].(*String)
+		e, okE := args[1].(Integer)
 		if okS && okE {
 			size := int(s)
 			if 0 < size && size < math.MaxInt32 {
 				b := make([]byte, size)
 				cryptoRand.Read(b)
-				switch e.Value {
-				case bytesBase64:
+				switch e {
+				case Integer(bytesEncodingBase64):
 					return &String{Value: base64.StdEncoding.EncodeToString(b)}, nil
-				case bytesHex:
+				case Integer(bytesEncodingHex):
 					return &String{Value: hex.EncodeToString(b)}, nil
+				case Integer(bytesEncodingHEX):
+					return &String{Value: strings.ToUpper(hex.EncodeToString(b))}, nil
+				case Integer(bytesEncodingBinary):
+					return &String{Value: fmt.Sprintf("%08b", b)}, nil
 				default:
 					return &Bytes{Value: b}, nil
 				}
@@ -139,15 +164,24 @@ func bytesTimingSafeEqual(args ...Value) (Value, error) {
 func bytesEncode(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		b, okI := args[0].(*Bytes)
-		e, okE := args[1].(*String)
+		e, okE := args[1].(Integer)
 		if okI && okE {
-			switch e.Value {
-			case bytesBase64:
+			switch e {
+			case Integer(bytesEncodingBase64):
 				return &String{Value: base64.StdEncoding.EncodeToString(b.Value)}, nil
-			case bytesHex:
+			case Integer(bytesEncodingHex):
 				return &String{Value: hex.EncodeToString(b.Value)}, nil
-			case bytesBase64URL:
+			case Integer(bytesEncodingHEX):
+				return &String{Value: strings.ToUpper(hex.EncodeToString(b.Value))}, nil
+			case Integer(bytesEncodingBase64URL):
 				return &String{Value: base64.URLEncoding.EncodeToString(b.Value)}, nil
+			case Integer(bytesEncodingBinary):
+				var sb strings.Builder
+				sb.Grow(len(b.Value) * 8)
+				for _, v := range b.Value {
+					fmt.Fprintf(&sb, "%08b", v)
+				}
+				return &String{Value: sb.String()}, nil
 			default:
 				return b, nil
 			}
@@ -159,20 +193,40 @@ func bytesEncode(args ...Value) (Value, error) {
 func bytesDecode(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, okS := args[0].(*String)
-		e, okE := args[1].(*String)
+		e, okE := args[1].(Integer)
 		if okS && okE {
 			var r []byte
 			var err error
-			switch e.Value {
-			case bytesBase64:
+			switch e {
+			case Integer(bytesEncodingBase64):
 				r, err = base64.StdEncoding.DecodeString(s.Value)
 				goto resolve
-			case bytesHex:
+			case Integer(bytesEncodingHex), Integer(bytesEncodingHEX):
 				r, err = hex.DecodeString(s.Value)
 				goto resolve
-			case bytesBase64URL:
+			case Integer(bytesEncodingBase64URL):
 				r, err = base64.URLEncoding.DecodeString(s.Value)
 				goto resolve
+			case Integer(bytesEncodingBinary):
+				l := len(s.Value)
+				if l%8 == 0 {
+					r = make([]byte, l/8)
+					for i := 0; i < l; i += 8 {
+						var b byte
+						for j := range 8 {
+							switch s.Value[i+j] {
+							case '1':
+								b = (b << 1) | 1
+							case '0':
+								b <<= 1
+							default:
+								return NilValue, nil
+							}
+						}
+						r[i/8] = b
+					}
+					goto resolve
+				}
 			default:
 				return &Bytes{Value: []byte(s.Value)}, nil
 			}
@@ -187,10 +241,12 @@ func bytesDecode(args ...Value) (Value, error) {
 }
 
 func bytesEncodings() *Object {
-	e := make(map[string]Value, 3)
-	e[bytesBase64] = &String{Value: bytesBase64}
-	e[bytesHex] = &String{Value: bytesHex}
-	e[bytesBase64URL] = &String{Value: bytesBase64URL}
+	e := make(map[string]Value, 5)
+	e["base64"] = Integer(bytesEncodingBase64)
+	e["hex"] = Integer(bytesEncodingHex)
+	e["HEX"] = Integer(bytesEncodingHEX)
+	e["base64url"] = Integer(bytesEncodingBase64URL)
+	e["binary"] = Integer(bytesEncodingBinary)
 	return &Object{Value: e}
 }
 
@@ -272,6 +328,44 @@ func bytesToString(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {
 			return &String{Value: string(b.Value)}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesBitLen(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if b, ok := args[0].(*Bytes); ok {
+			return Integer(len(b.Value) * 8), nil
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesDump(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if b, ok := args[0].(*Bytes); ok {
+			const rowSize = 16
+			var sb strings.Builder
+			l := len(b.Value)
+			for i := 0; i < l; i += rowSize {
+				end := min(i+rowSize, l)
+				row := b.Value[i:end]
+				fmt.Fprintf(&sb, "%08x ", i)
+				var space int
+				for j := range rowSize {
+					if j < len(row) {
+						space++
+						fmt.Fprintf(&sb, "%02x", row[j])
+						if space > 1 {
+							space = 0
+							sb.WriteByte(' ')
+						}
+					}
+				}
+				sb.WriteByte('\n')
+			}
+			return &String{Value: sb.String()}, nil
 		}
 	}
 	return NilValue, nil

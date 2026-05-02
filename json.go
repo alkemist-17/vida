@@ -91,6 +91,8 @@ func jsonIsValid(args ...Value) (Value, error) {
 			return Bool(json.Valid([]byte(t.Value))), nil
 		case *Bytes:
 			return Bool(json.Valid(t.Value)), nil
+		default:
+			return Bool(false), nil
 		}
 	}
 	return NilValue, nil
