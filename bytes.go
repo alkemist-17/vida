@@ -20,7 +20,7 @@ const (
 )
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 11)}
+	m := &Object{Value: make(map[string]Value, 12)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
 	m.Value["cryptoRandom"] = GFn(bytesCryptoRandom)
@@ -32,6 +32,7 @@ func loadFoundationBytes() Value {
 	m.Value["xor"] = GFn(bytesXOR)
 	m.Value["uuid"] = GFn(bytesUUID)
 	m.Value["parseUUID"] = GFn(bytesParseUUID)
+	m.Value["toString"] = GFn(bytesToString)
 	return m
 }
 
@@ -262,6 +263,15 @@ func bytesParseUUID(args ...Value) (Value, error) {
 			if err == nil && len(decoded) == bytesUUIDLen {
 				return &Bytes{Value: decoded}, nil
 			}
+		}
+	}
+	return NilValue, nil
+}
+
+func bytesToString(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if b, ok := args[0].(*Bytes); ok {
+			return &String{Value: string(b.Value)}, nil
 		}
 	}
 	return NilValue, nil
