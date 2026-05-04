@@ -227,6 +227,7 @@ func bytesDecode(args ...Value) (Value, error) {
 					}
 					goto resolve
 				}
+				goto nilvalue
 			default:
 				return &Bytes{Value: []byte(s.Value)}, nil
 			}
@@ -237,6 +238,7 @@ func bytesDecode(args ...Value) (Value, error) {
 			return &Bytes{Value: r}, nil
 		}
 	}
+nilvalue:
 	return NilValue, nil
 }
 
@@ -273,7 +275,7 @@ func bytesToFile(args ...Value) (Value, error) {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			defer f.Close()
-			n, err := f.WriteString(s.Value)
+			n, err := f.Write([]byte(s.Value))
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
