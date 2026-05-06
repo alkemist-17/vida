@@ -1,18 +1,21 @@
 package vida
 
 import (
-	"fmt"
+	cryptoRand "crypto/rand"
 	"maps"
-	"math/rand/v2"
 )
 
 func loadObjectLib() Value {
 	if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
-	__meta = fmt.Sprint(__meta, rand.Uint64())
-	__proto = fmt.Sprint(__proto, rand.Uint64())
-	m := &Object{Value: make(map[string]Value, 17)}
+	if __meta == "" {
+		__meta = cryptoRand.Text()
+	}
+	if __proto == "" {
+		__proto = cryptoRand.Text()
+	}
+	m := &Object{Value: make(map[string]Value, 18)}
 	m.Value["inject"] = GFn(objectInjectProperties)
 	m.Value["extends"] = GFn(objectSetPrototype)
 	m.Value["extract"] = GFn(objectExtractProperties)
@@ -30,6 +33,7 @@ func loadObjectLib() Value {
 	m.Value["keys"] = GFn(objectGetKeys)
 	m.Value["values"] = GFn(objectGetValues)
 	m.Value["getOrInsert"] = GFn(objectGetOrInsert)
+	m.Value["setmp"] = GFn(objectSetMetaProto)
 	return m
 }
 
@@ -309,4 +313,28 @@ func objectrecursiveProtoCheck(set map[string]bool, self *Object) {
 		proto := p.(*Object)
 		objectrecursiveProtoCheck(set, proto)
 	}
+}
+
+func objectSetMetaProto(args ...Value) (Value, error) {
+	if len(args) > 2 {
+		self, okself := args[0].(*Object)
+		meta, okmeta := args[1].(*Object)
+		proto, okproto := args[2].(*Object)
+		if okself && okmeta && okproto {
+			if m, ok := self.Value[__meta].(*Object); ok {
+				if v, ok := m.Value[__setmeta]; ok {
+					return v, nil
+				}
+			}
+			self.Value[__meta] = meta
+			if m, ok := self.Value[__meta].(*Object); ok {
+				if v, ok := m.Value[__setproto]; ok {
+					return v, nil
+				}
+			}
+			self.Value[__proto] = proto
+			return self, nil
+		}
+	}
+	return NilValue, nil
 }

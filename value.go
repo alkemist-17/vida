@@ -898,7 +898,7 @@ func (o *Object) IGet(index Value) (Value, error) {
 	}
 	if val, ok := o.Value[index.ObjectKey()]; ok {
 		return val, nil
-	} else if proto, ok := o.Value[__proto].(*Object); ok {
+	} else if proto, ok := o.Value[__proto].(*Object); ok && o != proto {
 		return proto.IGet(index)
 	}
 	return NilValue, nil
@@ -1051,6 +1051,15 @@ func (o *Object) ObjectKey() string {
 }
 
 func (o *Object) Type() string {
+	if proto, ok := o.Value[__proto].(*Object); ok {
+		if prototype, ok := proto.Value[__type]; ok {
+			switch t := prototype.(type) {
+			case *String:
+				return t.Value
+			}
+		}
+		return proto.Type()
+	}
 	return "object"
 }
 

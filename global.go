@@ -71,6 +71,8 @@ const (
 	__ge = "__ge"
 
 	__gt = "__gt"
+
+	__type = "__type"
 )
 
 var clbu *[]Value
