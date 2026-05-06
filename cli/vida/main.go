@@ -267,4 +267,5 @@ func printAbout() {
 func clear() {
 	fmt.Printf("\u001B[H")
 	fmt.Printf("\u001B[2J")
+	fmt.Printf("\u001B[3J")
 }
