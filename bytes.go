@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"unsafe"
 
 	"github.com/alkemist-17/vida/verror"
 )
@@ -36,10 +37,15 @@ const (
 	bytesEncodingBinary
 )
 
+const (
+	littleEndian = "LittleEndian"
+	bigEndian    = "BigEndian"
+)
+
 const bytesUUIDLen = 16
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 14)}
+	m := &Object{Value: make(map[string]Value, 15)}
 	m.Value["new"] = GFn(bytesCreateNewBytesValue)
 	m.Value["from"] = GFn(bytesFromValue)
 	m.Value["genCryptoRand"] = GFn(bytesGenerateCryptoRand)
@@ -54,6 +60,7 @@ func loadFoundationBytes() Value {
 	m.Value["toString"] = GFn(bytesToString)
 	m.Value["bitLen"] = GFn(bytesBitLen)
 	m.Value["hexdump"] = GFn(bytesDump)
+	m.Value["getSystemEndianess"] = GFn(bytesEndianess)
 	return m
 }
 
@@ -371,4 +378,12 @@ func bytesDump(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func bytesEndianess(args ...Value) (Value, error) {
+	b := uint16(0xFF)
+	if *(*byte)(unsafe.Pointer(&b)) == 0 {
+		return &String{Value: bigEndian}, nil
+	}
+	return &String{Value: littleEndian}, nil
 }
