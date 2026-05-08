@@ -51,6 +51,8 @@ func newMainCompiler(ast *ast.Ast, scriptName string) *compiler {
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
+	estInstr := max(len(ast.Statement)*4, 64)
+	c.currentFn.Code = make([]uint64, 0, estInstr)
 	return c
 }
 

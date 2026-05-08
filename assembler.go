@@ -7,6 +7,33 @@ import (
 )
 
 const (
+	opLoad     = uint64(load) << shift56
+	opStore    = uint64(store) << shift56
+	opPrefix   = uint64(prefix) << shift56
+	opBinop    = uint64(binop) << shift56
+	opBinopG   = uint64(binopG) << shift56
+	opBinopK   = uint64(binopK) << shift56
+	opBinopQ   = uint64(binopQ) << shift56
+	opEq       = uint64(eq) << shift56
+	opArray    = uint64(array) << shift56
+	opObject   = uint64(object) << shift56
+	opIGet     = uint64(iGet) << shift56
+	opISet     = uint64(iSet) << shift56
+	opSlice    = uint64(slice) << shift56
+	opForSet   = uint64(forSet) << shift56
+	opForLoop  = uint64(forLoop) << shift56
+	opIForSet  = uint64(iForSet) << shift56
+	opIForLoop = uint64(iForLoop) << shift56
+	opJump     = uint64(jump) << shift56
+	opCheck    = uint64(check) << shift56
+	opFun      = uint64(fun) << shift56
+	opCall     = uint64(call) << shift56
+	opRet      = uint64(ret) << shift56
+	opHeader   = uint64(header)
+	opEnd      = uint64(end)
+)
+
+const (
 	rKonst = iota
 	rLoc
 	rGlob
@@ -50,196 +77,189 @@ const (
 )
 
 func (c *compiler) appendHeader() {
-	c.currentFn.Code = append(c.currentFn.Code, header)
+	c.currentFn.Code = append(c.currentFn.Code, opHeader)
 }
 
 func (c *compiler) appendEnd() {
-	c.currentFn.Code = append(c.currentFn.Code, end)
+	c.currentFn.Code = append(c.currentFn.Code, opEnd)
 }
 
 func (c *compiler) emitLoad(from, to, kind int) {
-	var i uint64 = uint64(to)
-	i |= uint64(from) << shift16
-	i |= uint64(kind) << shift32
-	i |= load << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(from)<<shift16)|
+			(uint64(kind)<<shift32)|
+			opLoad)
 }
 
 func (c *compiler) emitStore(from, to, src, dst int) {
-	var i uint64 = uint64(to)
-	i |= uint64(from) << shift16
-	i |= uint64(src) << shift32
-	i |= uint64(dst) << shift48
-	i |= store << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(from)<<shift16)|
+			(uint64(src)<<shift32)|
+			(uint64(dst)<<shift48)|
+			opStore)
 }
 
 func (c *compiler) emitPrefix(from, to int, operator token.Token) {
-	var i uint64 = uint64(to)
-	i |= uint64(from) << shift16
-	i |= uint64(operator) << shift32
-	i |= prefix << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(from)<<shift16)|
+			(uint64(operator)<<shift32)|
+			opPrefix)
 }
 
 func (c *compiler) emitBinop(lidx, ridx, to int, operator token.Token) {
-	var i uint64 = uint64(to)
-	i |= uint64(lidx) << shift16
-	i |= uint64(ridx) << shift32
-	i |= uint64(operator) << shift48
-	i |= binop << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(lidx)<<shift16)|
+			(uint64(ridx)<<shift32)|
+			(uint64(operator)<<shift48)|
+			opBinop)
 }
 
 func (c *compiler) emitBinopG(lidx, ridx, to int, operator token.Token) {
-	var i uint64 = uint64(to)
-	i |= uint64(lidx) << shift16
-	i |= uint64(ridx) << shift32
-	i |= uint64(operator) << shift48
-	i |= binopG << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(lidx)<<shift16)|
+			(uint64(ridx)<<shift32)|
+			(uint64(operator)<<shift48)|
+			opBinopG)
 }
 
 func (c *compiler) emitBinopK(kidx, regAddr, to int, operator token.Token) {
-	var i uint64 = uint64(to)
-	i |= uint64(kidx) << shift16
-	i |= uint64(regAddr) << shift32
-	i |= uint64(operator) << shift48
-	i |= binopK << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(kidx)<<shift16)|
+			(uint64(regAddr)<<shift32)|
+			(uint64(operator)<<shift48)|
+			opBinopK)
 }
 
 func (c *compiler) emitBinopQ(kidx, regAddr, to int, operator token.Token) {
-	var i uint64 = uint64(to)
-	i |= uint64(kidx) << shift16
-	i |= uint64(regAddr) << shift32
-	i |= uint64(operator) << shift48
-	i |= binopQ << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(kidx)<<shift16)|
+			(uint64(regAddr)<<shift32)|
+			(uint64(operator)<<shift48)|
+			opBinopQ)
 }
 
 func (c *compiler) emitSuperEq(lidx, ridx, to, scopeLeft, scopeRight int, operator token.Token) {
-	var s byte = byte(scopeRight)
-	s |= byte(scopeLeft) << shift2
+	var flags byte = byte(scopeRight) | (byte(scopeLeft) << shift2)
 	if operator == token.NEQ {
-		s |= 1 << shift4
+		flags |= 1 << shift4
 	}
-	var i uint64 = uint64(to)
-	i |= uint64(ridx) << shift16
-	i |= uint64(lidx) << shift32
-	i |= uint64(s) << shift48
-	i |= eq << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(ridx)<<shift16)|
+			(uint64(lidx)<<shift32)|
+			(uint64(flags)<<shift48)|
+			opEq)
 }
 
 func (c *compiler) emitArray(length, root, to int) {
-	var i uint64 = uint64(to)
-	i |= uint64(root) << shift16
-	i |= uint64(length) << shift32
-	i |= array << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(root)<<shift16)|
+			(uint64(length)<<shift32)|
+			opArray)
 }
 
 func (c *compiler) emitObject(to int) {
-	var i uint64 = uint64(to)
-	i |= object << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code, uint64(to)|opObject)
 }
 
 func (c *compiler) emitIGet(indexable, index, to, scopeIndex, scopeIndexable int) {
-	var s byte = byte(scopeIndexable)
-	s |= byte(scopeIndex) << shift4
-	var i uint64 = uint64(to)
-	i |= uint64(index) << shift16
-	i |= uint64(indexable) << shift32
-	i |= uint64(s) << shift48
-	i |= iGet << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	var flags byte = byte(scopeIndexable) | (byte(scopeIndex) << shift4)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(index)<<shift16)|
+			(uint64(indexable)<<shift32)|
+			(uint64(flags)<<shift48)|
+			opIGet)
 }
 
 func (c *compiler) emitISet(indexable, index, expr, scopeIdx, scopeExpr int) {
-	var s byte = byte(scopeExpr)
-	s |= byte(scopeIdx) << shift4
-	var i uint64 = uint64(expr)
-	i |= uint64(index) << shift16
-	i |= uint64(indexable) << shift32
-	i |= uint64(s) << shift48
-	i |= iSet << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	var flags byte = byte(scopeExpr) | (byte(scopeIdx) << shift4)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(expr)|
+			(uint64(index)<<shift16)|
+			(uint64(indexable)<<shift32)|
+			(uint64(flags)<<shift48)|
+			opISet)
 }
 
 func (c *compiler) emitSlice(mode, sliceable, to int) {
-	var i uint64 = uint64(to)
-	i |= uint64(sliceable) << shift16
-	i |= uint64(mode) << shift32
-	i |= slice << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(sliceable)<<shift16)|
+			(uint64(mode)<<shift32)|
+			opSlice)
 }
 
 func (c *compiler) emitForSet(iReg, loop int) {
-	var i uint64 = uint64(iReg)
-	i |= uint64(loop) << shift16
-	i |= forSet << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(iReg)|
+			(uint64(loop)<<shift16)|
+			opForSet)
 }
 
 func (c *compiler) emitForLoop(iReg, loop int) {
-	var i uint64 = uint64(iReg)
-	i |= uint64(loop) << shift16
-	i |= forLoop << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(iReg)|
+			(uint64(loop)<<shift16)|
+			opForLoop)
 }
 
 func (c *compiler) emitIForSet(loop, iterable, ireg int) {
-	var i uint64 = uint64(ireg)
-	i |= uint64(iterable) << shift16
-	i |= uint64(loop) << shift32
-	i |= iForSet << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(ireg)|
+			(uint64(iterable)<<shift16)|
+			(uint64(loop)<<shift32)|
+			opIForSet)
 }
 
 func (c *compiler) emitIForLoop(iReg, loop int) {
-	var i uint64 = uint64(iReg)
-	i |= uint64(loop) << shift16
-	i |= iForLoop << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(iReg)|
+			(uint64(loop)<<shift16)|
+			opIForLoop)
 }
 
 func (c *compiler) emitJump(to int) {
-	var i uint64 = uint64(to)
-	i |= jump << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code, uint64(to)|opJump)
 }
 
 func (c *compiler) emitCheck(against, reg, jump int) {
-	var i uint64 = uint64(jump)
-	i |= uint64(reg) << shift16
-	i |= uint64(against) << shift32
-	i |= check << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(jump)|
+			(uint64(reg)<<shift16)|
+			(uint64(against)<<shift32)|
+			opCheck)
 }
 
 func (c *compiler) emitFun(from, to int) {
-	var i uint64 = uint64(to)
-	i |= uint64(from) << shift16
-	i |= fun << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(from)<<shift16)|
+			opFun)
 }
 
 func (c *compiler) emitCall(callable, argCount, ellipsis, firstArg int) {
-	var i uint64 = uint64(callable)
-	i |= uint64(argCount) << shift16
-	i |= uint64(ellipsis) << shift32
-	i |= uint64(firstArg) << shift48
-	i |= call << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(callable)|
+			(uint64(argCount)<<shift16)|
+			(uint64(ellipsis)<<shift32)|
+			(uint64(firstArg)<<shift48)|
+			opCall)
 }
 
 func (c *compiler) emitRet(source, index int) {
-	var i uint64 = uint64(source)
-	i |= uint64(index) << shift16
-	i |= ret << shift56
-	c.currentFn.Code = append(c.currentFn.Code, i)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(source)|
+			(uint64(index)<<shift16)|
+			opRet)
 }
 
 func (c *compiler) refScope(id string) (int, int) {
