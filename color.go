@@ -264,7 +264,7 @@ func Sprint256(fg, bg int, a ...any) string {
 
 // Color Value Interface
 func generateColorInterface(color *Color) Value {
-	o := &Object{Value: make(map[string]Value)}
+	o := &Object{Value: make(map[string]Value, 7)}
 	o.Value[colorName] = color
 	o.Value["string"] = GFn(colorString)
 	o.Value["format"] = GFn(colorFormat)

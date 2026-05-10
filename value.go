@@ -731,10 +731,10 @@ func (o *Object) Prefix(op uint64) (Value, error) {
 }
 
 func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
-	if meta, ok := o.Value[__meta].(*Object); ok {
+	if proto, ok := o.Value[__proto].(*Object); ok {
 		switch op {
 		case uint64(token.ADD):
-			if generic, ok := meta.Value[__add]; ok {
+			if generic, ok := proto.Value[__add]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -743,7 +743,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.SUB):
-			if generic, ok := meta.Value[__sub]; ok {
+			if generic, ok := proto.Value[__sub]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -752,7 +752,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.MUL):
-			if generic, ok := meta.Value[__mul]; ok {
+			if generic, ok := proto.Value[__mul]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -761,7 +761,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.DIV):
-			if generic, ok := meta.Value[__div]; ok {
+			if generic, ok := proto.Value[__div]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -770,7 +770,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.REM):
-			if generic, ok := meta.Value[__rem]; ok {
+			if generic, ok := proto.Value[__rem]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -779,7 +779,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.EQ):
-			if generic, ok := meta.Value[__eq]; ok {
+			if generic, ok := proto.Value[__eq]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -788,7 +788,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.NEQ):
-			if generic, ok := meta.Value[__neq]; ok {
+			if generic, ok := proto.Value[__neq]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -797,7 +797,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.LE):
-			if generic, ok := meta.Value[__le]; ok {
+			if generic, ok := proto.Value[__le]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -806,7 +806,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.LT):
-			if generic, ok := meta.Value[__lt]; ok {
+			if generic, ok := proto.Value[__lt]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -815,7 +815,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.GE):
-			if generic, ok := meta.Value[__ge]; ok {
+			if generic, ok := proto.Value[__ge]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -824,7 +824,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 				}
 			}
 		case uint64(token.GT):
-			if generic, ok := meta.Value[__gt]; ok {
+			if generic, ok := proto.Value[__gt]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -838,7 +838,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 	case *Object:
 		switch op {
 		case uint64(token.ADD):
-			pairs := make(map[string]Value)
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
 			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
@@ -852,14 +852,14 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 			return &Object{Value: pairs}, nil
 		case uint64(token.BAND):
 			pairs := make(map[string]Value)
-			for k, v := range o.Value {
-				if _, contains := r.Value[k]; contains {
-					pairs[k] = v
+			for k := range o.Value {
+				if x, contains := r.Value[k]; contains {
+					pairs[k] = x
 				}
 			}
 			return &Object{Value: pairs}, nil
 		case uint64(token.BOR):
-			pairs := make(map[string]Value)
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
 			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
@@ -884,29 +884,31 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if get, ok := meta.Value[__get]; ok {
+	if val, ok := o.Value[index.ObjectKey()]; ok {
+		return val, nil
+	}
+	if proto, ok := o.Value[__proto].(*Object); ok {
+		if get, ok := proto.Value[__get]; ok {
 			switch val := get.(type) {
 			case *Function:
 				return o.execute(val, index)
 			case *Object:
-				return val.IGet(index)
+				if o != val {
+					return val.IGet(index)
+				}
 			default:
 				return val, nil
 			}
+		} else if o != proto {
+			return proto.IGet(index)
 		}
-	}
-	if val, ok := o.Value[index.ObjectKey()]; ok {
-		return val, nil
-	} else if proto, ok := o.Value[__proto].(*Object); ok && o != proto {
-		return proto.IGet(index)
 	}
 	return NilValue, nil
 }
 
 func (o *Object) ISet(index, val Value) error {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if set, ok := meta.Value[__set]; ok {
+	if proto, ok := o.Value[__proto].(*Object); ok {
+		if set, ok := proto.Value[__set]; ok {
 			switch setvalue := set.(type) {
 			case *Function:
 				_, err := o.execute(setvalue, index, val)
@@ -934,8 +936,8 @@ func (o *Object) IsIterable() Bool {
 }
 
 func (o *Object) IsCallable() Bool {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if _, ok := meta.Value[__call]; ok {
+	if proto, ok := o.Value[__proto].(*Object); ok {
+		if _, ok := proto.Value[__call]; ok {
 			return true
 		}
 	}
@@ -943,7 +945,7 @@ func (o *Object) IsCallable() Bool {
 }
 
 func (o *Object) Call(args ...Value) (Value, error) {
-	switch fn := o.Value[__meta].(*Object).Value[__call].(type) {
+	switch fn := o.Value[__proto].(*Object).Value[__call].(type) {
 	case *Function:
 		if fn.CoreFn.IsVar {
 			a := make([]Value, len(args))
@@ -1018,28 +1020,38 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 	return v, nil
 }
 
-func (o *Object) String() string {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if str, ok := meta.Value[__str]; ok {
+func (o *Object) getDescription() (string, bool) {
+	if proto, ok := o.Value[__proto].(*Object); ok {
+		if str, ok := proto.Value[__str]; ok {
 			switch fn := str.(type) {
 			case *Function:
 				if val, err := o.execute(fn); err == nil {
-					return val.String()
+					return val.String(), true
 				} else {
-					fmt.Printf("\n\nRun Time error inside meta function __str %v\n", err)
+					fmt.Printf("\n\nRun Time error inside function __str %v\n", err)
 					os.Exit(0)
 				}
 			default:
-				return fn.String()
+				return fn.String(), true
 			}
+		} else if o != proto {
+			return proto.getDescription()
 		}
+	}
+	return "", false
+}
+
+func (o *Object) String() string {
+	str, overrriden := o.getDescription()
+	if overrriden {
+		return str
 	}
 	if len(o.Value) == 0 {
 		return "{}"
 	}
 	var r []string
 	for k, v := range o.Value {
-		if k != __proto && k != __meta {
+		if k != __proto {
 			r = append(r, fmt.Sprintf("%v: %v", k, v))
 		}
 	}
@@ -1064,7 +1076,7 @@ func (o *Object) Type() string {
 }
 
 func (o *Object) Clone() Value {
-	m := make(map[string]Value)
+	m := make(map[string]Value, len(o.Value))
 	for k, v := range o.Value {
 		m[k] = v.Clone()
 	}

@@ -91,7 +91,7 @@ type ObjectIterator struct {
 func newObjectIterator(o *Object) *ObjectIterator {
 	var keys []string
 	for k := range o.Value {
-		if k != __proto && k != __meta {
+		if k != __proto {
 			keys = append(keys, k)
 		}
 	}

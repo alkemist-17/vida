@@ -110,7 +110,7 @@ func jsonPretty(args ...Value) (Value, error) {
 }
 
 func parseObject(input map[string]any) *Object {
-	o := &Object{Value: make(map[string]Value)}
+	o := &Object{Value: make(map[string]Value, len(input))}
 	for kk, vv := range input {
 		switch tt := vv.(type) {
 		case nil:

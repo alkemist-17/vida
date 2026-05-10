@@ -11,7 +11,6 @@ func loadExampleExtension() vida.Value {
 func greet(args ...vida.Value) (vida.Value, error) {
 	if len(args) > 0 {
 		return &vida.String{Value: "Hello, " + args[0].String()}, nil
-	} else {
-		return &vida.String{Value: "Hello, World!"}, nil
 	}
+	return &vida.String{Value: "Hello, World!"}, nil
 }

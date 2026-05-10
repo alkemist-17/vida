@@ -1,0 +1,495 @@
+var obj = load("std/object")
+
+
+// The library exists and has all the expected functionality
+assert(
+    obj and
+    obj.set and
+    obj.keys and
+    obj.getOrInsert and
+    obj.inject and
+    obj.extends and
+    obj.conforms and
+    obj.del and
+    obj.setproto and
+    obj.getproto and
+    obj.extract and
+    obj.override and
+    obj.has and
+    obj.values and
+    obj.get and
+    obj.isEmpty and
+    obj.clear and
+    obj.hasproto and
+    obj.delproto
+)
+
+
+
+// set, get, has and del with one value
+
+var k = nil
+
+var v = nil
+
+var t = {}
+
+var o = {}
+
+var p = {}
+
+var sp = {}
+
+var hello = "hello"
+
+var world = "world"
+
+assert(o and p and sp and t)
+
+assert(o == o and p == p and sp == sp and t == t)
+
+assert(o != t)
+
+assert(obj.isEmpty(o) and obj.isEmpty(t) and obj.isEmpty(p) and obj.isEmpty(sp))
+
+t[o] = true
+
+t[p] = true
+
+t[sp] = true
+
+obj.set(o, "hello", 42)
+
+obj.set(o, hello, 42)
+
+assert(not obj.isEmpty(o) and len(o) == 1)
+
+obj.set(o, "world", obj.get(o, "hello") * 2)
+
+obj.set(o, world, obj.get(o, hello) * 2)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+assert(obj.get(o, "hello") == 42)
+
+assert(obj.get(o, hello) == 42)
+
+assert(obj.get(o, "world") == 42*2)
+
+assert(obj.get(o, world) == 42*2)
+
+assert(obj.has(o, hello) and obj.has(o, world))
+
+assert(obj.has(o, "hello") and obj.has(o, "world"))
+
+obj.del(o, hello)
+
+assert(not obj.isEmpty(o) and len(o) == 1)
+
+obj.del(o, world)
+
+assert(obj.isEmpty(o))
+
+
+
+// set, get, has, clear and del with more than one value
+
+obj.set(o, hello, 42, world, 42*2)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+assert(obj.get(o, hello) == 42 and obj.get(o, world) == 42*2)
+
+assert(obj.has(o, hello, world))
+
+obj.del(o, hello, world)
+
+assert(obj.isEmpty(o))
+
+obj.set(o, hello, 42, world, 42*2)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+obj.clear(o)
+
+assert(not obj.has(o, hello, world))
+
+assert(obj.isEmpty(o))
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// keys, values and getOrInsert
+
+obj.set(o, hello, 42, world, 42*2)
+
+k = obj.keys(o)
+
+v = obj.values(o)
+
+assert(len(k) == 2 and type(k) == "array" and len(v) == 2 and type(v) == "array")
+
+assert(hello in k and world in k)
+
+assert(42 in v and 42*2 in v)
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.isEmpty(o))
+
+obj.getOrInsert(o, hello, 42)
+
+obj.getOrInsert(o, world, 42*2)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+assert(obj.getOrInsert(o, hello, 100) == 42)
+
+assert(obj.getOrInsert(o, world, 200) == 42*2)
+
+k = obj.keys(o)
+
+v = obj.values(o)
+
+assert(len(k) == 2 and type(k) == "array" and len(v) == 2 and type(v) == "array")
+
+assert(hello in k and world in k)
+
+assert(42 in v and 42*2 in v)
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.isEmpty(o))
+
+
+
+// object prototype
+// object as prototype of itself
+
+o.__get = 42
+
+o.__set = nil
+
+assert(obj.hasproto(o) == false)
+
+obj.setproto(o, o)
+
+assert(obj.hasproto(o) == true)
+
+assert(o.hello and o[hello] and o.hello == 42 and o[hello] == 42)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+o[53] = 53
+
+assert(o[53] == 42)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+assert(o == obj.getproto(o) and t[obj.getproto(o)])
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.isEmpty(o))
+
+assert(obj.hasproto(o) == false)
+
+obj.setproto(o, o)
+
+assert(obj.hasproto(o) == true)
+
+assert(not o.hello and not o[hello] and o.hello == nil and o[hello] == nil)
+
+assert(obj.isEmpty(o))
+
+obj.delproto(o)
+
+assert(obj.hasproto(o) == false)
+
+assert(obj.isEmpty(o))
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// object as prototype of other objects
+// prototype chain
+
+p.hello = 42
+
+p.world = 91
+
+assert(obj.hasproto(o) == false)
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o) == true)
+
+assert(obj.isEmpty(o))
+
+assert(o.hello == 42 and o.world == 91)
+
+o.getHello = fun self => self.hello
+
+assert(o:getHello() == 42)
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.isEmpty(o))
+
+assert(obj.hasproto(o) == false)
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o) == true)
+
+assert(obj.isEmpty(o))
+
+p.getHello = fun self => self.hello
+
+p.getWorld = fun self => self.world
+
+assert(o:getHello() == 42)
+
+assert(o:getWorld() == 91)
+
+obj.delproto(o)
+
+assert(obj.hasproto(o) == false)
+
+obj.clear(p)
+
+
+
+// prototype get, set, has, del
+
+p.__getproto = false
+
+p.__delproto = false
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o))
+
+assert(obj.getproto(o) == false)
+
+assert(obj.hasproto(o))
+
+obj.delproto(o)
+
+assert(obj.hasproto(o))
+
+obj.clear(p)
+
+p.hello = 42
+
+assert(o.hello == 42)
+
+assert(obj.hasproto(o))
+
+assert(obj.getproto(o) == p)
+
+p.__setproto = false
+
+obj.clear(o)
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o))
+
+assert(obj.getproto(o) == p)
+
+obj.setproto(o, t)
+
+assert(obj.hasproto(o))
+
+assert(obj.getproto(o) == p)
+
+obj.clear(p)
+
+assert(obj.hasproto(o))
+
+assert(obj.getproto(o) == p)
+
+obj.setproto(o, t)
+
+assert(obj.hasproto(o))
+
+assert(obj.getproto(o) == t)
+
+obj.delproto(o)
+
+assert(obj.hasproto(o) == false)
+
+obj.clear(o)
+
+sp.hello = fun => 42
+
+obj.setproto(p, sp)
+
+obj.setproto(o, p)
+
+assert(o.hello() == 42)
+
+assert(o.hello and type(o.hello) == "function")
+
+assert(o.world == nil)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+o[hello] = 42
+
+p[world] = 91
+
+sp.r = o + p
+
+assert(obj.has(sp.r, hello, world))
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+o.hello = 42
+
+o.world = 91
+
+assert(obj.has(o, hello, world))
+
+p.world = true
+
+sp.r = o - p
+
+assert(obj.has(sp.r, hello) and not obj.has(sp.r, world))
+
+assert(sp.r.hello == 42 and sp.r.world == nil)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+o[hello] = 42
+
+p[world] = 91
+
+sp.r = o | p
+
+assert(obj.has(sp.r, hello, world))
+
+assert(sp.r.hello == 42 and sp.r.world == 91)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+o.hello = 42
+
+o.world = 91
+
+assert(obj.has(o, hello, world))
+
+p.world = true
+
+sp.r = o & p
+
+assert(not obj.has(sp.r, hello) and obj.has(sp.r, world))
+
+assert(sp.r.hello == nil and sp.r.world == true)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+o.hello = 100
+
+o.world = 200
+
+assert(obj.has(o, hello, world))
+
+p.hello = 42
+
+p.world = 91
+
+assert(obj.has(p, hello, world))
+
+sp.r = o + p
+
+assert(obj.has(sp.r, hello) and obj.has(sp.r, world))
+
+assert(sp.r.hello == 42 and sp.r.world == 91)
+
+sp.r = p + o
+
+assert(obj.has(sp.r, hello) and obj.has(sp.r, world))
+
+assert(sp.r.hello == 100 and sp.r.world == 200)
+
+sp.r = o & p
+
+assert(obj.has(sp.r, hello) and obj.has(sp.r, world))
+
+assert(sp.r.hello == 42 and sp.r.world == 91)
+
+sp.r = p & o
+
+assert(obj.has(sp.r, hello) and obj.has(sp.r, world))
+
+assert(sp.r.hello == 100 and sp.r.world == 200)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// __str, __call and __type
+
+sp.__str = "bear"
+
+obj.setproto(p, sp)
+
+obj.setproto(o, p)
+
+assert(format("%v", o) == "bear")
+
+assert(format("%v", p) == "bear")
+
+assert(format("%v", sp) == `{__str: bear}`)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+obj.setproto(p, sp)
+
+obj.setproto(o, p)
+
+assert(format("%v", o) == "{}")
+
+assert(format("%v", p) == "{}")
+
+p.hello = 42
+
+o.world = 91
+
+assert(format("%v", o) == "{world: 91}")
+
+assert(format("%v", p) == "{hello: 42}")
+
+assert(format("%v", sp) == "{}")
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])

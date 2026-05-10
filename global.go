@@ -19,11 +19,11 @@ type ErrorInfo map[string]map[int]uint
 
 var extensionlibsLoader LibsLoader
 
-var __proto string
-
-var __meta string
+var __proto string = initProtName
 
 const (
+	initProtName = "$__proto$"
+
 	globalStateIndex = 0
 
 	errorMessageFieldName = "message"
@@ -36,19 +36,19 @@ const (
 
 	__call = "__call"
 
+	__type = "__type"
+
 	__get = "__get"
 
 	__set = "__set"
 
-	__getmeta = "__getmeta"
+	__del = "__del"
 
 	__getproto = "__getproto"
 
-	__setmeta = "__setmeta"
-
 	__setproto = "__setproto"
 
-	__del = "__del"
+	__delproto = "__delproto"
 
 	__add = "__add"
 
@@ -71,8 +71,6 @@ const (
 	__ge = "__ge"
 
 	__gt = "__gt"
-
-	__type = "__type"
 )
 
 var clbu *[]Value
@@ -165,9 +163,6 @@ func coreLen(args ...Value) (Value, error) {
 				return Integer(lobj), nil
 			}
 			if _, ok := v.Value[__proto]; ok {
-				lobj--
-			}
-			if _, ok := v.Value[__meta]; ok {
 				lobj--
 			}
 			return Integer(lobj), nil

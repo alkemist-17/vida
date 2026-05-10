@@ -1,6 +1,27 @@
 var object = load("std/object")
 
-assert(object)
+// The library exists and has all the expected functionality
+assert(
+    object and
+    object.set and
+    object.keys and
+    object.getOrInsert and
+    object.inject and
+    object.extends and
+    object.conforms and
+    object.del and
+    object.setproto and
+    object.getproto and
+    object.extract and
+    object.override and
+    object.has and
+    object.values and
+    object.get and
+    object.isEmpty and
+    object.clear and
+    object.hasproto and
+    object.delproto
+)
 
 var void = {}
 
@@ -187,6 +208,10 @@ empty = { hi = fun self => self.hello }
 empty = object.extends(empty, void)
 
 assert(empty:hi() == 42)
+
+empty.hi = fun self => self.world
+
+assert(empty:hi() == 91)
 
 void = { hello = 42, world = 91 }
 

@@ -208,9 +208,9 @@ func arraySortStrings(args ...Value) (Value, error) {
 func arrayToObject(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
-			o := &Object{Value: make(map[string]Value)}
+			o := &Object{Value: make(map[string]Value, len(xs.Value))}
 			for i, v := range xs.Value {
-				o.Value[Integer(i).String()] = v
+				o.Value[Integer(i).ObjectKey()] = v
 			}
 			return o, nil
 		}

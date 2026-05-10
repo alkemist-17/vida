@@ -21,7 +21,7 @@ const (
 )
 
 func generateFileHandlerObject(file *os.File) Value {
-	o := &Object{Value: make(map[string]Value)}
+	o := &Object{Value: make(map[string]Value, 7)}
 	o.Value[fileHandlerName] = &FileHandler{Handler: file}
 	o.Value["close"] = fileClose()
 	o.Value["isClosed"] = fileIsClosed()

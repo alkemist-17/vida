@@ -142,29 +142,29 @@ func castToObject(args ...Value) (Value, error) {
 		case *Object:
 			return v.Clone(), nil
 		case *Array:
-			o := &Object{Value: make(map[string]Value)}
+			o := &Object{Value: make(map[string]Value, len(v.Value))}
 			for i, v := range v.Value {
-				o.Value[Integer(i).String()] = v
+				o.Value[Integer(i).ObjectKey()] = v
 			}
 			return o, nil
 		case *Bytes:
-			o := &Object{Value: make(map[string]Value)}
+			o := &Object{Value: make(map[string]Value, len(v.Value))}
 			for i, v := range v.Value {
-				o.Value[Integer(i).String()] = Integer(v)
+				o.Value[Integer(i).ObjectKey()] = Integer(v)
 			}
 			return o, nil
 		case VidaError:
-			o := &Object{Value: make(map[string]Value)}
+			o := &Object{Value: make(map[string]Value, 1)}
 			o.Value[errorMessageFieldName] = v.Message
 			return o, nil
 		case *Enum:
-			o := &Object{Value: make(map[string]Value)}
+			o := &Object{Value: make(map[string]Value, len(v.Pairs))}
 			for k, v := range v.Pairs {
 				o.Value[k] = v
 			}
 			return o, nil
 		default:
-			o := &Object{Value: make(map[string]Value)}
+			o := &Object{Value: make(map[string]Value, 1)}
 			o.Value["value"] = v
 			return o, nil
 		}
