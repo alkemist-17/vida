@@ -66,7 +66,7 @@ assert(o and p and sp and t)
 
 assert(o == o and p == p and sp == sp and t == t)
 
-assert(o != t)
+assert(o != t and o != p and o != sp and p != sp and t != p)
 
 assert(obj.isEmpty(o) and obj.isEmpty(t) and obj.isEmpty(p) and obj.isEmpty(sp))
 
@@ -120,6 +120,8 @@ assert(obj.get(o, hello) == 42 and obj.get(o, world) == 42*2)
 
 assert(obj.has(o, hello, world))
 
+assert(not obj.has(o, hello, world, "alpha"))
+
 obj.del(o, hello, world)
 
 assert(obj.isEmpty(o))
@@ -130,7 +132,7 @@ assert(not obj.isEmpty(o) and len(o) == 2)
 
 obj.clear(o)
 
-assert(not obj.has(o, hello, world))
+assert(not obj.has(o, hello, world, "alpha"))
 
 assert(obj.isEmpty(o))
 
@@ -232,6 +234,46 @@ obj.delproto(o)
 assert(obj.hasproto(o) == false)
 
 assert(obj.isEmpty(o))
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+o.__get = 42
+
+o.__set = nil
+
+assert(o.hello and o[hello] and o.hello == 42 and o[hello] == 42)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+o[53] = 53
+
+assert(o[53] == 42)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+obj.clear(o)
+
+assert(t[o] and t[p] and t[sp])
+
+o.__del = nil
+
+o.hello = 42
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+obj.del(o, hello)
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+assert(o.hello == o[hello] and o.hello == 42)
+
+obj.del(o, "__del")
+
+assert(not obj.isEmpty(o) and len(o) == 2)
+
+assert(o.hello == o[hello] and o.hello == 42)
 
 obj.clear(o)
 
@@ -557,4 +599,37 @@ assert(obj.hasproto(o) and obj.getproto(o) == p)
 
 assert(obj.isCallable(o) and obj.isCallable(p))
 
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// When it has not prototype
+
+o.__type = hello
+
+o.__str = hello
+
+o.__call = hello
+
+assert(obj.hasproto(o) == false)
+
+assert(obj.isCallable(o))
+
+assert(type(o) == hello)
+
+assert(o() == hello)
+
+assert(format("%v", o) == hello)
+
+o[hello] = 42
+
+o.__call = fun self => self.hello
+
+assert(o() == o.hello)
+
+o.hello = 91
+
+assert(o() == o.hello)
 

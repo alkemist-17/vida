@@ -884,22 +884,23 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
+	if get, ok := o.Value[__get]; ok {
+		switch val := get.(type) {
+		case *Function:
+			return o.execute(val, index)
+		case *Object:
+			if o != val {
+				return val.IGet(index)
+			}
+		default:
+			return val, nil
+		}
+	}
 	if val, ok := o.Value[index.ObjectKey()]; ok {
 		return val, nil
 	}
 	if proto, ok := o.Value[__proto].(*Object); ok {
-		if get, ok := proto.Value[__get]; ok {
-			switch val := get.(type) {
-			case *Function:
-				return o.execute(val, index)
-			case *Object:
-				if o != val {
-					return val.IGet(index)
-				}
-			default:
-				return val, nil
-			}
-		} else if o != proto {
+		if _, ok := proto.Value[__get]; ok || o != proto {
 			return proto.IGet(index)
 		}
 	}
@@ -907,17 +908,20 @@ func (o *Object) IGet(index Value) (Value, error) {
 }
 
 func (o *Object) ISet(index, val Value) error {
+	if set, ok := o.Value[__set]; ok {
+		switch v := set.(type) {
+		case *Function:
+			_, err := o.execute(v, index, val)
+			return err
+		case *Object:
+			return v.ISet(index, val)
+		default:
+			return nil
+		}
+	}
 	if proto, ok := o.Value[__proto].(*Object); ok {
-		if set, ok := proto.Value[__set]; ok {
-			switch setvalue := set.(type) {
-			case *Function:
-				_, err := o.execute(setvalue, index, val)
-				return err
-			case *Object:
-				return setvalue.ISet(index, val)
-			default:
-				return nil
-			}
+		if _, ok := proto.Value[__set]; ok {
+			return proto.ISet(index, val)
 		}
 	}
 	o.Value[index.ObjectKey()] = val

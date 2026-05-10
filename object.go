@@ -112,6 +112,9 @@ func objectExtractProperties(args ...Value) (Value, error) {
 func objectDeleteProperty(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
+			if __delete, ok := self.Value[__del]; ok {
+				return __delete, nil
+			}
 			if proto, ok := self.Value[__proto].(*Object); ok {
 				if __delete, ok := proto.Value[__del]; ok {
 					return __delete, nil

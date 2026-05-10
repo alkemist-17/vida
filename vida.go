@@ -10,9 +10,9 @@ const (
 )
 
 const (
-	minor     = 3
 	major     = 0
-	patch     = 60
+	minor     = 3
+	patch     = 61
 	inception = 25
 )
 
