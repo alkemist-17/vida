@@ -6,7 +6,7 @@ assert(
     obj and
     obj.set and
     obj.keys and
-    obj.getOrInsert and
+    obj.getOrSet and
     obj.inject and
     obj.extends and
     obj.conforms and
@@ -21,7 +21,9 @@ assert(
     obj.isEmpty and
     obj.clear and
     obj.hasproto and
-    obj.delproto
+    obj.delproto and
+    obj.isObject and
+    obj.isCallable
 )
 
 
@@ -39,6 +41,22 @@ var o = {}
 var p = {}
 
 var sp = {}
+
+assert(obj.isObject(t))
+
+assert(obj.isObject(o))
+
+assert(obj.isObject(p))
+
+assert(obj.isObject(sp))
+
+assert(obj.isCallable(t) == false)
+
+assert(obj.isCallable(o) == false)
+
+assert(obj.isCallable(p) == false)
+
+assert(obj.isCallable(sp) == false)
 
 var hello = "hello"
 
@@ -120,7 +138,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 
-// keys, values and getOrInsert
+// keys, values and getOrSet
 
 obj.set(o, hello, 42, world, 42*2)
 
@@ -140,15 +158,15 @@ assert(t[o] and t[p] and t[sp])
 
 assert(obj.isEmpty(o))
 
-obj.getOrInsert(o, hello, 42)
+obj.getOrSet(o, hello, 42)
 
-obj.getOrInsert(o, world, 42*2)
+obj.getOrSet(o, world, 42*2)
 
 assert(not obj.isEmpty(o) and len(o) == 2)
 
-assert(obj.getOrInsert(o, hello, 100) == 42)
+assert(obj.getOrSet(o, hello, 100) == 42)
 
-assert(obj.getOrInsert(o, world, 200) == 42*2)
+assert(obj.getOrSet(o, world, 200) == 42*2)
 
 k = obj.keys(o)
 
@@ -455,6 +473,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 // __str, __call and __type
+// when the prototype is a different object
 
 sp.__str = "bear"
 
@@ -466,7 +485,7 @@ assert(format("%v", o) == "bear")
 
 assert(format("%v", p) == "bear")
 
-assert(format("%v", sp) == `{__str: bear}`)
+assert(format("%v", sp) == `bear`)
 
 obj.clear(o, p, sp)
 
@@ -493,3 +512,49 @@ assert(format("%v", sp) == "{}")
 obj.clear(o, p, sp)
 
 assert(t[o] and t[p] and t[sp])
+
+obj.setproto(p, sp)
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o) and obj.getproto(o) == p)
+
+assert(obj.hasproto(p) and obj.getproto(p) == sp)
+
+assert(type(o) == "object" and type(p) == "object" and type(sp) == "object")
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+sp.__type = 42
+
+obj.setproto(p, sp)
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o) and obj.getproto(o) == p)
+
+assert(obj.hasproto(p) and obj.getproto(p) == sp)
+
+assert(type(o) == "42" and type(p) == "42" and type(sp) == "42")
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(not obj.hasproto(o))
+
+assert(not obj.hasproto(p))
+
+assert(not obj.hasproto(sp))
+
+p.__call = 42
+
+obj.setproto(o, p)
+
+assert(obj.hasproto(o) and obj.getproto(o) == p)
+
+assert(obj.isCallable(o) and obj.isCallable(p))
+
+

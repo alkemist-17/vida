@@ -5,7 +5,7 @@ assert(
     object and
     object.set and
     object.keys and
-    object.getOrInsert and
+    object.getOrSet and
     object.inject and
     object.extends and
     object.conforms and
@@ -20,12 +20,22 @@ assert(
     object.isEmpty and
     object.clear and
     object.hasproto and
-    object.delproto
+    object.delproto and
+    object.isObject and
+    object.isCallable
 )
 
 var void = {}
 
 var empty = void
+
+assert(object.isObject(void))
+
+assert(object.isObject(empty))
+
+assert(object.isCallable(void) == false)
+
+assert(object.isCallable(empty) == false)
 
 assert(object.inject(void, void, void) == void and object.inject(void, void, void) == empty)
 
@@ -194,7 +204,7 @@ assert(not object.extract(void, empty).gamma)
 assert(not object.extract(void, empty).theta)
 
 void = {}
-empty = object.getOrInsert(void, "hello", 42)
+empty = object.getOrSet(void, "hello", 42)
 
 assert(void == empty)
 assert(object.has(empty, "hello"))

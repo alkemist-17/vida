@@ -2,17 +2,24 @@ package vida
 
 import "fmt"
 
-const v uint64 = 'v'
-const i uint64 = 'i'
-const d uint64 = 'd'
-const a uint64 = 'a'
+const (
+	v = 'v'
+	i = 'i'
+	d = 'd'
+	a = 'a'
+)
 
-const major uint64 = 0
-const minor uint64 = 3
-const patch uint64 = 59
-const inception uint64 = 25
-const header uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
-const name = "	Vida 🌿 🐝 🌻 🦖"
+const (
+	minor     = 3
+	major     = 0
+	patch     = 60
+	inception = 25
+)
+
+const (
+	header uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
+	name          = "	Vida 🌿 🐝 🌻 🦖"
+)
 
 func Name() string {
 	return name

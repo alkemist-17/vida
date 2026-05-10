@@ -32,6 +32,12 @@ const (
 
 	foundationInterfaceName = "std/"
 
+	__getproto = "__getproto"
+
+	__setproto = "__setproto"
+
+	__delproto = "__delproto"
+
 	__str = "__str"
 
 	__call = "__call"
@@ -43,12 +49,6 @@ const (
 	__set = "__set"
 
 	__del = "__del"
-
-	__getproto = "__getproto"
-
-	__setproto = "__setproto"
-
-	__delproto = "__delproto"
 
 	__add = "__add"
 

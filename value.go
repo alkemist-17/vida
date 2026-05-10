@@ -936,6 +936,9 @@ func (o *Object) IsIterable() Bool {
 }
 
 func (o *Object) IsCallable() Bool {
+	if _, ok := o.Value[__call]; ok {
+		return true
+	}
 	if proto, ok := o.Value[__proto].(*Object); ok {
 		if _, ok := proto.Value[__call]; ok {
 			return true
@@ -945,16 +948,28 @@ func (o *Object) IsCallable() Bool {
 }
 
 func (o *Object) Call(args ...Value) (Value, error) {
-	switch fn := o.Value[__proto].(*Object).Value[__call].(type) {
+	var Fn Value = NilValue
+	if v, ok := o.Value[__call]; ok {
+		Fn = v
+		goto processMaybeFn
+	}
+	if proto, ok := o.Value[__proto].(*Object); ok {
+		if v, ok := proto.Value[__call]; ok {
+			Fn = v
+			goto processMaybeFn
+		}
+	}
+processMaybeFn:
+	switch v := Fn.(type) {
 	case *Function:
-		if fn.CoreFn.IsVar {
+		if v.CoreFn.IsVar {
 			a := make([]Value, len(args))
 			copy(a, args)
-			return o.execute(fn, &Array{Value: a})
+			return o.execute(v, &Array{Value: a})
 		}
-		return o.execute(fn, args...)
+		return o.execute(v, args...)
 	default:
-		return fn, nil
+		return v, nil
 	}
 }
 
@@ -1042,6 +1057,19 @@ func (o *Object) getDescription() (string, bool) {
 }
 
 func (o *Object) String() string {
+	if str, ok := o.Value[__str]; ok {
+		switch v := str.(type) {
+		case *Function:
+			if val, err := o.execute(v); err == nil {
+				return val.String()
+			} else {
+				fmt.Printf("\n\nRun Time error in function __str %v for object %p\n", err, o)
+				os.Exit(0)
+			}
+		default:
+			return v.String()
+		}
+	}
 	str, overrriden := o.getDescription()
 	if overrriden {
 		return str
@@ -1063,14 +1091,15 @@ func (o *Object) ObjectKey() string {
 }
 
 func (o *Object) Type() string {
+	if prototype, ok := o.Value[__type]; ok {
+		return prototype.String()
+	}
 	if proto, ok := o.Value[__proto].(*Object); ok {
 		if prototype, ok := proto.Value[__type]; ok {
-			switch t := prototype.(type) {
-			case *String:
-				return t.Value
-			}
+			return prototype.String()
+		} else if o != proto {
+			return proto.Type()
 		}
-		return proto.Type()
 	}
 	return "object"
 }

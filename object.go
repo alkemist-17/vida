@@ -12,17 +12,17 @@ func loadObjectLib() Value {
 	if __proto == initProtName {
 		__proto = cryptoRand.Text()
 	}
-	m := &Object{Value: make(map[string]Value, 18)}
+	m := &Object{Value: make(map[string]Value, 20)}
 	m.Value["inject"] = GFn(objectInjectProperties)
 	m.Value["extends"] = GFn(objectSetPrototype)
 	m.Value["extract"] = GFn(objectExtractProperties)
 	m.Value["override"] = GFn(objectInjectAndOverrideProperties)
 	m.Value["conforms"] = GFn(objectCheckProperties)
-	m.Value["setproto"] = GFn(objectSetPrototype)
 	m.Value["getproto"] = GFn(objectGetPrototype)
+	m.Value["setproto"] = GFn(objectSetPrototype)
 	m.Value["hasproto"] = GFn(objectHasPrototype)
 	m.Value["delproto"] = GFn(objectDelPrototype)
-	m.Value["getOrInsert"] = GFn(objectGetOrInsert)
+	m.Value["getOrSet"] = GFn(objectGetOrSet)
 	m.Value["get"] = GFn(objectGetValue)
 	m.Value["set"] = GFn(objectSetValue)
 	m.Value["has"] = GFn(objectHasValue)
@@ -30,6 +30,8 @@ func loadObjectLib() Value {
 	m.Value["keys"] = GFn(objectGetKeys)
 	m.Value["values"] = GFn(objectGetValues)
 	m.Value["isEmpty"] = GFn(objectIsEmpty)
+	m.Value["isObject"] = GFn(objectIsObject)
+	m.Value["isCallable"] = GFn(objectIsCallable)
 	m.Value["clear"] = GFn(objectClear)
 	return m
 }
@@ -181,7 +183,7 @@ func objectSetValue(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func objectGetOrInsert(args ...Value) (Value, error) {
+func objectGetOrSet(args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if self, ok := args[0].(*Object); ok {
 			if val, ok := self.Value[args[1].ObjectKey()]; ok {
@@ -278,6 +280,23 @@ func objectIsEmpty(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func objectIsObject(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		_, ok := args[0].(*Object)
+		return Bool(ok), nil
+	}
+	return NilValue, nil
+}
+
+func objectIsCallable(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if o, ok := args[0].(*Object); ok {
+			return o.IsCallable(), nil
+		}
+	}
+	return Bool(false), nil
 }
 
 func objectClear(args ...Value) (Value, error) {
