@@ -1,17 +1,20 @@
 var object = load("std/object")
 
+
+
 // The library exists and has all the expected functionality
 assert(
     object and
     object.set and
     object.keys and
-    object.getOrSet and
+    object.getset and
     object.inject and
     object.extends and
     object.conforms and
+    object.implements and
     object.del and
-    object.setproto and
-    object.getproto and
+    object.setmeta and
+    object.getmeta and
     object.extract and
     object.override and
     object.has and
@@ -19,46 +22,338 @@ assert(
     object.get and
     object.isEmpty and
     object.clear and
-    object.hasproto and
-    object.delproto and
+    object.hasmeta and
+    object.delmeta and
     object.isObject and
     object.isCallable
 )
+
+
 
 var void = {}
 
 var empty = void
 
-assert(object.isObject(void))
+var meta = empty
 
-assert(object.isObject(empty))
+var gen = { calipso = 1, casiopea = 2, ursaMaiorem = 3 }
+
+var alp = { hello = 42, world = 43 }
+
+var his = { hello = true, world = false }
+
+
+
+assert(object.isObject(void) and object.isObject(empty) and object.isObject(meta))
+
+assert(void == empty and empty == meta)
 
 assert(object.isCallable(void) == false)
 
 assert(object.isCallable(empty) == false)
 
-assert(object.inject(void, void, void) == void and object.inject(void, void, void) == empty)
+assert(object.isCallable(meta) == false)
 
-var gen = { calipso casipea ursaMaiorem }
+assert(len(void) == len(meta) and len(meta) == len(empty) and len(meta) == 0)
 
-assert(object.inject(void, void, gen))
-assert(object.conforms(void, gen))
+assert(object.isEmpty(meta) and object.isEmpty(void) and object.isEmpty(empty))
 
-void = {}
+assert(object.inject(void, void, void, meta, empty) == void and object.inject(void, void, void, meta, empty) == empty)
 
-var alp = { hello = 42, world = 43 }
-var his = { hello = true, world = false }
+assert(object.inject(void, void, gen) == void)
+
+assert(void.calipso == 1 and meta.calipso == 1 and empty.calipso == 1)
+
+assert(void.casiopea == 2 and meta.casiopea == 2 and empty.casiopea == 2)
+
+assert(void.ursaMaiorem == 3 and meta.ursaMaiorem == 3 and empty.ursaMaiorem == 3)
+
+assert(object.conforms(void, gen) and object.conforms(meta, gen) and object.conforms(empty, gen))
+
+object.clear(void)
+
+assert(void == meta and meta == empty)
+
+assert(len(void) == len(meta) and len(meta) == len(empty) and len(meta) == 0)
+
+assert(object.isEmpty(meta) and object.isEmpty(void) and object.isEmpty(empty))
+
+
 
 assert(object.override(void, alp, his).hello == his.hello)
+
 assert(object.override(void, alp, his).world == his.world)
 
-void = {}
+object.clear(void)
 
-assert(object.inject(void, alp, his).hello == alp.hello)
-assert(object.inject(void, alp, his).world == alp.world)
+assert(object.override(void, his, alp).hello == alp.hello)
+
+assert(object.override(void, his, alp).world == alp.world)
+
+object.clear(void)
+
+
+
+meta = { hello = 1200 world = 2400 }
+
+object.setmeta(void, meta)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta)
+
+assert(void.hello == meta.hello and void.world == meta.world)
+
+object.delmeta(void)
+
+assert(not object.hasmeta(void))
+
+assert(void.hello == nil and void.world == nil)
+
+object.setmeta(void, meta)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta)
+
+assert(void.hello == meta.hello and void.world == meta.world)
+
+empty = object.inject({}, void)
+
+assert(empty.hello == nil and empty.world == nil)
+
+assert(not object.hasmeta(empty) and object.hasmeta(void) and object.getmeta(void) == meta)
+
+object.clear(void)
+
+object.clear(empty)
+
+object.setmeta(void, meta)
+
+object.setmeta(empty, meta)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta)
+
+assert(object.hasmeta(empty) and object.getmeta(empty) == meta)
+
+assert(void.hello == meta.hello and void.world == meta.world)
+
+assert(empty.hello == meta.hello and empty.world == meta.world)
+
+assert(meta == meta and void != empty)
+
+object.delmeta(void, empty)
+
+assert(not object.hasmeta(empty) and not object.hasmeta(void))
+
+object.clear(void, empty)
+
+void.hello = 42
+
+empty.hello = 91
+
+object.setmeta(void, meta)
+
+assert(object.hasmeta(void) and not object.hasmeta(empty))
+
+assert(void.hello == 42)
+
+object.override(empty, void)
+
+assert(empty.hello == 42)
+
+assert(object.hasmeta(void) and not object.hasmeta(empty))
+
+void.hello = 42
+
+empty.hello = 91
+
+object.override(void, empty)
+
+assert(empty.hello == 91)
+
+assert(object.hasmeta(void) and not object.hasmeta(empty))
+
+void = object.inject(void, void, void, void, void)
+
+assert(void == void)
+
+empty = object.inject(empty, void, void, void, void)
+
+assert(void == void and empty == empty)
+
+assert(object.hasmeta(void) and not object.hasmeta(empty))
+
+void.hello = 42
+
+empty.hello = 91
+
+assert(void.world == meta.world)
+
+void = object.override(void, empty)
+
+assert(void == void and empty == empty)
+
+assert(object.hasmeta(void) and not object.hasmeta(empty))
+
+assert(void.hello == empty.hello)
+
+assert(void.world == meta.world)
+
+void.hello = 42
+
+empty.hello = 91
+
+assert(void.world == meta.world)
+
+empty = object.override(empty, void)
+
+assert(void == void and empty == empty)
+
+assert(object.hasmeta(void) and not object.hasmeta(empty))
+
+assert(empty.hello == void.hello)
+
+assert(void.world == meta.world)
+
+object.clear(void, empty)
+
+object.extends(void, meta)
+
+object.extends(empty, meta)
+
+assert(object.hasmeta(void) and object.hasmeta(empty))
+
+assert(object.getmeta(void) == meta and object.getmeta(empty) == meta)
+
+object.clear(void, empty)
+
+assert(void == void and empty == empty)
+
+void = object.extends(void, meta)
+
+empty = object.extends(empty, meta)
+
+assert(object.hasmeta(void) and object.hasmeta(empty))
+
+assert(object.getmeta(void) == meta and object.getmeta(empty) == meta)
+
+assert(void == void and empty == empty)
+
+object.clear(void, empty, meta)
+
+void.hello = 42
+
+void.world = 42
+
+void.alpha = 42
+
+empty.world = 120
+
+meta.alpha = 1200
+
+object.extract(void, empty, meta)
+
+assert(void.hello == 42 and not object.has(void, "world") and not object.has(void, "alpha"))
+
+object.clear(void, empty, meta)
+
+void.hello = 42
+
+void.world = 42
+
+empty.world = 120
+
+meta.alpha = 1200
+
+object.setmeta(void, meta)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta)
+
+assert(void.alpha == meta.alpha)
+
+object.extract(void, empty, meta)
+
+assert(void.hello == 42 and not object.has(void, "world") and not object.has(void, "alpha"))
+
+assert(void.alpha == meta.alpha)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta)
+
+object.clear(void, empty, meta)
+
+void.hello = 42
+
+void.world = 42
+
+empty.world = 120
+
+meta.alpha = 1200
+
+void = object.setmeta(void, meta)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta and void == void)
+
+assert(void.alpha == meta.alpha)
+
+void = object.extract(void, empty, meta)
+
+assert(void.hello == 42 and not object.has(void, "world") and not object.has(void, "alpha"))
+
+assert(void.alpha == meta.alpha)
+
+assert(object.hasmeta(void) and object.getmeta(void) == meta and void == void)
+
+object.clear(void, empty, meta)
+
+
+
+void.hello = fun => 42
+
+void.world = fun => 91
+
+void.alpha = fun => 1200
+
+meta.hello = void.hello
+
+meta.world = void.world
+
+meta.alpha = void.alpha
+
+empty = object.setmeta(empty, meta)
+
+assert(object.hasmeta(empty) and object.getmeta(empty) == meta)
+
+assert(object.conforms(empty, void) and object.implements(empty, void))
+
+object.clear(void, empty, meta)
+
+assert(object.conforms(empty, void) and object.implements(void, empty))
+
+void.hello = fun => 42
+
+void.world = fun => 91
+
+void.alpha = fun => 1200
+
+assert(not object.conforms(empty, void) and object.implements(void, empty))
+
+empty.hello = nil
+
+assert(not object.conforms(empty, void) and object.implements(void, empty))
+
+empty.world = nil
+
+assert(not object.conforms(empty, void) and object.implements(void, empty))
+
+empty.alpha = nil
+
+assert(object.conforms(empty, void) and object.implements(void, empty))
+
+object.clear(void, empty, meta)
+
+
 
 void = { hello world }
+
 alp = { this is the end }
+
 his = { tomorrow never die }
 
 assert(len(void) == 2)
@@ -75,6 +370,7 @@ var checkProps = fun void {
         assert(v.hello == void.hello and v.world == void.world and v.alpha == void.alpha)
     }
 }
+
 
 
 void = {
@@ -195,25 +491,30 @@ empty = {
 
 
 assert(object.inject(void, empty).alpha == nil)
+
 assert(object.inject(void, empty).gamma == nil)
+
 assert(object.inject(void, empty).theta == nil)
 
-
 assert(not object.extract(void, empty).alpha)
+
 assert(not object.extract(void, empty).gamma)
+
 assert(not object.extract(void, empty).theta)
 
-void = {}
-empty = object.getOrSet(void, "hello", 42)
+object.clear(void)
+
+empty = object.getset(void, "hello", 42)
 
 assert(void == empty)
+
 assert(object.has(empty, "hello"))
+
 assert(empty.hello == 42)
 
+void.hello = 42 void. world = 91
 
-void = { hello = 42, world = 91 }
-
-empty = { hi = fun self => self.hello }
+empty.hi = fun self => self.hello
 
 empty = object.extends(empty, void)
 
@@ -223,11 +524,20 @@ empty.hi = fun self => self.world
 
 assert(empty:hi() == 91)
 
-void = { hello = 42, world = 91 }
+void.hello = 42 void. world = 91
 
-empty = { hi = fun self => self.hello }
+empty.hi = fun self => self.hello
 
 void = object.extends(void, empty)
 
 assert(void:hi() == 42)
 
+object.clear(void, empty)
+
+assert(object.isEmpty(void) and object.isObject(void) and len(void) == 0)
+
+assert(object.has(void, "hello") == false)
+
+assert(object.isEmpty(empty) and object.isObject(empty) and len(empty) == 0)
+
+assert(object.has(empty, "hello") == false)

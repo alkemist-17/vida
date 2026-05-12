@@ -19,10 +19,10 @@ type ErrorInfo map[string]map[int]uint
 
 var extensionlibsLoader LibsLoader
 
-var __proto string = initProtName
+var __meta string = inititalMetaName
 
 const (
-	initProtName = "$__proto$"
+	inititalMetaName = "$$__meta__$$"
 
 	globalStateIndex = 0
 
@@ -32,11 +32,13 @@ const (
 
 	foundationInterfaceName = "std/"
 
-	__getproto = "__getproto"
+	__getmeta = "__getmeta"
 
-	__setproto = "__setproto"
+	__setmeta = "__setmeta"
 
-	__delproto = "__delproto"
+	__delmeta = "__delmeta"
+
+	__hasmeta = "__hasmeta"
 
 	__str = "__str"
 
@@ -49,6 +51,8 @@ const (
 	__set = "__set"
 
 	__del = "__del"
+
+	__has = "__has"
 
 	__add = "__add"
 
@@ -162,7 +166,7 @@ func coreLen(args ...Value) (Value, error) {
 			if lobj == 0 {
 				return Integer(lobj), nil
 			}
-			if _, ok := v.Value[__proto]; ok {
+			if _, ok := v.Value[__meta]; ok {
 				lobj--
 			}
 			return Integer(lobj), nil

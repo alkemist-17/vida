@@ -2,37 +2,39 @@ package vida
 
 import (
 	cryptoRand "crypto/rand"
-	"maps"
 )
 
 func loadObjectLib() Value {
 	if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
-	if __proto == initProtName {
-		__proto = cryptoRand.Text()
+	if __meta == inititalMetaName {
+		__meta = cryptoRand.Text()
 	}
-	m := &Object{Value: make(map[string]Value, 20)}
+	m := &Object{Value: make(map[string]Value, 21)}
 	m.Value["inject"] = GFn(objectInjectProperties)
-	m.Value["extends"] = GFn(objectSetPrototype)
-	m.Value["extract"] = GFn(objectExtractProperties)
 	m.Value["override"] = GFn(objectInjectAndOverrideProperties)
+	m.Value["extract"] = GFn(objectExtractProperties)
 	m.Value["conforms"] = GFn(objectCheckProperties)
-	m.Value["getproto"] = GFn(objectGetPrototype)
-	m.Value["setproto"] = GFn(objectSetPrototype)
-	m.Value["hasproto"] = GFn(objectHasPrototype)
-	m.Value["delproto"] = GFn(objectDelPrototype)
-	m.Value["getOrSet"] = GFn(objectGetOrSet)
+	m.Value["implements"] = GFn(objectCheckProperties)
+	m.Value["extends"] = GFn(objectSetMeta)
+
+	m.Value["getmeta"] = GFn(objectGetMeta)
+	m.Value["setmeta"] = GFn(objectSetMeta)
+	m.Value["hasmeta"] = GFn(objectHasMeta)
+	m.Value["delmeta"] = GFn(objectDelMeta)
 	m.Value["get"] = GFn(objectGetValue)
 	m.Value["set"] = GFn(objectSetValue)
 	m.Value["has"] = GFn(objectHasValue)
 	m.Value["del"] = GFn(objectDeleteProperty)
+
 	m.Value["keys"] = GFn(objectGetKeys)
 	m.Value["values"] = GFn(objectGetValues)
 	m.Value["isEmpty"] = GFn(objectIsEmpty)
 	m.Value["isObject"] = GFn(objectIsObject)
 	m.Value["isCallable"] = GFn(objectIsCallable)
 	m.Value["clear"] = GFn(objectClear)
+	m.Value["getset"] = GFn(objectGetOrSet)
 	return m
 }
 
@@ -42,7 +44,7 @@ func objectInjectProperties(args ...Value) (Value, error) {
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
 					for k, x := range other.Value {
-						if _, isPresent := self.Value[k]; !isPresent {
+						if _, isPresent := self.Value[k]; !isPresent && k != __meta {
 							self.Value[k] = x
 						}
 					}
@@ -59,7 +61,11 @@ func objectInjectAndOverrideProperties(args ...Value) (Value, error) {
 		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
-					maps.Copy(self.Value, other.Value)
+					for k, x := range other.Value {
+						if k != __meta {
+							self.Value[k] = x
+						}
+					}
 				}
 			}
 			return self, nil
@@ -75,13 +81,13 @@ func objectCheckProperties(args ...Value) (Value, error) {
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
 					for k := range other.Value {
-						if k != __proto {
+						if k != __meta {
 							set[k] = false
 						}
 					}
 				}
 			}
-			objectrecursiveProtoCheck(set, self)
+			objectrecursiveMetaSearch(set, self)
 			for _, v := range set {
 				if !v {
 					return Bool(false), nil
@@ -99,7 +105,9 @@ func objectExtractProperties(args ...Value) (Value, error) {
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
 					for k := range other.Value {
-						delete(self.Value, k)
+						if k != __meta {
+							delete(self.Value, k)
+						}
 					}
 				}
 			}
@@ -115,8 +123,8 @@ func objectDeleteProperty(args ...Value) (Value, error) {
 			if __delete, ok := self.Value[__del]; ok {
 				return __delete, nil
 			}
-			if proto, ok := self.Value[__proto].(*Object); ok {
-				if __delete, ok := proto.Value[__del]; ok {
+			if meta, ok := self.Value[__meta].(*Object); ok {
+				if __delete, ok := meta.Value[__del]; ok {
 					return __delete, nil
 				}
 			}
@@ -129,16 +137,16 @@ func objectDeleteProperty(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func objectSetPrototype(args ...Value) (Value, error) {
+func objectSetMeta(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
-			if proto, ok := args[1].(*Object); ok {
-				if proto, ok := self.Value[__proto].(*Object); ok {
-					if v, ok := proto.Value[__setproto]; ok {
+			if meta, ok := args[1].(*Object); ok {
+				if meta, ok := self.Value[__meta].(*Object); ok {
+					if v, ok := meta.Value[__setmeta]; ok {
 						return v, nil
 					}
 				}
-				self.Value[__proto] = proto
+				self.Value[__meta] = meta
 				return self, nil
 			}
 		}
@@ -146,16 +154,16 @@ func objectSetPrototype(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func objectGetPrototype(args ...Value) (Value, error) {
+func objectGetMeta(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
-			if proto, ok := self.Value[__proto].(*Object); ok {
-				if v, ok := proto.Value[__getproto]; ok {
+			if meta, ok := self.Value[__meta].(*Object); ok {
+				if v, ok := meta.Value[__getmeta]; ok {
 					return v, nil
 				}
 			}
-			if proto, ok := self.Value[__proto]; ok {
-				return proto, nil
+			if meta, ok := self.Value[__meta]; ok {
+				return meta, nil
 			}
 		}
 	}
@@ -217,13 +225,13 @@ func objectGetKeys(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
 			lobj := len(self.Value)
-			if _, ok := self.Value[__proto]; ok {
+			if _, ok := self.Value[__meta]; ok {
 				lobj--
 			}
 			keys := make([]Value, int(lobj))
 			var idx int
 			for k := range self.Value {
-				if k != __proto {
+				if k != __meta {
 					keys[idx] = &String{Value: k}
 					idx++
 				}
@@ -238,13 +246,13 @@ func objectGetValues(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
 			lobj := len(self.Value)
-			if _, ok := self.Value[__proto]; ok {
+			if _, ok := self.Value[__meta]; ok {
 				lobj--
 			}
 			values := make([]Value, int(lobj))
 			var idx int
 			for k, v := range self.Value {
-				if k != __proto {
+				if k != __meta {
 					values[idx] = v
 					idx++
 				}
@@ -255,20 +263,19 @@ func objectGetValues(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func objectrecursiveProtoCheck(set map[string]bool, self *Object) {
+func objectrecursiveMetaSearch(set map[string]bool, self *Object) {
 	if self == nil {
 		return
 	}
 	for k := range self.Value {
-		if k != __proto {
+		if k != __meta {
 			if _, isPresent := set[k]; isPresent {
 				set[k] = true
 			}
 		}
 	}
-	if p, ok := self.Value[__proto]; ok {
-		proto := p.(*Object)
-		objectrecursiveProtoCheck(set, proto)
+	if meta, ok := self.Value[__meta].(*Object); ok {
+		objectrecursiveMetaSearch(set, meta)
 	}
 }
 
@@ -276,7 +283,7 @@ func objectIsEmpty(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
 			l := len(self.Value)
-			if _, ok := self.Value[__proto]; ok {
+			if _, ok := self.Value[__meta]; ok {
 				l--
 			}
 			return Bool(l == 0), nil
@@ -313,10 +320,10 @@ func objectClear(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func objectHasPrototype(args ...Value) (Value, error) {
+func objectHasMeta(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
-			if _, ok := self.Value[__proto].(*Object); ok {
+			if _, ok := self.Value[__meta].(*Object); ok {
 				return Bool(true), nil
 			}
 			return Bool(false), nil
@@ -325,17 +332,16 @@ func objectHasPrototype(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func objectDelPrototype(args ...Value) (Value, error) {
+func objectDelMeta(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if self, ok := args[0].(*Object); ok {
-			if proto, ok := self.Value[__proto].(*Object); ok {
-				if dp, ok := proto.Value[__delproto]; ok {
-					return dp, nil
+		for _, v := range args {
+			if val, ok := v.(*Object); ok {
+				if meta, ok := val.Value[__meta].(*Object); ok {
+					if _, ok := meta.Value[__delmeta]; !ok {
+						delete(val.Value, __meta)
+					}
 				}
-				delete(self.Value, __proto)
-				return self, nil
 			}
-			return self, nil
 		}
 	}
 	return NilValue, nil

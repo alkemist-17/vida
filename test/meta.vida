@@ -6,13 +6,14 @@ assert(
     obj and
     obj.set and
     obj.keys and
-    obj.getOrSet and
+    obj.getset and
     obj.inject and
     obj.extends and
     obj.conforms and
+    obj.implements and
     obj.del and
-    obj.setproto and
-    obj.getproto and
+    obj.setmeta and
+    obj.getmeta and
     obj.extract and
     obj.override and
     obj.has and
@@ -20,8 +21,8 @@ assert(
     obj.get and
     obj.isEmpty and
     obj.clear and
-    obj.hasproto and
-    obj.delproto and
+    obj.hasmeta and
+    obj.delmeta and
     obj.isObject and
     obj.isCallable
 )
@@ -140,7 +141,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 
-// keys, values and getOrSet
+// keys, values and getset
 
 obj.set(o, hello, 42, world, 42*2)
 
@@ -160,15 +161,15 @@ assert(t[o] and t[p] and t[sp])
 
 assert(obj.isEmpty(o))
 
-obj.getOrSet(o, hello, 42)
+obj.getset(o, hello, 42)
 
-obj.getOrSet(o, world, 42*2)
+obj.getset(o, world, 42*2)
 
 assert(not obj.isEmpty(o) and len(o) == 2)
 
-assert(obj.getOrSet(o, hello, 100) == 42)
+assert(obj.getset(o, hello, 100) == 42)
 
-assert(obj.getOrSet(o, world, 200) == 42*2)
+assert(obj.getset(o, world, 200) == 42*2)
 
 k = obj.keys(o)
 
@@ -195,11 +196,11 @@ o.__get = 42
 
 o.__set = nil
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
-obj.setproto(o, o)
+obj.setmeta(o, o)
 
-assert(obj.hasproto(o) == true)
+assert(obj.hasmeta(o) == true)
 
 assert(o.hello and o[hello] and o.hello == 42 and o[hello] == 42)
 
@@ -211,7 +212,7 @@ assert(o[53] == 42)
 
 assert(not obj.isEmpty(o) and len(o) == 2)
 
-assert(o == obj.getproto(o) and t[obj.getproto(o)])
+assert(o == obj.getmeta(o) and t[obj.getmeta(o)])
 
 obj.clear(o)
 
@@ -219,19 +220,19 @@ assert(t[o] and t[p] and t[sp])
 
 assert(obj.isEmpty(o))
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
-obj.setproto(o, o)
+obj.setmeta(o, o)
 
-assert(obj.hasproto(o) == true)
+assert(obj.hasmeta(o) == true)
 
 assert(not o.hello and not o[hello] and o.hello == nil and o[hello] == nil)
 
 assert(obj.isEmpty(o))
 
-obj.delproto(o)
+obj.delmeta(o)
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
 assert(obj.isEmpty(o))
 
@@ -288,11 +289,11 @@ p.hello = 42
 
 p.world = 91
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o) == true)
+assert(obj.hasmeta(o) == true)
 
 assert(obj.isEmpty(o))
 
@@ -308,11 +309,11 @@ assert(t[o] and t[p] and t[sp])
 
 assert(obj.isEmpty(o))
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o) == true)
+assert(obj.hasmeta(o) == true)
 
 assert(obj.isEmpty(o))
 
@@ -324,9 +325,9 @@ assert(o:getHello() == 42)
 
 assert(o:getWorld() == 91)
 
-obj.delproto(o)
+obj.delmeta(o)
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
 obj.clear(p)
 
@@ -334,21 +335,21 @@ obj.clear(p)
 
 // prototype get, set, has, del
 
-p.__getproto = false
+p.__getmeta = false
 
-p.__delproto = false
+p.__delmeta = false
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-assert(obj.getproto(o) == false)
+assert(obj.getmeta(o) == false)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-obj.delproto(o)
+obj.delmeta(o)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
 obj.clear(p)
 
@@ -356,49 +357,49 @@ p.hello = 42
 
 assert(o.hello == 42)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-assert(obj.getproto(o) == p)
+assert(obj.getmeta(o) == p)
 
-p.__setproto = false
+p.__setmeta = false
 
 obj.clear(o)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-assert(obj.getproto(o) == p)
+assert(obj.getmeta(o) == p)
 
-obj.setproto(o, t)
+obj.setmeta(o, t)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-assert(obj.getproto(o) == p)
+assert(obj.getmeta(o) == p)
 
 obj.clear(p)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-assert(obj.getproto(o) == p)
+assert(obj.getmeta(o) == p)
 
-obj.setproto(o, t)
+obj.setmeta(o, t)
 
-assert(obj.hasproto(o))
+assert(obj.hasmeta(o))
 
-assert(obj.getproto(o) == t)
+assert(obj.getmeta(o) == t)
 
-obj.delproto(o)
+obj.delmeta(o)
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
 obj.clear(o)
 
 sp.hello = fun => 42
 
-obj.setproto(p, sp)
+obj.setmeta(p, sp)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
 assert(o.hello() == 42)
 
@@ -519,9 +520,9 @@ assert(t[o] and t[p] and t[sp])
 
 sp.__str = "bear"
 
-obj.setproto(p, sp)
+obj.setmeta(p, sp)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
 assert(format("%v", o) == "bear")
 
@@ -533,9 +534,9 @@ obj.clear(o, p, sp)
 
 assert(t[o] and t[p] and t[sp])
 
-obj.setproto(p, sp)
+obj.setmeta(p, sp)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
 assert(format("%v", o) == "{}")
 
@@ -555,13 +556,13 @@ obj.clear(o, p, sp)
 
 assert(t[o] and t[p] and t[sp])
 
-obj.setproto(p, sp)
+obj.setmeta(p, sp)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o) and obj.getproto(o) == p)
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
 
-assert(obj.hasproto(p) and obj.getproto(p) == sp)
+assert(obj.hasmeta(p) and obj.getmeta(p) == sp)
 
 assert(type(o) == "object" and type(p) == "object" and type(sp) == "object")
 
@@ -571,13 +572,13 @@ assert(t[o] and t[p] and t[sp])
 
 sp.__type = 42
 
-obj.setproto(p, sp)
+obj.setmeta(p, sp)
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o) and obj.getproto(o) == p)
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
 
-assert(obj.hasproto(p) and obj.getproto(p) == sp)
+assert(obj.hasmeta(p) and obj.getmeta(p) == sp)
 
 assert(type(o) == "42" and type(p) == "42" and type(sp) == "42")
 
@@ -585,17 +586,17 @@ obj.clear(o, p, sp)
 
 assert(t[o] and t[p] and t[sp])
 
-assert(not obj.hasproto(o))
+assert(not obj.hasmeta(o))
 
-assert(not obj.hasproto(p))
+assert(not obj.hasmeta(p))
 
-assert(not obj.hasproto(sp))
+assert(not obj.hasmeta(sp))
 
 p.__call = 42
 
-obj.setproto(o, p)
+obj.setmeta(o, p)
 
-assert(obj.hasproto(o) and obj.getproto(o) == p)
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
 
 assert(obj.isCallable(o) and obj.isCallable(p))
 
@@ -613,7 +614,7 @@ o.__str = hello
 
 o.__call = hello
 
-assert(obj.hasproto(o) == false)
+assert(obj.hasmeta(o) == false)
 
 assert(obj.isCallable(o))
 
@@ -632,4 +633,74 @@ assert(o() == o.hello)
 o.hello = 91
 
 assert(o() == o.hello)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// prototype chain with metamethods
+// __str, __type, __call
+
+sp.__str = hello
+
+sp.__type = world
+
+sp.__call = fun => 42*2
+
+sp.hello = 42
+
+sp.world = 91
+
+p.alpha = 55
+
+obj.setmeta(p, sp)
+
+obj.setmeta(o, p)
+
+assert(obj.isEmpty(o))
+
+assert(o.alpha == 55 and o.hello == 42 and o.world == 91)
+
+assert(format("%v", sp) == hello)
+
+assert(format("%v", p) == hello)
+
+assert(format("%v", o) == hello)
+
+assert(type(o) == world and type(p) == world and type(sp) == world)
+
+assert(not obj.isCallable(o) and obj.isCallable(p) and obj.isCallable(sp))
+
+assert(p() == 42*2)
+
+assert(sp() == 42*2)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// operator overloading
+// __add, __sub, __mul, __div, __rem
+
+
+
+// __eq, __neq, __le, __lt, __ge, __gt
+
+
+
+// __bor, __bxor, __bshl, __bshr, __band
+
+
+
+// __umin, __uplus, __unot, __ubnot
+
+
+
+// __in, __and, __or
+
+
 
