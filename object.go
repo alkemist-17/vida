@@ -18,13 +18,12 @@ func loadObjectLib() Value {
 	m.Value["conforms"] = GFn(objectCheckProperties)
 	m.Value["implements"] = GFn(objectCheckProperties)
 	m.Value["extends"] = GFn(objectSetMeta)
-
-	m.Value["getmeta"] = GFn(objectGetMeta)
 	m.Value["setmeta"] = GFn(objectSetMeta)
+	m.Value["getmeta"] = GFn(objectGetMeta)
 	m.Value["hasmeta"] = GFn(objectHasMeta)
 	m.Value["delmeta"] = GFn(objectDelMeta)
-	m.Value["get"] = GFn(objectGetValue)
 	m.Value["set"] = GFn(objectSetValue)
+	m.Value["get"] = GFn(objectGetValue)
 	m.Value["has"] = GFn(objectHasValue)
 	m.Value["del"] = GFn(objectDeleteProperty)
 
@@ -120,14 +119,6 @@ func objectExtractProperties(args ...Value) (Value, error) {
 func objectDeleteProperty(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
-			if __delete, ok := self.Value[__del]; ok {
-				return __delete, nil
-			}
-			if meta, ok := self.Value[__meta].(*Object); ok {
-				if __delete, ok := meta.Value[__del]; ok {
-					return __delete, nil
-				}
-			}
 			for _, prop := range args[1:] {
 				delete(self.Value, prop.ObjectKey())
 			}
@@ -139,16 +130,16 @@ func objectDeleteProperty(args ...Value) (Value, error) {
 
 func objectSetMeta(args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			if meta, ok := args[1].(*Object); ok {
-				if meta, ok := self.Value[__meta].(*Object); ok {
-					if v, ok := meta.Value[__setmeta]; ok {
-						return v, nil
-					}
+		self, selfIsObj := args[0].(*Object)
+		maybeMeta, metaIsObj := args[1].(*Object)
+		if selfIsObj && metaIsObj {
+			if meta, ok := self.Value[__meta].(*Object); ok {
+				if v, ok := meta.Value[__setmeta]; ok {
+					return v, nil
 				}
-				self.Value[__meta] = meta
-				return self, nil
 			}
+			self.Value[__meta] = maybeMeta
+			return self, nil
 		}
 	}
 	return NilValue, nil
@@ -161,8 +152,6 @@ func objectGetMeta(args ...Value) (Value, error) {
 				if v, ok := meta.Value[__getmeta]; ok {
 					return v, nil
 				}
-			}
-			if meta, ok := self.Value[__meta]; ok {
 				return meta, nil
 			}
 		}
@@ -335,10 +324,10 @@ func objectHasMeta(args ...Value) (Value, error) {
 func objectDelMeta(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		for _, v := range args {
-			if val, ok := v.(*Object); ok {
-				if meta, ok := val.Value[__meta].(*Object); ok {
-					if _, ok := meta.Value[__delmeta]; !ok {
-						delete(val.Value, __meta)
+			if self, ok := v.(*Object); ok {
+				if meta, ok := self.Value[__meta].(*Object); ok {
+					if _, ok := meta.Value[__setmeta]; !ok {
+						delete(self.Value, __meta)
 					}
 				}
 			}

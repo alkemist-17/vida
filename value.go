@@ -884,47 +884,65 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
-	if get, ok := o.Value[__get]; ok {
-		switch val := get.(type) {
-		case *Function:
-			return o.execute(val, index)
-		case *Object:
-			if o != val {
-				return val.IGet(index)
-			}
-		default:
+	current := o
+	for range maxMetaSearch {
+		if val, ok := current.Value[index.ObjectKey()]; ok {
 			return val, nil
 		}
-	}
-	if val, ok := o.Value[index.ObjectKey()]; ok {
-		return val, nil
-	}
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if _, ok := meta.Value[__get]; ok || o != meta {
-			return meta.IGet(index)
+
+		meta, ok := current.Value[__meta].(*Object)
+		if !ok {
+			break
+		}
+
+		get, hasGet := meta.Value[__get]
+		if !hasGet {
+			current = meta
+			continue
+		}
+
+		switch val := get.(type) {
+		case *Function:
+			return current.execute(val, index)
+		case *Object:
+			if current == val {
+				return NilValue, nil
+			}
+			current = val
+		default:
+			return val, nil
 		}
 	}
 	return NilValue, nil
 }
 
 func (o *Object) ISet(index, val Value) error {
-	if set, ok := o.Value[__set]; ok {
+	current := o
+	for range maxMetaSearch {
+		meta, ok := current.Value[__meta].(*Object)
+		if !ok {
+			current.Value[index.ObjectKey()] = val
+			return nil
+		}
+		set, ok := meta.Value[__set]
+		if !ok {
+			current.Value[index.ObjectKey()] = val
+			return nil
+		}
 		switch v := set.(type) {
 		case *Function:
-			_, err := o.execute(v, index, val)
+			_, err := current.execute(v, index, val)
 			return err
 		case *Object:
-			return v.ISet(index, val)
+			if current == v {
+				current.Value[index.ObjectKey()] = val
+				return nil
+			}
+			current = v
 		default:
 			return nil
 		}
 	}
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if _, ok := meta.Value[__set]; ok {
-			return meta.ISet(index, val)
-		}
-	}
-	o.Value[index.ObjectKey()] = val
 	return nil
 }
 
@@ -940,9 +958,6 @@ func (o *Object) IsIterable() Bool {
 }
 
 func (o *Object) IsCallable() Bool {
-	if _, ok := o.Value[__call]; ok {
-		return true
-	}
 	if meta, ok := o.Value[__meta].(*Object); ok {
 		if _, ok := meta.Value[__call]; ok {
 			return true
@@ -952,29 +967,24 @@ func (o *Object) IsCallable() Bool {
 }
 
 func (o *Object) Call(args ...Value) (Value, error) {
-	var Fn Value = NilValue
-	if v, ok := o.Value[__call]; ok {
-		Fn = v
-		goto processMaybeFn
-	}
 	if meta, ok := o.Value[__meta].(*Object); ok {
-		if v, ok := meta.Value[__call]; ok {
-			Fn = v
-			goto processMaybeFn
+		if callable, ok := meta.Value[__call]; ok {
+			switch Fn := callable.(type) {
+			case *Function:
+				if Fn.CoreFn.IsVar {
+					a := make([]Value, len(args))
+					copy(a, args)
+					return o.execute(Fn, &Array{Value: a})
+				}
+				return o.execute(Fn, args...)
+			case GFn:
+				return Fn.Call(args...)
+			default:
+				return Fn, nil
+			}
 		}
 	}
-processMaybeFn:
-	switch v := Fn.(type) {
-	case *Function:
-		if v.CoreFn.IsVar {
-			a := make([]Value, len(args))
-			copy(a, args)
-			return o.execute(v, &Array{Value: a})
-		}
-		return o.execute(v, args...)
-	default:
-		return v, nil
-	}
+	return NilValue, verror.ErrNotImplemented
 }
 
 func (o *Object) Iterator() Value {
@@ -1039,44 +1049,21 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 	return v, nil
 }
 
-func (o *Object) getDescription() (string, bool) {
+func (o *Object) String() string {
 	if meta, ok := o.Value[__meta].(*Object); ok {
 		if str, ok := meta.Value[__str]; ok {
-			switch fn := str.(type) {
+			switch v := str.(type) {
 			case *Function:
-				if val, err := o.execute(fn); err == nil {
-					return val.String(), true
+				if val, err := o.execute(v); err == nil {
+					return val.String()
 				} else {
-					fmt.Printf("\n\nRun Time error inside function __str %v\n", err)
+					fmt.Printf("\n\nRun Time error in function __str %v for object %p\n", err, o)
 					os.Exit(0)
 				}
 			default:
-				return fn.String(), true
+				return v.String()
 			}
-		} else if o != meta {
-			return meta.getDescription()
 		}
-	}
-	return "", false
-}
-
-func (o *Object) String() string {
-	if str, ok := o.Value[__str]; ok {
-		switch v := str.(type) {
-		case *Function:
-			if val, err := o.execute(v); err == nil {
-				return val.String()
-			} else {
-				fmt.Printf("\n\nRun Time error in function __str %v for object %p\n", err, o)
-				os.Exit(0)
-			}
-		default:
-			return v.String()
-		}
-	}
-	str, overrriden := o.getDescription()
-	if overrriden {
-		return str
 	}
 	if len(o.Value) == 0 {
 		return "{}"
@@ -1095,14 +1082,9 @@ func (o *Object) ObjectKey() string {
 }
 
 func (o *Object) Type() string {
-	if metatype, ok := o.Value[__type]; ok {
-		return metatype.String()
-	}
 	if meta, ok := o.Value[__meta].(*Object); ok {
 		if metatype, ok := meta.Value[__type]; ok {
 			return metatype.String()
-		} else if o != meta {
-			return meta.Type()
 		}
 	}
 	return "object"

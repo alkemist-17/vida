@@ -26,6 +26,8 @@ const (
 
 	globalStateIndex = 0
 
+	maxMetaSearch = 10_000
+
 	errorMessageFieldName = "message"
 
 	DefaultInputPrompt = "Input > "
@@ -36,23 +38,15 @@ const (
 
 	__setmeta = "__setmeta"
 
-	__delmeta = "__delmeta"
-
-	__hasmeta = "__hasmeta"
+	__call = "__call"
 
 	__str = "__str"
-
-	__call = "__call"
 
 	__type = "__type"
 
 	__get = "__get"
 
 	__set = "__set"
-
-	__del = "__del"
-
-	__has = "__has"
 
 	__add = "__add"
 

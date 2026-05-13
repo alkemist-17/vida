@@ -189,8 +189,8 @@ assert(obj.isEmpty(o))
 
 
 
-// object prototype
-// object as prototype of itself
+// metaobject
+// object as metaobject of itself
 
 o.__get = 42
 
@@ -240,54 +240,56 @@ obj.clear(o)
 
 assert(t[o] and t[p] and t[sp])
 
-o.__get = 42
+p.__get = 42
 
-o.__set = nil
+p.__set = nil
+
+o = obj.setmeta(o, p)
 
 assert(o.hello and o[hello] and o.hello == 42 and o[hello] == 42)
 
-assert(not obj.isEmpty(o) and len(o) == 2)
+assert(obj.isEmpty(o) and len(o) == 0)
 
 o[53] = 53
 
 assert(o[53] == 42)
 
-assert(not obj.isEmpty(o) and len(o) == 2)
+assert(obj.isEmpty(o) and len(o) == 0)
 
 obj.clear(o)
 
 assert(t[o] and t[p] and t[sp])
-
-o.__del = nil
 
 o.hello = 42
 
-assert(not obj.isEmpty(o) and len(o) == 2)
+assert(not obj.isEmpty(o) and len(o) == 1)
 
 obj.del(o, hello)
 
-assert(not obj.isEmpty(o) and len(o) == 2)
+assert(obj.isEmpty(o) and len(o) == 0)
 
-assert(o.hello == o[hello] and o.hello == 42)
+assert(o.hello == o[hello] and o.hello == nil)
 
 obj.del(o, "__del")
 
-assert(not obj.isEmpty(o) and len(o) == 2)
+assert(obj.isEmpty(o) and len(o) == 0)
 
-assert(o.hello == o[hello] and o.hello == 42)
+assert(o.hello == o[hello] and o.hello == nil)
 
-obj.clear(o)
+obj.clear(o, p, sp)
 
 assert(t[o] and t[p] and t[sp])
 
 
 
-// object as prototype of other objects
-// prototype chain
+// object as metaobject of other objects
+// metaobject equivalent of prototype chain
 
 p.hello = 42
 
 p.world = 91
+
+assert(p.hello == 42 and p.world == 91)
 
 assert(obj.hasmeta(o) == false)
 
@@ -333,11 +335,11 @@ obj.clear(p)
 
 
 
-// prototype get, set, has, del
+// metaobject get, set, has, del
 
 p.__getmeta = false
 
-p.__delmeta = false
+p.__setmeta = false
 
 obj.setmeta(o, p)
 
@@ -516,7 +518,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 // __str, __call and __type
-// when the prototype is a different object
+// when the metaobject is a different object
 
 sp.__str = "bear"
 
@@ -524,11 +526,11 @@ obj.setmeta(p, sp)
 
 obj.setmeta(o, p)
 
-assert(format("%v", o) == "bear")
+assert(format("%v", o) == "{}")
 
 assert(format("%v", p) == "bear")
 
-assert(format("%v", sp) == `bear`)
+assert(format("%v", sp) == `{__str: bear}`)
 
 obj.clear(o, p, sp)
 
@@ -580,7 +582,7 @@ assert(obj.hasmeta(o) and obj.getmeta(o) == p)
 
 assert(obj.hasmeta(p) and obj.getmeta(p) == sp)
 
-assert(type(o) == "42" and type(p) == "42" and type(sp) == "42")
+assert(type(o) == "object" and type(p) == "42" and type(sp) == "object")
 
 obj.clear(o, p, sp)
 
@@ -596,9 +598,15 @@ p.__call = 42
 
 obj.setmeta(o, p)
 
+obj.setmeta(p, p)
+
 assert(obj.hasmeta(o) and obj.getmeta(o) == p)
 
+assert(obj.hasmeta(p) and obj.getmeta(p) == p)
+
 assert(obj.isCallable(o) and obj.isCallable(p))
+
+assert(p() == o() and p() == p.__call)
 
 obj.clear(o, p, sp)
 
@@ -606,7 +614,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 
-// When it has not prototype
+// When it has not metaobject
 
 o.__type = hello
 
@@ -616,7 +624,19 @@ o.__call = hello
 
 assert(obj.hasmeta(o) == false)
 
-assert(obj.isCallable(o))
+assert(obj.isCallable(o) == false)
+
+assert(type(o) != hello)
+
+assert(format("%v", o) != hello)
+
+o = obj.setmeta(o, o)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) == true)
+
+assert(obj.isCallable(o) == true)
 
 assert(type(o) == hello)
 
@@ -640,7 +660,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 
-// prototype chain with metamethods
+// metaobject chain with metamethods
 // __str, __type, __call
 
 sp.__str = hello
@@ -663,19 +683,195 @@ assert(obj.isEmpty(o))
 
 assert(o.alpha == 55 and o.hello == 42 and o.world == 91)
 
-assert(format("%v", sp) == hello)
+assert(format("%v", sp) != hello)
 
 assert(format("%v", p) == hello)
 
-assert(format("%v", o) == hello)
+assert(format("%v", o) != hello)
 
-assert(type(o) == world and type(p) == world and type(sp) == world)
+assert(type(o) == "object" and type(p) == world and type(sp) == "object")
 
-assert(not obj.isCallable(o) and obj.isCallable(p) and obj.isCallable(sp))
+assert(not obj.isCallable(o) and obj.isCallable(p) and not obj.isCallable(sp))
 
 assert(p() == 42*2)
 
-assert(sp() == 42*2)
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// __setmeta, not __setmeta and __getmeta
+
+p.hello = 42
+
+o.world = 91
+
+assert(obj.hasmeta(o) == false)
+
+obj.setmeta(o, p)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(o.hello == p.hello and o.world == 91)
+
+obj.clear(o, p)
+
+p.hello = 1000
+
+p.world = 2000
+
+assert(obj.hasmeta(o) == false)
+
+o = obj.setmeta(o, p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(o.hello == p.hello and o.world == p.world)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+p.__setmeta = nil
+
+p.data = 42
+
+obj.setmeta(o, p)
+
+assert(o.data == p.data)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+sp.r = obj.setmeta(o, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(o.data == p.data)
+
+assert(sp.r == p.__setmeta)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// not __getmeta
+
+p.hello = 1000
+
+p.world = 2000
+
+p.__getmeta = hello
+
+assert(obj.hasmeta(o) == false and obj.getmeta(o) == nil)
+
+o = obj.setmeta(o, p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p.__getmeta)
+
+assert(o.hello == p.hello and o.world == p.world)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// not __getmeta and // not __setmeta
+
+p.hello = 1000
+
+p.world = 2000
+
+p.__getmeta = hello
+
+p.__setmeta = world
+
+assert(obj.hasmeta(o) == false and obj.getmeta(o) == nil)
+
+o = obj.setmeta(o, p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p.__getmeta)
+
+assert(o.hello == p.hello and o.world == p.world)
+
+sp.r = obj.setmeta(o, sp)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p.__getmeta)
+
+assert(obj.hasmeta(o) and sp.r == p.__setmeta)
+
+assert(o.hello == p.hello and o.world == p.world)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// delmeta with and without guard
+
+p.hello = 1000
+
+p.world = 2000
+
+o.hello = 42
+
+o.world = 91
+
+assert(obj.hasmeta(o) == false and obj.getmeta(o) == nil)
+
+o = obj.setmeta(o, p)
+
+p = obj.setmeta(p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(p) and obj.getmeta(p) == sp)
+
+assert(o.hello and p.hello and o.world and p.world)
+
+obj.delmeta(o, p. sp)
+
+assert(not obj.hasmeta(o) and not obj.hasmeta(o) and not obj.hasmeta(sp))
+
+assert(p.hello == 1000 and p.world == 2000 and o.hello == 42 and o.world == 91)
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+p.hello = 1000
+
+p.world = 2000
+
+p.__setmeta = hello
+
+assert(obj.hasmeta(o) == false and obj.getmeta(o) == nil)
+
+o = obj.setmeta(o, p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+obj.delmeta(o, p. sp)
+
+assert(o.hello == p.hello and o.world == p.world)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
 
 obj.clear(o, p, sp)
 
