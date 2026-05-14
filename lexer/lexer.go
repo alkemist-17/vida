@@ -385,11 +385,9 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case '&':
 			tok = token.BAND
 		default:
-			if tok != token.UNEXPECTED {
-				tok = token.UNEXPECTED
-				lit = string(ch)
-				l.LexicalError = verror.New(l.ScriptName, fmt.Sprintf("found an unrecognized character '%v'", lit), verror.LexicalErrType, l.line)
-			}
+			tok = token.UNEXPECTED
+			lit = string(ch)
+			l.LexicalError = verror.New(l.ScriptName, fmt.Sprintf("found an unrecognized character '%v'", lit), verror.LexicalErrType, l.line)
 		}
 	}
 	return
