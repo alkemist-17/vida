@@ -26,7 +26,6 @@ func loadObjectLib() Value {
 	m.Value["get"] = GFn(objectGetValue)
 	m.Value["has"] = GFn(objectHasValue)
 	m.Value["del"] = GFn(objectDeleteProperty)
-
 	m.Value["keys"] = GFn(objectGetKeys)
 	m.Value["values"] = GFn(objectGetValues)
 	m.Value["isEmpty"] = GFn(objectIsEmpty)
@@ -184,13 +183,16 @@ func objectSetValue(args ...Value) (Value, error) {
 }
 
 func objectGetOrSet(args ...Value) (Value, error) {
-	if len(args) > 2 {
+	l := len(args)
+	if l > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if val, ok := self.Value[args[1].ObjectKey()]; ok {
 				return val, nil
 			}
-			self.Value[args[1].ObjectKey()] = args[2]
-			return self, nil
+			if l > 2 {
+				self.Value[args[1].ObjectKey()] = args[2]
+				return self, nil
+			}
 		}
 	}
 	return NilValue, nil

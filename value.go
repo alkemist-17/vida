@@ -722,6 +722,28 @@ func (o *Object) Boolean() Bool {
 }
 
 func (o *Object) Prefix(op uint64) (Value, error) {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		switch op {
+		case uint64(token.SUB):
+			if generic, ok := meta.Value[__umin]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val)
+				default:
+					return val, nil
+				}
+			}
+		case uint64(token.ADD):
+			if generic, ok := meta.Value[__uplus]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val)
+				default:
+					return val, nil
+				}
+			}
+		}
+	}
 	switch op {
 	case uint64(token.NOT):
 		return Bool(false), nil
@@ -771,24 +793,6 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 			}
 		case uint64(token.REM):
 			if generic, ok := meta.Value[__rem]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.EQ):
-			if generic, ok := meta.Value[__eq]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.NEQ):
-			if generic, ok := meta.Value[__neq]; ok {
 				switch val := generic.(type) {
 				case *Function:
 					return o.execute(val, rhs)
@@ -947,6 +951,20 @@ func (o *Object) ISet(index, val Value) error {
 }
 
 func (o *Object) Equals(other Value) Bool {
+	if meta, ok := o.Value[__meta].(*Object); ok {
+		if generic, ok := meta.Value[__eq]; ok {
+			switch val := generic.(type) {
+			case *Function:
+				res, err := o.execute(val, other)
+				if err != nil {
+					return Bool(false)
+				}
+				return res.Boolean()
+			default:
+				return val.Boolean()
+			}
+		}
+	}
 	if val, ok := other.(*Object); ok {
 		return o == val
 	}

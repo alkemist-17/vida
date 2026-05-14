@@ -60,8 +60,6 @@ const (
 
 	__eq = "__eq"
 
-	__neq = "__neq"
-
 	__le = "__le"
 
 	__lt = "__lt"
@@ -69,6 +67,10 @@ const (
 	__ge = "__ge"
 
 	__gt = "__gt"
+
+	__umin = "__umin"
+
+	__uplus = "__uplus"
 )
 
 var clbu *[]Value
@@ -527,7 +529,7 @@ func StringLength(input *String) Integer {
 	return Integer(len(input.Runes))
 }
 
-func IsMemberOf(args ...Value) (Value, error) {
+func IsMemberOf(args ...Value) (Bool, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {
 		case *Array:
@@ -564,7 +566,7 @@ func IsMemberOf(args ...Value) (Value, error) {
 			return Bool(false), nil
 		}
 	}
-	return NilValue, nil
+	return Bool(false), nil
 }
 
 func pauseExecution(message string) {

@@ -785,7 +785,7 @@ assert(t[o] and t[p] and t[sp])
 
 
 
-// not __getmeta and // not __setmeta
+// not __getmeta and not __setmeta
 
 p.hello = 1000
 
@@ -882,21 +882,405 @@ assert(t[o] and t[p] and t[sp])
 // operator overloading
 // __add, __sub, __mul, __div, __rem
 
+p.__add = fun self, other {
+    ret 42
+}
+
+p.__sub = fun self, other {
+    ret 43
+}
+
+p.__mul = fun self, other {
+    ret 44
+}
+
+p.__div = fun self, other {
+    ret 45
+}
+
+p.__rem = fun self, other {
+    ret 46
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(o + sp == sp + o and o + sp == 42)
+
+assert(o - sp == sp - o and o - sp == 43)
+
+assert(o * sp == sp * o and o * sp == 44)
+
+assert(o / sp == sp / o and o / sp == 45)
+
+assert(o % sp == sp % o and o % sp == 46)
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
 
 
-// __eq, __neq, __le, __lt, __ge, __gt
+
+// __eq, __le, __lt, __ge, __gt
+
+p.__eq = fun self, other {
+    ret 47
+}
+
+p.__le = fun self, other {
+    ret 49
+}
+
+p.__lt = fun self, other {
+    ret 50
+}
+
+p.__ge = fun self, other {
+    ret 51
+}
+
+p.__gt = fun self, other {
+    ret 52
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert((o == sp) == (sp == o) and (o == sp) == true)
+
+assert((o != sp) == (sp != o) and (o != sp) == not(o == sp))
+
+assert((o <= sp) == (sp <= o) and (o <= sp) == 49)
+
+assert((o < sp) == (sp < o) and (o < sp) == 50)
+
+assert((o >= sp) == (sp >= o) and (o >= sp) == 51)
+
+assert((o > sp) == (sp > o) and (o > sp) == 52)
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
 
 
 
-// __bor, __bxor, __bshl, __bshr, __band
+// __umin, __uplus
+
+p.__umin = fun self {
+    ret 100
+}
+
+p.__uplus = fun self {
+    ret 200
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(-o == 100 and +o == 200)
+
+assert(-sp == 100 and +sp == 200)
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
 
 
 
-// __umin, __uplus, __unot, __ubnot
+// __add, __sub, __mul, __div, __rem checking both arguments
+
+p.__add = fun self, other {
+    ret self.hello + other.hello
+}
+
+p.__sub = fun self, other {
+    ret self.hello - other.hello
+}
+
+p.__mul = fun self, other {
+    ret self.hello * other.hello
+}
+
+p.__div = fun self, other {
+    ret self.hello / other.hello
+}
+
+p.__rem = fun self, other {
+    ret self.hello % other.hello
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+o.hello = 100
+
+sp.hello = 100
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(o + sp == sp + o and o + sp == (o.hello + sp.hello) and sp + o == 200)
+
+assert(o - sp == sp - o and o - sp == (o.hello - sp.hello) and sp - o == 0)
+
+assert(o * sp == sp * o and o * sp == (o.hello * sp.hello) and sp * o == 100*100)
+
+assert(o / sp == sp / o and o / sp == (o.hello / sp.hello) and sp / o == 100/100)
+
+assert(o % sp == sp % o and o % sp == (o.hello % sp.hello) and sp % o == 100%100)
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
 
 
 
-// __in, __and, __or
+// __eq, __le, __lt, __ge, __gt checking both arguments
+
+p.__eq = fun self, other {
+    ret self.hello == other.hello
+}
+
+p.__le = fun self, other {
+    ret self.hello <= other.hello
+}
+
+p.__lt = fun self, other {
+    ret self.hello < other.hello
+}
+
+p.__ge = fun self, other {
+    ret self.hello >= other.hello
+}
+
+p.__gt = fun self, other {
+    ret self.hello > other.hello
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+o.hello = 100
+
+sp.hello = 100
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert((o == sp) == (sp == o) and (o == sp) == (o.hello == sp.hello) and (sp == o) == (100==100))
+
+assert((o != sp) == (sp != o) and (o != sp) == (o.hello != sp.hello) and (sp != o) == (100!=100))
+
+assert((o <= sp) == (sp <= o) and (o <= sp) == (o.hello <= sp.hello) and (sp <= o) == (100<=100))
+
+assert((o < sp) == (sp < o) and (o < sp) == (o.hello < sp.hello) and (sp < o) == (100<100))
+
+assert((o >= sp) == (sp >= o) and (o >= sp) == (o.hello >= sp.hello) and (sp >= o) == (100>=100))
+
+assert((o > sp) == (sp > o) and (o > sp) == (o.hello > sp.hello) and (sp > o) == (100>100))
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
 
 
+
+// __eq, __le, __lt, __ge, __gt checking both arguments
+
+p.__eq = fun self, other {
+    ret self.hello == other.hello
+}
+
+p.__le = fun self, other {
+    ret self.hello <= other.hello
+}
+
+p.__lt = fun self, other {
+    ret self.hello < other.hello
+}
+
+p.__ge = fun self, other {
+    ret self.hello >= other.hello
+}
+
+p.__gt = fun self, other {
+    ret self.hello > other.hello
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+o.hello = 100
+
+sp.hello = 200
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert((o == sp) == (sp == o) and (o == sp) == (o.hello == sp.hello) and (sp == o) == (100==200))
+
+assert((o != sp) == (sp != o) and (o != sp) == (o.hello != sp.hello) and (sp != o) == (100!=200))
+
+assert((o <= sp) == (o.hello <= sp.hello) and (o <= sp) == (100<=200))
+
+assert((o < sp) == (o.hello < sp.hello) and (o < sp) == (100<200))
+
+assert((o >= sp) == (o.hello >= sp.hello) and (o >= sp) == (100>=200))
+
+assert((o > sp) == (o.hello > sp.hello) and (o > sp) == (100>200))
+
+assert((sp <= o) == (sp.hello <= o.hello) and (sp <= o) == (200<=100))
+
+assert((sp < o) == (sp.hello < o.hello) and (sp < o) == (200<100))
+
+assert((sp >= o) == (sp.hello >= o.hello) and (sp >= o) == (200>=100))
+
+assert((sp > o) == (sp.hello > o.hello) and (sp > o) == (200>100))
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// __umin, __uplus checking values
+
+p.__umin = fun self {
+    ret -self.hello
+}
+
+p.__uplus = fun self {
+    ret +self.hello
+}
+
+o = obj.setmeta(o, p)
+
+sp = obj.setmeta(sp, p)
+
+o.hello = 42
+
+sp.hello = -91
+
+assert(obj.hasmeta(o) and obj.getmeta(o) == p)
+
+assert(obj.hasmeta(sp) and obj.getmeta(sp) == p)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(-o == -42 and +o == 42)
+
+assert(-sp == 91 and +sp == -91)
+
+obj.clear(o, p, sp)
+
+assert(not obj.hasmeta(o))
+
+assert(not obj.hasmeta(sp))
+
+assert(t[o] and t[p] and t[sp])
+
+
+
+// keys and values
+
+p.hello = 42
+
+p.world = 91
+
+assert(hello in obj.keys(p) and world in obj.keys(p))
+
+assert(42 in obj.values(p) and 91 in obj.values(p))
+
+
+
+// isEmpty, isObject and isCallable
+
+assert(not obj.isEmpty(p))
+
+assert(obj.isObject(p) and obj.isObject(o) and obj.isObject(sp))
+
+assert(not obj.isObject(hello) and not obj.isObject(world) and not obj.isObject(42))
+
+assert(not obj.isCallable(p) and not obj.isCallable(o) and not obj.isCallable(sp))
+
+
+
+// getset
+
+assert(obj.getset(p, hello) == p.hello)
+
+assert(obj.getset(p, world) == p.world)
+
+assert(obj.getset(p, "sheep", "cow") == p)
+
+assert(obj.getset(p, "sheep") == "cow")
+
+
+
+// clear
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.isEmpty(o) and obj.isEmpty(p) and obj.isEmpty(sp))
+
+assert(not obj.hasmeta(o) and not obj.hasmeta(p) and not obj.hasmeta(sp))
 
