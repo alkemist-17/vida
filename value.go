@@ -1131,7 +1131,7 @@ func (o *Object) ObjectKey() string {
 
 func (o *Object) Type() string {
 	if meta, ok := o.Value[__meta].(*Object); ok {
-		if metatype, ok := meta.Value[__type]; ok && reflect.ValueOf(metatype).Pointer() != reflect.ValueOf(o).Pointer() {
+		if metatype, ok := meta.Value[__type]; ok {
 			return metatype.String()
 		}
 	}
