@@ -6,6 +6,7 @@ import (
 	"maps"
 	"math"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -681,13 +682,27 @@ func (xs *Array) Iterator() Value {
 	return &ArrayIterator{Array: xs.Value, Init: -1, End: len(xs.Value)}
 }
 
-func (xs Array) String() string {
+func (xs *Array) String() string {
+	return xs.stringify(make(map[uintptr]bool))
+}
+
+func (xs *Array) stringify(visited map[uintptr]bool) string {
 	if len(xs.Value) == 0 {
 		return "[]"
 	}
+
+	ptr := reflect.ValueOf(xs).Pointer()
+
+	if visited[ptr] {
+		return "[...]"
+	}
+
+	visited[ptr] = true
+	defer delete(visited, ptr)
+
 	var r []string
 	for _, v := range xs.Value {
-		r = append(r, v.String())
+		r = append(r, stringWithVisited(v, visited))
 	}
 	return fmt.Sprintf("[%v]", strings.Join(r, ", "))
 }
@@ -1068,28 +1083,43 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 }
 
 func (o *Object) String() string {
+	return o.stringify(make(map[uintptr]bool))
+}
+
+func (o *Object) stringify(visited map[uintptr]bool) string {
 	if meta, ok := o.Value[__meta].(*Object); ok {
 		if str, ok := meta.Value[__str]; ok {
 			switch v := str.(type) {
 			case *Function:
 				if val, err := o.execute(v); err == nil {
-					return val.String()
+					return stringWithVisited(val, visited)
 				} else {
 					fmt.Printf("\n\nRun Time error in function __str %v for object %p\n", err, o)
 					os.Exit(0)
 				}
 			default:
-				return v.String()
+				return stringWithVisited(v, visited)
 			}
 		}
 	}
+
 	if len(o.Value) == 0 {
 		return "{}"
 	}
+
+	ptr := reflect.ValueOf(o).Pointer()
+
+	if visited[ptr] {
+		return "{...}"
+	}
+
+	visited[ptr] = true
+	defer delete(visited, ptr)
+
 	var r []string
 	for k, v := range o.Value {
 		if k != __meta {
-			r = append(r, fmt.Sprintf("%v: %v", k, v))
+			r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
 		}
 	}
 	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
@@ -1101,7 +1131,7 @@ func (o *Object) ObjectKey() string {
 
 func (o *Object) Type() string {
 	if meta, ok := o.Value[__meta].(*Object); ok {
-		if metatype, ok := meta.Value[__type]; ok {
+		if metatype, ok := meta.Value[__type]; ok && reflect.ValueOf(metatype).Pointer() != reflect.ValueOf(o).Pointer() {
 			return metatype.String()
 		}
 	}

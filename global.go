@@ -101,6 +101,17 @@ func (tp *threadPool) releaseThread() {
 	tp.Key--
 }
 
+func stringWithVisited(v Value, visited map[uintptr]bool) string {
+	switch c := v.(type) {
+	case *Array:
+		return c.stringify(visited)
+	case *Object:
+		return c.stringify(visited)
+	default:
+		return v.String()
+	}
+}
+
 type GlobalState struct {
 	*VM
 	Main    *Thread
