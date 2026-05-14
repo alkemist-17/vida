@@ -1,0 +1,160 @@
+// self-ref.vida
+// Regression tests for cycle detection in Array and Object printing.
+// Expected: no stack overflow, no infinite loop, [...] or {...} at cycle point.
+
+// ──────────────────────────────────────────────
+// 1. ARRAY SELF-REFERENCE (direct)
+// ──────────────────────────────────────────────
+
+var a = []
+append(a, a)
+print(a)                       // [[...]]
+
+// ──────────────────────────────────────────────
+// 2. ARRAY SELF-REFERENCE (nested one level)
+// ──────────────────────────────────────────────
+
+var b = []
+var inner = [b]
+append(b, inner)
+print(b)                       // [[[...]]]
+
+// ──────────────────────────────────────────────
+// 3. MUTUAL ARRAY CYCLE (a -> b -> a)
+// ──────────────────────────────────────────────
+
+var c = []
+var d = []
+append(c, d)
+append(d, c)
+print(c)                       // [[[...]]]
+print(d)                       // [[[...]]]
+
+// ──────────────────────────────────────────────
+// 4. ARRAY WITH SAFE SIBLINGS (no false positives)
+// ──────────────────────────────────────────────
+
+var e = [1, 2, 3]
+var f = [e, e, e]
+print(f)                       // [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+
+// ──────────────────────────────────────────────
+// 5. OBJECT SELF-REFERENCE (direct)
+// ──────────────────────────────────────────────
+
+var o = {}
+o.self = o
+print(o)                       // {self: {...}}
+
+// ──────────────────────────────────────────────
+// 6. OBJECT SELF-REFERENCE (nested one level)
+// ──────────────────────────────────────────────
+
+var p = {}
+var q = {}
+q.ref = p
+p.child = q
+print(p)                       // {child: {ref: {...}}}
+print(q)                       // {ref: {child: {...}}}
+
+// ──────────────────────────────────────────────
+// 7. MUTUAL OBJECT CYCLE (o1 -> o2 -> o1)
+// ──────────────────────────────────────────────
+
+var o1 = {}
+var o2 = {}
+o1.other = o2
+o2.other = o1
+print(o1)                      // {other: {other: {...}}}
+print(o2)                      // {other: {other: {...}}}
+
+// ──────────────────────────────────────────────
+// 8. CROSS-TYPE: array containing self-referencing object
+// ──────────────────────────────────────────────
+
+var obj = {}
+obj.self = obj
+var arr = [1, obj, 2]
+print(arr)                     // [1, {self: {...}}, 2]
+
+// ──────────────────────────────────────────────
+// 9. CROSS-TYPE: object field pointing back to containing array
+// ──────────────────────────────────────────────
+
+var base = []
+var node = {}
+node.arr = base
+append(base, node)
+print(base)                    // [{arr: [...]}]
+
+// ──────────────────────────────────────────────
+// 10. CROSS-TYPE: deep mixed cycle (array -> object -> array)
+// ──────────────────────────────────────────────
+
+var r = []
+var s = {}
+var t = {}
+s.next = t
+t.root = r
+append(r, s)
+print(r)                       // [{next: {root: [...]}}]
+
+// ──────────────────────────────────────────────
+// 11. CROSS-TYPE: object containing array containing same object
+// ──────────────────────────────────────────────
+
+var u = {}
+var v = [u]
+u.loop = v
+print(u)                       // {loop: [{loop: [...]}]}
+print(v)                       // [{loop: [...]}]
+
+// ──────────────────────────────────────────────
+// 12. DEEPLY NESTED SELF-REFERENCE (5 levels deep)
+// ──────────────────────────────────────────────
+
+var deep = []
+var level1 = []
+var level2 = []
+var level3 = []
+var level4 = [deep]
+
+append(level3, level4)
+append(level2, level3)
+append(level1, level2)
+append(deep, level1)
+print(deep)                    // [[[[[ [...] ]]]]]
+
+// ──────────────────────────────────────────────
+// 13. ARRAY WITH MIXED SAFE AND CYCLIC ELEMENTS
+// ──────────────────────────────────────────────
+
+var safe = [1, 2, 3]
+var cyc  = []
+append(cyc, cyc)
+var mixed = [safe, cyc, safe]
+print(mixed)                   // [[1, 2, 3], [[...]], [1, 2, 3]]
+
+// ──────────────────────────────────────────────
+// 14. OBJECT WITH MIXED SAFE AND CYCLIC FIELDS
+// ──────────────────────────────────────────────
+
+var safeObj = {x = 1}
+var cycObj  = {}
+cycObj.self = cycObj
+var mixedObj = {a = safeObj, b = cycObj, c = safeObj}
+print(mixedObj)                // {a: {x: 1}, b: {self: {...}}, c: {x: 1}}
+
+// ──────────────────────────────────────────────
+// 15. TRIPLE MUTUAL CYCLE (a -> b -> c -> a)
+// ──────────────────────────────────────────────
+
+var x = []
+var y = []
+var z = []
+append(x, y)
+append(y, z)
+append(z, x)
+print(x)                       // [[[ [...] ]]]
+print(y)                       // [[[ [...] ]]]
+print(z)                       // [[[ [...] ]]]
