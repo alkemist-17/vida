@@ -617,7 +617,13 @@ func (vm *VM) printCallStack() {
 	for i := vm.fp; i >= 0; i-- {
 		modName := vm.Frames[i].lambda.CoreFn.ScriptName
 		ip := vm.Frames[i].ip
-		err := verror.NewStackFrameInfo(modName, vm.Script.ErrorInfo[modName][ip])
+		var nearLine uint
+		if vm.Script.ErrorInfo[modName][ip] == 0 {
+			nearLine = getNonZeroLine(modName, ip, vm)
+		} else {
+			nearLine = vm.Script.ErrorInfo[modName][ip]
+		}
+		err := verror.NewStackFrameInfo(modName, nearLine)
 		fmt.Printf("%v\n", err)
 	}
 }
@@ -625,7 +631,29 @@ func (vm *VM) printCallStack() {
 func (vm *VM) createError(ip int, err error) (Result, error) {
 	modName := vm.Frame.lambda.CoreFn.ScriptName
 	vm.Frame.ip = ip
-	return Failure, verror.New(modName, err.Error(), verror.RunTimeErrType, vm.Script.ErrorInfo[modName][ip])
+	var nearLine uint
+	if vm.Script.ErrorInfo[modName][ip] == 0 {
+		nearLine = getNonZeroLine(modName, ip, vm)
+	} else {
+		nearLine = vm.Script.ErrorInfo[modName][ip]
+	}
+	return Failure, verror.New(modName, err.Error(), verror.RunTimeErrType, nearLine)
+}
+
+func getNonZeroLine(modName string, ip int, vm *VM) uint {
+	var nearLine uint
+	values := make([]uint, 4)
+	values[0] = vm.Script.ErrorInfo[modName][ip+1]
+	values[1] = vm.Script.ErrorInfo[modName][ip+2]
+	values[2] = vm.Script.ErrorInfo[modName][ip-1]
+	values[3] = vm.Script.ErrorInfo[modName][ip-2]
+	for _, v := range values {
+		if v != 0 {
+			nearLine = v
+			return nearLine
+		}
+	}
+	return nearLine
 }
 
 func checkISACompatibility(script *Script) error {
