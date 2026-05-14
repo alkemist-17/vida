@@ -185,14 +185,16 @@ func executeScript(path string) {
 	i, err := vida.NewInterpreter(path, extensions.GetLoader())
 	handleTestError(err, path)
 	r, err := i.MeasureRunTime()
-	handleTestFailure(r, err)
+	handleTestFailure(r, err, i)
 	fmt.Printf("\tResult : %v ✅\n\n\n\n", r)
 }
 
-func handleTestFailure(r vida.Result, err error) {
+func handleTestFailure(r vida.Result, err error, i *vida.Interpreter) {
 	if err != nil {
-		fmt.Printf("\tResult : %v ❌\n\n\n\n", r)
+		fmt.Printf("\tResult : %v ❌\n\n", r)
 		fmt.Println(err)
+		i.PrintCallStack()
+		fmt.Printf("\n\n")
 		os.Exit(0)
 	}
 }
