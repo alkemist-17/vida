@@ -17,6 +17,13 @@ const (
 	Completed
 )
 
+const (
+	minFrameSize = 8
+	minStackSize = 256
+	maxFrameSize = 1024
+	maxStackSize = 1024
+)
+
 func (state ThreadState) String() string {
 	switch state {
 	case Ready:

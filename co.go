@@ -20,11 +20,28 @@ func loadFoundationCoroutine() Value {
 }
 
 func coNewThread(args ...Value) (Value, error) {
-	if len(args) > 0 {
+	l := len(args)
+	switch l {
+	case 1:
 		if fn, ok := args[0].(*Function); ok {
-			return newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script), nil
+			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
+			return coNewThreadWithSizeControl(fn, script, minFrameSize, minStackSize), nil
 		}
-		return NilValue, verror.ErrNotAFunction
+	case 2:
+		fn, okFn := args[0].(*Function)
+		frameSize, ok := args[1].(Integer)
+		if okFn && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize {
+			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
+			return coNewThreadWithSizeControl(fn, script, frameSize, minStackSize), nil
+		}
+	case 3:
+		fn, okFn := args[0].(*Function)
+		frameSize, okFS := args[1].(Integer)
+		stackSize, ok := args[2].(Integer)
+		if okFn && okFS && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize && minStackSize <= stackSize && stackSize <= maxStackSize {
+			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
+			return coNewThreadWithSizeControl(fn, script, frameSize, stackSize), nil
+		}
 	}
 	return NilValue, nil
 }
@@ -139,4 +156,17 @@ func coIsMain(args ...Value) (Value, error) {
 		return Bool(true), nil
 	}
 	return Bool(false), nil
+}
+
+func coNewThreadWithSizeControl(fn *Function, script *Script, frameSize, stackSize Integer) *Thread {
+	return &Thread{
+		Script: &Script{
+			Konstants:    script.Konstants,
+			Store:        script.Store,
+			ErrorInfo:    script.ErrorInfo,
+			MainFunction: fn,
+		},
+		Frames: make([]frame, frameSize),
+		Stack:  make([]Value, stackSize),
+	}
 }
