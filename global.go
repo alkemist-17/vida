@@ -551,6 +551,10 @@ func StringLength(input *String) Integer {
 	return Integer(len(input.Runes))
 }
 
+func IsMemberOfWithTValue(args ...TValue) (TValue, error) {
+	return BoolVal(false), nil
+}
+
 func IsMemberOf(args ...Value) (Bool, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {

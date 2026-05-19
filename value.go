@@ -15,9 +15,9 @@ import (
 )
 
 type Value interface {
-	Boolean() Bool                // Done
-	Prefix(uint64) (Value, error) // Done
-	Binop(uint64, Value) (Value, error)
+	Boolean() Bool                      // Done
+	Prefix(uint64) (Value, error)       // Done
+	Binop(uint64, Value) (Value, error) // Done
 	IGet(Value) (Value, error)
 	ISet(Value, Value) error
 	Equals(Value) Bool // Done

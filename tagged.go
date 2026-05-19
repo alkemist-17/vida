@@ -2,6 +2,7 @@ package vida
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"reflect"
 	"strconv"
@@ -229,6 +230,260 @@ switch v.ttype {
 		return
 	}
 */
+
+func (v TValue) Binop(op uint64, r TValue) (TValue, error) {
+	switch v.ttype {
+	case TNil:
+		switch op {
+		case uint64(token.AND):
+			return v, nil
+		case uint64(token.OR):
+			return r, nil
+		case uint64(token.IN):
+			return IsMemberOfWithTValue(v, r)
+		}
+	case TBool:
+		switch op {
+		case uint64(token.AND):
+			if v.ival != 0 {
+				return r, nil
+			}
+			return v, nil
+		case uint64(token.OR):
+			if v.ival != 0 {
+				return v, nil
+			}
+			return r, nil
+		case uint64(token.IN):
+			return IsMemberOfWithTValue(v, r)
+		}
+	case TInt:
+		switch r.ttype {
+		case TInt:
+			ll := v.ival
+			rr := r.ival
+			switch op {
+			case uint64(token.ADD):
+				return IntVal(ll + rr), nil
+			case uint64(token.SUB):
+				return IntVal(ll - rr), nil
+			case uint64(token.MUL):
+				return IntVal(ll * rr), nil
+			case uint64(token.DIV):
+				if rr == 0 {
+					return NilVal(), verror.ErrDivisionByZero
+				}
+				return IntVal(ll / rr), nil
+			case uint64(token.REM):
+				if rr == 0 {
+					return NilVal(), verror.ErrDivisionByZero
+				}
+				return IntVal(ll % rr), nil
+			case uint64(token.LT):
+				return BoolVal(ll < rr), nil
+			case uint64(token.LE):
+				return BoolVal(ll <= rr), nil
+			case uint64(token.GT):
+				return BoolVal(ll > rr), nil
+			case uint64(token.GE):
+				return BoolVal(ll >= rr), nil
+			case uint64(token.BXOR):
+				return IntVal(int64(uint32(ll) ^ uint32(rr))), nil
+			case uint64(token.BOR):
+				return IntVal(int64(uint32(ll) | uint32(rr))), nil
+			case uint64(token.BAND):
+				return IntVal(int64(uint32(ll) & uint32(rr))), nil
+			case uint64(token.BSHL):
+				return IntVal(int64(uint32(ll) << uint32(rr))), nil
+			case uint64(token.BSHR):
+				return IntVal(int64(uint32(ll) >> uint32(rr))), nil
+			}
+		case TFloat:
+			ll := v.ival
+			rr := r.Float()
+			switch op {
+			case uint64(token.ADD):
+				return FloatVal(float64(ll) + rr), nil
+			case uint64(token.SUB):
+				return FloatVal(float64(ll) - rr), nil
+			case uint64(token.MUL):
+				return FloatVal(float64(ll) * rr), nil
+			case uint64(token.DIV):
+				return FloatVal(float64(ll) / rr), nil
+			case uint64(token.REM):
+				return FloatVal(math.Remainder(float64(ll), rr)), nil
+			case uint64(token.LT):
+				return BoolVal(float64(ll) < rr), nil
+			case uint64(token.LE):
+				return BoolVal(float64(ll) <= rr), nil
+			case uint64(token.GT):
+				return BoolVal(float64(ll) > rr), nil
+			case uint64(token.GE):
+				return BoolVal(float64(ll) >= rr), nil
+			}
+		}
+	case TFloat:
+		switch r.ttype {
+		case TFloat:
+			ll := v.Float()
+			rr := r.Float()
+			switch op {
+			case uint64(token.ADD):
+				return FloatVal(ll + rr), nil
+			case uint64(token.SUB):
+				return FloatVal(ll - rr), nil
+			case uint64(token.MUL):
+				return FloatVal(ll * rr), nil
+			case uint64(token.DIV):
+				return FloatVal(ll / rr), nil
+			case uint64(token.REM):
+				return FloatVal(math.Remainder(ll, rr)), nil
+			case uint64(token.LT):
+				return BoolVal(ll < rr), nil
+			case uint64(token.LE):
+				return BoolVal(ll <= rr), nil
+			case uint64(token.GT):
+				return BoolVal(ll > rr), nil
+			case uint64(token.GE):
+				return BoolVal(ll >= rr), nil
+			}
+		case TInt:
+			ll := v.Float()
+			rr := float64(r.ival)
+			switch op {
+			case uint64(token.ADD):
+				return FloatVal(ll + rr), nil
+			case uint64(token.SUB):
+				return FloatVal(ll - rr), nil
+			case uint64(token.MUL):
+				return FloatVal(ll * rr), nil
+			case uint64(token.DIV):
+				return FloatVal(ll / rr), nil
+			case uint64(token.REM):
+				return FloatVal(math.Remainder(ll, rr)), nil
+			case uint64(token.LT):
+				return BoolVal(ll < rr), nil
+			case uint64(token.LE):
+				return BoolVal(ll <= rr), nil
+			case uint64(token.GT):
+				return BoolVal(ll > rr), nil
+			case uint64(token.GE):
+				return BoolVal(ll >= rr), nil
+			}
+		}
+	case TString:
+		if r.ttype == TString {
+			ll := v.String()
+			rr := r.String()
+			switch op {
+			case uint64(token.ADD):
+				if len(ll)+len(rr) >= verror.MaxMemSize {
+					return NilVal(), verror.ErrMaxMemSize
+				}
+				var sb strings.Builder
+				fmt.Fprint(&sb, ll, rr)
+				return StringVal(sb.String()), nil
+			case uint64(token.AND):
+				return r, nil
+			case uint64(token.OR):
+				return v, nil
+			case uint64(token.LT):
+				return BoolVal(ll < rr), nil
+			case uint64(token.LE):
+				return BoolVal(ll <= rr), nil
+			case uint64(token.GT):
+				return BoolVal(ll > rr), nil
+			case uint64(token.GE):
+				return BoolVal(ll >= rr), nil
+			case uint64(token.IN):
+				return BoolVal(strings.Contains(ll, rr)), nil
+			}
+		}
+	case TArray:
+		if r.ttype == TArray {
+			xs := v.Arr()
+			rr := r.Arr()
+			switch op {
+			case uint64(token.ADD):
+				rLen := len(rr.Value)
+				if rLen == 0 {
+					return v, nil
+				}
+				lLen := len(xs.Value)
+				if rLen+lLen >= verror.MaxMemSize {
+					return NilVal(), verror.ErrMaxMemSize
+				}
+				values := make([]TValue, lLen+rLen)
+				copy(values[:lLen], xs.Value)
+				copy(values[lLen:], rr.Value)
+				return ArrayVal(&TypeArray{Value: values}), nil
+			}
+		}
+	case TObject:
+		if r.ttype == TObject {
+			ll := v.Obj()
+			rr := r.Obj()
+			switch op {
+			case uint64(token.ADD):
+				pairs := make(map[string]TValue, len(ll.Value)+len(rr.Value))
+				maps.Copy(pairs, ll.Value)
+				maps.Copy(pairs, rr.Value)
+				return ObjectVal(&TypeObject{Value: pairs}), nil
+			case uint64(token.SUB):
+				pairs := make(map[string]TValue)
+				for k, v := range ll.Value {
+					if _, contains := rr.Value[k]; !contains {
+						pairs[k] = v
+					}
+				}
+				return ObjectVal(&TypeObject{Value: pairs}), nil
+			case uint64(token.BAND):
+				pairs := make(map[string]TValue)
+				for k := range ll.Value {
+					if x, contains := rr.Value[k]; contains {
+						pairs[k] = x
+					}
+				}
+				return ObjectVal(&TypeObject{Value: pairs}), nil
+			case uint64(token.BOR):
+				pairs := make(map[string]TValue, len(ll.Value)+len(rr.Value))
+				maps.Copy(pairs, ll.Value)
+				maps.Copy(pairs, rr.Value)
+				return ObjectVal(&TypeObject{Value: pairs}), nil
+			}
+		}
+	case TBytes:
+		if r.ttype == TBytes {
+			ll := v.BBytes()
+			rr := r.BBytes()
+			switch op {
+			case uint64(token.ADD):
+				rLen := len(rr.Value)
+				if rLen == 0 {
+					return v, nil
+				}
+				lLen := len(ll.Value)
+				if rLen+lLen >= verror.MaxMemSize {
+					return NilVal(), verror.ErrMaxMemSize
+				}
+				values := make([]byte, lLen+rLen)
+				copy(values[:lLen], ll.Value)
+				copy(values[lLen:], rr.Value)
+				return BytesVal(&Bytes{Value: values}), nil
+			}
+		}
+	default:
+		switch op {
+		case uint64(token.OR):
+			return v, nil
+		case uint64(token.AND):
+			return r, nil
+		case uint64(token.IN):
+			return IsMemberOfWithTValue(v, r)
+		}
+	}
+	return NilVal(), verror.ErrBinaryOpNotDefined
+}
 
 func (v TValue) Prefix(op uint64) (TValue, error) {
 	switch v.ttype {
