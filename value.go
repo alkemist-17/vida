@@ -15,20 +15,20 @@ import (
 )
 
 type Value interface {
-	Boolean() Bool
-	Prefix(uint64) (Value, error)
+	Boolean() Bool                // Done
+	Prefix(uint64) (Value, error) // Done
 	Binop(uint64, Value) (Value, error)
 	IGet(Value) (Value, error)
 	ISet(Value, Value) error
-	Equals(Value) Bool
+	Equals(Value) Bool // Done
 	IsIterable() Bool
 	Iterator() Value
 	IsCallable() Bool
 	Call(args ...Value) (Value, error)
-	String() string
-	Type() string
+	String() string // Done
+	Type() string   // Done
 	Clone() Value
-	ObjectKey() string
+	ObjectKey() string // Done
 }
 
 type Nil struct {

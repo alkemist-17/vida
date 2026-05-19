@@ -112,6 +112,17 @@ func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	}
 }
 
+func stringWithVisitedTValue(v TValue, visited map[uintptr]bool) string {
+	switch v.ttype {
+	case TArray:
+		return v.Arr().stringify(visited)
+	case TObject:
+		return v.Obj().stringify(visited)
+	default:
+		return v.String()
+	}
+}
+
 type GlobalState struct {
 	*VM
 	Main    *Thread
