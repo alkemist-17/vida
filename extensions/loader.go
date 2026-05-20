@@ -2,7 +2,7 @@ package extensions
 
 import "github.com/alkemist-17/vida"
 
-var Success = vida.Bool(true)
+var Success = true
 
 func GetLoader() vida.LibsLoader {
 	l := make(map[string]func() vida.Value)

@@ -287,18 +287,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		init := len(c.currentFn.Code)
 		idx, scope := c.compileExpr(n.Condition, true)
 		if scope == rKonst {
-			switch v := (*c.kb.Konstants)[idx].(type) {
-			case Nil:
-				c.skipBlock(n.Block)
-				c.cleanUpLoopScope(init, true)
-				return
-			case Bool:
-				if !v {
-					c.skipBlock(n.Block)
-					c.cleanUpLoopScope(init, true)
-					return
-				}
-			}
 			c.compileStmt(n.Block)
 			c.emitJump(init)
 			c.cleanUpLoopScope(init, true)
@@ -1098,26 +1086,6 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		c.emitCall(c.rAlloc, 0, 0, 1)
 		c.errorInfo[c.currentFn.ScriptName][len(c.currentFn.Code)] = n.Line
 		return c.rAlloc, rLoc
-	case *ast.Enum:
-		e := &Enum{Pairs: map[string]Integer{}}
-		if n.HasInitVal {
-			for _, v := range n.Variants {
-				if v == "_" {
-					n.Init++
-					continue
-				}
-				e.Pairs[v] = Integer(n.Init)
-				n.Init++
-			}
-			return c.kb.EnumIndex(e), rKonst
-		}
-		for i, v := range n.Variants {
-			if v == "_" {
-				continue
-			}
-			e.Pairs[v] = Integer(i)
-		}
-		return c.kb.EnumIndex(e), rKonst
 	default:
 		return 0, rGlob
 	}
@@ -1126,16 +1094,6 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 func (c *compiler) compileConditional(n *ast.If, shouldJumpOutside bool) {
 	idx, scope := c.compileExpr(n.Condition, false)
 	if scope == rKonst {
-		switch v := (*c.kb.Konstants)[idx].(type) {
-		case Nil:
-			c.skipBlock(n.Block)
-			return
-		case Bool:
-			if !v {
-				c.skipBlock(n.Block)
-				return
-			}
-		}
 		c.compileBlockAndCheckJump(n.Block, shouldJumpOutside)
 	} else {
 		c.exprToReg(idx, scope)
@@ -1208,15 +1166,15 @@ func (c *compiler) leaveFuncScope() {
 }
 
 func (c *compiler) integrateKonst(val Value) (int, int) {
-	switch e := val.(type) {
-	case Integer:
-		return c.kb.IntegerIndex(int64(e)), rKonst
-	case Float:
-		return c.kb.FloatIndex(float64(e)), rKonst
-	case Bool:
-		return c.kb.BooleanIndex(bool(e)), rKonst
-	case *String:
-		return c.kb.StringIndex(e.Value), rKonst
+	switch val.ttype {
+	case TInt:
+		return c.kb.IntegerIndex(val.ival), rKonst
+	case TFloat:
+		return c.kb.FloatIndex(val.Float()), rKonst
+	case TBool:
+		return c.kb.BooleanIndex(val.Bool()), rKonst
+	case TString:
+		return c.kb.StringIndex(val.Str().Value), rKonst
 	default:
 		return c.kb.NilIndex(), rKonst
 	}
@@ -1455,7 +1413,7 @@ func (c *compiler) compileBinaryEq(n *ast.BinaryExpr, isRoot bool) (int, int) {
 			if n.Op == token.NEQ {
 				val = !val
 			}
-			return c.integrateKonst(val)
+			return c.integrateKonst(BoolVal(val))
 		case rGlob:
 			if c.mutLoc && isRoot {
 				c.emitSuperEq(i, j, c.rDest, loadFromKonst, loadFromGlobal, n.Op)

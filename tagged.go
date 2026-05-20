@@ -33,91 +33,84 @@ const (
 	TExtern   uint8 = 255
 )
 
-type TValue struct {
-	extern Extern
-	ival   int64
-	ptr    unsafe.Pointer
-	ttype  uint8
+type Value struct {
+	ival  int64
+	ptr   unsafe.Pointer
+	ttype uint8
 }
 
-func (v TValue) TType() uint8 {
+func (v Value) TType() uint8 {
 	return v.ttype
 }
 
-func (v TValue) Int() int64 {
+func (v Value) Int() int64 {
 	return v.ival
 }
 
-func (v TValue) Float() float64 {
+func (v Value) Float() float64 {
 	return math.Float64frombits(uint64(v.ival))
 }
 
-func (v TValue) Bool() bool {
+func (v Value) Bool() bool {
 	return v.ival != 0
 }
 
-func (v TValue) Str() *TypeString {
-	return (*TypeString)(v.ptr)
+func (v Value) Str() *String {
+	return (*String)(v.ptr)
 }
 
-func (v TValue) Arr() *TypeArray {
-	return (*TypeArray)(v.ptr)
+func (v Value) Arr() *Array {
+	return (*Array)(v.ptr)
 }
 
-func (v TValue) Obj() *TypeObject {
-	return (*TypeObject)(v.ptr)
+func (v Value) Obj() *Object {
+	return (*Object)(v.ptr)
 }
 
-func (v TValue) Fn() *Function {
+func (v Value) Fn() *Function {
 	return (*Function)(v.ptr)
 }
 
-func (v TValue) CoreFn() *CoreFunction {
+func (v Value) CoreFn() *CoreFunction {
 	return (*CoreFunction)(v.ptr)
 }
 
-func (v TValue) GFunction() GoFunction {
+func (v Value) GFunction() GoFunction {
 	return (*GFnWrapper)(v.ptr).Fn
 }
 
-func (v TValue) BBytes() *Bytes {
+func (v Value) BBytes() *Bytes {
 	return (*Bytes)(v.ptr)
 }
 
-func (v TValue) Enm() *Enum {
+func (v Value) Enm() *Enum {
 	return (*Enum)(v.ptr)
 }
 
-func (v TValue) Err() *VError {
+func (v Value) Err() *VError {
 	return (*VError)(v.ptr)
 }
 
-func (v TValue) Time() time.Time {
+func (v Value) Time() time.Time {
 	return (*VTime)(v.ptr).Time
 }
 
-func (v TValue) Thread() *Thread {
+func (v Value) Thread() *Thread {
 	return (*Thread)(v.ptr)
 }
 
-func (v TValue) Ext() Extern {
-	return v.extern
-}
-
-func (v TValue) Boolean() bool {
+func (v Value) Boolean() bool {
 	switch v.ttype {
 	case TNil, TError:
 		return false
 	case TBool:
 		return v.ival != 0
-	case TExtern:
-		return v.extern.Boolean()
 	default:
 		return true
 	}
 }
 
-func (v TValue) ObjectKey() string {
+func (v Value) ObjectKey() string {
 	switch v.ttype {
 	case TNil:
 		return "nil"
@@ -153,11 +146,11 @@ func (v TValue) ObjectKey() string {
 	case TThread:
 		return fmt.Sprintf("Thread(%p)", v.ptr)
 	default:
-		return v.extern.ObjectKey()
+		return ""
 	}
 }
 
-func (v TValue) Type() string {
+func (v Value) Type() string {
 	switch v.ttype {
 	case TNil:
 		return "nil"
@@ -190,7 +183,7 @@ func (v TValue) Type() string {
 	case TThread:
 		return "thread"
 	default:
-		return v.extern.ObjectKey()
+		return ""
 	}
 }
 
@@ -231,7 +224,102 @@ switch v.ttype {
 	}
 */
 
-func (v TValue) Binop(op uint64, r TValue) (TValue, error) {
+func (v Value) Clone() Value {
+	return v
+}
+
+func (v Value) IsCallable() bool {
+	return v.ttype == TFunction || v.ttype == TGFn
+}
+
+func (v Value) Iterator() Value {
+	return NilVal()
+}
+
+func (v Value) IsIterable() bool {
+	return false
+}
+
+func (v Value) ISet(index, val Value) error {
+	switch v.ttype {
+	case TArray:
+		if index.ttype == TInt {
+			xs := v.Arr()
+			i, l := index.ival, int64(len(xs.Value))
+			if i < 0 {
+				i += l
+			}
+			if 0 <= i && i < l {
+				xs.Value[i] = val
+				return nil
+			}
+		}
+	case TObject:
+		o := v.Obj()
+		o.Value[index.ObjectKey()] = val
+		return nil
+	}
+	return verror.ErrValueNotIndexable
+}
+
+func (v Value) IGet(index Value) (Value, error) {
+	switch v.ttype {
+	case TString:
+		if index.ttype == TInt {
+			s := v.Str()
+			if s.Runes == nil {
+				s.Runes = []rune(s.Value)
+			}
+			i, l := index.ival, int64(len(s.Runes))
+			if i < 0 {
+				i += l
+			}
+			if 0 <= i && i < l {
+				sr := s.Runes[i : i+1]
+				return StringVal(string(sr), sr), nil
+			}
+		}
+	case TArray:
+		if index.ttype == TInt {
+			xs := v.Arr()
+			i, l := index.ival, int64(len(xs.Value))
+			if i < 0 {
+				i += l
+			}
+			if 0 <= i && i < l {
+				return xs.Value[i], nil
+			}
+		}
+	case TObject:
+		if val, ok := v.Obj().Value[index.ObjectKey()]; ok {
+			return val, nil
+		}
+		return NilVal(), nil
+	case TError:
+		if index.ttype == TString && index.String() == errorMessageFieldName {
+			return v.Err().Message, nil
+		}
+	case TEnum:
+		if val, ok := v.Enm().Pairs[index.ObjectKey()]; ok {
+			return IntVal(int64(val)), nil
+		}
+		return NilVal(), nil
+	case TBytes:
+		if index.ttype == TInt {
+			b := v.BBytes()
+			i, l := index.ival, int64(len(b.Value))
+			if i < 0 {
+				i += l
+			}
+			if 0 <= i && i < l {
+				return IntVal(int64(b.Value[i])), nil
+			}
+		}
+	}
+	return NilVal(), verror.ErrValueNotIndexable
+}
+
+func (v Value) Binop(op uint64, r Value) (Value, error) {
 	switch v.ttype {
 	case TNil:
 		switch op {
@@ -382,7 +470,7 @@ func (v TValue) Binop(op uint64, r TValue) (TValue, error) {
 				}
 				var sb strings.Builder
 				fmt.Fprint(&sb, ll, rr)
-				return StringVal(sb.String()), nil
+				return StringVal(sb.String(), nil), nil
 			case uint64(token.AND):
 				return r, nil
 			case uint64(token.OR):
@@ -413,10 +501,10 @@ func (v TValue) Binop(op uint64, r TValue) (TValue, error) {
 				if rLen+lLen >= verror.MaxMemSize {
 					return NilVal(), verror.ErrMaxMemSize
 				}
-				values := make([]TValue, lLen+rLen)
+				values := make([]Value, lLen+rLen)
 				copy(values[:lLen], xs.Value)
 				copy(values[lLen:], rr.Value)
-				return ArrayVal(&TypeArray{Value: values}), nil
+				return ArrayVal(&Array{Value: values}), nil
 			}
 		}
 	case TObject:
@@ -425,31 +513,31 @@ func (v TValue) Binop(op uint64, r TValue) (TValue, error) {
 			rr := r.Obj()
 			switch op {
 			case uint64(token.ADD):
-				pairs := make(map[string]TValue, len(ll.Value)+len(rr.Value))
+				pairs := make(map[string]Value, len(ll.Value)+len(rr.Value))
 				maps.Copy(pairs, ll.Value)
 				maps.Copy(pairs, rr.Value)
-				return ObjectVal(&TypeObject{Value: pairs}), nil
+				return ObjectVal(&Object{Value: pairs}), nil
 			case uint64(token.SUB):
-				pairs := make(map[string]TValue)
+				pairs := make(map[string]Value)
 				for k, v := range ll.Value {
 					if _, contains := rr.Value[k]; !contains {
 						pairs[k] = v
 					}
 				}
-				return ObjectVal(&TypeObject{Value: pairs}), nil
+				return ObjectVal(&Object{Value: pairs}), nil
 			case uint64(token.BAND):
-				pairs := make(map[string]TValue)
+				pairs := make(map[string]Value)
 				for k := range ll.Value {
 					if x, contains := rr.Value[k]; contains {
 						pairs[k] = x
 					}
 				}
-				return ObjectVal(&TypeObject{Value: pairs}), nil
+				return ObjectVal(&Object{Value: pairs}), nil
 			case uint64(token.BOR):
-				pairs := make(map[string]TValue, len(ll.Value)+len(rr.Value))
+				pairs := make(map[string]Value, len(ll.Value)+len(rr.Value))
 				maps.Copy(pairs, ll.Value)
 				maps.Copy(pairs, rr.Value)
-				return ObjectVal(&TypeObject{Value: pairs}), nil
+				return ObjectVal(&Object{Value: pairs}), nil
 			}
 		}
 	case TBytes:
@@ -485,7 +573,7 @@ func (v TValue) Binop(op uint64, r TValue) (TValue, error) {
 	return NilVal(), verror.ErrBinaryOpNotDefined
 }
 
-func (v TValue) Prefix(op uint64) (TValue, error) {
+func (v Value) Prefix(op uint64) (Value, error) {
 	switch v.ttype {
 	case TNil, TError:
 		switch op {
@@ -522,13 +610,11 @@ func (v TValue) Prefix(op uint64) (TValue, error) {
 		case uint64(token.NOT):
 			return BoolVal(false), nil
 		}
-	default:
-		return v.extern.Prefix(op)
 	}
 	return NilVal(), verror.ErrBinaryOpNotDefined
 }
 
-func (v TValue) String() string {
+func (v Value) String() string {
 	switch v.ttype {
 	case TNil:
 		return "nil"
@@ -574,11 +660,11 @@ func (v TValue) String() string {
 	case TTime:
 		return v.Time().Format(time.RFC3339)
 	default:
-		return v.extern.String()
+		return ""
 	}
 }
 
-func (v TValue) Equals(other TValue) bool {
+func (v Value) Equals(other Value) bool {
 	switch v.ttype {
 	case TNil:
 		return other.ttype == TNil
@@ -630,159 +716,88 @@ func (v TValue) Equals(other TValue) bool {
 		if other.ttype == TTime {
 			return v.Time().Equal(other.Time())
 		}
-	case TExtern:
-		if other.ttype == TExtern {
-			return v.extern.Equals(other)
-		}
 	}
 	return false
 }
 
-type GoFunction func(...TValue) (TValue, error)
+type GoFunction func(...Value) (Value, error)
 
 type GFnWrapper struct {
 	Fn GoFunction
 }
 
 type VError struct {
-	Message TValue
+	Message Value
 }
 
 type VTime struct {
 	Time time.Time
 }
 
-func NilVal() TValue {
-	return TValue{}
+func NilVal() Value {
+	return Value{}
 }
 
-func BoolVal(b bool) TValue {
+func BoolVal(b bool) Value {
 	if b {
-		return TValue{ttype: TBool, ival: 1}
+		return Value{ttype: TBool, ival: 1}
 	}
-	return TValue{ttype: TBool}
+	return Value{ttype: TBool}
 }
 
-func IntVal(n int64) TValue {
-	return TValue{ttype: TInt, ival: n}
+func IntVal(n int64) Value {
+	return Value{ttype: TInt, ival: n}
 }
 
-func FloatVal(f float64) TValue {
-	return TValue{ttype: TFloat, ival: int64(math.Float64bits(f))}
+func FloatVal(f float64) Value {
+	return Value{ttype: TFloat, ival: int64(math.Float64bits(f))}
 }
 
-func StringVal(s string) TValue {
-	return TValue{ttype: TString, ptr: unsafe.Pointer(&TypeString{Value: s})}
+func StringVal(s string, r []rune) Value {
+	return Value{ttype: TString, ptr: unsafe.Pointer(&String{Value: s, Runes: r})}
 }
 
-func ArrayVal(a *TypeArray) TValue {
-	return TValue{ttype: TArray, ptr: unsafe.Pointer(a)}
+func ArrayVal(a *Array) Value {
+	return Value{ttype: TArray, ptr: unsafe.Pointer(a)}
 }
 
-func ObjectVal(o *TypeObject) TValue {
-	return TValue{ttype: TObject, ptr: unsafe.Pointer(o)}
+func ObjectVal(o *Object) Value {
+	return Value{ttype: TObject, ptr: unsafe.Pointer(o)}
 }
 
-func FunctionVal(f *Function) TValue {
-	return TValue{ttype: TFunction, ptr: unsafe.Pointer(f)}
+func FunctionVal(f *Function) Value {
+	return Value{ttype: TFunction, ptr: unsafe.Pointer(f)}
 }
 
-func GFnVal(fn func(...TValue) (TValue, error)) TValue {
-	return TValue{ttype: TGFn, ptr: unsafe.Pointer(&GFnWrapper{fn})}
+func CoreFunctionVal(c *CoreFunction) Value {
+	return Value{ttype: TCoreFn, ptr: unsafe.Pointer(c)}
 }
 
-func BytesVal(b *Bytes) TValue {
-	return TValue{ttype: TBytes, ptr: unsafe.Pointer(b)}
+func GFnVal(fn func(...Value) (Value, error)) Value {
+	return Value{ttype: TGFn, ptr: unsafe.Pointer(&GFnWrapper{fn})}
 }
 
-func EnumVal(e *Enum) TValue {
-	return TValue{ttype: TEnum, ptr: unsafe.Pointer(e)}
+func BytesVal(b *Bytes) Value {
+	return Value{ttype: TBytes, ptr: unsafe.Pointer(b)}
 }
 
-func ErrorVal(msg TValue) TValue {
-	return TValue{ttype: TError, ptr: unsafe.Pointer(&VError{msg})}
+func EnumVal(e *Enum) Value {
+	return Value{ttype: TEnum, ptr: unsafe.Pointer(e)}
 }
 
-func TimeVal(t time.Time) TValue {
-	return TValue{ttype: TTime, ptr: unsafe.Pointer(&VTime{t})}
+func ErrorVal(msg Value) Value {
+	return Value{ttype: TError, ptr: unsafe.Pointer(&VError{msg})}
 }
 
-func ExtVal(e Extern) TValue {
-	return TValue{ttype: TExtern, extern: e}
+func TimeVal(t time.Time) Value {
+	return Value{ttype: TTime, ptr: unsafe.Pointer(&VTime{t})}
 }
 
-type Extern interface {
-	Boolean() bool
-	Prefix(op uint64) (TValue, error)
-	Binop(op uint64, rhs TValue) (TValue, error)
-	Equals(other TValue) bool
-	IGet(index TValue) (TValue, error)
-	ISet(index, val TValue) error
-	IsIterable() bool
-	Iterator() TValue
-	IsCallable() bool
-	Call(args ...TValue) (TValue, error)
-	String() string
-	TypeName() string
-	ObjectKey() string
-	Clone() TValue
+type Array struct {
+	Value []Value
 }
 
-type ExternalDefaults struct{}
-
-func (e *ExternalDefaults) Boolean() bool {
-	return true
-}
-
-func (e *ExternalDefaults) Prefix(op uint64) (TValue, error) {
-	return NilVal(), verror.ErrPrefixOpNotDefined
-}
-
-func (e *ExternalDefaults) Binop(op uint64, rhs TValue) (TValue, error) {
-	return NilVal(), verror.ErrBinaryOpNotDefined
-}
-
-func (e *ExternalDefaults) IGet(index TValue) (TValue, error) {
-	return NilVal(), verror.ErrValueNotIndexable
-}
-
-func (e *ExternalDefaults) ISet(index, val TValue) error {
-	return verror.ErrValueNotIndexable
-}
-
-func (e *ExternalDefaults) Equals(other TValue) bool {
-	return false
-}
-
-func (e *ExternalDefaults) IsIterable() bool {
-	return false
-}
-
-func (e *ExternalDefaults) Iterator() TValue {
-	return NilVal()
-}
-
-func (e *ExternalDefaults) IsCallable() bool {
-	return false
-}
-
-func (e *ExternalDefaults) Call(args ...TValue) (TValue, error) {
-	return NilVal(), verror.ErrNotImplemented
-}
-
-func (e *ExternalDefaults) ObjectKey() string {
-	return "undefined"
-}
-
-func (e *ExternalDefaults) Clone() TValue {
-	return NilVal()
-}
-
-type TypeArray struct {
-	Value []TValue
-}
-
-func (xs *TypeArray) stringify(visited map[uintptr]bool) string {
+func (xs *Array) stringify(visited map[uintptr]bool) string {
 	if len(xs.Value) == 0 {
 		return "[]"
 	}
@@ -803,11 +818,11 @@ func (xs *TypeArray) stringify(visited map[uintptr]bool) string {
 	return fmt.Sprintf("[%v]", strings.Join(r, ", "))
 }
 
-type TypeObject struct {
-	Value map[string]TValue
+type Object struct {
+	Value map[string]Value
 }
 
-func (o *TypeObject) stringify(visited map[uintptr]bool) string {
+func (o *Object) stringify(visited map[uintptr]bool) string {
 	if len(o.Value) == 0 {
 		return "{}"
 	}
@@ -830,6 +845,35 @@ func (o *TypeObject) stringify(visited map[uintptr]bool) string {
 	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
 }
 
-type TypeString struct {
+type String struct {
+	Runes []rune
 	Value string
+}
+
+type Bytes struct {
+	Value []byte
+}
+
+type Enum struct {
+	Pairs map[string]int64
+}
+
+type freeInfo struct {
+	Index   int
+	IsLocal bool
+	Id      string
+}
+
+type CoreFunction struct {
+	Code       []uint64
+	Info       []freeInfo
+	Free       int
+	Arity      int
+	IsVar      bool
+	ScriptName string
+}
+
+type Function struct {
+	Free   []Value
+	CoreFn *CoreFunction
 }

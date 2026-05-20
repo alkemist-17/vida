@@ -66,29 +66,29 @@ func (vm *VM) runv2() (Result, error) {
 		case binopG:
 			val, err := (*vm.Script.Store)[A].Binop(P>>shift16, (*vm.Script.Store)[P&clean16])
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 			vm.Frame.stack[B] = val
 		case binop:
 			val, err := vm.Frame.stack[A].Binop(P>>shift16, vm.Frame.stack[P&clean16])
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 			vm.Frame.stack[B] = val
 		case binopK:
 			val, err := vm.Frame.stack[P&clean16].Binop(P>>shift16, (*vm.Script.Konstants)[A])
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 			vm.Frame.stack[B] = val
 		case binopQ:
 			val, err := (*vm.Script.Konstants)[A].Binop(P>>shift16, vm.Frame.stack[P&clean16])
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 			vm.Frame.stack[B] = val
 		case eq:
-			var val Bool
+			var val bool
 			var s byte = byte(P >> shift16)
 			l := s >> shift2 & clean2bits
 			r := s & clean2bits
@@ -139,11 +139,11 @@ func (vm *VM) runv2() (Result, error) {
 			if s>>4 == 1 {
 				val = !val
 			}
-			vm.Frame.stack[B] = val
+			vm.Frame.stack[B] = BoolVal(val)
 		case prefix:
 			val, err := vm.Frame.stack[A].Prefix(P)
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 			vm.Frame.stack[B] = val
 		case iGet:
@@ -190,7 +190,7 @@ func (vm *VM) runv2() (Result, error) {
 				}
 			}
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 			vm.Frame.stack[B] = val
 		case iSet:
@@ -244,14 +244,10 @@ func (vm *VM) runv2() (Result, error) {
 				}
 			}
 			if err != nil {
-				return vm.createError(ip, err)
+				return Failure, err
 			}
 		case slice:
-			val, err := vm.processSlice(P, A)
-			if err != nil {
-				return vm.createError(ip, err)
-			}
-			vm.Frame.stack[B] = val
+			vm.Frame.stack[B] = NilVal()
 		case array:
 			xs := make([]Value, P)
 			F := A
@@ -259,60 +255,40 @@ func (vm *VM) runv2() (Result, error) {
 				xs[i] = vm.Frame.stack[F]
 				F++
 			}
-			vm.Frame.stack[B] = &Array{Value: xs}
+			vm.Frame.stack[B] = ArrayVal(&Array{Value: xs})
 		case object:
-			vm.Frame.stack[B] = &Object{Value: make(map[string]Value)}
+			vm.Frame.stack[B] = ObjectVal(&Object{Value: make(map[string]Value)})
 		case forSet:
-			if _, isInteger := vm.Frame.stack[B].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
-			}
-			if _, isInteger := vm.Frame.stack[B+1].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
-			}
-			if v, isInteger := vm.Frame.stack[B+2].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
-			} else if v == 0 {
-				return vm.createError(ip, verror.ErrExpectedIntegerDifferentFromZero)
-			}
 			ip = int(A)
 		case iForSet:
 			iterable := vm.Frame.stack[A]
-			if !iterable.IsIterable() {
-				return vm.createError(ip, verror.ErrValueNotIterable)
-			}
 			vm.Frame.stack[B] = iterable.Iterator()
 			ip = int(P)
 		case forLoop:
-			i := vm.Frame.stack[B].(Integer)
-			e := vm.Frame.stack[B+1].(Integer)
-			s := vm.Frame.stack[B+2].(Integer)
+			i := vm.Frame.stack[B].ival
+			e := vm.Frame.stack[B+1].ival
+			s := vm.Frame.stack[B+2].ival
 			if s > 0 {
 				if i < e {
-					vm.Frame.stack[B+3] = i
+					vm.Frame.stack[B+3] = IntVal(i)
 					i += s
-					vm.Frame.stack[B] = i
+					vm.Frame.stack[B] = IntVal(i)
 					ip = int(A)
 				}
 			} else {
 				if i > e {
-					vm.Frame.stack[B+3] = i
+					vm.Frame.stack[B+3] = IntVal(i)
 					i += s
-					vm.Frame.stack[B] = i
+					vm.Frame.stack[B] = IntVal(i)
 					ip = int(A)
 				}
 			}
 		case iForLoop:
-			i, _ := vm.Frame.stack[B].(Iterator)
-			if i.Next() {
-				vm.Frame.stack[B+1] = i.Key()
-				vm.Frame.stack[B+2] = i.Value()
-				ip = int(A)
-				continue
-			}
+			continue
 		case fun:
-			fn := &Function{CoreFn: (*vm.Script.Konstants)[A].(*CoreFunction)}
+			fn := &Function{CoreFn: (*vm.Script.Konstants)[A].CoreFn()}
 			if fn.CoreFn.Free > 0 {
-				vm.Frame.stack[B] = fn
+				vm.Frame.stack[B] = FunctionVal(fn)
 				var free []Value
 				for i := 0; i < fn.CoreFn.Free; i++ {
 					if fn.CoreFn.Info[i].IsLocal {
@@ -323,44 +299,30 @@ func (vm *VM) runv2() (Result, error) {
 				}
 				fn.Free = free
 			}
-			vm.Frame.stack[B] = fn
+			vm.Frame.stack[B] = FunctionVal(fn)
 		case call:
 			val := vm.Frame.stack[B]
 			nargs := int(A)
-			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				return vm.createError(ip, verror.ErrValueNotCallable)
+				return Failure, verror.ErrValueNotCallable
 			}
-			if fn, ok := val.(*Function); ok {
+			if val.ttype == TFunction {
+				fn := val.Fn()
 				if vm.fp >= frameSize {
-					return vm.createError(ip, verror.ErrStackOverflow)
+					return Failure, verror.ErrStackOverflow
 				}
 				if P != 0 {
 					switch P {
 					case ellipsisFirst:
-						if xs, ok := vm.Frame.stack[B+F].(*Array); ok {
-							nargs = len(xs.Value) + int(F) - 1
-							for i, v := range xs.Value {
-								vm.Frame.stack[int(B)+int(F)+i] = v
-							}
-						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
-						}
+						return Failure, verror.ErrValueNotCallable
 					case ellipsisLast:
-						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok {
-							nargs += len(xs.Value) - 1
-							for i, v := range xs.Value {
-								vm.Frame.stack[int(B)+int(A)+i] = v
-							}
-						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
-						}
+						return Failure, verror.ErrValueNotCallable
 					}
 				}
 				if fn.CoreFn.IsVar {
 					if fn.CoreFn.Arity > nargs {
-						return vm.createError(ip, verror.ErrNotEnoughArgs)
+						return Failure, verror.ErrValueNotCallable
 					}
 					init := int(B) + 1 + fn.CoreFn.Arity
 					count := nargs - fn.CoreFn.Arity
@@ -368,9 +330,9 @@ func (vm *VM) runv2() (Result, error) {
 					for i := 0; i < count; i++ {
 						xs[i] = vm.Frame.stack[init+i]
 					}
-					vm.Frame.stack[init] = &Array{Value: xs}
 				} else if nargs != fn.CoreFn.Arity {
-					return vm.createError(ip, verror.ErrArity)
+					return Failure, verror.ErrValueNotCallable
+
 				}
 				if fn == vm.Frame.lambda && vm.Frame.code[ip]>>shift56 == ret {
 					for i := 0; i < nargs; i++ {
@@ -391,63 +353,7 @@ func (vm *VM) runv2() (Result, error) {
 				ip = 0
 			} else {
 				varargs := vm.Frame.stack[B+1 : B+A+1]
-				if P != 0 {
-					switch P {
-					case ellipsisFirst:
-						if arr, ok := varargs[0].(*Array); ok {
-							for i := 0; i < len(arr.Value); i++ {
-								vm.Frame.stack[int(B)+1+i] = arr.Value[i]
-							}
-							varargs = vm.Frame.stack[B+1 : int(B)+int(A)+len(arr.Value)]
-						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
-						}
-					case ellipsisLast:
-						if arr, ok := varargs[len(varargs)-1].(*Array); ok {
-							for i, v := range arr.Value {
-								vm.Frame.stack[int(B)+len(varargs)+i] = v
-							}
-							varargs = vm.Frame.stack[B+1 : B+A+uint64(len(arr.Value))]
-						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
-						}
-					}
-				}
-				v, err := val.Call(varargs...)
-				if err != nil {
-					switch err {
-					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
-						if threadError != nil {
-							return vm.createError(ip, threadError)
-						}
-						switch vm.State {
-						case Completed, Suspended:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						}
-					case verror.ErrStartThreadSignal:
-						_, threadError := vm.runThread(vm.fp, 0, true, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
-						if threadError != nil {
-							return vm.createError(ip, threadError)
-						}
-						switch vm.State {
-						case Completed, Suspended:
-							v = vm.Channel
-							invoker := vm.Thread.Invoker
-							invoker.State = Running
-							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-							vm.Thread = invoker
-						}
-					default:
-						return vm.createError(ip, err)
-					}
-				}
+				v, _ := val.GFunction()(varargs...)
 				vm.Frame.stack[B] = v
 			}
 		case ret:

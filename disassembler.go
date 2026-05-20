@@ -8,7 +8,6 @@ import (
 )
 
 func PrintBytecode(script *Script, name string) string {
-	clear()
 	fmt.Println("Machine Code for", name)
 	var sb strings.Builder
 	sb.WriteString(printHeader())
@@ -16,16 +15,6 @@ func PrintBytecode(script *Script, name string) string {
 	for i := 1; i < len(script.MainFunction.CoreFn.Code); i++ {
 		s = printInstr(script.MainFunction.CoreFn.Code[i], uint64(i), false)
 		sb.WriteString(s)
-	}
-	for idx, v := range *script.Konstants {
-		if f, ok := v.(*CoreFunction); ok {
-			fmt.Fprintf(&sb, "\n\n\n\nFunction %v/%v/%v", idx, f.Arity, f.Free)
-			var s string
-			for i := 0; i < len(f.Code); i++ {
-				s = printInstr(f.Code[i], uint64(i), false)
-				sb.WriteString(s)
-			}
-		}
 	}
 	sb.WriteString(printKonstants(*script.Konstants))
 	return sb.String()

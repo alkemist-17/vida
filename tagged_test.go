@@ -56,7 +56,7 @@ func TestBoolFalseValZeroAlloc(t *testing.T) {
 }
 
 func TestNilValZeroAlloc(t *testing.T) {
-	var nil TValue
+	var nil Value
 	allocs := testing.AllocsPerRun(1000000, func() {
 		nil = NilVal()
 	})
@@ -66,7 +66,7 @@ func TestNilValZeroAlloc(t *testing.T) {
 	}
 }
 
-func checkTag(t *testing.T, v TValue, want uint8) {
+func checkTag(t *testing.T, v Value, want uint8) {
 	t.Helper()
 	if v.TType() != want {
 		t.Fatalf("tag: got %d, want %d", v.TType(), want)
@@ -78,7 +78,7 @@ func TestNilValTag(t *testing.T) {
 }
 
 func TestNilValIsZeroTValue(t *testing.T) {
-	var zero TValue
+	var zero Value
 	if zero != NilVal() {
 		t.Fatal("zero TValue is not equal to NilVal()")
 	}
@@ -166,20 +166,20 @@ func TestFloatValZeroAllocAccessor(t *testing.T) {
 }
 
 func TestStringValTag(t *testing.T) {
-	checkTag(t, StringVal("hello"), TString)
+	checkTag(t, StringVal("hello", nil), TString)
 }
 
 func TestStringValRoundTrip(t *testing.T) {
 	cases := []string{"", "hello", "日本語", "a\x00b", "newline\n"}
 	for _, s := range cases {
-		if got := StringVal(s).Str().Value; got != s {
+		if got := StringVal(s, nil).Str().Value; got != s {
 			t.Fatalf("StringVal(%q).Str().TValue = %q", s, got)
 		}
 	}
 }
 
 func TestStringValPtrNotNil(t *testing.T) {
-	v := StringVal("x")
+	v := StringVal("x", nil)
 	if v.ptr == nil {
 		t.Fatal("StringVal produced a nil ptr")
 	}
@@ -188,7 +188,7 @@ func TestStringValPtrNotNil(t *testing.T) {
 func TestStringValAllocsOnConstruction(t *testing.T) {
 	// Exactly one allocation: the stringData heap object.
 	allocs := testing.AllocsPerRun(100_000, func() {
-		v := StringVal("hello")
+		v := StringVal("hello", nil)
 		if v.Str().Value != "hello" {
 			t.Fatalf("stringVal: got %v, want %v", v.Str().Value, v)
 		}
@@ -199,7 +199,7 @@ func TestStringValAllocsOnConstruction(t *testing.T) {
 }
 
 func TestStringValAccessorZeroAlloc(t *testing.T) {
-	v := StringVal("hello")
+	v := StringVal("hello", nil)
 	allocs := testing.AllocsPerRun(1_000_000, func() { _ = v.Str() })
 	if allocs > 0 {
 		t.Fatalf("Str() accessor: got %v allocs, want 0", allocs)
@@ -207,11 +207,11 @@ func TestStringValAccessorZeroAlloc(t *testing.T) {
 }
 
 func TestArrayValTag(t *testing.T) {
-	checkTag(t, ArrayVal(&TypeArray{}), TArray)
+	checkTag(t, ArrayVal(&Array{}), TArray)
 }
 
 func TestArrayValRoundTrip(t *testing.T) {
-	a := &TypeArray{Value: []TValue{IntVal(1), IntVal(2), IntVal(3)}}
+	a := &Array{Value: []Value{IntVal(1), IntVal(2), IntVal(3)}}
 	v := ArrayVal(a)
 	if v.Arr() != a {
 		t.Fatal("ArrayVal round-trip pointer mismatch")
@@ -219,7 +219,7 @@ func TestArrayValRoundTrip(t *testing.T) {
 }
 
 func TestArrayValNilElements(t *testing.T) {
-	a := &TypeArray{Value: []TValue{NilVal(), NilVal()}}
+	a := &Array{Value: []Value{NilVal(), NilVal()}}
 	v := ArrayVal(a)
 	if len(v.Arr().Value) != 2 {
 		t.Fatal("array element count mismatch")
@@ -227,7 +227,7 @@ func TestArrayValNilElements(t *testing.T) {
 }
 
 func TestArrayValAccessorZeroAlloc(t *testing.T) {
-	v := ArrayVal(&TypeArray{})
+	v := ArrayVal(&Array{})
 	allocs := testing.AllocsPerRun(1_000_000, func() { _ = v.Arr() })
 	if allocs > 0 {
 		t.Fatalf("Arr() accessor: got %v allocs, want 0", allocs)
@@ -235,11 +235,11 @@ func TestArrayValAccessorZeroAlloc(t *testing.T) {
 }
 
 func TestObjectValTag(t *testing.T) {
-	checkTag(t, ObjectVal(&TypeObject{}), TObject)
+	checkTag(t, ObjectVal(&Object{}), TObject)
 }
 
 func TestObjectValRoundTrip(t *testing.T) {
-	o := &TypeObject{Value: map[string]TValue{"key": IntVal(99)}}
+	o := &Object{Value: map[string]Value{"key": IntVal(99)}}
 	v := ObjectVal(o)
 	if v.Obj() != o {
 		t.Fatal("ObjectVal round-trip pointer mismatch")
@@ -247,7 +247,7 @@ func TestObjectValRoundTrip(t *testing.T) {
 }
 
 func TestObjectValEmptyMap(t *testing.T) {
-	o := &TypeObject{Value: make(map[string]TValue)}
+	o := &Object{Value: make(map[string]Value)}
 	v := ObjectVal(o)
 	if len(v.Obj().Value) != 0 {
 		t.Fatal("expected empty object")
@@ -255,7 +255,7 @@ func TestObjectValEmptyMap(t *testing.T) {
 }
 
 func TestObjectValAccessorZeroAlloc(t *testing.T) {
-	v := ObjectVal(&TypeObject{Value: make(map[string]TValue)})
+	v := ObjectVal(&Object{Value: make(map[string]Value)})
 	allocs := testing.AllocsPerRun(1_000_000, func() { _ = v.Obj() })
 	if allocs > 0 {
 		t.Fatalf("Obj() accessor: got %v allocs, want 0", allocs)
@@ -293,13 +293,13 @@ func TestFunctionValAccessorZeroAlloc(t *testing.T) {
 }
 
 func TestGFnValTag(t *testing.T) {
-	fn := func(args ...TValue) (TValue, error) { return NilVal(), nil }
+	fn := func(args ...Value) (Value, error) { return NilVal(), nil }
 	checkTag(t, GFnVal(fn), TGFn)
 }
 
 func TestGFnValRoundTrip(t *testing.T) {
 	called := false
-	fn := func(args ...TValue) (TValue, error) {
+	fn := func(args ...Value) (Value, error) {
 		called = true
 		return IntVal(7), nil
 	}
@@ -317,7 +317,7 @@ func TestGFnValRoundTrip(t *testing.T) {
 }
 
 func TestGFnValPtrNotNil(t *testing.T) {
-	v := GFnVal(func(args ...TValue) (TValue, error) { return NilVal(), nil })
+	v := GFnVal(func(args ...Value) (Value, error) { return NilVal(), nil })
 	if v.ptr == nil {
 		t.Fatal("GFnVal produced a nil ptr")
 	}
@@ -325,8 +325,8 @@ func TestGFnValPtrNotNil(t *testing.T) {
 
 func TestGFnValAllocsOnConstruction(t *testing.T) {
 	// Exactly one allocation: the GFnWrapper heap object.
-	fn := func(args ...TValue) (TValue, error) { return NilVal(), nil }
-	var sink TValue
+	fn := func(args ...Value) (Value, error) { return NilVal(), nil }
+	var sink Value
 	allocs := testing.AllocsPerRun(100_000, func() {
 		sink = GFnVal(fn)
 	})
@@ -337,7 +337,7 @@ func TestGFnValAllocsOnConstruction(t *testing.T) {
 }
 
 func TestGFnValAccessorZeroAlloc(t *testing.T) {
-	v := GFnVal(func(args ...TValue) (TValue, error) { return NilVal(), nil })
+	v := GFnVal(func(args ...Value) (Value, error) { return NilVal(), nil })
 	allocs := testing.AllocsPerRun(1_000_000, func() { _ = v.GFunction() })
 	if allocs > 0 {
 		t.Fatalf("GFn() accessor: got %v allocs, want 0", allocs)
@@ -384,12 +384,12 @@ func TestBytesValAccessorZeroAlloc(t *testing.T) {
 }
 
 func TestEnumValTag(t *testing.T) {
-	e := &Enum{Pairs: map[string]Integer{"A": 0}}
+	e := &Enum{Pairs: map[string]int64{"A": 0}}
 	checkTag(t, EnumVal(e), TEnum)
 }
 
 func TestEnumValRoundTrip(t *testing.T) {
-	e := &Enum{Pairs: map[string]Integer{"Red": 0, "Green": 1, "Blue": 2}}
+	e := &Enum{Pairs: map[string]int64{"Red": 0, "Green": 1, "Blue": 2}}
 	v := EnumVal(e)
 	if v.Enm() != e {
 		t.Fatal("EnumVal round-trip pointer mismatch")
@@ -397,7 +397,7 @@ func TestEnumValRoundTrip(t *testing.T) {
 }
 
 func TestEnumValPairsPreserved(t *testing.T) {
-	e := &Enum{Pairs: map[string]Integer{"X": 10, "Y": 20}}
+	e := &Enum{Pairs: map[string]int64{"X": 10, "Y": 20}}
 	v := EnumVal(e)
 	if v.Enm().Pairs["X"] != 10 || v.Enm().Pairs["Y"] != 20 {
 		t.Fatal("enum pairs not preserved through EnumVal")
@@ -405,7 +405,7 @@ func TestEnumValPairsPreserved(t *testing.T) {
 }
 
 func TestEnumValAccessorZeroAlloc(t *testing.T) {
-	v := EnumVal(&Enum{Pairs: map[string]Integer{"A": 0}})
+	v := EnumVal(&Enum{Pairs: map[string]int64{"A": 0}})
 	allocs := testing.AllocsPerRun(1_000_000, func() { _ = v.Enm() })
 	if allocs > 0 {
 		t.Fatalf("Enm() accessor: got %v allocs, want 0", allocs)
@@ -413,11 +413,11 @@ func TestEnumValAccessorZeroAlloc(t *testing.T) {
 }
 
 func TestErrorValTag(t *testing.T) {
-	checkTag(t, ErrorVal(StringVal("oops")), TError)
+	checkTag(t, ErrorVal(StringVal("oops", nil)), TError)
 }
 
 func TestErrorValRoundTripWithString(t *testing.T) {
-	msg := StringVal("something went wrong")
+	msg := StringVal("something went wrong", nil)
 	v := ErrorVal(msg)
 	got := v.Err().Message
 	if got.TType() != TString {
@@ -445,7 +445,7 @@ func TestErrorValRoundTripWithNil(t *testing.T) {
 }
 
 func TestErrorValPtrNotNil(t *testing.T) {
-	v := ErrorVal(StringVal("err"))
+	v := ErrorVal(StringVal("err", nil))
 	if v.ptr == nil {
 		t.Fatal("ErrorVal produced a nil ptr")
 	}
@@ -455,7 +455,7 @@ func TestErrorValAllocsOnConstruction(t *testing.T) {
 	// Exactly one allocation: the vidaErrorData heap struct.
 	// The message is a pre-built TValue so it does not allocate here.
 	msg := IntVal(1)
-	var sink TValue
+	var sink Value
 	allocs := testing.AllocsPerRun(100_000, func() {
 		v := ErrorVal(msg)
 		sink = v
@@ -531,7 +531,7 @@ func TestTimeValMonotonicStripped(t *testing.T) {
 func TestTimeValAllocsOnConstruction(t *testing.T) {
 	// Exactly one allocation: the vidaTime heap wrapper.
 	ts := time.Now()
-	var sink TValue
+	var sink Value
 	allocs := testing.AllocsPerRun(100_000, func() {
 		v := TimeVal(ts)
 		sink = v
@@ -558,7 +558,7 @@ type stubExt struct {
 
 func (s *stubExt) TypeName() string  { return s.name }
 func (s *stubExt) String() string    { return s.name }
-func (s *stubExt) Clone() TValue     { return ExtVal(&stubExt{name: s.name, n: s.n}) }
+func (s *stubExt) Clone() Value      { return ExtVal(&stubExt{name: s.name, n: s.n}) }
 func (s *stubExt) ObjectKey() string { return s.name }
 
 func TestExtValTag(t *testing.T) {
@@ -634,7 +634,7 @@ func TestAllTagsDistinct(t *testing.T) {
 func TestTValueStructSize(t *testing.T) {
 	// 32 bytes: 1 tag + 7 pad + 8 ival + 8 ptr + 16 ext (interface).
 	const want = 40
-	if got := unsafe.Sizeof(TValue{}); got != want {
+	if got := unsafe.Sizeof(Value{}); got != want {
 		t.Fatalf("TValue size: got %d bytes, want %d", got, want)
 	}
 }
@@ -649,7 +649,7 @@ func TestNilTagIsZero(t *testing.T) {
 func TestDifferentTypesNotEqual(t *testing.T) {
 	// TValues of different types must never compare equal,
 	// even when their payload bits happen to overlap.
-	vals := []TValue{
+	vals := []Value{
 		NilVal(),
 		BoolVal(false), // ival == 0, same as NilVal
 		IntVal(0),      // ival == 0
@@ -668,8 +668,8 @@ func TestDifferentTypesNotEqual(t *testing.T) {
 func TestHeapTValuesNeverEqualByContent(t *testing.T) {
 	// Two distinct heap objects with the same content must not be ==
 	// (pointer identity, not deep equality).
-	a1 := ArrayVal(&TypeArray{Value: []TValue{IntVal(1)}})
-	a2 := ArrayVal(&TypeArray{Value: []TValue{IntVal(1)}})
+	a1 := ArrayVal(&Array{Value: []Value{IntVal(1)}})
+	a2 := ArrayVal(&Array{Value: []Value{IntVal(1)}})
 	if a1 == a2 {
 		t.Fatal("two distinct *Array TValues compared equal via ==")
 	}

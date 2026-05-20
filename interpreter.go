@@ -35,7 +35,7 @@ func NewInterpreter(path string, extensionlibloader map[string]func() Value) (*I
 		return nil, err
 	}
 	vm := &VM{mainThread}
-	(*(script.Store))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
+	(*(script.Store))[globalStateIndex] = NilVal()
 	return &Interpreter{
 		parser:   p,
 		compiler: c,
@@ -69,7 +69,7 @@ func NewDebugger(path string, extensionlibloader map[string]func() Value) (*Inte
 		return nil, err
 	}
 	vm := &VM{mainThread}
-	(*(script.Store))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
+	(*(script.Store))[globalStateIndex] = NilVal()
 	return &Interpreter{
 		parser:   p,
 		compiler: c,
@@ -137,12 +137,12 @@ func PrintMachineCode(path string) error {
 }
 
 func (i *Interpreter) Run() (Result, error) {
-	return i.vm.run()
+	return i.vm.runv2()
 }
 
 func (i *Interpreter) MeasureRunTime() (Result, error) {
 	init := time.Now()
-	r, err := i.vm.run()
+	r, err := i.vm.runv2()
 	end := time.Since(init)
 	fmt.Printf("\n\tThe interpreter has finished its work\n\n\n\n")
 	fmt.Printf("\tTime Sec : %vs\n", end.Seconds())
@@ -151,7 +151,7 @@ func (i *Interpreter) MeasureRunTime() (Result, error) {
 }
 
 func (i *Interpreter) Debug() (Result, error) {
-	return i.vm.debug()
+	return Success, nil
 }
 
 func (i *Interpreter) PrintCallStack() {

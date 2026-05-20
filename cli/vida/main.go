@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/alkemist-17/vida"
@@ -23,10 +24,10 @@ const (
 )
 
 func main() {
-	// f, err := os.Create("vida.prof")
-	// handleError(err)
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
+	f, err := os.Create("vida.prof")
+	handleError(err)
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
 	args := os.Args
 	if len(args) > 1 {
 		switch parseCMD(args[1]) {
