@@ -1,0 +1,274 @@
+var a = load("std/array")
+
+assert(a, type(a) == "object")
+
+var A = newArray()
+
+var N = 10
+
+var F = 0
+
+var T = 0
+
+var S = 0
+
+var zero = 0
+
+var one = 1
+
+assert(len(A) == zero and a.cap(A) == zero)
+
+A = newArray(N)
+
+assert(len(A) == N and a.cap(A) == N)
+
+for _, v in A {
+    assert(v == nil)
+}
+
+A = newArray(N, N)
+
+assert(len(A) == N and a.cap(A) == N)
+
+for _, v in A {
+    assert(v == N)
+}
+
+A = newArray({ from = F, to = T })
+
+assert(len(A) == one and a.cap(A) == one and A[zero] == zero)
+
+F = 1
+
+T = 5
+
+A = newArray({ from = F, to = T })
+
+assert(len(A) == 5 and a.cap(A) >= len(A) and A[zero] == one)
+
+for i in 1, 6 {
+    assert(A[i-1] == i)
+}
+
+F = 0
+
+T = 10
+
+S = 2
+
+A = newArray({ from = F, to = T, step = S })
+
+assert(len(A) == 6 and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 10
+
+T = 1
+
+S = -3
+
+A = newArray({ from = F, to = T, step = S })
+
+assert(len(A) == 4 and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 5
+
+T = 1
+
+S = -1
+
+A = newArray({ from = F, to = T, step = S })
+
+assert(len(A) == 5 and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 0.0
+
+T = 1.0
+
+S = 0.25
+
+A = newArray({ from = F, to = T, step = S })
+
+assert(len(A) == 5 and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 1.5
+
+T = 0.0
+
+S = -0.5
+
+A = newArray({ from = F, to = T, step = S })
+
+assert(len(A) == 4 and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 0.0
+
+T = 1.0
+
+N = 5
+
+A = newArray({ linspace = { from = F, to = T, n = N } })
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 0.0
+
+T = 1.0
+
+N = 4
+
+A = newArray({ linspace = { from = F, to = T, n = N } })
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+F = 0.0
+
+T = 1.0
+
+N = 20
+
+A = newArray({ linspace = { from = F, to = T, n = N } })
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == F and A[-1] == T)
+
+var L = 10
+
+var V = []
+
+var C = true
+
+A = newArray( { len = L, val = V, clone = C } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(A) and len(A[-1]) == zero and A[zero] != A[one])
+
+L = 100
+
+V = L
+
+A = newArray( { len = L, val = V } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(zero) and A[-1] == V and A[zero] == A[one])
+
+L = 0
+
+C = 100
+
+N = 10
+
+A = newArray( { len = L, cap = C } )
+
+assert(len(A) == L and a.cap(A) == C)
+
+for i in N {
+    append(A, C)
+    assert(len(A) == L+i+1 and a.cap(A) == C)
+}
+
+L = 60
+
+V = []
+
+C = 100
+
+A = newArray( { len = L, val = V, cap = C, clone = true } )
+
+assert(len(A) == L and a.cap(A) == C and len(A[zero]) == len(V) and A[zero] != A[-1])
+
+A = newArray( { len = L, val = V, cap = C, clone = true, clip = false } )
+
+assert(len(A) == L and a.cap(A) == C and len(A[zero]) == len(V) and A[zero] != A[-1])
+
+A = newArray( { len = L, val = V, cap = C, clone = false, clip = true } )
+
+assert(len(A) == L and a.cap(A) == len(A) and len(A[zero]) == len(V) and A[zero] == A[-1])
+
+L = 100
+
+A = newArray( { len = L, random = "string" } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type("") and len(A[zero]) > zero)
+
+for i in L {
+    assert(len(A[i]) > zero and type(A[i]) == "string")
+}
+
+A = newArray( { len = L, random = "int" } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(L))
+
+for i in L {
+    assert(type(A[i]) == "int")
+}
+
+A = newArray( { len = L, random = "float" } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(0.0))
+
+for i in L {
+    assert(type(A[i]) == "float")
+}
+
+A = newArray( { len = L, random = "bool" } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(true))
+
+for i in L {
+    assert(type(A[i]) == "bool" and (A[i] == true or A[i] == false))
+}
+
+A = newArray( { len = L, random = "byte" } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(zero))
+
+for i in L {
+    assert(type(A[i]) == type(zero) and A[i] >= 0 and A[i] <= 255)
+}
+
+A = newArray( { len = L, random = "nil" } )
+
+assert(len(A) == L and a.cap(A) >= len(A) and type(A[zero]) == type(nil))
+
+for i in L {
+    assert(type(A[i]) == type(nil) and A[i] == nil)
+}
+
+N = 20
+
+A = newArray( { seq = "fibonacci", n = N } )
+print(A)
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == zero and A[5] == 5 and A[7] == 13 and A[16] == 987)
+
+A = newArray( { seq = "primes", n = N } )
+print(A)
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 2 and A[5] == 13 and A[7] == 19 and A[-1] == 71)
+
+A = newArray( { seq = "squares", n = N } )
+print(A)
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 0 and A[5] == 25 and A[7] == 49 and A[-1] == 361)
+
+A = newArray( { seq = "cubes", n = N } )
+print(A)
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 0 and A[5] == 125 and A[7] == 343 and A[-1] == 6859)
+
+A = newArray( { seq = "triangular", n = N } )
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 0 and A[5] == 15 and A[7] == 28 and A[-1] == 190)
+
+A = newArray( { seq = "catalan", n = N } )
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 1 and A[5] == 42 and A[7] == 429 and A[-1] == 1767263190)
+
+A = newArray( { seq = "powers2", n = N } )
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 1 and A[5] == 32 and A[7] == 128 and A[-1] == 524288)
+
+A = newArray( { seq = "factorial", n = N } )
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 1 and A[5] == 120 and A[7] == 5040 and A[-1] == 121645100408832000)
+
+A = newArray( { seq = "evens", n = N } )
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == zero and A[5] == 10 and A[7] == 14 and A[-1] == 38)
+
+A = newArray( { seq = "odds", n = N } )
+
+assert(len(A) == N and a.cap(A) >= len(A) and A[zero] == 1 and A[5] == 11 and A[7] == 15 and A[-1] == 39)

@@ -2,12 +2,13 @@ package vida
 
 import (
 	"slices"
+	"unsafe"
 
 	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationArray() Value {
-	m := &Object{Value: make(map[string]Value, 22)}
+	m := &Object{Value: make(map[string]Value, 26)}
 	m.Value["concat"] = GFn(arrayConcat)
 	m.Value["clear"] = GFn(arrayClear)
 	m.Value["index"] = GFn(arrayIndex)
@@ -20,7 +21,7 @@ func loadFoundationArray() Value {
 	m.Value["sortS"] = GFn(arraySortStrings)
 	m.Value["sortBy"] = GFn(arraySortObjects)
 	m.Value["toObject"] = GFn(arrayToObject)
-	m.Value["new"] = GFn(coreMakeArray)
+	m.Value["new"] = GFn(coreNewArray)
 	m.Value["isArray"] = GFn(arrayIsArray)
 	m.Value["isEmpty"] = GFn(arrayIsEmpty)
 	m.Value["entries"] = GFn(arrayPairs)
@@ -30,6 +31,10 @@ func loadFoundationArray() Value {
 	m.Value["clip"] = GFn(arrayClip)
 	m.Value["del"] = GFn(arrayDelete)
 	m.Value["replace"] = GFn(arrayReplace)
+	m.Value["cap"] = GFn(arrayCap)
+	m.Value["view"] = GFn(arrayView)
+	m.Value["grow"] = GFn(arrayGrow)
+	m.Value["sharesArray"] = GFn(arraySharesBackingArray)
 	return m
 }
 
@@ -55,6 +60,54 @@ func arrayClear(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			xs.Value = make([]Value, 0)
+			return xs, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func arrayCap(args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if xs, ok := args[0].(*Array); ok {
+			return Integer(cap(xs.Value)), nil
+		}
+	}
+	return NilValue, nil
+}
+
+func arraySharesBackingArray(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		a, okA := args[0].(*Array)
+		b, okB := args[1].(*Array)
+		if okA && okB {
+			return Bool(sharesBackingArray(a.Value, b.Value)), nil
+		}
+	}
+	return NilValue, nil
+}
+
+func arrayView(args ...Value) (Value, error) {
+	if len(args) > 2 {
+		xs, ok := args[0].(*Array)
+		init, okI := args[1].(Integer)
+		end, okE := args[2].(Integer)
+		if ok && okI && okE {
+			s, e, empty := sliceBounds(init, end, Integer(len(xs.Value)))
+			if empty {
+				return &Array{Value: xs.Value[:0]}, nil
+			}
+			return &Array{Value: xs.Value[s:e]}, nil
+		}
+	}
+	return NilValue, nil
+}
+
+func arrayGrow(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		xs, ok := args[0].(*Array)
+		size, oksize := args[1].(Integer)
+		if ok && oksize && 0 <= size && size < verror.MaxMemSize {
+			xs.Value = slices.Grow(xs.Value, int(size))
 			return xs, nil
 		}
 	}
@@ -418,4 +471,26 @@ func arrayReplace(args ...Value) (Value, error) {
 		}
 	}
 	return NilValue, nil
+}
+
+func sharesBackingArray[T any](a, b []T) bool {
+	ptrA := unsafe.SliceData(a)
+	ptrB := unsafe.SliceData(b)
+
+	if ptrA == nil || ptrB == nil {
+		return false
+	}
+
+	size := unsafe.Sizeof(a[0])
+	if size == 0 {
+		return true
+	}
+
+	addrA := uintptr(unsafe.Pointer(ptrA))
+	addrB := uintptr(unsafe.Pointer(ptrB))
+
+	endA := addrA + uintptr(cap(a))*size
+	endB := addrB + uintptr(cap(b))*size
+
+	return (addrA >= addrB && addrA < endB) || (addrB >= addrA && addrB < endA)
 }
