@@ -678,7 +678,7 @@ func coreNewArray(args ...Value) (Value, error) {
 		// Grow an existing array's capacity without changing length.
 		//   newArray({ grow=myArray, by=50 })
 		if arr, ok := v.Value["grow"].(*Array); ok {
-			if by, ok := v.Value["by"].(Integer); ok && by > 0 {
+			if by, ok := v.Value["by"].(Integer); ok && 0 < by && by < verror.MaxMemSize {
 				clone := arr.Clone().(*Array)
 				clone.Value = slices.Grow(clone.Value, int(by))
 				return clone, nil
