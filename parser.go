@@ -15,6 +15,12 @@ const (
 	ellipsisLast
 )
 
+const (
+	sliceHasEnd = 1 << iota
+	sliceInitialMode
+	sliceHasStart
+)
+
 type parser struct {
 	err     verror.VidaError
 	current token.TokenInfo
@@ -793,24 +799,24 @@ afterParen:
 func (p *parser) indexOrSlice(e ast.Node) ast.Node {
 	p.advance()
 	var index [2]ast.Node
-	mode := 2
+	mode := sliceInitialMode
 	if p.current.Token != token.DOUBLE_DOT {
-		mode |= 4
+		mode |= sliceHasStart
 		index[0] = p.expression(token.LowestPrec)
 		p.advance()
 	}
-	var numDDots int
+	var hasDots bool
 	if p.current.Token == token.DOUBLE_DOT {
-		numDDots++
+		hasDots = true
 		p.advance()
 		if p.current.Token != token.RBRACKET && p.current.Token != token.EOF {
-			mode |= 1
+			mode |= sliceHasEnd
 			index[1] = p.expression(token.LowestPrec)
 			p.advance()
 		}
 	}
 	p.expect(token.RBRACKET)
-	if numDDots > 0 {
+	if hasDots {
 		return &ast.Slice{
 			Value: e,
 			First: index[0],
