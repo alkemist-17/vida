@@ -1100,21 +1100,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		return c.rAlloc, rLoc
 	case *ast.Enum:
 		e := &Enum{Pairs: map[string]Integer{}}
-		if n.HasInitVal {
-			for _, v := range n.Variants {
-				if v == "_" {
-					n.Init++
-					continue
-				}
-				e.Pairs[v] = Integer(n.Init)
-				n.Init++
-			}
-			return c.kb.EnumIndex(e), rKonst
-		}
 		for i, v := range n.Variants {
-			if v == "_" {
-				continue
-			}
 			e.Pairs[v] = Integer(i)
 		}
 		return c.kb.EnumIndex(e), rKonst

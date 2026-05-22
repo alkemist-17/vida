@@ -225,12 +225,7 @@ type MethodCallExpr struct {
 }
 
 type Enum struct {
-	Variants   []string
-	Identifier string
-	Init       int64
-	Step       int64
-	HasForExpr bool
-	HasInitVal bool
+	Variants []string
 }
 
 func (ast *Ast) _node()           {}

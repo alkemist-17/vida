@@ -27,28 +27,42 @@ assert(Color.green == 1)
 assert(Color.blue == 2)
 
 var CardSuit = enum {
-    spades = 10
+    spades
     hearts
     diamonds
     clubs
 }
 
-assert(CardSuit.spades == 10)
-assert(CardSuit.hearts == 11)
-assert(CardSuit.diamonds == 12)
-assert(CardSuit.clubs == 13)
+assert(CardSuit.spades == 0)
+assert(CardSuit.hearts == 1)
+assert(CardSuit.diamonds == 2)
+assert(CardSuit.clubs == 3)
 
 var Konst = enum {
-    c1 = 1
+    c1
     c2
-    _
     c4
-    _
-    _
     c7
 }
 
-assert(Konst.c1 == 1)
-assert(Konst.c2 == 2)
-assert(Konst.c4 == 4)
-assert(Konst.c7 == 7)
+assert(Konst.c1 == 0)
+assert(Konst.c2 == 1)
+assert(Konst.c4 == 2)
+assert(Konst.c7 == 3)
+
+var network = { tcp udp }
+
+var conn = { port = 3000 ntype = network.tcp }
+
+assert(conn.ntype == network.tcp)
+
+if conn.ntype == network.tcp {
+    conn.ntype = network.udp
+}
+
+assert(conn.ntype == network.udp)
+
+var R = enum { hello world again hello world }
+
+assert(R.again == 2 and R.hello == 3 and R.world == 4)
+
