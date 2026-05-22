@@ -74,7 +74,6 @@ Import		:=	'import' '(' String ')'
 Function	:=	'fun' (iden... | iden (',' iden)* (',' iden...)? )? fBody | '=>' expr
 fBody		:=	'{' statement* ret?* '}'
 Enumeration :=	'enum' '{' ident+ '}'
-			|	'enum' '{' ident '=' '-'|'+'|'~'? Integer iden* '}'
 select		:=	'[' expr | '..' | '..' expr | expr '..' | expr '..' expr ']' select*
 			|	'.' ident select*
 			|	'(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' | select*
