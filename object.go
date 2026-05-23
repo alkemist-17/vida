@@ -1,16 +1,7 @@
 package vida
 
-import (
-	cryptoRand "crypto/rand"
-)
-
 func loadObjectLib() Value {
-	if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
-		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
-	}
-	if __meta == inititalMetaName {
-		__meta = cryptoRand.Text()
-	}
+	checkForTPAndMeta()
 	m := &Object{Value: make(map[string]Value, 21)}
 	m.Value["inject"] = GFn(objectInjectProperties)
 	m.Value["override"] = GFn(objectInjectAndOverrideProperties)

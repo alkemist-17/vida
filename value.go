@@ -845,6 +845,9 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
 		case uint64(token.META):
+			if threadPoolIsDown {
+				checkForTPAndMeta()
+			}
 			if meta, ok := o.Value[__meta].(*Object); ok {
 				if v, ok := meta.Value[__setmeta]; ok {
 					return v, nil

@@ -2,6 +2,7 @@ package vida
 
 import (
 	"bufio"
+	cryptoRand "crypto/rand"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -100,6 +101,8 @@ const (
 
 var clbu *[]Value
 
+var threadPoolIsDown = true
+
 type threadPool struct {
 	ThreadMap map[int]*Thread
 	Key       int
@@ -108,6 +111,18 @@ type threadPool struct {
 func newThreadPool() *threadPool {
 	return &threadPool{
 		ThreadMap: make(map[int]*Thread),
+	}
+}
+
+func checkForTPAndMeta() {
+	if threadPoolIsDown {
+		if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
+			((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
+		}
+		if __meta == inititalMetaName {
+			__meta = cryptoRand.Text()
+		}
+		threadPoolIsDown = false
 	}
 }
 
@@ -277,8 +292,6 @@ func coreNewArray(args ...Value) (Value, error) {
 	}
 
 	switch v := args[0].(type) {
-
-	// ── newArray(N) or newArray(N, initVal)
 	case Integer:
 		var init Value = NilValue
 		if l > 1 {
@@ -337,10 +350,9 @@ func coreNewArray(args ...Value) (Value, error) {
 						if step == 0 {
 							return &Array{}, nil
 						}
-						// Positive step: from must be < to
 						if step > 0 {
 							if from > to {
-								return &Array{}, nil // silent no-op
+								return &Array{}, nil
 							}
 							var xs []Value
 							for i := from; i <= to; i += step {
@@ -348,10 +360,9 @@ func coreNewArray(args ...Value) (Value, error) {
 							}
 							return &Array{Value: xs}, nil
 						}
-						// Negative step: countdown
 						if step < 0 {
 							if from < to {
-								return &Array{}, nil // silent no-op
+								return &Array{}, nil
 							}
 							var xs []Value
 							for i := from; i >= to; i += step {
@@ -466,7 +477,6 @@ func coreNewArray(args ...Value) (Value, error) {
 				}
 				return &Array{Value: A}, nil
 			} else {
-				// default fill: NilValue
 				for i := range size {
 					A[i] = NilValue
 				}
@@ -736,9 +746,6 @@ func coreNewArray(args ...Value) (Value, error) {
 	case *Array:
 		return v.Clone(), nil
 	}
-
-	// ── Object fallback: entries ─────────────────────────────────────────────
-	// Any Object not matched above → array of [key, val] pairs.
 common:
 	if obj, ok := args[0].(*Object); ok {
 		var i int
@@ -754,8 +761,6 @@ common:
 
 	return &Array{}, nil
 }
-
-// ── helpers ───────────────────────────────────────────────────────────────
 
 func isPrime(n Integer) bool {
 	if n < 2 {

@@ -16,6 +16,7 @@ type Interpreter struct {
 }
 
 func NewInterpreter(path string, extensionlibloader map[string]func() Value) (*Interpreter, error) {
+	threadPoolIsDown = true
 	src, err := readScript(path)
 	if err != nil {
 		return nil, err
