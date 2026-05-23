@@ -427,7 +427,11 @@ func (p *parser) expression(precedence int) ast.Node {
 		p.advance()
 		op := p.current.Token
 		p.advance()
-		r := p.expression(op.Precedence())
+		nextPrecedence := op.Precedence()
+		if op.IsRightAssociative() {
+			nextPrecedence--
+		}
+		r := p.expression(nextPrecedence)
 		e = &ast.BinaryExpr{Op: op, Lhs: e, Rhs: r, Line: line}
 	}
 	return e
@@ -438,7 +442,7 @@ func (p *parser) prefix() ast.Node {
 	case token.NOT, token.SUB, token.ADD, token.TILDE:
 		t := p.current.Token
 		p.advance()
-		e := p.prefix()
+		e := p.expression(token.PrefixPrec)
 		return &ast.PrefixExpr{Op: t, Expr: e, Line: p.current.Line}
 	}
 	return p.primary()

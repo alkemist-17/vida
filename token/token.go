@@ -40,6 +40,7 @@ const (
 	MUL
 	DIV
 	REM
+	POW
 	LT
 	LE
 	GT
@@ -51,6 +52,7 @@ const (
 	BXOR
 	BSHL
 	BSHR
+	META
 	binary_op_end
 
 	keyword_init
@@ -106,6 +108,7 @@ var Tokens = [...]string{
 	MUL:         "*",
 	DIV:         "/",
 	REM:         "%",
+	POW:         "**",
 	LT:          "<",
 	LE:          "<=",
 	GT:          ">",
@@ -117,6 +120,7 @@ var Tokens = [...]string{
 	BXOR:        "^",
 	BSHL:        "<<",
 	BSHR:        ">>",
+	META:        "=<",
 	AND:         "and",
 	OR:          "or",
 	FOR:         "for",
@@ -171,6 +175,10 @@ func (token Token) IsBinaryOperator() bool {
 	return (binary_op_init < token && token < binary_op_end) || token == AND || token == OR || token == IN
 }
 
+func (token Token) IsRightAssociative() bool {
+	return token == META || token == POW
+}
+
 func IsKeyword(name string) bool {
 	_, ok := keywords[name]
 	return ok
@@ -197,7 +205,7 @@ func IsIdentifier(name string) bool {
 
 const (
 	LowestPrec  = 0
-	PrefixPrec  = 6
+	PrefixPrec  = 5
 	HighestPrec = 7
 )
 
@@ -207,12 +215,14 @@ func (op Token) Precedence() int {
 		return 1
 	case AND:
 		return 2
-	case EQ, NEQ, LT, LE, GT, GE, IN:
+	case EQ, NEQ, LT, LE, GT, GE, IN, META:
 		return 3
 	case ADD, SUB, BOR, BXOR:
 		return 4
 	case MUL, DIV, REM, BSHL, BSHR, BAND:
 		return 5
+	case POW:
+		return 6
 	}
 	return LowestPrec
 }

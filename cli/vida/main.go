@@ -193,7 +193,6 @@ func handleTestFailure(r vida.Result, err error, i *vida.Interpreter) {
 	if err != nil {
 		fmt.Printf("\tResult : %v ❌\n\n", r)
 		fmt.Println(err)
-		i.PrintCallStack()
 		fmt.Printf("\n\n")
 		os.Exit(0)
 	}

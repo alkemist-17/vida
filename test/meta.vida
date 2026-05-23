@@ -1284,3 +1284,54 @@ assert(obj.isEmpty(o) and obj.isEmpty(p) and obj.isEmpty(sp))
 
 assert(not obj.hasmeta(o) and not obj.hasmeta(p) and not obj.hasmeta(sp))
 
+
+
+// operator meta =<
+
+o.__type = "entity" 
+
+o.__str = "<Entity>"
+
+p.legs = 4 
+
+p.sound = "<Sound>" 
+
+p = p =< o
+
+sp.sound = "moo" 
+
+sp = sp =< p
+
+assert(obj.getmeta(sp) == p)
+
+assert(obj.getmeta(p) == o)
+
+assert(sp.legs == 4)
+
+assert(type(p) == o.__type)
+
+sp = sp =< nil
+
+assert(obj.getmeta(sp) == nil)
+
+k = (sp =< p =< o)
+
+assert(k == sp)
+
+k = { fallback = true }
+
+v = { } =< (o or k)
+
+assert(obj.getmeta(v) == o)
+
+
+
+// clear
+
+obj.clear(o, p, sp)
+
+assert(t[o] and t[p] and t[sp])
+
+assert(obj.isEmpty(o) and obj.isEmpty(p) and obj.isEmpty(sp))
+
+assert(not obj.hasmeta(o) and not obj.hasmeta(p) and not obj.hasmeta(sp))

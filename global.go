@@ -60,6 +60,8 @@ const (
 
 	__rem = "__rem"
 
+	__pow = "__pow"
+
 	__eq = "__eq"
 
 	__le = "__le"

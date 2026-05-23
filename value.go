@@ -40,12 +40,10 @@ func (n Nil) Boolean() Bool {
 }
 
 func (n Nil) Prefix(op uint64) (Value, error) {
-	switch op {
-	case uint64(token.NOT):
+	if op == uint64(token.NOT) {
 		return Bool(true), nil
-	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
 	}
+	return NilValue, verror.ErrPrefixOpNotDefined
 }
 
 func (n Nil) Binop(op uint64, rhs Value) (Value, error) {
@@ -89,12 +87,10 @@ func (b Bool) Boolean() Bool {
 }
 
 func (b Bool) Prefix(op uint64) (Value, error) {
-	switch op {
-	case uint64(token.NOT):
+	if op == uint64(token.NOT) {
 		return !b, nil
-	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
 	}
+	return NilValue, verror.ErrPrefixOpNotDefined
 }
 
 func (b Bool) Binop(op uint64, rhs Value) (Value, error) {
@@ -189,10 +185,6 @@ func (s *String) Binop(op uint64, rhs Value) (Value, error) {
 			}
 			str := &String{Value: s.Value + r.Value}
 			return str, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return s, nil
 		case uint64(token.LT):
 			return Bool(s.Value < r.Value), nil
 		case uint64(token.LE):
@@ -204,15 +196,14 @@ func (s *String) Binop(op uint64, rhs Value) (Value, error) {
 		case uint64(token.IN):
 			return Bool(strings.Contains(r.Value, s.Value)), nil
 		}
-	default:
-		switch op {
-		case uint64(token.OR):
-			return s, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.IN):
-			return IsMemberOf(s, rhs)
-		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return s, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(s, rhs)
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
@@ -240,12 +231,10 @@ func (s *String) ISet(index, val Value) error {
 }
 
 func (s *String) Prefix(op uint64) (Value, error) {
-	switch op {
-	case uint64(token.NOT):
+	if op == uint64(token.NOT) {
 		return Bool(false), nil
-	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
 	}
+	return NilValue, verror.ErrPrefixOpNotDefined
 }
 
 func (s *String) Equals(other Value) Bool {
@@ -330,10 +319,6 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 				return NilValue, verror.ErrDivisionByZero
 			}
 			return l % r, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return l, nil
 		case uint64(token.LT):
 			return Bool(l < r), nil
 		case uint64(token.LE):
@@ -352,8 +337,8 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 			return Integer(uint32(l) << uint32(r)), nil
 		case uint64(token.BSHR):
 			return Integer(uint32(l) >> uint32(r)), nil
-		case uint64(token.IN):
-			return IsMemberOf(l, rhs)
+		case uint64(token.POW):
+			return Integer(math.Pow(float64(l), float64(r))), nil
 		}
 	case Float:
 		switch op {
@@ -367,10 +352,6 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 			return Float(Float(l) / r), nil
 		case uint64(token.REM):
 			return Float(math.Remainder(float64(l), float64(r))), nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return l, nil
 		case uint64(token.LT):
 			return Bool(Float(l) < r), nil
 		case uint64(token.LE):
@@ -379,18 +360,17 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 			return Bool(Float(l) > r), nil
 		case uint64(token.GE):
 			return Bool(Float(l) >= r), nil
-		case uint64(token.IN):
-			return IsMemberOf(l, rhs)
+		case uint64(token.POW):
+			return Float(math.Pow(float64(l), float64(r))), nil
 		}
-	default:
-		switch op {
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return l, nil
-		case uint64(token.IN):
-			return IsMemberOf(l, rhs)
-		}
+	}
+	switch op {
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.OR):
+		return l, nil
+	case uint64(token.IN):
+		return IsMemberOf(l, rhs)
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
@@ -477,10 +457,6 @@ func (f Float) Binop(op uint64, rhs Value) (Value, error) {
 			return f / r, nil
 		case uint64(token.REM):
 			return Float(math.Remainder(float64(f), float64(r))), nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return f, nil
 		case uint64(token.LT):
 			return Bool(f < r), nil
 		case uint64(token.LE):
@@ -489,8 +465,8 @@ func (f Float) Binop(op uint64, rhs Value) (Value, error) {
 			return Bool(f > r), nil
 		case uint64(token.GE):
 			return Bool(f >= r), nil
-		case uint64(token.IN):
-			return IsMemberOf(f, rhs)
+		case uint64(token.POW):
+			return Float(math.Pow(float64(f), float64(r))), nil
 		}
 	case Integer:
 		switch op {
@@ -504,10 +480,6 @@ func (f Float) Binop(op uint64, rhs Value) (Value, error) {
 			return f / Float(r), nil
 		case uint64(token.REM):
 			return Float(math.Remainder(float64(f), float64(r))), nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return f, nil
 		case uint64(token.LT):
 			return Bool(f < Float(r)), nil
 		case uint64(token.LE):
@@ -516,18 +488,17 @@ func (f Float) Binop(op uint64, rhs Value) (Value, error) {
 			return Bool(f > Float(r)), nil
 		case uint64(token.GE):
 			return Bool(f >= Float(r)), nil
-		case uint64(token.IN):
-			return IsMemberOf(f, rhs)
+		case uint64(token.POW):
+			return Float(math.Pow(float64(f), float64(r))), nil
 		}
-	default:
-		switch op {
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return f, nil
-		case uint64(token.IN):
-			return IsMemberOf(f, rhs)
-		}
+	}
+	switch op {
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.OR):
+		return f, nil
+	case uint64(token.IN):
+		return IsMemberOf(f, rhs)
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
@@ -589,12 +560,10 @@ func (xs *Array) Boolean() Bool {
 }
 
 func (xs *Array) Prefix(op uint64) (Value, error) {
-	switch op {
-	case uint64(token.NOT):
+	if op == uint64(token.NOT) {
 		return Bool(false), nil
-	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
 	}
+	return NilValue, verror.ErrPrefixOpNotDefined
 }
 
 func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
@@ -614,22 +583,17 @@ func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
 			copy(values[:lLen], xs.Value)
 			copy(values[lLen:], r.Value)
 			return &Array{Value: values}, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return xs, nil
 		case uint64(token.IN):
 			return IsMemberOf(xs, rhs)
 		}
-	default:
-		switch op {
-		case uint64(token.OR):
-			return xs, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.IN):
-			return IsMemberOf(xs, rhs)
-		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return xs, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(xs, rhs)
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
@@ -759,12 +723,10 @@ func (o *Object) Prefix(op uint64) (Value, error) {
 			}
 		}
 	}
-	switch op {
-	case uint64(token.NOT):
+	if op == uint64(token.NOT) {
 		return Bool(false), nil
-	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
 	}
+	return NilValue, verror.ErrPrefixOpNotDefined
 }
 
 func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
@@ -882,22 +844,31 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
+		case uint64(token.META):
+			if meta, ok := o.Value[__meta].(*Object); ok {
+				if v, ok := meta.Value[__setmeta]; ok {
+					return v, nil
+				}
+			}
+			o.Value[__meta] = r
 			return o, nil
-		case uint64(token.IN):
-			return IsMemberOf(o, rhs)
 		}
-	default:
-		switch op {
-		case uint64(token.OR):
-			return o, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.IN):
-			return IsMemberOf(o, rhs)
+	case Nil:
+		if meta, ok := o.Value[__meta].(*Object); ok {
+			if v, ok := meta.Value[__setmeta]; ok {
+				return v, nil
+			}
 		}
+		delete(o.Value, __meta)
+		return o, nil
+	}
+	switch op {
+	case uint64(token.OR):
+		return o, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(o, rhs)
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
@@ -1567,22 +1538,15 @@ func (b *Bytes) Binop(op uint64, rhs Value) (Value, error) {
 			copy(values[:lLen], b.Value)
 			copy(values[lLen:], r.Value)
 			return &Bytes{Value: values}, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.OR):
-			return b, nil
-		case uint64(token.IN):
-			return IsMemberOf(b, r)
 		}
-	default:
-		switch op {
-		case uint64(token.OR):
-			return b, nil
-		case uint64(token.AND):
-			return r, nil
-		case uint64(token.IN):
-			return IsMemberOf(b, r)
-		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return b, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(b, rhs)
 	}
 	return NilValue, verror.ErrBinaryOpNotDefined
 }
