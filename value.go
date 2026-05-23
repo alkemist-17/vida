@@ -241,6 +241,9 @@ func (s *String) Equals(other Value) Bool {
 	if val, ok := other.(*String); ok {
 		return s.Value == val.Value
 	}
+	if val, ok := other.(*Bytes); ok {
+		return s.Value == string(val.Value)
+	}
 	return false
 }
 
@@ -1581,6 +1584,9 @@ func (b *Bytes) ISet(index, val Value) error {
 func (b *Bytes) Equals(other Value) Bool {
 	if val, ok := other.(*Bytes); ok {
 		return b == val
+	}
+	if val, ok := other.(*String); ok {
+		return string(b.Value) == val.Value
 	}
 	return false
 }
