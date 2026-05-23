@@ -387,6 +387,9 @@ func (i Integer) Equals(other Value) Bool {
 	if val, ok := other.(Integer); ok {
 		return i == val
 	}
+	if val, ok := other.(Float); ok {
+		return i == Integer(val)
+	}
 	return false
 }
 
@@ -514,6 +517,9 @@ func (f Float) ISet(index, val Value) error {
 func (f Float) Equals(other Value) Bool {
 	if val, ok := other.(Float); ok {
 		return f == val
+	}
+	if val, ok := other.(Integer); ok {
+		return f == Float(val)
 	}
 	return false
 }
