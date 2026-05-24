@@ -576,6 +576,9 @@ func textLines(args ...Value) (Value, error) {
 			if len(parts) > 0 && parts[len(parts)-1] == EmptyString {
 				parts = parts[:len(parts)-1]
 			}
+			if len(parts) > 0 && parts[0] == EmptyString {
+				parts = parts[1:]
+			}
 			return textStringToArray(parts), nil
 		}
 	}
