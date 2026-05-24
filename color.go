@@ -75,7 +75,7 @@ func colorNew(args ...Value) (Value, error) {
 }
 
 func colorReset(args ...Value) (Value, error) {
-	fmt.Print(Sprint256(-1, -1, ""))
+	fmt.Print(Sprint256(-1, -1, EmptyString))
 	return NilValue, nil
 }
 
@@ -389,7 +389,7 @@ func printSection(title string, start, end int) {
 	}
 
 	// Reset after section
-	fmt.Print(Sprint256(-1, -1, ""))
+	fmt.Print(Sprint256(-1, -1, EmptyString))
 }
 
 func colorValue(val Value) (int, bool) {

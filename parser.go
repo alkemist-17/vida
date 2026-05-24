@@ -658,7 +658,7 @@ func (p *parser) operand() ast.Node {
 		return e
 	default:
 		if p.ok {
-			if p.lexer.LexicalError.Message == "" {
+			if p.lexer.LexicalError.Message == EmptyString {
 				p.err = verror.New(p.lexer.ScriptName, "expected a valid expression", verror.SyntaxErrType, p.current.Line)
 			} else {
 				p.err = verror.New(p.lexer.ScriptName, p.lexer.LexicalError.Error(), verror.SyntaxErrType, p.current.Line)

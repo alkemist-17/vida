@@ -77,6 +77,8 @@ const (
 	__umin = "__umin"
 
 	__uplus = "__uplus"
+
+	EmptyString = ""
 )
 
 const (

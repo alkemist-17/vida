@@ -127,7 +127,7 @@ func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, err
 		return nil, err
 	}
 
-	if parsedURL.Scheme == "" {
+	if parsedURL.Scheme == EmptyString {
 		parsedURL.Scheme = httpDefaultSchema
 	}
 
@@ -291,14 +291,14 @@ func httpResolveRawURL(userConfig *Object, userRawURL *string) (string, error) {
 	if b, ok := userConfig.Value[httpBaseField].(*String); ok {
 		return b.Value, nil
 	}
-	return "", errors.New("http client must have an url")
+	return EmptyString, errors.New("http client must have an url")
 }
 
 func httpParseBase(userConfig *Object) string {
 	if b, ok := userConfig.Value[httpBaseField].(*String); ok {
 		return b.Value
 	}
-	return ""
+	return EmptyString
 }
 
 func httpResolveURL(rawURL, base string) (*url.URL, error) {
@@ -311,18 +311,18 @@ func httpResolveURL(rawURL, base string) (*url.URL, error) {
 		return parsed, nil
 	}
 
-	if base != "" {
+	if base != EmptyString {
 		parsedBase, err := url.Parse(base)
 		if err != nil {
 			return nil, err
 		}
-		if parsedBase.Scheme == "" {
+		if parsedBase.Scheme == EmptyString {
 			parsedBase.Scheme = httpDefaultSchema
 		}
 		return parsedBase.JoinPath(parsed.String()), nil
 	}
 
-	if parsed.Scheme == "" {
+	if parsed.Scheme == EmptyString {
 		parsed.Scheme = httpDefaultSchema
 	}
 	return parsed, nil
@@ -345,7 +345,7 @@ func httpExecuteRequest(ctx context.Context, requestConfig *requestConfig) (*htt
 
 func httpBuildBodyReader(body Value) (io.Reader, string, error) {
 	if body == nil {
-		return http.NoBody, "", nil
+		return http.NoBody, EmptyString, nil
 	}
 	switch v := body.(type) {
 	case *String:
@@ -355,16 +355,16 @@ func httpBuildBodyReader(body Value) (io.Reader, string, error) {
 	case *Object:
 		jsonBody, err := json.Marshal(v)
 		if err != nil {
-			return nil, "", err
+			return nil, EmptyString, err
 		}
 		return bytes.NewBuffer(jsonBody), httpContentTypeAppJSON, nil
 	default:
-		return nil, "", nil
+		return nil, EmptyString, nil
 	}
 }
 
 func httpSetHeaders(req *http.Request, headers map[string]string, contentType string) {
-	if contentType != "" {
+	if contentType != EmptyString {
 		if _, exists := headers[httpContentType]; !exists {
 			headers[httpContentType] = contentType
 		}
@@ -444,7 +444,7 @@ func httpCalculateDelayWithServerHint(res *http.Response, internalDelay time.Dur
 }
 
 func parseRetryAfter(res *http.Response) time.Duration {
-	if ra := res.Header.Get(httpRetryAfterHeader); ra != "" {
+	if ra := res.Header.Get(httpRetryAfterHeader); ra != EmptyString {
 		if secs, err := strconv.Atoi(ra); err == nil {
 			return time.Duration(secs) * time.Second
 		}
@@ -456,7 +456,7 @@ func parseRetryAfter(res *http.Response) time.Duration {
 		}
 	}
 
-	if reset := res.Header.Get(httpXRateLimitResetHeader); reset != "" {
+	if reset := res.Header.Get(httpXRateLimitResetHeader); reset != EmptyString {
 		if unix, err := strconv.ParseInt(reset, 10, 64); err == nil {
 			d := time.Until(time.Unix(unix, 0))
 			if d > 0 {

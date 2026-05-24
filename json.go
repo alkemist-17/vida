@@ -100,7 +100,7 @@ func jsonIsValid(args ...Value) (Value, error) {
 
 func jsonPretty(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if b, err := json.MarshalIndent(args[0], "", "  "); err == nil {
+		if b, err := json.MarshalIndent(args[0], EmptyString, "  "); err == nil {
 			return &String{Value: string(b)}, nil
 		} else {
 			return VidaError{Message: &String{Value: err.Error()}}, nil

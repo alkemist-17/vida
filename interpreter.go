@@ -102,7 +102,7 @@ func PrintTokens(path string) error {
 	fmt.Printf("%5v   %-15v   %-2v\n\n", "Line", "Token", "Value")
 	for {
 		line, tok, lit := l.Next()
-		if l.LexicalError.Message != "" {
+		if l.LexicalError.Message != EmptyString {
 			hadError = true
 			break
 		}

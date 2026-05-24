@@ -4,6 +4,8 @@ import "unicode"
 
 type Token uint64
 
+const emptyString = ""
+
 const (
 	UNEXPECTED Token = iota
 	EOF
@@ -192,7 +194,7 @@ func LookUp(name string) Token {
 }
 
 func IsIdentifier(name string) bool {
-	if name == "" || IsKeyword(name) {
+	if name == emptyString || IsKeyword(name) {
 		return false
 	}
 	for i, c := range name {

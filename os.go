@@ -57,7 +57,7 @@ func osGetEnv(args ...Value) (Value, error) {
 				xs = append(xs, &String{Value: r})
 				xs = append(xs, Bool(ok))
 			} else {
-				xs = append(xs, &String{Value: ""})
+				xs = append(xs, &String{Value: EmptyString})
 				xs = append(xs, Bool(ok))
 			}
 			return &Array{Value: xs}, nil

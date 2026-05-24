@@ -473,7 +473,7 @@ func (f *formatter) fmtSx(s, digits string) {
 
 // fmtBx formats a byte slice as a hexadecimal encoding of its bytes.
 func (f *formatter) fmtBx(b []byte, digits string) {
-	f.fmtSbx("", b, digits)
+	f.fmtSbx(EmptyString, b, digits)
 }
 
 // fmtQ formats a string as a double-quoted, escaped Go string constant.

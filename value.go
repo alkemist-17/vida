@@ -1662,11 +1662,11 @@ func (i ValueSemanticsImpl) Call(args ...Value) (Value, error) {
 }
 
 func (i ValueSemanticsImpl) String() string {
-	return ""
+	return EmptyString
 }
 
 func (i ValueSemanticsImpl) Type() string {
-	return ""
+	return EmptyString
 }
 
 func (i ValueSemanticsImpl) Clone() Value {
@@ -1674,7 +1674,7 @@ func (i ValueSemanticsImpl) Clone() Value {
 }
 
 func (i ValueSemanticsImpl) ObjectKey() string {
-	return ""
+	return EmptyString
 }
 
 func (i ValueSemanticsImpl) MarshalJSON() ([]byte, error) {
@@ -1724,11 +1724,11 @@ func (i *ReferenceSemanticsImpl) Call(args ...Value) (Value, error) {
 }
 
 func (i ReferenceSemanticsImpl) String() string {
-	return ""
+	return EmptyString
 }
 
 func (i *ReferenceSemanticsImpl) Type() string {
-	return ""
+	return EmptyString
 }
 
 func (i *ReferenceSemanticsImpl) Clone() Value {
@@ -1736,7 +1736,7 @@ func (i *ReferenceSemanticsImpl) Clone() Value {
 }
 
 func (i *ReferenceSemanticsImpl) ObjectKey() string {
-	return ""
+	return EmptyString
 }
 
 func (i *ReferenceSemanticsImpl) MarshalJSON() ([]byte, error) {
