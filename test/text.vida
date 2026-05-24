@@ -10,7 +10,7 @@ assert(not text.hasPrefix(data, "amber"))
 assert(text.hasSuffix(data, "ld"))
 assert(not text.hasSuffix(data, "groovy"))
 
-assert(type(text.fromCodePoint(9731, 9733, 9842, nil, true, false, 0x2f804)) == "string")
+assert(type(text.fromCodePoints(9731, 9733, 9842, nil, true, false, 0x2f804)) == "string")
 
 assert(text.trim("¡¡¡Hello, World!!!", "!¡") == data)
 assert(text.trim("   Hello, World   ") == data)
@@ -94,8 +94,8 @@ factor = 0
 data = text.repeat(someText, factor)
 assert(len(data) == 0 and type(data) == "string") // empty string
 
-// fromCodePoint
-data = text.fromCodePoint(65, 66, 67, 68, 69, 70)
+// fromCodePoints
+data = text.fromCodePoints(65, 66, 67, 68, 69, 70)
 someText = "ABCDEF"
 assert(data == someText)
 
@@ -235,11 +235,11 @@ assert(all(someText, text.isSpace))
 
 someText = "A"
 assert(text.codePoints(someText)[0] == 65)
-assert(text.fromCodePoint(...text.codePoints(someText)) == someText)
+assert(text.fromCodePoints(...text.codePoints(someText)) == someText)
 
 someText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 for k, v in someText {
-    assert(text.fromCodePoint(...text.codePoints(v)) == v)
+    assert(text.fromCodePoints(...text.codePoints(v)) == v)
 }
 
 
@@ -487,9 +487,9 @@ assert(len(emojiCodes) == 2 and type(emojiCodes) == "array")
 assert(emojiCodes[0] == 129408 and emojiCodes[1] == 127881)
 
 
-// Round-trip: codepoints → fromCodePoint
+// Round-trip: codepoints → fromCodePoints
 var original = "Vida✨"
-var roundtrip = text.fromCodePoint(...text.codePoints(original))
+var roundtrip = text.fromCodePoints(...text.codePoints(original))
 assert(original == roundtrip)
 
 var filter = fun A, p {
@@ -510,14 +510,14 @@ assert(len(asciiOnly) == 5 and asciiOnly[0] == 72 and asciiOnly[1] == 105)
 
 
 // ============================================================================
-// PROPERTY: codepoints round-trip with fromCodePoint
+// PROPERTY: codepoints round-trip with fromCodePoints
 // ============================================================================
 var test_codepoints_roundtrip = fun {
     var testStrings = ["", "a", "Hello", "🦀", "αβγ", "Hello🌍123"]
     
     for i, s in testStrings {
         var cps = text.codePoints(s)
-        var reconstructed = text.fromCodePoint(...cps)
+        var reconstructed = text.fromCodePoints(...cps)
         assertEqual(s, reconstructed, "roundtrip: " + s)
     }
 }

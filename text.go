@@ -14,7 +14,7 @@ func loadFoundationText() Value {
 	m := &Object{Value: make(map[string]Value, 42)}
 	m.Value["hasPrefix"] = GFn(textHasPrefix)
 	m.Value["hasSuffix"] = GFn(textHasSuffix)
-	m.Value["fromCodePoint"] = GFn(textFromCodepoint)
+	m.Value["fromCodePoints"] = GFn(textFromCodepoints)
 	m.Value["trim"] = GFn(textTrim)
 	m.Value["trimLeft"] = GFn(textTrimLeft)
 	m.Value["trimRight"] = GFn(textTrimRight)
@@ -79,7 +79,7 @@ func textHasSuffix(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func textFromCodepoint(args ...Value) (Value, error) {
+func textFromCodepoints(args ...Value) (Value, error) {
 	runes := make([]rune, 0, len(args))
 	for _, a := range args {
 		if v, ok := a.(Integer); ok && v > 0 {
