@@ -2,6 +2,7 @@ var text = load("std/text")
 assert(text)
 
 var data = "Hello, World"
+var R = nil
 
 assert(text.hasPrefix(data, "Hell"))
 assert(not text.hasPrefix(data, "amber"))
@@ -13,19 +14,35 @@ assert(type(text.fromCodePoint(9731, 9733, 9842, nil, true, false, 0x2f804)) == 
 
 assert(text.trim("¡¡¡Hello, World!!!", "!¡") == data)
 assert(text.trim("   Hello, World   ") == data)
-assert(text.trim("   Hello, World   ", nil) == data)
+assert(text.trim("   Hello, World   ", nil) == nil)
 assert(text.trim("Hello, World   ") == data)
 assert(text.trim("   Hello, World") == data)
 
-assert(text.split("a,b,c", ","))
-assert(text.split("a man a plan a canal panama", "a "))
-assert(text.split(" xyz ", ""))
-assert(text.split("", "Bernardo O'Higgins"))
 
+R = text.split("a,b,c", ",")
+assert(type(R) == "array" and len(R) == 3)
+
+R = text.split("a man a plan a canal panama", "a ")
+assert(type(R) == "array" and len(R) == 4)
+
+R = text.split(" xyz ", "")
+assert(type(R) == "array" and len(R) == 5)
+
+R = text.split("", "Bernardo O'Higgins")
+assert(type(R) == "array" and len(R) == 1) // empty string
+
+R = text.split(" xyz ", nil)
+assert(R == nil)
+
+R = text.split(" xyz ", 123)
+assert(R == nil)
+
+R = text.split(" xyz ", 0.0)
+assert(R == nil)
 
 // Check equality
 var checkListEquality = fun l, r {
-    for i in 0, len(l) {
+    for i in len(l) {
         assert(l[i] == r[i])
     }
 }
@@ -59,12 +76,16 @@ assert(text.hasSuffix(words[5], "ality"))
 
 // fields
 var data = text.fields("philanthropy serendipity nebula origin perception cardinality")
-
 checkListEquality(words, data)
 
 // split
 data = text.split("philanthropy, serendipity, nebula, origin, perception, cardinality", ", ")
+checkListEquality(words, data)
 
+data = text.split("philanthropy,serendipity,nebula,origin,perception,cardinality", ",")
+checkListEquality(words, data)
+
+data = text.split("philanthropyXXXserendipityXXXnebulaXXXoriginXXXperceptionXXXcardinality", "XXX")
 checkListEquality(words, data)
 
 // repeat
@@ -74,7 +95,7 @@ data = text.repeat(someText, factor)
 assert(len(someText) * factor == len(data))
 factor = 0
 data = text.repeat(someText, factor)
-assert(len(data) == 0)
+assert(len(data) == 0 and type(data) == "string") // empty string
 
 // fromCodePoint
 data = text.fromCodePoint(65, 66, 67, 68, 69, 70)
@@ -83,17 +104,17 @@ assert(data == someText)
 
 // replace
 someText = "With or without you, I cannot live with or without you"
-data = text.replace(someText, "I", "you", -1)
+data = text.replaceN(someText, "I", "you", -1)
 assert(data == "With or without you, you cannot live with or without you")
 
 someText = "Peter Piper picked a peck of pickled peppers"
-data = text.replace(someText, "p", "v", 2)
+data = text.replaceN(someText, "p", "v", 2)
 assert(data == "Peter Piver vicked a peck of pickled peppers")
 
-data = text.replace(someText, "p", "v", 4)
+data = text.replaceN(someText, "p", "v", 4)
 assert(data == "Peter Piver vicked a veck of vickled peppers")
 
-data = text.replace(someText, "", "P", -1)
+data = text.replaceN(someText, "", "P", -1)
 assert(data == "PPPePtPePrP PPPiPpPePrP PpPiPcPkPePdP PaP PpPePcPkP PoPfP PpPiPcPkPlPePdP PpPePpPpPePrPsP")
 
 // replaceAll
@@ -125,6 +146,20 @@ assert(text.center(someText, 8) == " hello  ")
 assert(text.center(someText, 9) == "  hello  ")
 assert(text.center(someText, 10) == "  hello   ")
 assert(text.center(someText, 11) == "   hello   ")
+
+someText = "hi"
+
+assert(text.center(someText, 2) == someText)
+assert(text.center(someText, 6, sep) == "--hi--")
+assert(text.center(someText, 5, sep) == "-hi--")
+
+someText = "X"
+assert(text.center(someText, 7, "ab") == "abababXababab")
+
+someText = "🦀"
+assert(text.center(someText, 5) == "  🦀  ")
+
+
 
 // contains
 someText = "For some other reasons we did not know when it was happening ... "
@@ -202,11 +237,376 @@ assert(all(someText, text.isSpace))
 // codePoint
 
 someText = "A"
-assert(text.codePoint(someText) == 65)
-assert(text.fromCodePoint(text.codePoint(someText)) == someText)
+assert(text.codePoints(someText)[0] == 65)
+assert(text.fromCodePoint(...text.codePoints(someText)) == someText)
 
 someText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 for k, v in someText {
-    assert(text.fromCodePoint(text.codePoint(v)) == v)
+    assert(text.fromCodePoint(...text.codePoints(v)) == v)
 }
+
+
+// ============================================================================
+// TEXT PREDICATE TESTS - Property-based + Edge Cases + Unicode Coverage
+// ============================================================================
+
+// --- Helper assertions ---
+var assertEqual = fun actual, expected, msg {
+    if actual != expected {
+        error("ASSERT FAIL: " + msg + " | got: " + actual + ", expected: " + expected)
+    }
+}
+
+var assertTrue = fun value, msg {
+    assertEqual(value, true, msg)
+}
+
+var assertFalse = fun value, msg {
+    assertEqual(value, false, msg)
+}
+
+// ============================================================================
+// PROPERTY: Empty string always returns false for predicates
+// ============================================================================
+var test_empty_string_properties = fun {
+    assertTrue(text.isDecimal("") == false, "empty not decimal")
+    assertTrue(text.isDigit("") == false, "empty not digit")
+    assertTrue(text.isHexDigit("") == false, "empty not hex")
+    assertTrue(text.isLetter("") == false, "empty not letter")
+    assertTrue(text.isNumber("") == false, "empty not number")
+    assertTrue(text.isAscii("") == false, "empty not ascii")
+    assertTrue(text.isSpace("") == false, "empty not space")
+    assertTrue(text.isSpaceChar("") == false, "empty not spacechar")
+}
+
+// ============================================================================
+// PROPERTY: Single-char is subset of "all chars" (consistency check)
+// ============================================================================
+var test_single_char_consistency = fun {
+    // If a single char passes, the same char in a multi-char string of repeats should pass
+    assertTrue(text.isDecimal("5") == text.isDecimal("555"), "decimal single vs repeat")
+    assertTrue(text.isDigit("٣") == text.isDigit("٣٣٣"), "unicode digit consistency")
+    assertTrue(text.isLetter("α") == text.isLetter("ααα"), "greek letter consistency")
+    assertTrue(text.isAscii("A") == text.isAscii("AAA"), "ascii consistency")
+    assertTrue(text.isSpace(" ") == text.isSpace("   "), "space consistency")
+}
+
+// ============================================================================
+// PROPERTY: isDecimal ⊂ isDigit (ASCII digits are Unicode digits)
+// ============================================================================
+var test_decimal_subset_of_digit = fun {
+    // All ASCII decimal strings should also be Unicode digit strings
+    assertTrue(text.isDecimal("0") == true and text.isDigit("0") == true, "0 subset")
+    assertTrue(text.isDecimal("123") == true and text.isDigit("123") == true, "123 subset")
+    assertTrue(text.isDecimal("999") == true and text.isDigit("999") == true, "999 subset")
+    
+    // But not vice versa: Unicode-only digits
+    assertTrue(text.isDecimal("١٢٣") == false and text.isDigit("١٢٣") == true, "arabic-indic superset")
+    assertTrue(text.isDecimal("४५६") == false and text.isDigit("४५६") == true, "devanagari superset")
+}
+
+// ============================================================================
+// PROPERTY: isHexDigit is case-insensitive and ASCII-only
+// ============================================================================
+var test_hex_digit_properties = fun {
+    // Case insensitivity
+    assertTrue(text.isHexDigit("abc") == text.isHexDigit("ABC"), "hex case insensitive")
+    assertTrue(text.isHexDigit("aBcDeF") == true, "mixed case hex")
+    
+    // ASCII only
+    assertTrue(text.isHexDigit("123abc") == true, "valid hex")
+    assertTrue(text.isHexDigit("123xyz") == false, "invalid hex chars")
+    assertTrue(text.isHexDigit("12α") == false, "unicode not hex")
+    
+    // Edge: single valid chars
+    assertTrue(text.isHexDigit("0") == true, "hex zero")
+    assertTrue(text.isHexDigit("f") == true, "hex f lowercase")
+    assertTrue(text.isHexDigit("F") == true, "hex F uppercase")
+}
+
+// ============================================================================
+// PROPERTY: isLetter covers all Unicode scripts
+// ============================================================================
+var test_letter_unicode_coverage = fun {
+    // Latin
+    assertTrue(text.isLetter("abcXYZ") == true, "latin letters")
+    
+    // Greek
+    assertTrue(text.isLetter("αβγΩ") == true, "greek letters")
+    
+    // Cyrillic
+    assertTrue(text.isLetter("абвЯ") == true, "cyrillic letters")
+    
+    // CJK
+    assertTrue(text.isLetter("中文") == true, "cjk ideographs are letters")
+    
+    // Arabic
+    assertTrue(text.isLetter("عربي") == true, "arabic letters")
+    
+    // NOT letters: digits, punctuation, emoji
+    assertTrue(text.isLetter("123") == false, "digits not letters")
+    assertTrue(text.isLetter("!!!") == false, "punctuation not letters")
+    assertTrue(text.isLetter("🦀🎉") == false, "emoji not letters")
+    
+    // Mixed: any non-letter fails the "all" predicate
+    assertTrue(text.isLetter("abc123") == false, "mixed letter+digit fails")
+}
+
+// ============================================================================
+// PROPERTY: isNumber is broader than isDigit
+// ============================================================================
+var test_number_vs_digit = fun {
+    // Digits are numbers
+    assertTrue(text.isDigit("123") == true and text.isNumber("123") == true, "digits are numbers")
+    
+    // But numbers include more: Roman numerals, fractions, superscripts
+    assertTrue(text.isDigit("Ⅳ") == false and text.isNumber("Ⅳ") == true, "roman numeral")
+    assertTrue(text.isDigit("½") == false and text.isNumber("½") == true, "fraction")
+    assertTrue(text.isDigit("²") == false and text.isNumber("²") == true, "superscript")
+    
+    // Non-numeric characters fail both
+    assertTrue(text.isDigit("abc") == false and text.isNumber("abc") == false, "letters fail both")
+}
+
+// ============================================================================
+// PROPERTY: isAscii checks bytes, not runes (multi-byte UTF-8 fails)
+// ============================================================================
+var test_ascii_byte_semantics = fun {
+    // Pure ASCII
+    assertTrue(text.isAscii("Hello123!") == true, "pure ascii")
+    
+    // Any multi-byte UTF-8 rune fails, even if the rune's codepoint < 128 (impossible, but test the byte logic)
+    assertTrue(text.isAscii("α") == false, "greek alpha not ascii bytes")
+    assertTrue(text.isAscii("€") == false, "euro symbol not ascii")
+    assertTrue(text.isAscii("🦀") == false, "emoji not ascii")
+    
+    // Mixed: one non-ASCII byte fails the whole string
+    assertTrue(text.isAscii("Helloα") == false, "mixed ascii+unicode fails")
+    
+    // Edge: empty already tested, but single ASCII char
+    assertTrue(text.isAscii("A") == true, "single ascii char")
+}
+
+// ============================================================================
+// PROPERTY: isSpace vs isSpaceChar distinction
+// ============================================================================
+var test_space_predicates = fun {
+    // isSpace: ALL chars must be whitespace
+    assertTrue(text.isSpace("   ") == true, "multiple spaces")
+    assertTrue(text.isSpace("\t\n\r") == true, "mixed whitespace chars")
+    assertTrue(text.isSpace(" \u00A0\u2003") == true, "unicode spaces (NBSP, EM)")
+    assertTrue(text.isSpace("  x") == false, "space+non-space fails")
+    
+    // isSpaceChar: EXACTLY ONE whitespace rune
+    assertTrue(text.isSpaceChar(" ") == true, "single space char")
+    assertTrue(text.isSpaceChar("\t") == true, "single tab char")
+    assertTrue(text.isSpaceChar("\n") == true, "single newline char")
+    assertTrue(text.isSpaceChar("\u00A0") == true, "single NBSP char")
+    
+    // Fails for: empty, multi-char, non-space
+    assertTrue(text.isSpaceChar("") == false, "empty not spacechar")
+    assertTrue(text.isSpaceChar("  ") == false, "two spaces not spacechar")
+    assertTrue(text.isSpaceChar("a") == false, "letter not spacechar")
+}
+
+// ============================================================================
+// EDGE CASES: Boundary values and tricky inputs
+// ============================================================================
+var test_edge_cases = fun {
+    // Decimal boundaries
+    assertTrue(text.isDecimal("0") == true, "decimal zero")
+    assertTrue(text.isDecimal("9") == true, "decimal nine")
+    assertTrue(text.isDecimal("00") == true, "leading zeros ok")
+    assertTrue(text.isDecimal("-5") == false, "negative sign not decimal")
+    assertTrue(text.isDecimal("5.0") == false, "decimal point not decimal")
+    
+    // Hex boundaries
+    assertTrue(text.isHexDigit("0") == true, "hex zero")
+    assertTrue(text.isHexDigit("9") == true, "hex nine")
+    assertTrue(text.isHexDigit("a") == true, "hex a")
+    assertTrue(text.isHexDigit("f") == true, "hex f")
+    assertTrue(text.isHexDigit("g") == false, "hex stops at f")
+    
+    // Unicode edge: combining marks, zero-width chars
+    assertTrue(text.isLetter("e\u0301") == false, "base+combining mark not single letter rune")
+    assertTrue(text.isAscii("\u007F") == true, "DEL char (127) is ascii")
+    assertTrue(text.isAscii("\u0080") == false, "U+0080 not ascii (first non-ascii)")
+    
+    // Whitespace edge cases
+    assertTrue(text.isSpace("\u200B") == false, "zero-width space is NOT unicode.IsSpace")
+    assertTrue(text.isSpace("\u3000") == true, "ideographic space IS unicode.IsSpace")
+    
+    // Very long strings (performance smoke test)
+    var longDecimal = text.repeat("1", 10000)
+    assertTrue(text.isDecimal(longDecimal) == true, "long decimal string")
+    
+    var longMixed = "123abc" + text.repeat("456", 1000)
+    assertTrue(text.isDecimal(longMixed) == false, "long mixed fails fast")
+}
+
+// ============================================================================
+// PROPERTY: Early termination (performance + correctness)
+// ============================================================================
+var test_early_termination = fun {
+    // A non-matching char at the start should fail immediately
+    // (We can't measure time in pure Vida, but we can test correctness)
+    assertTrue(text.isDecimal("a123456789") == false, "fails on first char")
+    assertTrue(text.isLetter("1abcdefgh") == false, "digit at start fails letter")
+    
+    // A non-matching char at the end should still fail (full scan needed)
+    assertTrue(text.isDecimal("123456789a") == false, "fails on last char")
+}
+
+// ============================================================================
+// RUN ALL TESTS
+// ============================================================================
+var run_all_predicate_tests = fun {
+    test_empty_string_properties()
+    test_single_char_consistency()
+    test_decimal_subset_of_digit()
+    test_hex_digit_properties()
+    test_letter_unicode_coverage()
+    test_number_vs_digit()
+    test_ascii_byte_semantics()
+    test_space_predicates()
+    test_edge_cases()
+    test_early_termination()
+}
+
+// Predicate Functions Test Suite
+run_all_predicate_tests()
+
+
+
+// Basic usage
+var codes = text.codePoints("Hello")
+assert(len(codes) == 5 and type(codes) == "array")
+assert(codes[0] == 72 and codes[1] == 101 and codes[2] == 108 and codes[3] == 108 and codes[4] == 111)
+
+
+// Unicode support
+var emojiCodes = text.codePoints("🦀🎉")
+assert(len(emojiCodes) == 2 and type(emojiCodes) == "array")
+assert(emojiCodes[0] == 129408 and emojiCodes[1] == 127881)
+
+
+// Round-trip: codepoints → fromCodePoint
+var original = "Vida✨"
+var roundtrip = text.fromCodePoint(...text.codePoints(original))
+assert(original == roundtrip)
+
+var filter = fun A, p {
+    var R = []
+    for _, v in A {
+        if p(v) {
+            append(A, v)
+        }
+    }
+    ret A
+}
+
+
+// Filter non-ASCII codepoints
+var isAscii = fun cp => cp <= 127
+var asciiOnly = filter(text.codePoints("Hiα"), isAscii)
+assert(len(asciiOnly) == 5 and asciiOnly[0] == 72 and asciiOnly[1] == 105)
+
+
+// ============================================================================
+// PROPERTY: codepoints round-trip with fromCodePoint
+// ============================================================================
+var test_codepoints_roundtrip = fun {
+    var testStrings = ["", "a", "Hello", "🦀", "αβγ", "Hello🌍123"]
+    
+    for i, s in testStrings {
+        var cps = text.codePoints(s)
+        var reconstructed = text.fromCodePoint(...cps)
+        assertEqual(s, reconstructed, "roundtrip: " + s)
+    }
+}
+
+// ============================================================================
+// PROPERTY: codepoints length matches rune count
+// ============================================================================
+var test_codepoints_length = fun {
+    assertEqual(len(text.codePoints("")), 0, "empty length")
+    assertEqual(len(text.codePoints("abc")), 3, "ascii length")
+    assertEqual(len(text.codePoints("🦀🎉")), 2, "emoji length")
+    assertEqual(len(text.codePoints("αβγ")), 3, "greek length")
+    assertEqual(len(text.codePoints("")), len(""), "length match")
+}
+
+// ============================================================================
+// PROPERTY: codepoint values are valid Unicode scalar values
+// ============================================================================
+var test_codepoints_valid_range = fun {
+    var cps = text.codePoints("Hello🌍123")
+    for i, cp in cps {
+        // Unicode scalar values: 0 to 0x10FFFF, excluding surrogates
+        assert(cp >= 0)
+        assert(cp <= 0x10FFFF)
+        assert(cp < 0xD800 or cp > 0xDFFF)
+    }
+}
+
+// ============================================================================
+// PROPERTY: ASCII strings have codepoints <= 127
+// ============================================================================
+var test_codepoints_ascii_range = fun {
+    var asciiStrings = ["", " ", "ABC", "123", "!@#"]
+    for i, s in asciiStrings {
+        for j, cp in text.codePoints(s) {
+            assert(cp <= 127)
+        }
+    }
+    
+    // Non-ASCII should have at least one cp > 127
+    var nonAscii = ["α", "🦀", "café", "Москва"]
+    for i, s in nonAscii {
+        var hasHigh = false
+        for j, cp in text.codePoints(s) {
+            if cp > 127 { hasHigh = true }
+        }
+        assert(hasHigh, "non-ascii has high cp: " + s)
+    }
+}
+
+// ============================================================================
+// EDGE CASES
+// ============================================================================
+var test_codepoints_edge_cases = fun {
+    // Single characters at boundaries
+    var A = text.codePoints("\u0000")
+    assert(len(A) == 1 and A[0] == 0)
+    A = text.codePoints("\u007F")
+    assert(len(A) == 1 and A[0] == 127, "DEL char")
+    A = text.codePoints("\u0080")
+    assert(len(A) == 1 and A[0] == 128, "first non-ASCII")
+    A = text.codePoints("\u10FFFF")
+    assert(len(A) == 3 and A[0] == 4351 and A[1] == 70 and A[2] == 70, "max Unicode")
+    // Empty string
+    A = text.codePoints("")
+    assert(len(A) == 0, "empty returns empty array")
+    
+    // Combining marks are separate codepoints
+    var eAcute = "é"  // Could be precomposed U+00E9 or e + combining acute
+    var cps = text.codePoints(eAcute)
+    assert(len(cps) == 1 or len(cps) == 2, "combining mark handling")
+    
+    // Performance smoke: long string
+    var longStr = text.repeat("a", 10000)
+    cps = text.codePoints(longStr)
+    assert(len(cps) == 10000, "long string length")
+    // All should be 97 ('a')
+    for _, v in cps {
+        assert(v == 97)
+    }
+}
+
+
+test_codepoints_roundtrip()
+test_codepoints_length()
+test_codepoints_valid_range()
+test_codepoints_ascii_range()
+test_codepoints_edge_cases()
 

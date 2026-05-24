@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/alkemist-17/vida/verror"
 )
@@ -304,15 +305,7 @@ func coreNewArray(args ...Value) (Value, error) {
 			}
 			return &Array{Value: arr}, nil
 		}
-
-	// ── newArray({ ... })
 	case *Object:
-
-		// ── { from, to } or { from, to, step } ──────────────────────────────
-		// Ranges: integers or floats, positive or negative step.
-		//   newArray({ from=1,  to=5  })           → [1,2,3,4,5]
-		//   newArray({ from=10, to=1, step=-2 })   → [10,8,6,4,2]
-		//   newArray({ from=0.0, to=1.0, step=0.25 }) → float range
 		if _, hasFrom := v.Value["from"]; hasFrom {
 			if _, hasTo := v.Value["to"]; hasTo {
 
@@ -376,11 +369,6 @@ func coreNewArray(args ...Value) (Value, error) {
 				goto common
 			}
 		}
-
-		// ── { linspace } ─────────────────────────────────────────────────────
-		// Evenly spaced floats.
-		//   newArray({ linspace={ from=0.0, to=1.0, n=5 } })       → [0.0,0.25,0.5,0.75,1.0]
-		//   newArray({ linspace={ from=0.0, to=1.0, n=4, open=true } }) → [0.0,0.25,0.5,0.75]
 		if ls, ok := v.Value["linspace"].(*Object); ok {
 			if fromF, ok := ls.Value["from"].(Float); ok {
 				if toF, ok := ls.Value["to"].(Float); ok {
@@ -406,13 +394,6 @@ func coreNewArray(args ...Value) (Value, error) {
 				}
 			}
 		}
-
-		// ── { len, val?, clone?, cap?, clip? } ───────────────────────────────
-		// Fill with a value; optionally clone each element independently.
-		//   newArray({ len=5, val=0 })                  → [0,0,0,0,0]
-		//   newArray({ len=3, val=[], clone=true })      → three distinct empty arrays
-		//   newArray({ len=5, cap=100 })                 → len 5, capacity 100
-		//   newArray({ len=5, val=0, clip=true })        → tight allocation
 		if size, ok := v.Value["len"].(Integer); ok && size >= 0 && size < verror.MaxMemSize {
 			capSize := size
 			if c, ok := v.Value["cap"].(Integer); ok && c > size {
@@ -439,13 +420,6 @@ func coreNewArray(args ...Value) (Value, error) {
 					}
 				}
 			} else if random, ok := v.Value["random"].(*String); ok {
-				// ── { random, len } ──────────────────────────────────────────────────
-				// Random arrays of typed values.
-				//   newArray({ len=5, random="int" })     → random integers
-				//   newArray({ len=5, random="float" })   → random [0.0,1.0)
-				//   newArray({ len=5, random="bool" })    → random booleans
-				//   newArray({ len=5, random="string" })  → random nano-IDs
-				//   newArray({ len=5, random="byte" })    → random bytes (0-255 as Integer)
 				A := make([]Value, size)
 				switch random.Value {
 				case "string":
@@ -488,17 +462,6 @@ func coreNewArray(args ...Value) (Value, error) {
 
 			return &Array{Value: A}, nil
 		}
-
-		// ── { seq, n } ───────────────────────────────────────────────────────
-		// Named mathematical sequences.
-		//   newArray({ seq="fibonacci",  n=10 }) → [0,1,1,2,3,5,8,13,21,34]
-		//   newArray({ seq="primes",     n=8  }) → [2,3,5,7,11,13,17,19]
-		//   newArray({ seq="squares",    n=6  }) → [0,1,4,9,16,25]
-		//   newArray({ seq="cubes",      n=5  }) → [0,1,8,27,64]
-		//   newArray({ seq="triangular", n=6  }) → [0,1,3,6,10,15]
-		//   newArray({ seq="catalan",    n=7  }) → [1,1,2,5,14,42,132]
-		//   newArray({ seq="powers2",    n=8  }) → [1,2,4,8,16,32,64,128]
-		//   newArray({ seq="factorial",  n=7  }) → [1,1,2,6,24,120,720]
 		if seqName, ok := v.Value["seq"].(*String); ok {
 			if n, ok := v.Value["n"].(Integer); ok && n > 0 && n < verror.MaxMemSize {
 				switch seqName.Value {
@@ -575,10 +538,6 @@ func coreNewArray(args ...Value) (Value, error) {
 				}
 			}
 		}
-
-		// ── { repeat, times } ────────────────────────────────────────────────
-		// Repeat a sub-array N times.
-		//   newArray({ repeat=[1,2,3], times=3 }) → [1,2,3,1,2,3,1,2,3]
 		if src, ok := v.Value["repeat"].(*Array); ok {
 			if times, ok := v.Value["times"].(Integer); ok && times > 0 {
 				total := Integer(len(src.Value)) * times
@@ -592,11 +551,6 @@ func coreNewArray(args ...Value) (Value, error) {
 				return &Array{Value: A}, nil
 			}
 		}
-
-		// ── { zip = [arr1, arr2] } ───────────────────────────────────────────
-		// Interleave two arrays into pairs.
-		//   newArray({ zip=[a, b] }) → [[a0,b0],[a1,b1],...]
-		// Shorter array determines length; use { zip=[a,b], pad=nil } to fill gaps.
 		if zipVal, ok := v.Value["zip"].(*Array); ok && len(zipVal.Value) == 2 {
 			if arr1, ok := zipVal.Value[0].(*Array); ok {
 				if arr2, ok := zipVal.Value[1].(*Array); ok {
@@ -634,10 +588,6 @@ func coreNewArray(args ...Value) (Value, error) {
 				}
 			}
 		}
-
-		// ── { flatten } ──────────────────────────────────────────────────────
-		// Flatten one level of nested arrays.
-		//   newArray({ flatten=[[1,2],[3,4],[5]] }) → [1,2,3,4,5]
 		if nested, ok := v.Value["flatten"].(*Array); ok {
 			var A []Value
 			for _, item := range nested.Value {
@@ -652,12 +602,6 @@ func coreNewArray(args ...Value) (Value, error) {
 			}
 			return &Array{Value: A}, nil
 		}
-
-		// ── { keys }, { values }, { pairs } ─────────────────────────────────
-		// Extract keys, values, or [key,val] pairs from an Object.
-		//   newArray({ keys=obj })   → ["name","age","city"]
-		//   newArray({ values=obj }) → ["Alice", 30, "NYC"]
-		//   newArray({ pairs=obj })  → [["name","Alice"],["age",30],...]
 		if obj, ok := v.Value["keys"].(*Object); ok {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
@@ -685,10 +629,6 @@ func coreNewArray(args ...Value) (Value, error) {
 			}
 			return &Array{Value: A}, nil
 		}
-
-		// ── { grow } ─────────────────────────────────────────────────────────
-		// Grow an existing array's capacity without changing length.
-		//   newArray({ grow=myArray, by=50 })
 		if arr, ok := v.Value["grow"].(*Array); ok {
 			if by, ok := v.Value["by"].(Integer); ok && 0 < by && by < verror.MaxMemSize {
 				clone := arr.Clone().(*Array)
@@ -696,42 +636,26 @@ func coreNewArray(args ...Value) (Value, error) {
 				return clone, nil
 			}
 		}
-
-		// ── { clip } ─────────────────────────────────────────────────────────
-		// Clip an array to its length, releasing excess capacity.
-		//   newArray({ clip=myArray })
 		if arr, ok := v.Value["clip"].(*Array); ok {
 			clone := arr.Clone().(*Array)
 			clone.Value = slices.Clip(clone.Value)
 			return clone, nil
 		}
-
-	// ── newArray("hello") ────────────────────────────────────────────────────
-	// Explode a string into an array of its runes (codepoints).
-	//   newArray("hello") → ["h","e","l","l","o"]
 	case *String:
 		var i int
 		it := v.Iterator().(Iterator)
-		A := make([]Value, StringLength(v))
+		A := make([]Value, utf8.RuneCountInString(v.Value))
 		for it.Next() {
 			A[i] = it.Value()
 			i++
 		}
 		return &Array{Value: A}, nil
-
-	// ── newArray(bytes) ──────────────────────────────────────────────────────
-	// Convert a Bytes value into an array of integers.
-	//   newArray(b) → [72, 101, 108, ...]
 	case *Bytes:
 		A := make([]Value, len(v.Value))
 		for i, b := range v.Value {
 			A[i] = Integer(b)
 		}
 		return &Array{Value: A}, nil
-
-	// ── newArray(float) ──────────────────────────────────────────────────────
-	// Decompose a float into its IEEE 754 components.
-	//   newArray(3.14) → [sign, exponent, mantissa]  all as Integer
 	case Float:
 		bits := math.Float64bits(float64(v))
 		sign := Integer((bits >> 63) & 1)
@@ -739,10 +663,6 @@ func coreNewArray(args ...Value) (Value, error) {
 		mantissa := Integer(bits & 0x000FFFFFFFFFFFFF)
 		A := []Value{sign, exponent, mantissa}
 		return &Array{Value: A}, nil
-
-	// ── newArray(arr) ────────────────────────────────────────────────────────
-	// Clone an existing array (deep copy).
-	//   newArray(arr) → a fresh independent copy
 	case *Array:
 		return v.Clone(), nil
 	}
