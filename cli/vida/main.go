@@ -11,16 +11,17 @@ import (
 )
 
 const (
-	RUN     = "run"
-	DEGUG   = "debug"
-	TIME    = "time"
-	TOKENS  = "tokens"
-	AST     = "ast"
-	HELP    = "help"
-	VERSION = "version"
-	ABOUT   = "about"
-	CODE    = "code"
-	TEST    = "test"
+	RUN          = "run"
+	DEGUG        = "debug"
+	TIME         = "time"
+	TOKENS       = "tokens"
+	AST          = "ast"
+	SEMANTIC_AST = "astc"
+	HELP         = "help"
+	VERSION      = "version"
+	ABOUT        = "about"
+	CODE         = "code"
+	TEST         = "test"
 )
 
 func main() {
@@ -40,7 +41,9 @@ func main() {
 		case TOKENS:
 			printTokens(args)
 		case AST:
-			printAST(args)
+			printAST(args, false)
+		case SEMANTIC_AST:
+			printAST(args, true)
 		case HELP:
 			printHelp()
 		case VERSION:
@@ -128,7 +131,7 @@ func printTokens(args []string) {
 	}
 }
 
-func printAST(args []string) {
+func printAST(args []string, colorized bool) {
 	clear()
 	printVersion()
 	largs := len(args)
@@ -136,7 +139,7 @@ func printAST(args []string) {
 		for i := 2; i < largs; i++ {
 			p, err := filepath.Abs(args[i])
 			handleError(err)
-			handleError(vida.PrintAST(p))
+			handleError(vida.PrintAST(p, colorized))
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(AST))
@@ -275,6 +278,7 @@ func printHelp() {
 	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("\t%-11v show the token list\n", TOKENS)
 	fmt.Printf("\t%-11v show the syntax tree\n", AST)
+	fmt.Printf("\t%-11v show a colorized syntax tree\n", SEMANTIC_AST)
 	fmt.Printf("\t%-11v show this message\n", HELP)
 	fmt.Printf("\t%-11v show the language version\n", VERSION)
 	fmt.Printf("\t%-11v compile and show the compiled code\n", CODE)

@@ -78,7 +78,7 @@ func NewDebugger(path string, extensionlibloader map[string]func() Value) (*Inte
 	}, nil
 }
 
-func PrintAST(path string) error {
+func PrintAST(path string, colorized bool) error {
 	src, err := readScript(path)
 	if err != nil {
 		return err
@@ -88,7 +88,11 @@ func PrintAST(path string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(ast.PrintAST(rAst))
+	if colorized {
+		fmt.Println(ast.PrintASTColor(rAst))
+	} else {
+		fmt.Println(ast.PrintAST(rAst))
+	}
 	return nil
 }
 
