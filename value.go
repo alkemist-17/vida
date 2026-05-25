@@ -822,6 +822,15 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 					return val, nil
 				}
 			}
+		case uint64(token.POW):
+			if generic, ok := meta.Value[__pow]; ok {
+				switch val := generic.(type) {
+				case *Function:
+					return o.execute(val, rhs)
+				default:
+					return val, nil
+				}
+			}
 		}
 	}
 	switch r := rhs.(type) {
