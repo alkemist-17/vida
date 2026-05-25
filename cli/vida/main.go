@@ -174,8 +174,10 @@ func test(args []string) {
 		for _, v := range args[2:] {
 			if strings.HasSuffix(v, vida.VidaFileExtension) {
 				testCount++
-				fmt.Printf("\t🧪 Running '%v'\n\n\n", v)
-				executeScript(filepath.Join(filepath.Dir(args[0]), v))
+				p, err := filepath.Abs(v)
+				handleError(err)
+				fmt.Printf("\t🧪 Running '%v'\n\n\n", p)
+				executeScript(p)
 				fmt.Printf("\n\n\n\n")
 			}
 		}
