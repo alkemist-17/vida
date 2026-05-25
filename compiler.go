@@ -1,6 +1,8 @@
 package vida
 
 import (
+	"path/filepath"
+
 	"github.com/alkemist-17/vida/ast"
 	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
@@ -12,8 +14,9 @@ type compiler struct {
 	breakCount    []int
 	continueJumps []int
 	continueCount []int
-	errMsg        string
 	fn            []*CoreFunction
+	errMsg        string
+	mainPath      string
 	currentFn     *CoreFunction
 	ast           *ast.Ast
 	script        *Script
@@ -48,6 +51,7 @@ func newMainCompiler(ast *ast.Ast, scriptName string) *compiler {
 		scriptMap: make(map[string]int),
 		depMap:    dm,
 		errorInfo: ei,
+		mainPath:  scriptName,
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -67,6 +71,7 @@ func newSubCompiler(ast *ast.Ast, scriptName string, kb *konstBuilder, store *[]
 		scriptMap:     scriptMap,
 		depMap:        depMap,
 		errorInfo:     ei,
+		mainPath:      scriptName,
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -1052,29 +1057,35 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		c.errorInfo[c.currentFn.ScriptName][len(c.currentFn.Code)] = n.Line
 		return o, rLoc
 	case *ast.Import:
-		if _, isCycle := c.depMap[n.Path]; isCycle {
+		var importFilePath string
+		if filepath.IsAbs(n.Path) {
+			importFilePath = n.Path
+		} else {
+			importFilePath = filepath.Join(filepath.Dir(c.mainPath), n.Path)
+		}
+		if _, isCycle := c.depMap[importFilePath]; isCycle {
 			c.hadError = true
 			c.errMsg = "import cycle detected"
 			c.lineErr = n.Line
 			return 0, rGlob
 		} else {
-			c.depMap[n.Path] = dummy
+			c.depMap[importFilePath] = dummy
 		}
-		if v, isPresent := c.scriptMap[n.Path]; isPresent {
-			delete(c.depMap, n.Path)
+		if v, isPresent := c.scriptMap[importFilePath]; isPresent {
+			delete(c.depMap, importFilePath)
 			c.emitFun(v, c.rAlloc)
 			c.emitCall(c.rAlloc, 0, 0, 1)
 			c.errorInfo[c.currentFn.ScriptName][len(c.currentFn.Code)] = n.Line
 			return c.rAlloc, rLoc
 		}
-		src, err := readScript(n.Path)
+		src, err := readScript(importFilePath)
 		if err != nil {
 			c.hadError = true
 			c.errMsg = err.Error()
 			c.lineErr = n.Line
 			return 0, rGlob
 		}
-		p := newParser(src, n.Path)
+		p := newParser(src, importFilePath)
 		scriptAST, err := p.parse()
 		if err != nil {
 			c.hadError = true
@@ -1082,7 +1093,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			c.lineErr = n.Line
 			return 0, rGlob
 		}
-		subCompiler := newSubCompiler(scriptAST, n.Path, c.kb, c.script.Store, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.Store))
+		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.Store, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.Store))
 		m, err := subCompiler.compileSubScript()
 		c.sb.index = len(*c.script.Store)
 		if err != nil {
@@ -1092,8 +1103,8 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			return 0, rGlob
 		}
 		fnIndex := c.kb.FunctionIndex(m.MainFunction.CoreFn)
-		c.scriptMap[n.Path] = fnIndex
-		delete(c.depMap, n.Path)
+		c.scriptMap[importFilePath] = fnIndex
+		delete(c.depMap, importFilePath)
 		c.emitFun(fnIndex, c.rAlloc)
 		c.emitCall(c.rAlloc, 0, 0, 1)
 		c.errorInfo[c.currentFn.ScriptName][len(c.currentFn.Code)] = n.Line

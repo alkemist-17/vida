@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/alkemist-17/vida"
@@ -63,7 +64,9 @@ func runDebug(args []string) {
 	clear()
 	if len(args) > 2 {
 		printVersion()
-		i, err := vida.NewDebugger(args[2], extensions.GetLoader())
+		p, err := filepath.Abs(args[2])
+		handleError(err)
+		i, err := vida.NewDebugger(p, extensions.GetLoader())
 		handleError(err)
 		r, err := i.Debug()
 		handleError(err)
@@ -75,7 +78,9 @@ func runDebug(args []string) {
 
 func run(args []string) {
 	if len(args) > 2 {
-		i, err := vida.NewInterpreter(args[2], extensions.GetLoader())
+		p, err := filepath.Abs(args[2])
+		handleError(err)
+		i, err := vida.NewInterpreter(p, extensions.GetLoader())
 		handleError(err)
 		_, err = i.Run()
 		if err != nil {
@@ -91,7 +96,9 @@ func time(args []string) {
 	clear()
 	printVersion()
 	if len(args) > 2 {
-		i, err := vida.NewInterpreter(args[2], extensions.GetLoader())
+		p, err := filepath.Abs(args[2])
+		handleError(err)
+		i, err := vida.NewInterpreter(p, extensions.GetLoader())
 		handleError(err)
 		r, err := i.MeasureRunTime()
 		if err != nil {
@@ -112,8 +119,9 @@ func printTokens(args []string) {
 	largs := len(args)
 	if largs > 2 {
 		for i := 2; i < largs; i++ {
-			err := vida.PrintTokens(args[i])
+			p, err := filepath.Abs(args[i])
 			handleError(err)
+			handleError(vida.PrintTokens(p))
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(TOKENS))
@@ -126,8 +134,9 @@ func printAST(args []string) {
 	largs := len(args)
 	if largs > 2 {
 		for i := 2; i < largs; i++ {
-			err := vida.PrintAST(args[i])
+			p, err := filepath.Abs(args[i])
 			handleError(err)
+			handleError(vida.PrintAST(p))
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(AST))
@@ -139,8 +148,9 @@ func printMachineCode(args []string) {
 	largs := len(args)
 	if largs > 2 {
 		for i := 2; i < largs; i++ {
-			err := vida.PrintMachineCode(args[i])
+			p, err := filepath.Abs(args[i])
 			handleError(err)
+			handleError(vida.PrintMachineCode(p))
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(CODE))
@@ -150,34 +160,47 @@ func printMachineCode(args []string) {
 func test(args []string) {
 	clear()
 	printVersion()
-	count := 0
-	basePath, err := os.Getwd()
-	handleTestError(err)
-	scripts, err := os.ReadDir(basePath)
-	handleTestError(err)
+	testCount := 0
 	if len(args) > 2 {
+		dir := args[2]
+		info, err := os.Stat(dir)
+		handleTestError(err)
+		if info.IsDir() {
+			scripts, err := os.ReadDir(dir)
+			handleTestError(err)
+			runScripts(dir, scripts, &testCount)
+			goto stats
+		}
 		for _, v := range args[2:] {
 			if strings.HasSuffix(v, vida.VidaFileExtension) {
-				count++
+				testCount++
 				fmt.Printf("\t🧪 Running '%v'\n\n\n", v)
-				executeScript(v)
+				executeScript(filepath.Join(filepath.Dir(args[0]), v))
 				fmt.Printf("\n\n\n\n")
 			}
 		}
 	} else {
-		for _, v := range scripts {
-			if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
-				count++
-				fmt.Printf("\t🧪 Running '%v'\n\n\n", v.Name())
-				executeScript(v.Name())
-				fmt.Printf("\n\n\n\n")
-			}
-		}
+		dir, err := os.Getwd()
+		scripts, err := os.ReadDir(dir)
+		handleTestError(err)
+		runScripts(dir, scripts, &testCount)
 	}
-	if count > 0 {
-		fmt.Printf("\t🧪\tAll tests were ok!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", count)
+stats:
+	if testCount > 0 {
+		fmt.Printf("\t🧪\tAll tests were ok!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
 	} else {
-		fmt.Printf("\t❌\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", count)
+		fmt.Printf("\t❌\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
+	}
+}
+
+func runScripts(dir string, scripts []os.DirEntry, textCount *int) {
+	for _, v := range scripts {
+		if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
+			(*textCount)++
+			fmt.Printf("\t🧪 Running '%v'\n\n\n", v.Name())
+			executeScript(filepath.Join(dir, v.Name()))
+			fmt.Printf("\n\n\n\n")
+		}
 	}
 }
 
@@ -201,16 +224,16 @@ func handleTestFailure(r vida.Result, err error) {
 func handleTestError(err error) {
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 }
 
 func handleError(err error) {
 	if err != nil {
-		clear()
+		//clear()
 		printVersion()
 		fmt.Printf("\t❌ %v\n\n\n\n", err.Error())
-		os.Exit(0)
+		os.Exit(1)
 	}
 }
 
@@ -245,7 +268,7 @@ func printHelp() {
 	fmt.Println("\tUsage:  vida  [command]  [script]")
 	fmt.Printf("\n\n")
 	fmt.Printf("\t%-11v compile and run a script\n", RUN)
-	fmt.Printf("\t%-11v run focused or all test scripts in the cwd\n", TEST)
+	fmt.Printf("\t%-11v run focused or all scripts in path\n", TEST)
 	fmt.Printf("\t%-11v compile and run a script step by step\n", DEGUG)
 	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("\t%-11v show the token list\n", TOKENS)
