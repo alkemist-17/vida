@@ -524,7 +524,7 @@ empty.hi = fun self => self.world
 
 assert(empty:hi() == 91)
 
-void.hello = 42 void. world = 91
+void.hello = 42 void.world = 91
 
 empty.hi = fun self => self.hello
 
@@ -541,3 +541,50 @@ assert(object.has(void, "hello") == false)
 assert(object.isEmpty(empty) and object.isObject(empty) and len(empty) == 0)
 
 assert(object.has(empty, "hello") == false)
+
+void = { "Content-Type" = 42, "hello world" = 55 }
+
+assert(void["Content-Type"] == 42 and void["hello world"] == 55)
+
+meta = "Content-Type"
+
+assert(void[meta] == 42 and void["hello world"] == 55)
+
+meta = "hello world"
+
+assert(void["Content-Type"] == 42 and void[meta] == 55)
+
+void = { hello world "this is a message" "always true" alpha gamma }
+
+assert(len(void) == 6 and void.hello == nil and void.world == nil and void.alpha == nil and void.gamma == nil)
+
+assert(void["this is a message"] == nil and void["always true"] == nil)
+
+void = { "prop1" "prop2" "prop3" }
+
+assert(len(void) == 3 and void["prop1"] == nil and void["prop2"] == nil and void["prop3"] == nil)
+
+void["prop1"] = "prop1"
+
+void["prop2"] = "prop2"
+
+void["prop3"] = "prop3"
+
+assert(len(void) == 3 and void["prop1"] == "prop1" and void["prop2"] == "prop2" and void["prop3"] == "prop3")
+
+meta = "prop1"
+
+assert(void[meta] == meta and void.prop1 == meta)
+
+meta = "prop2"
+
+assert(void[meta] == meta and void.prop2 == meta)
+
+meta = "prop3"
+
+assert(void[meta] == meta and void.prop3 == meta)
+
+void = { "falcon" = 100 "eagle" = 200 "prop" omega = 90 }
+
+assert(len(void) == 4 and void.falcon == 100 and void.eagle == 200 and void.prop == nil and void["omega"] == void.omega)
+

@@ -548,18 +548,22 @@ func (p *parser) operand() ast.Node {
 		p.advance()
 	loop:
 		for p.current.Token != token.RCURLY {
-			if p.current.Token == token.STRING {
+			var k ast.Node
+			switch p.current.Token {
+			case token.STRING:
 				p.current.Token = token.IDENTIFIER
 				p.current.Lit = p.current.Lit[1 : len(p.current.Lit)-1]
+				fallthrough
+			case token.IDENTIFIER:
+				p.expect(token.IDENTIFIER)
+				k = &ast.Property{Value: p.current.Lit}
 			}
-			p.expect(token.IDENTIFIER)
-			k := &ast.Property{Value: p.current.Lit}
 			p.advance()
 			if p.current.Token == token.COMMA {
 				p.advance()
 			}
 			switch p.current.Token {
-			case token.IDENTIFIER:
+			case token.IDENTIFIER, token.STRING:
 				obj.Pairs = append(obj.Pairs, &ast.Pair{Key: k, Value: &ast.Nil{}})
 			case token.ASSIGN:
 				p.expect(token.ASSIGN)
