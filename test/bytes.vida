@@ -1,190 +1,1111 @@
 var bytes = load("std/bytes")
 
-assert(
-    bytes and
-    bytes.new and
-    bytes.from and
-    bytes.genCryptoRand and
-    bytes.timingSafeEqual and
-    bytes.encode and
-    bytes.decode and
-    bytes.encoding and
-    bytes.toFile and
-    bytes.xor and
-    bytes.toString and
-    bytes.uuid and
-    bytes.parseUUID and
-    bytes.bitLen and
-    bytes.hexdump
-)
+// =============================================================================
+// Vida bytes library — regression test suite
+//
+// Convention:
+//   Each section is self-contained and labelled.
+//   Every assert carries a comment explaining what property it tests.
+//   Edge cases are grouped at the end of each section.
+//
+// Bit-index convention (MSB-first, left-to-right):
+//   byte[0] bits:  index 0 = 0x80 weight, index 7 = 0x01 weight
+//   byte[1] bits:  index 8 = 0x80 weight, index 15 = 0x01 weight
+//
+// Endianness (byte order only):
+//   big-endian:    result[0] is most-significant byte
+//   little-endian: result[0] is least-significant byte
+// =============================================================================
 
 
+// =============================================================================
+// 0. API surface — every exported name must exist
+// =============================================================================
 
-var size = 10
-var init = 0xFF
-var s = "This is a string test"
-var u = `/this/path+/this/other/path`
-var A = bytes.new(size)
-var B = nil
-var HEX = "54686973206973206120737472696e672074657374"
-var B64 = "VGhpcyBpcyBhIHN0cmluZyB0ZXN0"
-var B64URL = "L3RoaXMvcGF0aCsvdGhpcy9vdGhlci9wYXRo"
-var dash = "-"
+assert(bytes.new            != nil)
+assert(bytes.from           != nil)
+assert(bytes.fromFile       != nil)
+assert(bytes.toFile         != nil)
+assert(bytes.view           != nil)
+assert(bytes.copyTo         != nil)
+assert(bytes.fill           != nil)
+assert(bytes.reverse        != nil)
+assert(bytes.reversed       != nil)
+assert(bytes.concat         != nil)
+assert(bytes.xor            != nil)
+assert(bytes.toString       != nil)
+assert(bytes.bitLen         != nil)
+assert(bytes.hexdump        != nil)
+assert(bytes.getBit         != nil)
+assert(bytes.setBit         != nil)
+assert(bytes.bitView        != nil)
+assert(bytes.readUInt       != nil)
+assert(bytes.fromUInt       != nil)
+assert(bytes.encode         != nil)
+assert(bytes.decode         != nil)
+assert(bytes.encoding       != nil)
+assert(bytes.encoding.hex   != nil)
+assert(bytes.encoding.HEX   != nil)
+assert(bytes.encoding.base64     != nil)
+assert(bytes.encoding.base64url  != nil)
+assert(bytes.encoding.binary     != nil)
+assert(bytes.endian         != nil)
+assert(bytes.endian.big     != nil)
+assert(bytes.endian.little  != nil)
+assert(bytes.checksum       != nil)
+assert(bytes.checksums      != nil)
+assert(bytes.checksums.crc32     != nil)
+assert(bytes.checksums.crc32c    != nil)
+assert(bytes.checksums.adler32   != nil)
+assert(bytes.checksums.md5       != nil)
+assert(bytes.checksums.sha1      != nil)
+assert(bytes.checksums.sha256    != nil)
+assert(bytes.checksums.sha512    != nil)
+assert(bytes.checksums.sha3_384  != nil)
+assert(bytes.hmac           != nil)
+assert(bytes.hmacAlgorithms != nil)
+assert(bytes.hmacAlgorithms.md5    != nil)
+assert(bytes.hmacAlgorithms.sha1   != nil)
+assert(bytes.hmacAlgorithms.sha256 != nil)
+assert(bytes.hmacAlgorithms.sha512 != nil)
+assert(bytes.genCryptoRand  != nil)
+assert(bytes.timingSafeEqual != nil)
+assert(bytes.uuid           != nil)
+assert(bytes.parseUUID      != nil)
+assert(bytes.getSystemEndianess != nil)
 
 
-assert(len(A) == size)
-for _, v in A {
-    assert(v == 0)
-}
+// =============================================================================
+// 1. bytes.new — construction
+// =============================================================================
+
+// Empty buffer
+var A = bytes.new()
+assert(len(A) == 0)                          // zero-arg → empty
+
+// Zero-filled buffer of given size
+A = bytes.new(8)
+assert(len(A) == 8)
+for _, v in A { assert(v == 0) }             // default fill is 0x00
+
+// Buffer with explicit fill value
+A = bytes.new(4, 0xFF)
+assert(len(A) == 4)
+for _, v in A { assert(v == 0xFF) }          // every byte is 0xFF
+
+A = bytes.new(3, 0xAB)
+assert(A[0] == 0xAB and A[1] == 0xAB and A[2] == 0xAB)
+
+// Fill value wraps mod 256
+A = bytes.new(2, 256)                        // 256 mod 256 = 0
+for _, v in A { assert(v == 0) }
+
+A = bytes.new(2, 257)                        // 257 mod 256 = 1
+for _, v in A { assert(v == 1) }
+
+// From string
+A = bytes.new("ABC")
+assert(len(A) == 3)
+assert(A[0] == 65 and A[1] == 66 and A[2] == 67)   // ASCII
+
+// From another Bytes — produces independent copy
+var B = bytes.new(3, 0x55)
+A = bytes.new(B)
+assert(len(A) == 3)
+assert(bytes.timingSafeEqual(A, B))
+assert(not(A == B))                          // distinct instances
+
+// From array — non-integer elements are silently ignored
+A = bytes.new([0xAA, 0xBB, nil, true, false, "x", 0xCC])
+assert(len(A) == 3)
+assert(A[0] == 0xAA and A[1] == 0xBB and A[2] == 0xCC)
+
+// Single-byte buffer
+A = bytes.new(1, 0x00)
+assert(len(A) == 1 and A[0] == 0)
 
 
-A = bytes.new(size, init)
-for _, v in A {
-    assert(v == init)
-}
+// =============================================================================
+// 2. bytes.from — construction aliases
+// =============================================================================
 
-
-A = bytes.new(s)
-B = bytes.new(s)
-assert(len(A) == len(B))
-for i in len(A) {
-    assert(A[i] == B[i])
-}
-
-
-A = bytes.genCryptoRand(8)
-B = bytes.new(A)
-assert(not(A == B))
-assert(len(A) == len(B))
-for i in len(A) {
-    assert(A[i] == B[i])
-}
-
-assert(len(bytes.new()) == 0)
+// No-arg → empty
 assert(len(bytes.from()) == 0)
 
+// From string
+A = bytes.from("hello")
+assert(len(A) == 5)
+assert(A[0] == 104 and A[4] == 111)          // 'h'=104, 'o'=111
 
-A = [0xAA, 0xBB, nil, true, false, 0xFF]
-B = bytes.new(A)
-assert(len(B) == 3 and B[0] == 0xAA and B[1] == 0xBB and B[2] == 0xFF)
-
-
-B = bytes.from(A)
-assert(len(B) == 3 and B[0] == 0xAA and B[1] == 0xBB and B[2] == 0xFF)
-
-
-B = bytes.from(s)
-assert(len(B) == len(s))
-
+// From Bytes — independent copy
+B = bytes.from("copy")
 A = bytes.from(B)
-assert(not(A == B))
-assert(len(A) == len(B))
-for i in len(A) {
-    assert(A[i] == B[i])
-}
-
-A = bytes.genCryptoRand(size)
-B = bytes.genCryptoRand(size)
-
-assert(
-    not(bytes.timingSafeEqual(A, B)) and
-    bytes.timingSafeEqual(A, A) and
-    bytes.timingSafeEqual(B, B)
-)
-
-
-A = bytes.from(s)
-B = bytes.encode(A, bytes.encoding.hex)
-assert(B == HEX)
-
-
-B = bytes.encode(A, bytes.encoding.base64)
-assert(B == B64)
-
-
-B = bytes.decode(HEX, bytes.encoding.hex)
-assert(format("%s", B) == s)
-
-
-B = bytes.decode(B64, bytes.encoding.base64)
-assert(format("%s", B) == s)
-
-
-A = bytes.from(u)
-B = bytes.encode(A, bytes.encoding.base64url)
-assert(B == B64URL)
-
-assert(u == format("%s", bytes.decode(B, bytes.encoding.base64url)))
-
-A = bytes.uuid(nil)
-assert(A == "00000000-0000-0000-0000-000000000000")
-
-A = bytes.uuid("max")
-assert(A == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
-
-A = bytes.uuid()
-assert(len(A) == 36)
-assert(A[8] == dash)
-assert(A[13] == dash)
-assert(A[18] == dash)
-assert(A[23] == dash)
-
-A = bytes.genCryptoRand(16)
-B = bytes.uuid(A)
-assert(len(B) == 36)
-assert(B[8] == dash)
-assert(B[13] == dash)
-assert(B[18] == dash)
-assert(B[23] == dash)
-
-B = bytes.parseUUID(B)
 assert(bytes.timingSafeEqual(A, B))
+assert(not(A == B))
+
+// From array — same filtering as new
+A = bytes.from([0x01, 0x02, nil, 0x03])
+assert(len(A) == 3 and A[2] == 0x03)
 
 
-var i = "random-data"
-var k = bytes.from(i)
-
-assert(len(i) == len(k))
-assert(bytes.encode(k, bytes.encoding.base64) == "cmFuZG9tLWRhdGE=")
-assert(bytes.encode(k, bytes.encoding.hex) == "72616e646f6d2d64617461")
-assert(bytes.encode(k, bytes.encoding.HEX) == "72616E646F6D2D64617461")
-assert(bytes.encode(k, bytes.encoding.base64url) == "cmFuZG9tLWRhdGE=")
-assert(bytes.encode(k, bytes.encoding.binary) == "0111001001100001011011100110010001101111011011010010110101100100011000010111010001100001")
-
-assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.base64), bytes.encoding.base64)) == i)
-assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.hex), bytes.encoding.hex)) == i)
-assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.HEX), bytes.encoding.HEX)) == i)
-assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.base64url), bytes.encoding.base64url)) == i)
-assert(bytes.toString(bytes.decode(bytes.encode(k, bytes.encoding.binary), bytes.encoding.binary)) == i)
-
-
-
-
-var encodeHex = fun b => bytes.encode(b, bytes.encoding.hex)
-A = ["Marcus Aurelius", "Plato", "Aristotle", "Pythagoras", "Anaximandrus"]
-
-var crypto = fun {
-	for _, v in A {
-		var i = bytes.from(v)
-		var k = bytes.genCryptoRand(len(i))
-		print("I =", encodeHex(i))
-		print("K =", encodeHex(k))
-		var c = bytes.xor(i, k)
-		print("C =", encodeHex(c))
-		var p = bytes.xor(c, k)
-		print("P =", encodeHex(p))
-        assert(bytes.timingSafeEqual(i, p))
-        assert(bytes.toString(p) == v)
-	}
-}
-
-crypto()
-
+// =============================================================================
+// 3. bytes.toString
+// =============================================================================
 
 A = bytes.from("hello, world!")
-B = 13*8
-assert(bytes.bitLen(A) == B)
+assert(bytes.toString(A) == "hello, world!")
 
-A = bytes.genCryptoRand(1024)
-assert(len(A) == 1024)
-print(bytes.hexdump(A))
+// Roundtrip: from → toString
+var msg = "The quick brown fox"
+assert(bytes.toString(bytes.from(msg)) == msg)
+
+// Empty buffer → empty string
+assert(bytes.toString(bytes.new()) == "")
+
+
+// =============================================================================
+// 4. bytes.bitLen
+// =============================================================================
+
+assert(bytes.bitLen(bytes.new())   == 0)     // empty
+assert(bytes.bitLen(bytes.new(1))  == 8)     // 1 byte = 8 bits
+assert(bytes.bitLen(bytes.new(4))  == 32)    // 4 bytes = 32 bits
+assert(bytes.bitLen(bytes.new(16)) == 128)
+
+
+// =============================================================================
+// 5. bytes.fill, bytes.reverse, bytes.reversed
+// =============================================================================
+
+// fill mutates in-place and returns the same buffer
+A = bytes.new(4, 0x00)
+var R = bytes.fill(A, 0xAB)
+assert(A[0] == 0xAB and A[3] == 0xAB)        // mutated
+assert(R[1] == 0xAB and R[2] == 0xAB)        // returned value also has new content
+assert(A == R)
+
+// fill wraps mod 256
+A = bytes.new(2)
+bytes.fill(A, 300)                           // 300 mod 256 = 44
+assert(A[0] == 44 and A[1] == 44)
+
+// reverse mutates in-place
+A = bytes.from([0x01, 0x02, 0x03, 0x04])
+R = bytes.reverse(A)
+assert(A[0] == 0x04 and A[1] == 0x03 and A[2] == 0x02 and A[3] == 0x01)
+assert(A == R)
+
+// reverse of palindrome is identity
+A = bytes.from([0xAA, 0xBB, 0xAA])
+B = bytes.from([0xAA, 0xBB, 0xAA])
+bytes.reverse(A)
+assert(bytes.timingSafeEqual(A, B))
+
+// reversed returns a new buffer, original unchanged
+A = bytes.from([0x01, 0x02, 0x03])
+B = bytes.reversed(A)
+
+assert(A[0] == 0x01)
+assert(B[0] == 0x03 and B[1] == 0x02 and B[2] == 0x01)
+assert(not(A == B))
+
+// single-byte reverse is identity
+A = bytes.from([0x42])
+B = bytes.reversed(A)
+assert(B[0] == 0x42 and not(A == B))
+
+
+// =============================================================================
+// 6. bytes.view — zero-copy window
+// =============================================================================
+
+var data = bytes.from([0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77])
+
+// Full range
+var v = bytes.view(data, 0, 8)
+assert(len(v) == 8)
+assert(v[0] == 0x00 and v[7] == 0x77 and v[3] == 0x33)
+
+// Middle slice
+v = bytes.view(data, 2, 4)
+assert(len(v) == 4)
+assert(v[0] == 0x22 and v[3] == 0x55)
+
+// Single byte
+v = bytes.view(data, 5, 1)
+assert(len(v) == 1 and v[0] == 0x55)
+
+// Last byte
+v = bytes.view(data, 7, 1)
+assert(len(v) == 1 and v[0] == 0x77)
+
+
+// =============================================================================
+// 7. bytes.concat
+// =============================================================================
+
+// Two Bytes
+var r = bytes.concat(bytes.from([0x01, 0x02]), bytes.from([0x03, 0x04]))
+assert(len(r) == 4)
+assert(r[0] == 0x01 and r[3] == 0x04)
+
+// Three Bytes
+r = bytes.concat(bytes.from([0xAA]), bytes.from([0xBB]), bytes.from([0xCC]))
+assert(len(r) == 3 and r[0] == 0xAA and r[1] == 0xBB and r[2] == 0xCC)
+
+// String mixed with Bytes
+r = bytes.concat("hi", bytes.from([0x21]))
+assert(bytes.toString(r) == "hi!")
+
+// Empty inputs
+r = bytes.concat(bytes.new(), bytes.from([0xFF]))
+assert(len(r) == 1 and r[0] == 0xFF)
+
+r = bytes.concat(bytes.from([0xFF]), bytes.new())
+assert(len(r) == 1 and r[0] == 0xFF)
+
+r = bytes.concat(bytes.new(), bytes.new())
+assert(len(r) == 0)
+
+// Single argument
+r = bytes.concat(bytes.from([0x42]))
+assert(len(r) == 1 and r[0] == 0x42)
+
+// No arguments → empty
+r = bytes.concat()
+assert(len(r) == 0)
+
+// Concat then toString roundtrip
+r = bytes.concat(bytes.from("foo"), bytes.from("bar"))
+assert(bytes.toString(r) == "foobar")
+
+
+// =============================================================================
+// 8. bytes.xor
+// =============================================================================
+
+// XOR self → all zeros
+A = bytes.from([0xAA, 0xBB, 0xCC])
+r = bytes.xor(A, A)
+assert(r[0] == 0 and r[1] == 0 and r[2] == 0)
+
+// XOR with zeros → identity
+A = bytes.from([0x12, 0x34, 0x56])
+B = bytes.new(3, 0x00)
+r = bytes.xor(A, B)
+assert(bytes.timingSafeEqual(r, A))
+
+// XOR with all-ones → bitwise NOT
+A = bytes.from([0b11110000, 0b00001111])
+B = bytes.new(2, 0xFF)
+r = bytes.xor(A, B)
+assert(r[0] == 0b00001111 and r[1] == 0b11110000)
+
+// Symmetric: xor(xor(A, K), K) == A
+var key  = bytes.from([0x42, 0x13, 0x77, 0x5A])
+var plain = bytes.from([0xDE, 0xAD, 0xBE, 0xEF])
+var enc = bytes.xor(plain, key)
+var dec = bytes.xor(enc, key)
+assert(bytes.timingSafeEqual(dec, plain))
+
+// XOR truncates to shorter length
+A = bytes.from([0x01, 0x02, 0x03, 0x04, 0x05])
+B = bytes.from([0xFF, 0xFF, 0xFF])
+r = bytes.xor(A, B)
+assert(len(r) == 3)
+assert(r[0] == 0xFE and r[1] == 0xFD and r[2] == 0xFC)
+
+
+// =============================================================================
+// 9. bytes.timingSafeEqual
+// =============================================================================
+
+// Equal buffers → true
+assert(bytes.timingSafeEqual(bytes.from([0x01, 0x02]), bytes.from([0x01, 0x02])))
+
+// Different content → false
+assert(not(bytes.timingSafeEqual(bytes.from([0x01, 0x02]), bytes.from([0x01, 0x03]))))
+
+// Different length → false
+assert(not(bytes.timingSafeEqual(bytes.from([0x01]), bytes.from([0x01, 0x02]))))
+
+// Both empty → true
+assert(bytes.timingSafeEqual(bytes.new(), bytes.new()))
+
+// Self-equality
+A = bytes.genCryptoRand(32)
+assert(bytes.timingSafeEqual(A, A))
+
+
+// =============================================================================
+// 10. bytes.getBit — MSB-first indexing
+// =============================================================================
+//
+// Buffer layout for this section:
+//
+//   byte[0] = 0b10110100 = 0xB4
+//   index:     0 1 2 3 4 5 6 7
+//   value:     1 0 1 1 0 1 0 0
+//
+//   byte[1] = 0b00001111 = 0x0F
+//   index:     8 9 10 11 12 13 14 15
+//   value:     0 0  0  0  1  1  1  1
+//
+//   byte[2] = 0b11111111 = 0xFF
+//   index:    16 17 18 19 20 21 22 23
+//   value:     1  1  1  1  1  1  1  1
+
+var bitBuf = bytes.from([0xB4, 0x0F, 0xFF])
+
+// Byte 0: 0b10110100
+assert(bytes.getBit(bitBuf,  0) == 1)   // MSB of byte 0
+assert(bytes.getBit(bitBuf,  1) == 0)
+assert(bytes.getBit(bitBuf,  2) == 1)
+assert(bytes.getBit(bitBuf,  3) == 1)
+assert(bytes.getBit(bitBuf,  4) == 0)
+assert(bytes.getBit(bitBuf,  5) == 1)
+assert(bytes.getBit(bitBuf,  6) == 0)
+assert(bytes.getBit(bitBuf,  7) == 0)   // LSB of byte 0
+
+// Byte 1: 0b00001111
+assert(bytes.getBit(bitBuf,  8) == 0)   // MSB of byte 1
+assert(bytes.getBit(bitBuf,  9) == 0)
+assert(bytes.getBit(bitBuf, 10) == 0)
+assert(bytes.getBit(bitBuf, 11) == 0)
+assert(bytes.getBit(bitBuf, 12) == 1)
+assert(bytes.getBit(bitBuf, 13) == 1)
+assert(bytes.getBit(bitBuf, 14) == 1)
+assert(bytes.getBit(bitBuf, 15) == 1)   // LSB of byte 1
+
+// Byte 2: 0b11111111
+assert(bytes.getBit(bitBuf, 16) == 1)   // MSB of byte 1
+assert(bytes.getBit(bitBuf, 17) == 1)
+assert(bytes.getBit(bitBuf, 18) == 1)
+assert(bytes.getBit(bitBuf, 19) == 1)
+assert(bytes.getBit(bitBuf, 20) == 1)
+assert(bytes.getBit(bitBuf, 21) == 1)
+assert(bytes.getBit(bitBuf, 22) == 1)
+assert(bytes.getBit(bitBuf, 23) == 1)   // LSB of byte 1
+
+// Byte 2: 0xFF — all ones
+for i in 8 { assert(bytes.getBit(bitBuf, 16 + i) == 1) }
+
+// All-zeros buffer — every bit is 0
+var zeroBuf = bytes.new(4, 0x00)
+for i in 32 { assert(bytes.getBit(zeroBuf, i) == 0) }
+
+// All-ones buffer — every bit is 1
+var onesBuf = bytes.new(4, 0xFF)
+for i in 32 { assert(bytes.getBit(onesBuf, i) == 1) }
+
+// Single byte, all bit positions
+var singleByte = bytes.from([0b10010110])
+assert(bytes.getBit(singleByte, 0) == 1)
+assert(bytes.getBit(singleByte, 1) == 0)
+assert(bytes.getBit(singleByte, 2) == 0)
+assert(bytes.getBit(singleByte, 3) == 1)
+assert(bytes.getBit(singleByte, 4) == 0)
+assert(bytes.getBit(singleByte, 5) == 1)
+assert(bytes.getBit(singleByte, 6) == 1)
+assert(bytes.getBit(singleByte, 7) == 0)
+
+
+// =============================================================================
+// 11. bytes.setBit — immutability + MSB-first indexing
+// =============================================================================
+
+// setBit returns a NEW buffer; original is not modified
+var orig = bytes.from([0x00])
+var mod  = bytes.setBit(orig, 0, 1)   // set MSB
+assert(orig[0] == 0x00)               // original unchanged
+assert(mod[0]  == 0x80)               // MSB set → 0b10000000
+
+// Set LSB of first byte
+mod = bytes.setBit(bytes.from([0x00]), 7, 1)
+assert(mod[0] == 0x01)
+
+// Set middle bit
+mod = bytes.setBit(bytes.from([0x00]), 4, 1)
+assert(mod[0] == 0b00001000)          // bit 4 = weight 2³ = 0x08
+
+// Clear a set bit
+mod = bytes.setBit(bytes.from([0xFF]), 3, 0)
+assert(mod[0] == 0b11101111)          // bit 3 cleared: 0xFF ^ 0x10 = 0xEF
+
+// Cross-byte: set MSB of byte 1
+mod = bytes.setBit(bytes.from([0x00, 0x00]), 8, 1)
+assert(mod[0] == 0x00 and mod[1] == 0x80)
+
+// Cross-byte: set LSB of byte 1
+mod = bytes.setBit(bytes.from([0x00, 0x00]), 15, 1)
+assert(mod[0] == 0x00 and mod[1] == 0x01)
+
+// Idempotent: setting an already-set bit leaves value unchanged
+mod = bytes.setBit(bytes.from([0xFF]), 0, 1)
+assert(mod[0] == 0xFF)
+
+// Idempotent: clearing an already-clear bit leaves value unchanged
+mod = bytes.setBit(bytes.from([0x00]), 0, 0)
+assert(mod[0] == 0x00)
+
+// getBit / setBit roundtrip: write each bit, read it back
+var roundBuf = bytes.new(1, 0x00)
+var pattern  = [1, 0, 1, 1, 0, 0, 1, 0]
+for i in 8 {
+    roundBuf = bytes.setBit(roundBuf, i, pattern[i])
+}
+for i in 8 {
+    assert(bytes.getBit(roundBuf, i) == pattern[i])
+}
+
+
+// =============================================================================
+// 12. bytes.bitView — MSB-first bit extraction
+// =============================================================================
+//
+// Convention: bitView(buf, start, length) extracts bits [start, start+length)
+// and packs them MSB-first into a new buffer of ceil(length/8) bytes.
+// The first extracted bit becomes the MSB of result[0].
+
+// Identity: extract all bits of a single byte
+var bv = bytes.from([0xB4])       // 0b10110100
+var out = bytes.bitView(bv, 0, 8)
+assert(len(out) == 1 and out[0] == 0xB4)
+
+// Extract high nibble (bits 0-3 of 0xB4 = 1,0,1,1)
+// Packed MSB-first into one byte → 0b10110000 = 0xB0
+out = bytes.bitView(bv, 0, 4)
+assert(len(out) == 1 and out[0] == 0xB0)
+
+// Extract low nibble (bits 4-7 of 0xB4 = 0,1,0,0)
+// Packed MSB-first → 0b01000000 = 0x40
+out = bytes.bitView(bv, 4, 4)
+assert(len(out) == 1 and out[0] == 0x40)
+
+// Single bit extraction
+out = bytes.bitView(bv, 0, 1)     // MSB of 0xB4 = 1
+assert(len(out) == 1 and out[0] == 0x80)
+
+out = bytes.bitView(bv, 7, 1)     // LSB of 0xB4 = 0
+assert(len(out) == 1 and out[0] == 0x00)
+
+// Extract 1 bit that is set from all-zero context
+var aBuf = bytes.from([0x00, 0x80])   // bit 8 = 1, all others 0
+out = bytes.bitView(aBuf, 8, 1)
+assert(out[0] == 0x80)
+
+// Cross-byte extraction: two complete bytes → identity
+var twoByte = bytes.from([0xDE, 0xAD])
+out = bytes.bitView(twoByte, 0, 16)
+assert(len(out) == 2 and out[0] == 0xDE and out[1] == 0xAD)
+
+// Cross-byte extraction: 4 bits from byte 0 LSB side + 4 bits from byte 1 MSB side
+// buf = [0xF0, 0x0F]:
+//   bits 0-7:  1 1 1 1 0 0 0 0  (0xF0)
+//   bits 8-15: 0 0 0 0 1 1 1 1  (0x0F)
+// bitView(buf, 4, 8): bits 4-11 = 0 0 0 0 | 0 0 0 0
+// → packed: 0b00000000 = 0x00
+var crossBuf = bytes.from([0xF0, 0x0F])
+out = bytes.bitView(crossBuf, 4, 8)
+assert(len(out) == 1 and out[0] == 0x00)
+
+// Cross-byte extraction yielding non-trivial result:
+// buf = [0b11110000, 0b10101010]
+// bits 4-11: 0000 1010 → packed MSB-first → 0b00001010 = 0x0A
+var mixBuf = bytes.from([0b11110000, 0b10101010])
+out = bytes.bitView(mixBuf, 4, 8)
+assert(len(out) == 1 and out[0] == 0x0A)
+
+// Result size is always ceil(length / 8)
+out = bytes.bitView(bytes.new(4, 0xFF), 0, 1)
+assert(len(out) == 1)
+
+out = bytes.bitView(bytes.new(4, 0xFF), 0, 9)
+assert(len(out) == 2)
+
+out = bytes.bitView(bytes.new(4, 0xFF), 0, 16)
+assert(len(out) == 2)
+
+out = bytes.bitView(bytes.new(4, 0xFF), 0, 17)
+assert(len(out) == 3)
+
+// Zero-length extraction → empty buffer
+out = bytes.bitView(bytes.new(4, 0xFF), 0, 0)
+assert(len(out) == 0)
+
+// All-ones buffer: any extraction must produce all-ones output
+out = bytes.bitView(bytes.new(2, 0xFF), 0, 16)
+assert(out[0] == 0xFF and out[1] == 0xFF)
+
+// Partial last byte: extracted bits in high positions, low bits zero-padded
+// buf = [0xFF]; bitView(buf, 0, 3): bits 0,1,2 = 1,1,1
+// packed into 1 byte at MSB positions: 0b11100000 = 0xE0
+out = bytes.bitView(bytes.from([0xFF]), 0, 3)
+assert(len(out) == 1 and out[0] == 0xE0)
+
+
+// =============================================================================
+// 13. bytes.readUInt — endian-correct multi-byte integer reads
+// =============================================================================
+//
+// readUInt extracts bits [startBit, startBit+bitLen) and assembles a uint64.
+// big-endian:    result[0] of bitView is most-significant byte
+// little-endian: result[0] of bitView is least-significant byte
+//
+// Reference values (easy to verify by hand):
+//   0x0102 big-endian    → 258
+//   0x0102 little-endian → 0x0201 = 513
+
+// 8-bit reads — endian irrelevant (single byte)
+var buf8 = bytes.from([0xB4])
+assert(bytes.readUInt(buf8, 0, 8, bytes.endian.big)    == 0xB4)
+assert(bytes.readUInt(buf8, 0, 8, bytes.endian.little) == 0xB4)
+
+// 16-bit big-endian
+var buf16be = bytes.from([0x01, 0x02])
+assert(bytes.readUInt(buf16be, 0, 16, bytes.endian.big) == 0x0102)    // = 258
+
+// 16-bit little-endian: byte[0]=0x01 is LSB, byte[1]=0x02 is MSB → value = 0x0201
+var buf16le = bytes.from([0x01, 0x02])
+assert(bytes.readUInt(buf16le, 0, 16, bytes.endian.little) == 0x0201) // = 513
+
+// 32-bit big-endian
+var buf32 = bytes.from([0x12, 0x34, 0x56, 0x78])
+assert(bytes.readUInt(buf32, 0, 32, bytes.endian.big) == 0x12345678)
+
+// 32-bit little-endian: bytes are [0x12, 0x34, 0x56, 0x78]
+// LSB-first: value = 0x78563412
+assert(bytes.readUInt(buf32, 0, 32, bytes.endian.little) == 0x78563412)
+
+// 4-bit reads (single nibble, no endian effect)
+// buf = [0xAB] = 0b10101011
+// high nibble bits 0-3: 1,0,1,0 packed → 0x0A, as integer (big) = 10
+// low  nibble bits 4-7: 1,0,1,1 packed → 0x0B, as integer (big) = 11
+var nibbleBuf = bytes.from([0xAB])
+
+assert(bytes.readUInt(nibbleBuf, 0, 4, bytes.endian.big) == 0x0A)
+assert(bytes.readUInt(nibbleBuf, 4, 4, bytes.endian.big) == 0x0B)
+
+// Offset read: skip first byte entirely
+// buf = [0x00, 0x00, 0xAB]
+// bits 16-23 = 0xAB
+var padBuf = bytes.from([0x00, 0x00, 0xAB])
+assert(bytes.readUInt(padBuf, 16, 8, bytes.endian.big) == 0xAB)
+
+// Roundtrip symmetry: readUInt(fromUInt(v, n, e), 0, n, e) == v
+var testVals = [0, 1, 127, 128, 255, 256, 65535, 0xDEADBEEF]
+for _, tv in testVals {
+    var beBytes = bytes.fromUInt(tv, 32, bytes.endian.big)
+    var leBytes = bytes.fromUInt(tv, 32, bytes.endian.little)
+    assert(bytes.readUInt(beBytes, 0, 32, bytes.endian.big)    == tv)
+    assert(bytes.readUInt(leBytes, 0, 32, bytes.endian.little) == tv)
+}
+
+// 1-bit read
+var bit1buf = bytes.from([0x80])    // MSB set
+assert(bytes.readUInt(bit1buf, 0, 1, bytes.endian.big) == 1)
+var bit0buf = bytes.from([0x00])
+assert(bytes.readUInt(bit0buf, 0, 1, bytes.endian.big) == 0)
+
+
+// =============================================================================
+// 14. bytes.fromUInt — integer → bytes packing
+// =============================================================================
+
+// 8-bit: endian has no effect on a single byte
+assert(bytes.fromUInt(0xAB, 8, bytes.endian.big)[0]    == 0xAB)
+assert(bytes.fromUInt(0xAB, 8, bytes.endian.little)[0] == 0xAB)
+
+// 16-bit big-endian: MSB byte first
+var packed = bytes.fromUInt(0x0102, 16, bytes.endian.big)
+assert(len(packed) == 2 and packed[0] == 0x01 and packed[1] == 0x02)
+
+// 16-bit little-endian: LSB byte first
+packed = bytes.fromUInt(0x0102, 16, bytes.endian.little)
+assert(len(packed) == 2 and packed[0] == 0x02 and packed[1] == 0x01)
+
+// 32-bit big-endian
+packed = bytes.fromUInt(0x12345678, 32, bytes.endian.big)
+assert(len(packed) == 4)
+assert(packed[0] == 0x12 and packed[1] == 0x34 and packed[2] == 0x56 and packed[3] == 0x78)
+
+// 32-bit little-endian
+packed = bytes.fromUInt(0x12345678, 32, bytes.endian.little)
+assert(len(packed) == 4)
+assert(packed[0] == 0x78 and packed[1] == 0x56 and packed[2] == 0x34 and packed[3] == 0x12)
+
+// 4-bit packing: value 0xA (=10 = 0b1010) → MSB-first → 0b10100000 = 0xA0
+packed = bytes.fromUInt(0xA, 4, bytes.endian.big)
+assert(len(packed) == 1 and packed[0] == 0xA0)
+
+// Value 0 → all zero bytes
+packed = bytes.fromUInt(0, 16, bytes.endian.big)
+assert(len(packed) == 2 and packed[0] == 0x00 and packed[1] == 0x00)
+
+// Value that fills all bits exactly (e.g. 0xFF for 8 bits)
+packed = bytes.fromUInt(0xFF, 8, bytes.endian.big)
+assert(len(packed) == 1 and packed[0] == 0xFF)
+
+// Result byte length is always ceil(bitLength / 8)
+assert(len(bytes.fromUInt(0, 1,  bytes.endian.big)) == 1)
+assert(len(bytes.fromUInt(0, 7,  bytes.endian.big)) == 1)
+assert(len(bytes.fromUInt(0, 8,  bytes.endian.big)) == 1)
+assert(len(bytes.fromUInt(0, 9,  bytes.endian.big)) == 2)
+assert(len(bytes.fromUInt(0, 16, bytes.endian.big)) == 2)
+assert(len(bytes.fromUInt(0, 17, bytes.endian.big)) == 3)
+assert(len(bytes.fromUInt(0, 32, bytes.endian.big)) == 4)
+assert(len(bytes.fromUInt(0, 64, bytes.endian.big)) == 8)
+
+
+// =============================================================================
+// 15. getBit / setBit / bitView / readUInt / fromUInt — cross-function coherence
+// =============================================================================
+
+// Property: fromUInt then getBit must return the correct bits MSB-first
+// value = 0b10110100 = 0xB4; fromUInt(0xB4, 8, big) → [0xB4]
+var coherBuf = bytes.fromUInt(0xB4, 8, bytes.endian.big)
+assert(bytes.getBit(coherBuf, 0) == 1)   // MSB
+assert(bytes.getBit(coherBuf, 1) == 0)
+assert(bytes.getBit(coherBuf, 2) == 1)
+assert(bytes.getBit(coherBuf, 3) == 1)
+assert(bytes.getBit(coherBuf, 4) == 0)
+assert(bytes.getBit(coherBuf, 5) == 1)
+assert(bytes.getBit(coherBuf, 6) == 0)
+assert(bytes.getBit(coherBuf, 7) == 0)   // LSB
+
+// Property: bitView of fromUInt result is the same buffer (for full-byte lengths)
+var intBuf = bytes.fromUInt(0xDEAD, 16, bytes.endian.big)
+var viewOut = bytes.bitView(intBuf, 0, 16)
+assert(bytes.timingSafeEqual(intBuf, viewOut))
+
+// Property: readUInt(fromUInt(v, n, e), 0, n, e) == v  (partial bit widths)
+// 12-bit value (crosses a byte boundary in storage)
+var v12 = 0xABC    // = 0b101010111100
+var packed12 = bytes.fromUInt(v12, 12, bytes.endian.big)
+assert(len(packed12) == 2)
+assert(bytes.readUInt(packed12, 0, 12, bytes.endian.big) == v12)
+
+// Property: a single set bit at position i survives setBit→getBit
+var emptyBuf = bytes.new(3, 0x00)
+for i in 24 {
+    var withBit = bytes.setBit(emptyBuf, i, 1)
+    assert(bytes.getBit(withBit, i) == 1)
+    // all other bits must remain 0
+    for j in 24 {
+        if not(j == i) {
+            assert(bytes.getBit(withBit, j) == 0)
+        }
+    }
+}
+
+
+// =============================================================================
+// 16. bytes.encode / bytes.decode — all encodings, roundtrips
+// =============================================================================
+
+var plain = bytes.from([0xDE, 0xAD, 0xBE, 0xEF])
+
+// hex (lowercase)
+var hexStr = bytes.encode(plain, bytes.encoding.hex)
+assert(hexStr == "deadbeef")
+assert(bytes.timingSafeEqual(bytes.decode(hexStr, bytes.encoding.hex), plain))
+
+// HEX (uppercase)
+var hexUpper = bytes.encode(plain, bytes.encoding.HEX)
+assert(hexUpper == "DEADBEEF")
+assert(bytes.timingSafeEqual(bytes.decode(hexUpper, bytes.encoding.HEX), plain))
+
+// hex and HEX decode to the same result
+assert(bytes.timingSafeEqual(
+    bytes.decode("deadbeef", bytes.encoding.hex),
+    bytes.decode("DEADBEEF", bytes.encoding.HEX)
+))
+
+// base64
+var b64str = bytes.encode(bytes.from("Man"), bytes.encoding.base64)
+assert(b64str == "TWFu")       // well-known base64 value
+var b64rt = bytes.decode(b64str, bytes.encoding.base64)
+assert(bytes.toString(b64rt) == "Man")
+
+// base64url
+var urlPath = bytes.from("/bin/sh")
+var b64url = bytes.encode(urlPath, bytes.encoding.base64url)
+var b64urlRt = bytes.decode(b64url, bytes.encoding.base64url)
+assert(bytes.timingSafeEqual(b64urlRt, urlPath))
+
+// binary
+var binBuf = bytes.from([0b10110100])   // = 0xB4
+var binStr = bytes.encode(binBuf, bytes.encoding.binary)
+assert(binStr == "10110100")
+var binRt = bytes.decode(binStr, bytes.encoding.binary)
+assert(len(binRt) == 1 and binRt[0] == 0xB4)
+
+// binary multi-byte
+var multiBin = bytes.from([0xFF, 0x00])
+var multiStr = bytes.encode(multiBin, bytes.encoding.binary)
+assert(multiStr == "1111111100000000")
+assert(len(multiStr) == 16)
+var multiRt = bytes.decode(multiStr, bytes.encoding.binary)
+assert(bytes.timingSafeEqual(multiRt, multiBin))
+
+// binary string length == bitLen
+var randBuf = bytes.genCryptoRand(8)
+var randBin = bytes.encode(randBuf, bytes.encoding.binary)
+assert(len(randBin) == bytes.bitLen(randBuf))
+
+// All-zeros encode/decode
+var zeroes = bytes.new(4, 0x00)
+assert(bytes.encode(zeroes, bytes.encoding.hex) == "00000000")
+assert(bytes.timingSafeEqual(bytes.decode("00000000", bytes.encoding.hex), zeroes))
+
+
+// =============================================================================
+// 17. bytes.checksum — output lengths and determinism
+// =============================================================================
+
+var msgCS = bytes.from("The quick brown fox jumps over the lazy dog")
+
+// Known lengths per algorithm
+assert(len(bytes.checksum(msgCS, bytes.checksums.crc32))   ==  4)
+assert(len(bytes.checksum(msgCS, bytes.checksums.crc32c))  ==  4)
+assert(len(bytes.checksum(msgCS, bytes.checksums.adler32)) ==  4)
+assert(len(bytes.checksum(msgCS, bytes.checksums.md5))     == 16)
+assert(len(bytes.checksum(msgCS, bytes.checksums.sha1))    == 20)
+assert(len(bytes.checksum(msgCS, bytes.checksums.sha256))  == 32)
+assert(len(bytes.checksum(msgCS, bytes.checksums.sha3_384))== 48)
+assert(len(bytes.checksum(msgCS, bytes.checksums.sha512))  == 64)
+
+// Determinism: same input → same output
+assert(bytes.timingSafeEqual(
+    bytes.checksum(msgCS, bytes.checksums.sha256),
+    bytes.checksum(msgCS, bytes.checksums.sha256)
+))
+
+// Avalanche: single bit flip changes output completely
+var msgA = bytes.from("hello")
+var msgB = bytes.setBit(bytes.from("hello"), 1, 0)   // flip MSB of 'h' (0x68 → 0x28)
+var hashA = bytes.checksum(msgA, bytes.checksums.sha256)
+var hashB = bytes.checksum(msgB, bytes.checksums.sha256)
+assert(not(bytes.timingSafeEqual(hashA, hashB)))
+
+// Different algorithms on same input → different outputs
+var sha256h = bytes.checksum(msgCS, bytes.checksums.sha256)
+var sha512h = bytes.checksum(msgCS, bytes.checksums.sha512)
+assert(not(bytes.timingSafeEqual(sha256h, sha512h)))
+
+// Empty input is valid
+assert(len(bytes.checksum(bytes.new(), bytes.checksums.sha256)) == 32)
+assert(len(bytes.checksum(bytes.new(), bytes.checksums.md5))    == 16)
+
+// Known SHA-256 of empty string:
+// e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+var emptyHash = bytes.checksum(bytes.new(), bytes.checksums.sha256)
+assert(bytes.encode(emptyHash, bytes.encoding.hex) ==
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+
+// Known MD5 of empty string: d41d8cd98f00b204e9800998ecf8427e
+var emptyMD5 = bytes.checksum(bytes.new(), bytes.checksums.md5)
+assert(bytes.encode(emptyMD5, bytes.encoding.hex) == "d41d8cd98f00b204e9800998ecf8427e")
+
+
+// =============================================================================
+// 18. bytes.hmac — output lengths, determinism, key sensitivity
+// =============================================================================
+
+var hmacMsg = bytes.from("message")
+var hmacKey = bytes.from("secret")
+
+assert(len(bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.md5))    == 16)
+assert(len(bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha1))   == 20)
+assert(len(bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha256)) == 32)
+assert(len(bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha512)) == 64)
+
+// Determinism
+assert(bytes.timingSafeEqual(
+    bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha256),
+    bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha256)
+))
+
+// Key sensitivity: different key → different HMAC
+var wrongKey = bytes.from("wrong")
+assert(not(bytes.timingSafeEqual(
+    bytes.hmac(hmacMsg, hmacKey,  bytes.hmacAlgorithms.sha256),
+    bytes.hmac(hmacMsg, wrongKey, bytes.hmacAlgorithms.sha256)
+)))
+
+// Message sensitivity: different message → different HMAC
+assert(not(bytes.timingSafeEqual(
+    bytes.hmac(bytes.from("msg1"), hmacKey, bytes.hmacAlgorithms.sha256),
+    bytes.hmac(bytes.from("msg2"), hmacKey, bytes.hmacAlgorithms.sha256)
+)))
+
+// HMAC ≠ plain checksum on the same input
+assert(not(bytes.timingSafeEqual(
+    bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha256),
+    bytes.checksum(hmacMsg, bytes.checksums.sha256)
+)))
+
+// Known HMAC-SHA256("message", "secret"):
+// 8b5f48702995c1598c573db1e21866a9b825d4a794d169d7060a03605796360b
+var knownHMAC = bytes.hmac(hmacMsg, hmacKey, bytes.hmacAlgorithms.sha256)
+assert(bytes.encode(knownHMAC, bytes.encoding.hex) ==
+    "8b5f48702995c1598c573db1e21866a9b825d4a794d169d7060a03605796360b")
+
+
+// =============================================================================
+// 19. bytes.genCryptoRand
+// =============================================================================
+
+// Output length is exactly as requested
+assert(len(bytes.genCryptoRand(1))   == 1)
+assert(len(bytes.genCryptoRand(16))  == 16)
+assert(len(bytes.genCryptoRand(32))  == 32)
+assert(len(bytes.genCryptoRand(256)) == 256)
+
+// Two calls almost certainly differ (birthday: P(collision) ≈ 2⁻²⁵⁵ for 32 bytes)
+var r1 = bytes.genCryptoRand(32)
+var r2 = bytes.genCryptoRand(32)
+assert(not(bytes.timingSafeEqual(r1, r2)))
+
+// Encoded forms have the right lengths
+var randHex = bytes.genCryptoRand(8, bytes.encoding.hex)
+assert(len(randHex) == 16)           // hex: 2 chars per byte
+
+var randB64 = bytes.genCryptoRand(6, bytes.encoding.base64)
+assert(len(randB64) == 8)            // base64: ceil(6/3)*4 = 8 chars
+
+var randBin = bytes.genCryptoRand(2, bytes.encoding.binary)
+assert(len(randBin) == 16)           // binary: 8 chars per byte
+
+
+// =============================================================================
+// 20. bytes.uuid
+// =============================================================================
+
+var dash = "-"
+
+// Nil UUID
+var nilUUID = bytes.uuid(nil)
+assert(nilUUID == "00000000-0000-0000-0000-000000000000")
+assert(len(nilUUID) == 36)
+
+// Max UUID (non-bytes argument)
+var maxUUID = bytes.uuid("not-16-bytes")
+assert(maxUUID == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
+
+// Random UUID structure
+var randUUID = bytes.uuid()
+assert(len(randUUID) == 36)
+assert(randUUID[8]  == dash)
+assert(randUUID[13] == dash)
+assert(randUUID[18] == dash)
+assert(randUUID[23] == dash)
+
+// No two random UUIDs are equal
+var u1 = bytes.uuid()
+var u2 = bytes.uuid()
+assert(not(u1 == u2))
+
+// UUID from exactly 16 bytes roundtrips through parseUUID
+var rawUUID = bytes.genCryptoRand(16)
+var uuidStr = bytes.uuid(rawUUID)
+assert(len(uuidStr) == 36)
+var parsedBack = bytes.parseUUID(uuidStr)
+assert(len(parsedBack) == 16)
+assert(bytes.timingSafeEqual(rawUUID, parsedBack))
+
+// parseUUID of nil UUID → 16 zero bytes
+var parsedNil = bytes.parseUUID("00000000-0000-0000-0000-000000000000")
+assert(len(parsedNil) == 16)
+for _, v in parsedNil { assert(v == 0) }
+
+
+// =============================================================================
+// 21. bytes.hexdump
+// =============================================================================
+
+// Non-empty: output is a non-empty string
+var dumpBuf = bytes.genCryptoRand(64)
+var dumpOut = bytes.hexdump(dumpBuf)
+assert(len(dumpOut) > 0)
+
+// Each row covers 16 bytes; 64 bytes → 4 rows
+// Each row: "xxxxxxxx " (9) + 8 pairs with spaces (24) + newline (1) = 34 chars per row
+// Just verify the output length is consistent and non-trivial
+assert(len(dumpOut) > 32)
+
+// Small buffer — 1 byte
+var dumpSmall = bytes.hexdump(bytes.from([0xAB]))
+assert(len(dumpSmall) > 0)
+
+// Empty buffer → empty string
+assert(len(bytes.hexdump(bytes.new())) == 0)
+
+
+// =============================================================================
+// 22. bytes.copyTo
+// =============================================================================
+
+// Copy full src into dst
+var dst = bytes.new(4, 0x00)
+var src = bytes.from([0xAA, 0xBB, 0xCC, 0xDD])
+var n = bytes.copyTo(dst, src, 0)
+assert(n == 4)
+assert(dst[0] == 0xAA and dst[1] == 0xBB and dst[2] == 0xCC and dst[3] == 0xDD)
+
+// Copy from offset within src
+dst = bytes.new(2, 0x00)
+src = bytes.from([0x11, 0x22, 0x33, 0x44])
+bytes.copyTo(dst, src, 2)               // copies src[2..3] into dst
+assert(dst[0] == 0x33 and dst[1] == 0x44)
+
+// Copy with explicit length
+dst = bytes.new(4, 0x00)
+src = bytes.from([0xAA, 0xBB, 0xCC, 0xDD, 0xEE])
+bytes.copyTo(dst, src, 0, 3)            // copy 3 bytes from offset 0
+assert(dst[0] == 0xAA and dst[1] == 0xBB and dst[2] == 0xCC and dst[3] == 0x00)
+
+
+// =============================================================================
+// 23. bytes.getSystemEndianess
+// =============================================================================
+
+// Must return either the big or little endian string constant
+var sysEnd = bytes.getSystemEndianess()
+assert(sysEnd == bytes.endian.big or sysEnd == bytes.endian.little)
+
+
+// =============================================================================
+// 24. File I/O roundtrip
+// =============================================================================
+
+var tmpPath = "./vida_bytes_regression.tmp"
+var fileContent = bytes.from("regression test file content 1234567890")
+var written = bytes.toFile(fileContent, tmpPath)
+assert(written == len(fileContent))
+
+var loaded = bytes.fromFile(tmpPath)
+assert(bytes.timingSafeEqual(fileContent, loaded))
+
+// Overwrite and re-read
+var newContent = bytes.genCryptoRand(128)
+bytes.toFile(newContent, tmpPath)
+var reloaded = bytes.fromFile(tmpPath)
+assert(bytes.timingSafeEqual(newContent, reloaded))
+
+var os = load("std/os")
+os.rm(tmpPath)
+
+
+// =============================================================================
+// 25. Integration: authenticated encryption (XOR cipher + HMAC-SHA256)
+// =============================================================================
+//
+// Simulates a real protocol:
+//   packet = HMAC(ciphertext, key) || ciphertext
+//   ciphertext = plaintext XOR keystream
+
+var authEncrypt = fun {
+    var messages = [
+        "Marcus Aurelius",
+        "Epictetus",
+        "Seneca",
+        "",
+        "短い"
+    ]
+    var secretKey = bytes.from("regression-test-key-v1")
+
+    for _, plaintext in messages {
+        var plain = bytes.from(plaintext)
+
+        // Encrypt with random keystream (handle empty message gracefully)
+        var keystream = bytes.new(len(plain))
+        if len(plain) > 0 {
+            keystream = bytes.genCryptoRand(len(plain))
+        }
+        var cipher = bytes.xor(plain, keystream)
+
+        // Authenticate: MAC covers ciphertext only
+        var mac = bytes.hmac(cipher, secretKey, bytes.hmacAlgorithms.sha256)
+        assert(len(mac) == 32)
+
+        // Frame: [32-byte MAC][ciphertext]
+        var packet = bytes.concat(mac, cipher)
+        assert(len(packet) == 32 + len(plain))
+
+        // Receiver: split packet
+        var recvMAC    = bytes.view(packet, 0, 32)
+        var recvCipher = bytes.view(packet, 32, len(plain))
+
+        // Verify MAC
+        var expectedMAC = bytes.hmac(recvCipher, secretKey, bytes.hmacAlgorithms.sha256)
+        assert(bytes.timingSafeEqual(recvMAC, expectedMAC))
+
+        // Tamper detection: flipping a bit in ciphertext must break MAC
+        // (only for non-empty messages)
+        if len(plain) > 0 {
+            var tampered = bytes.setBit(bytes.new(recvCipher), 0, 1)
+            if not(bytes.getBit(recvCipher, 0) == 1) {
+                var badMAC = bytes.hmac(tampered, secretKey, bytes.hmacAlgorithms.sha256)
+                assert(not(bytes.timingSafeEqual(recvMAC, badMAC)))
+            }
+        }
+
+        // Decrypt and verify recovery
+        var recovered = bytes.xor(recvCipher, keystream)
+        assert(bytes.toString(recovered) == plaintext)
+    }
+}
+
+authEncrypt()
+
+
+// =============================================================================
+// 26. Integration: binary protocol field packing (big-endian bit fields)
+// =============================================================================
+//
+// Simulates packing a compact protocol header:
+//
+//   [ version: 4 bits ][ flags: 4 bits ][ length: 16 bits ][ checksum: 8 bits ]
+//   Total: 32 bits = 4 bytes
+
+var packHeader = fun {
+    var version  = 0x3        // 4  bits: 0b0011
+    var flags    = 0xA        // 4  bits: 0b1010
+    var msgLen   = 0x0400     // 16 bits: 1024
+    var cs       = 0xBE       // 8  bits: 0xBE
+
+    // Pack each field
+    var vBytes  = bytes.fromUInt(version, 4,  bytes.endian.big)   // [0x30]
+    var fBytes  = bytes.fromUInt(flags,   4,  bytes.endian.big)   // [0xA0]
+    var lBytes  = bytes.fromUInt(msgLen,  16, bytes.endian.big)   // [0x04, 0x00]
+    var cBytes  = bytes.fromUInt(cs,      8,  bytes.endian.big)   // [0xBE]
+
+    // The four-bit fields need to be merged into one byte
+    // version nibble is in the high 4 bits of vBytes[0]: 0b0011_0000 = 0x30
+    // flags   nibble is in the high 4 bits of fBytes[0]: 0b1010_0000 = 0xA0
+    // OR them together to form the first header byte
+    var firstByte = bytes.from([vBytes[0] | (fBytes[0] >> 4)])
+    // firstByte[0] = 0x30 | 0x0A = 0x3A = 0b00111010
+
+    var header = bytes.concat(firstByte, lBytes, cBytes)
+    assert(len(header) == 4)
+
+    // Unpack and verify version (high nibble)
+    var unpackedVersion = bytes.readUInt(header, 0, 4, bytes.endian.big)
+    assert(unpackedVersion == version)
+
+    // Unpack and verify flags (low nibble of first byte)
+    var unpackedFlags = bytes.readUInt(header, 4, 4, bytes.endian.big)
+    assert(unpackedFlags == flags)
+
+    // Unpack and verify length (bits 8-23)
+    var unpackedLen = bytes.readUInt(header, 8, 16, bytes.endian.big)
+    assert(unpackedLen == msgLen)
+
+    // Unpack and verify checksum (bits 24-31)
+    var unpackedCS = bytes.readUInt(header, 24, 8, bytes.endian.big)
+    assert(unpackedCS == cs)
+}
+
+packHeader()
