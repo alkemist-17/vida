@@ -8,7 +8,7 @@ func loadFoundationCasting() Value {
 	m := &Object{Value: make(map[string]Value, 6)}
 	m.Value["toString"] = GFn(castToString)
 	m.Value["toInt"] = GFn(castToInt)
-	m.Value["toFloat"] = GFn(casttoFloat)
+	m.Value["toFloat"] = GFn(castToFloat)
 	m.Value["toBool"] = GFn(castToBool)
 	m.Value["toArray"] = GFn(castToArray)
 	m.Value["toObject"] = GFn(castToObject)
@@ -19,7 +19,7 @@ func castToString(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].String()}, nil
 	}
-	return NilValue, nil
+	return &String{Value: EmptyString}, nil
 }
 
 func castToInt(args ...Value) (Value, error) {
@@ -31,6 +31,11 @@ func castToInt(args ...Value) (Value, error) {
 			if e == nil {
 				return Integer(i), nil
 			}
+			f, e := strconv.ParseFloat(v.Value, 64)
+			if e == nil {
+				return Integer(f), nil
+			}
+			return NilValue, nil
 		case Integer:
 			return v, nil
 		case Bool:
@@ -39,24 +44,24 @@ func castToInt(args ...Value) (Value, error) {
 			}
 			return Integer(0), nil
 		case Float:
-			return Integer(v), nil
+			return Integer(int64(v)), nil
 		case Nil:
 			return Integer(0), nil
 		}
 	case 2:
 		if v, ok := args[0].(*String); ok {
-			if b, ok := args[1].(Integer); ok {
-				i, e := strconv.ParseInt(v.Value, int(b), 64)
+			if base, ok := args[1].(Integer); ok && base == 0 || (2 <= base && base <= 36) {
+				i, e := strconv.ParseInt(v.Value, int(base), 64)
 				if e == nil {
 					return Integer(i), nil
 				}
 			}
 		}
 	}
-	return NilValue, nil
+	return Integer(0), nil
 }
 
-func casttoFloat(args ...Value) (Value, error) {
+func castToFloat(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *String:
@@ -77,7 +82,7 @@ func casttoFloat(args ...Value) (Value, error) {
 			return Float(0), nil
 		}
 	}
-	return NilValue, nil
+	return Float(0), nil
 }
 
 func castToBool(args ...Value) (Value, error) {
@@ -92,7 +97,7 @@ func castToBool(args ...Value) (Value, error) {
 		}
 		return args[0].Boolean(), nil
 	}
-	return NilValue, nil
+	return Bool(false), nil
 }
 
 func castToArray(args ...Value) (Value, error) {
@@ -107,67 +112,62 @@ func castToArray(args ...Value) (Value, error) {
 			}
 			return &Array{Value: a}, nil
 		case *Object:
-			a := make([]Value, len(v.Value)*2)
-			var idx int
-			for k, v := range v.Value {
-				a[idx] = &String{Value: k}
-				idx++
-				a[idx] = v
-				idx++
+			pairs := make([]Value, len(v.Value))
+			i := 0
+			for k, val := range v.Value {
+				pairs[i] = &Array{Value: []Value{&String{Value: k}, val}}
+				i++
 			}
-			return &Array{Value: a}, nil
+			return &Array{Value: pairs}, nil
 		case *Enum:
-			a := make([]Value, len(v.Pairs)*2)
-			var idx int
-			for k, v := range v.Pairs {
-				a[idx] = &String{Value: k}
-				idx++
-				a[idx] = v
-				idx++
+			pairs := make([]Value, len(v.Pairs))
+			i := 0
+			for k, val := range v.Pairs {
+				pairs[i] = &Array{Value: []Value{&String{Value: k}, val}}
+				i++
 			}
-			return &Array{Value: a}, nil
+			return &Array{Value: pairs}, nil
 		case VidaError:
-			a := make([]Value, 2)
-			a[0] = &String{Value: errorMessageFieldName}
-			a[1] = v.Message
+			a := make([]Value, 1)
+			a[0] = v.Message
 			return &Array{Value: a}, nil
 		}
 	}
-	return NilValue, nil
+	return &Array{Value: make([]Value, 0)}, nil
 }
 
 func castToObject(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		switch v := args[0].(type) {
+		switch val := args[0].(type) {
 		case *Object:
-			return v.Clone(), nil
+			return val.Clone(), nil
 		case *Array:
-			o := &Object{Value: make(map[string]Value, len(v.Value))}
-			for i, v := range v.Value {
+			o := &Object{Value: make(map[string]Value, len(val.Value))}
+			for i, v := range val.Value {
 				o.Value[Integer(i).ObjectKey()] = v
 			}
 			return o, nil
 		case *Bytes:
-			o := &Object{Value: make(map[string]Value, len(v.Value))}
-			for i, v := range v.Value {
+			o := &Object{Value: make(map[string]Value, len(val.Value))}
+			for i, v := range val.Value {
 				o.Value[Integer(i).ObjectKey()] = Integer(v)
 			}
 			return o, nil
 		case VidaError:
 			o := &Object{Value: make(map[string]Value, 1)}
-			o.Value[errorMessageFieldName] = v.Message
+			o.Value[errorMessageFieldName] = val.Message
 			return o, nil
 		case *Enum:
-			o := &Object{Value: make(map[string]Value, len(v.Pairs))}
-			for k, v := range v.Pairs {
+			o := &Object{Value: make(map[string]Value, len(val.Pairs))}
+			for k, v := range val.Pairs {
 				o.Value[k] = v
 			}
 			return o, nil
 		default:
-			o := &Object{Value: make(map[string]Value, 1)}
-			o.Value["value"] = v
+			o := &Object{Value: make(map[string]Value, 4)}
+			o.Value[DefaultValField] = val
 			return o, nil
 		}
 	}
-	return NilValue, nil
+	return &Object{Value: make(map[string]Value)}, nil
 }

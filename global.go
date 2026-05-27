@@ -79,6 +79,8 @@ const (
 	__uplus = "__uplus"
 
 	EmptyString = ""
+
+	DefaultValField = "value"
 )
 
 const (
