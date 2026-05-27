@@ -8,8 +8,8 @@ import (
 
 func loadFoundationTask() Value {
 	m := &Object{Value: make(map[string]Value, 2)}
-	m.Value["concepts"] = GFn(taksConcepts)
-	m.Value["parallel"] = GFn(taskRunInParallel)
+	m.Value["concepts"] = NativeFunction(taksConcepts)
+	m.Value["parallel"] = NativeFunction(taskRunInParallel)
 	return m
 }
 
@@ -72,7 +72,7 @@ func taskRunInParallel(args ...Value) (Value, error) {
 								e = err
 							}
 						})
-					case GFn:
+					case NativeFunction:
 						wg.Go(func() {
 							val, err := fn.Call(T.Value[1:]...)
 							if err == nil {
@@ -84,19 +84,19 @@ func taskRunInParallel(args ...Value) (Value, error) {
 					default:
 						wg.Wait()
 						result = nil
-						return NilValue, verror.ErrParallelFn
+						return GlobalNil, verror.ErrParallelFn
 					}
 				} else {
 					wg.Wait()
 					result = nil
-					return NilValue, verror.ErrParallelArgs
+					return GlobalNil, verror.ErrParallelArgs
 				}
 			}
 			wg.Wait()
 			return result, e
 		} else {
-			return NilValue, verror.ErrNonEmptyTaskArray
+			return GlobalNil, verror.ErrNonEmptyTaskArray
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }

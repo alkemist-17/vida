@@ -15,7 +15,7 @@ import (
 	"github.com/alkemist-17/vida/verror"
 )
 
-var NilValue = Nil{}
+var GlobalNil = Nil{}
 
 type LibsLoader map[string]func() Value
 
@@ -182,19 +182,19 @@ var coreLibNames = []string{
 
 func loadCoreLib(store *[]Value) *[]Value {
 	*store = append(*store,
-		NilValue,
-		GFn(corePrint),
-		GFn(coreLen),
-		GFn(coreAppend),
-		GFn(coreNewArray),
-		GFn(coreLoadLib),
-		GFn(coreType),
-		GFn(coreAssert),
-		GFn(coreFormat),
-		GFn(coreReadLine),
-		GFn(coreClone),
-		GFn(coreError),
-		GFn(coreIsError),
+		GlobalNil,
+		NativeFunction(corePrint),
+		NativeFunction(coreLen),
+		NativeFunction(coreAppend),
+		NativeFunction(coreNewArray),
+		NativeFunction(coreLoadLib),
+		NativeFunction(coreType),
+		NativeFunction(coreAssert),
+		NativeFunction(coreFormat),
+		NativeFunction(coreReadLine),
+		NativeFunction(coreClone),
+		NativeFunction(coreError),
+		NativeFunction(coreIsError),
 	)
 	return store
 }
@@ -205,7 +205,7 @@ func corePrint(args ...Value) (Value, error) {
 		s = append(s, v)
 	}
 	fmt.Fprintln(os.Stdout, s...)
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreLen(args ...Value) (Value, error) {
@@ -231,14 +231,14 @@ func coreLen(args ...Value) (Value, error) {
 			return Integer(len(v.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreType(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].Type()}, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreFormat(args ...Value) (Value, error) {
@@ -249,7 +249,7 @@ func coreFormat(args ...Value) (Value, error) {
 			return &String{Value: s}, e
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreAssert(args ...Value) (Value, error) {
@@ -259,17 +259,17 @@ func coreAssert(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
-		return NilValue, err
+		return GlobalNil, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
 			return Bool(true), nil
 		}
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
-		return NilValue, err
+		return GlobalNil, err
 	}
 	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
-	return NilValue, err
+	return GlobalNil, err
 }
 
 func coreAppend(args ...Value) (Value, error) {
@@ -287,7 +287,7 @@ func coreAppend(args ...Value) (Value, error) {
 			return v, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreNewArray(args ...Value) (Value, error) {
@@ -298,7 +298,7 @@ func coreNewArray(args ...Value) (Value, error) {
 
 	switch v := args[0].(type) {
 	case Integer:
-		var init Value = NilValue
+		var init Value = GlobalNil
 		if l > 1 {
 			init = args[1]
 		}
@@ -450,13 +450,13 @@ func coreNewArray(args ...Value) (Value, error) {
 					}
 				default:
 					for i := range size {
-						A[i] = NilValue
+						A[i] = GlobalNil
 					}
 				}
 				return &Array{Value: A}, nil
 			} else {
 				for i := range size {
-					A[i] = NilValue
+					A[i] = GlobalNil
 				}
 			}
 
@@ -560,7 +560,7 @@ func coreNewArray(args ...Value) (Value, error) {
 				if arr2, ok := zipVal.Value[1].(*Array); ok {
 					minLen := Integer(min(len(arr1.Value), len(arr2.Value)))
 					padMode := false
-					var padVal Value = NilValue
+					var padVal Value = GlobalNil
 					if pad, hasPad := v.Value["pad"]; hasPad {
 						padMode = true
 						padVal = pad
@@ -727,16 +727,16 @@ func coreReadLine(args ...Value) (Value, error) {
 		return &String{Value: scanner.Text()}, nil
 	}
 	if err := scanner.Err(); err != nil {
-		return NilValue, err
+		return GlobalNil, err
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreClone(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return args[0].Clone(), nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreLoadLib(args ...Value) (Value, error) {
@@ -789,14 +789,14 @@ func coreLoadLib(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func coreError(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return VidaError{Message: args[0]}, nil
 	}
-	return VidaError{Message: NilValue}, nil
+	return VidaError{Message: GlobalNil}, nil
 }
 
 func coreIsError(args ...Value) (Value, error) {
@@ -811,7 +811,7 @@ func DeepEqual(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		return Bool(reflect.DeepEqual(args[0], args[1])), nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func loadFoundationCorelib() Value {

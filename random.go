@@ -12,22 +12,22 @@ const nanoIDMaxSize = 36
 
 func loadFoundationRandom() Value {
 	m := &Object{Value: make(map[string]Value, 21)}
-	m.Value["N"] = GFn(randN)
-	m.Value["I"] = GFn(randNextI)
-	m.Value["U32"] = GFn(randNextU32)
+	m.Value["N"] = NativeFunction(randN)
+	m.Value["I"] = NativeFunction(randNextI)
+	m.Value["U32"] = NativeFunction(randNextU32)
 	m.Value["F"] = randNextF(rand.Float64)
 	m.Value["norm"] = randNextF(rand.NormFloat64)
 	m.Value["exp"] = randNextF(rand.ExpFloat64)
-	m.Value["perm"] = GFn(randPerm)
-	m.Value["shuffled"] = GFn(randShuffled)
+	m.Value["perm"] = NativeFunction(randPerm)
+	m.Value["shuffled"] = NativeFunction(randShuffled)
 	m.Value["zipf"] = randNextZipf(rand.NewZipf(rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), rand.Float64()+1.0, rand.ExpFloat64()+1.0, math.MaxUint64))
 	m.Value["pcg"] = reandNewPermutedCongruentialGenerator(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	m.Value["CC8"] = randNewChaCha8()
-	m.Value["bytes"] = GFn(randBytes)
-	m.Value["text"] = GFn(randText)
-	m.Value["nanoid"] = GFn(randNanoID)
-	m.Value["uuid"] = GFn(bytesUUID)
-	m.Value["customNanoid"] = GFn(randNanoIDCustomAlphabeth)
+	m.Value["bytes"] = NativeFunction(randBytes)
+	m.Value["text"] = NativeFunction(randText)
+	m.Value["nanoid"] = NativeFunction(randNanoID)
+	m.Value["uuid"] = NativeFunction(bytesUUID)
+	m.Value["customNanoid"] = NativeFunction(randNanoIDCustomAlphabeth)
 	m.Value["nanoidDefaultSize"] = Integer(nanoIDDefaultSize)
 	m.Value["alphanumeric"] = &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
 	m.Value["numeric"] = &String{Value: "0123456789"}
@@ -50,7 +50,7 @@ func randNextI(args ...Value) (Value, error) {
 	return Integer(rand.Int64()), nil
 }
 
-func randNextF(fn func() float64) GFn {
+func randNextF(fn func() float64) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		return Float(fn()), nil
 	}
@@ -70,7 +70,7 @@ func randPerm(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func randShuffled(args ...Value) (Value, error) {
@@ -95,7 +95,7 @@ func randShuffled(args ...Value) (Value, error) {
 			return c, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func randNextU32(args ...Value) (Value, error) {
@@ -112,7 +112,7 @@ func randNextU32(args ...Value) (Value, error) {
 	return Integer(rand.Int32()), nil
 }
 
-func randNextZipf(zipf *rand.Zipf) GFn {
+func randNextZipf(zipf *rand.Zipf) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		i64 := Integer(zipf.Uint64())
 		if i64 < 0 {
@@ -122,7 +122,7 @@ func randNextZipf(zipf *rand.Zipf) GFn {
 	}
 }
 
-func reandNewPermutedCongruentialGenerator(pcg *rand.PCG) GFn {
+func reandNewPermutedCongruentialGenerator(pcg *rand.PCG) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		i64 := Integer(pcg.Uint64())
 		if i64 < 0 {
@@ -146,7 +146,7 @@ func randN(args ...Value) (Value, error) {
 	return Integer(rand.N(math.MaxInt)), nil
 }
 
-func randNewChaCha8() GFn {
+func randNewChaCha8() NativeFunction {
 	b := make([]byte, 32)
 	cryptoRand.Read(b)
 	chacha8 := rand.NewChaCha8([32]byte(b))
@@ -170,7 +170,7 @@ func randBytes(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func randText(args ...Value) (Value, error) {
@@ -200,7 +200,7 @@ func randNanoID(args ...Value) (Value, error) {
 			return &String{Value: string(nanoid), Runes: nanoid}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
@@ -214,7 +214,7 @@ func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
 			b := make([]byte, steps)
 			r := []rune(alpha.Value)
 			lenr := len(r)
-			return GFn(func(args ...Value) (Value, error) {
+			return NativeFunction(func(args ...Value) (Value, error) {
 				for {
 					cryptoRand.Read(b)
 					var j int
@@ -232,7 +232,7 @@ func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
 			}), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func generateMask(length int) Integer {

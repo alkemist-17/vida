@@ -4,7 +4,7 @@ import "github.com/alkemist-17/vida"
 
 func loadExampleExtension() vida.Value {
 	m := &vida.Object{Value: make(map[string]vida.Value)}
-	m.Value["sayHello"] = vida.GFn(greet)
+	m.Value["sayHello"] = vida.NativeFunction(greet)
 	return m
 }
 

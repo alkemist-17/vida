@@ -6,12 +6,12 @@ import (
 
 func loadFoundationCasting() Value {
 	m := &Object{Value: make(map[string]Value, 6)}
-	m.Value["toString"] = GFn(castToString)
-	m.Value["toInt"] = GFn(castToInt)
-	m.Value["toFloat"] = GFn(castToFloat)
-	m.Value["toBool"] = GFn(castToBool)
-	m.Value["toArray"] = GFn(castToArray)
-	m.Value["toObject"] = GFn(castToObject)
+	m.Value["toString"] = NativeFunction(castToString)
+	m.Value["toInt"] = NativeFunction(castToInt)
+	m.Value["toFloat"] = NativeFunction(castToFloat)
+	m.Value["toBool"] = NativeFunction(castToBool)
+	m.Value["toArray"] = NativeFunction(castToArray)
+	m.Value["toObject"] = NativeFunction(castToObject)
 	return m
 }
 
@@ -35,7 +35,7 @@ func castToInt(args ...Value) (Value, error) {
 			if e == nil {
 				return Integer(f), nil
 			}
-			return NilValue, nil
+			return GlobalNil, nil
 		case Integer:
 			return v, nil
 		case Bool:

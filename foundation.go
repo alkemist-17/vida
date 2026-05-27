@@ -11,18 +11,18 @@ func loadFoundationException() Value {
 		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 	}
 	m := &Object{Value: make(map[string]Value, 2)}
-	m.Value["raise"] = GFn(exceptionRaise)
-	m.Value["protected"] = GFn(exceptionCatch)
+	m.Value["raise"] = NativeFunction(exceptionRaise)
+	m.Value["protected"] = NativeFunction(exceptionCatch)
 	return m
 }
 
 func exceptionRaise(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n   Message : %v\n\n", verror.ExceptionErrType, args[0].String()))
-		return NilValue, err
+		return GlobalNil, err
 	}
 	err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n\n", verror.ExceptionErrType))
-	return NilValue, err
+	return GlobalNil, err
 }
 
 func exceptionCatch(args ...Value) (Value, error) {
@@ -97,5 +97,5 @@ func exceptionCatch(args ...Value) (Value, error) {
 			return v, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }

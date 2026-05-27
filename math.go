@@ -37,18 +37,18 @@ func loadFoundationMath() Value {
 	return m
 }
 
-func mathInf(fn func(int) float64) GFn {
+func mathInf(fn func(int) float64) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Integer); ok {
 				return Float(fn(int(v))), nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func mathIsNan(fn func(float64) bool) GFn {
+func mathIsNan(fn func(float64) bool) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Float); ok {
@@ -58,11 +58,11 @@ func mathIsNan(fn func(float64) bool) GFn {
 				return Bool(fn(float64(v))), nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func mathIsInf(fn func(float64, int) bool) GFn {
+func mathIsInf(fn func(float64, int) bool) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if v, ok := args[0].(Float); ok {
@@ -76,17 +76,17 @@ func mathIsInf(fn func(float64, int) bool) GFn {
 				}
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func mathNan(fn func() float64) GFn {
+func mathNan(fn func() float64) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		return Float(fn()), nil
 	}
 }
 
-func mathFromFloatToFloat(fn func(float64) float64) GFn {
+func mathFromFloatToFloat(fn func(float64) float64) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Float); ok {
@@ -96,11 +96,11 @@ func mathFromFloatToFloat(fn func(float64) float64) GFn {
 				return Float(fn(float64(v))), nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func mathPow(fn func(float64, float64) float64) GFn {
+func mathPow(fn func(float64, float64) float64) NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 1 {
 			switch l := args[0].(type) {
@@ -120,6 +120,6 @@ func mathPow(fn func(float64, float64) float64) GFn {
 				}
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }

@@ -37,15 +37,15 @@ func (it *ArrayIterator) Boolean() Bool {
 }
 
 func (it *ArrayIterator) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *ArrayIterator) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *ArrayIterator) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *ArrayIterator) ISet(Value, Value) error {
@@ -65,7 +65,7 @@ func (it *ArrayIterator) IsCallable() Bool {
 }
 
 func (it *ArrayIterator) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (it ArrayIterator) String() string {
@@ -122,15 +122,15 @@ func (it *ObjectIterator) Boolean() Bool {
 }
 
 func (it *ObjectIterator) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *ObjectIterator) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *ObjectIterator) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *ObjectIterator) ISet(Value, Value) error {
@@ -150,7 +150,7 @@ func (it *ObjectIterator) IsCallable() Bool {
 }
 
 func (it *ObjectIterator) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (it ObjectIterator) String() string {
@@ -190,15 +190,15 @@ func (it *StringIterator) Boolean() Bool {
 }
 
 func (it *StringIterator) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *StringIterator) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *StringIterator) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *StringIterator) ISet(Value, Value) error {
@@ -218,7 +218,7 @@ func (it *StringIterator) IsCallable() Bool {
 }
 
 func (it *StringIterator) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (it StringIterator) String() string {
@@ -257,15 +257,15 @@ func (it *IntegerIterator) Boolean() Bool {
 }
 
 func (it *IntegerIterator) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *IntegerIterator) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *IntegerIterator) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (it *IntegerIterator) ISet(Value, Value) error {
@@ -285,7 +285,7 @@ func (it *IntegerIterator) IsCallable() Bool {
 }
 
 func (it *IntegerIterator) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (it IntegerIterator) String() string {
@@ -325,15 +325,15 @@ func (bi *BytesIterator) Boolean() Bool {
 }
 
 func (bi *BytesIterator) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (bi *BytesIterator) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (bi *BytesIterator) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrOpNotDefinedForIterators
+	return GlobalNil, verror.ErrOpNotDefinedForIterators
 }
 
 func (bi *BytesIterator) ISet(Value, Value) error {
@@ -353,7 +353,7 @@ func (bi *BytesIterator) IsCallable() Bool {
 }
 
 func (bi *BytesIterator) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (bi BytesIterator) String() string {

@@ -12,48 +12,48 @@ import (
 
 func loadFoundationText() Value {
 	m := &Object{Value: make(map[string]Value, 42)}
-	m.Value["hasPrefix"] = GFn(textHasPrefix)
-	m.Value["hasSuffix"] = GFn(textHasSuffix)
-	m.Value["fromCodePoints"] = GFn(textFromCodepoints)
-	m.Value["trim"] = GFn(textTrim)
-	m.Value["trimLeft"] = GFn(textTrimLeft)
-	m.Value["trimRight"] = GFn(textTrimRight)
-	m.Value["split"] = GFn(textSplit)
-	m.Value["fields"] = GFn(textFields)
-	m.Value["repeat"] = GFn(textRepeat)
-	m.Value["replaceN"] = GFn(textReplaceN)
-	m.Value["replaceAll"] = GFn(textReplaceAll)
-	m.Value["center"] = GFn(textCenter)
-	m.Value["contains"] = GFn(textContains)
-	m.Value["containsAny"] = GFn(textContainsAny)
-	m.Value["index"] = GFn(textIndex)
-	m.Value["join"] = GFn(textJoin)
-	m.Value["toLower"] = GFn(textToLowerCase)
-	m.Value["toUpper"] = GFn(textToUpperCase)
-	m.Value["count"] = GFn(textCount)
-	m.Value["isAscii"] = GFn(textIsAscii)
-	m.Value["isDecimal"] = GFn(textIsDecimal)
-	m.Value["isDigit"] = GFn(textIsDigit)
-	m.Value["isHexDigit"] = GFn(textIsHexDigit)
-	m.Value["isLetter"] = GFn(textIsLetter)
-	m.Value["isNumber"] = GFn(textIsNumber)
-	m.Value["isSpace"] = GFn(textIsSpace)
-	m.Value["isSpaceChar"] = GFn(textIsSpaceChar)
-	m.Value["codePoints"] = GFn(textCodepoints)
-	m.Value["bytesLen"] = GFn(textBytesLen)
-	m.Value["equalFold"] = GFn(textEqualFold)
-	m.Value["capitalize"] = GFn(textCapitalize)
-	m.Value["padLeft"] = GFn(textPadLeft)
-	m.Value["padRight"] = GFn(textPadRight)
-	m.Value["lines"] = GFn(textLines)
-	m.Value["truncate"] = GFn(textTruncate)
-	m.Value["wrap"] = GFn(textWrap)
-	m.Value["slugify"] = GFn(textSlugify)
-	m.Value["startsWithAny"] = GFn(textStartsWithAny)
-	m.Value["endsWithAny"] = GFn(textEndsWithAny)
-	m.Value["compare"] = GFn(textCompare)
-	m.Value["urlEncode"] = GFn(textUrlEncode)
-	m.Value["urlDecode"] = GFn(textUrlDecode)
+	m.Value["hasPrefix"] = NativeFunction(textHasPrefix)
+	m.Value["hasSuffix"] = NativeFunction(textHasSuffix)
+	m.Value["fromCodePoints"] = NativeFunction(textFromCodepoints)
+	m.Value["trim"] = NativeFunction(textTrim)
+	m.Value["trimLeft"] = NativeFunction(textTrimLeft)
+	m.Value["trimRight"] = NativeFunction(textTrimRight)
+	m.Value["split"] = NativeFunction(textSplit)
+	m.Value["fields"] = NativeFunction(textFields)
+	m.Value["repeat"] = NativeFunction(textRepeat)
+	m.Value["replaceN"] = NativeFunction(textReplaceN)
+	m.Value["replaceAll"] = NativeFunction(textReplaceAll)
+	m.Value["center"] = NativeFunction(textCenter)
+	m.Value["contains"] = NativeFunction(textContains)
+	m.Value["containsAny"] = NativeFunction(textContainsAny)
+	m.Value["index"] = NativeFunction(textIndex)
+	m.Value["join"] = NativeFunction(textJoin)
+	m.Value["toLower"] = NativeFunction(textToLowerCase)
+	m.Value["toUpper"] = NativeFunction(textToUpperCase)
+	m.Value["count"] = NativeFunction(textCount)
+	m.Value["isAscii"] = NativeFunction(textIsAscii)
+	m.Value["isDecimal"] = NativeFunction(textIsDecimal)
+	m.Value["isDigit"] = NativeFunction(textIsDigit)
+	m.Value["isHexDigit"] = NativeFunction(textIsHexDigit)
+	m.Value["isLetter"] = NativeFunction(textIsLetter)
+	m.Value["isNumber"] = NativeFunction(textIsNumber)
+	m.Value["isSpace"] = NativeFunction(textIsSpace)
+	m.Value["isSpaceChar"] = NativeFunction(textIsSpaceChar)
+	m.Value["codePoints"] = NativeFunction(textCodepoints)
+	m.Value["bytesLen"] = NativeFunction(textBytesLen)
+	m.Value["equalFold"] = NativeFunction(textEqualFold)
+	m.Value["capitalize"] = NativeFunction(textCapitalize)
+	m.Value["padLeft"] = NativeFunction(textPadLeft)
+	m.Value["padRight"] = NativeFunction(textPadRight)
+	m.Value["lines"] = NativeFunction(textLines)
+	m.Value["truncate"] = NativeFunction(textTruncate)
+	m.Value["wrap"] = NativeFunction(textWrap)
+	m.Value["slugify"] = NativeFunction(textSlugify)
+	m.Value["startsWithAny"] = NativeFunction(textStartsWithAny)
+	m.Value["endsWithAny"] = NativeFunction(textEndsWithAny)
+	m.Value["compare"] = NativeFunction(textCompare)
+	m.Value["urlEncode"] = NativeFunction(textUrlEncode)
+	m.Value["urlDecode"] = NativeFunction(textUrlDecode)
 	return m
 }
 
@@ -65,7 +65,7 @@ func textHasPrefix(args ...Value) (Value, error) {
 			return Bool(strings.HasPrefix(v.Value, p.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textHasSuffix(args ...Value) (Value, error) {
@@ -76,7 +76,7 @@ func textHasSuffix(args ...Value) (Value, error) {
 			return Bool(strings.HasSuffix(v.Value, p.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textFromCodepoints(args ...Value) (Value, error) {
@@ -101,7 +101,7 @@ func textTrim(args ...Value) (Value, error) {
 			return &String{Value: strings.Trim(v.Value, " ")}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textTrimLeft(args ...Value) (Value, error) {
@@ -116,7 +116,7 @@ func textTrimLeft(args ...Value) (Value, error) {
 			return &String{Value: strings.TrimLeft(v.Value, " ")}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textTrimRight(args ...Value) (Value, error) {
@@ -131,7 +131,7 @@ func textTrimRight(args ...Value) (Value, error) {
 			return &String{Value: strings.TrimRight(v.Value, " ")}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textSplit(args ...Value) (Value, error) {
@@ -146,7 +146,7 @@ func textSplit(args ...Value) (Value, error) {
 			return textStringToArray(strings.Split(v.Value, " ")), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textFields(args ...Value) (Value, error) {
@@ -155,7 +155,7 @@ func textFields(args ...Value) (Value, error) {
 			return textStringToArray(strings.Fields(v.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textRepeat(args ...Value) (Value, error) {
@@ -163,13 +163,13 @@ func textRepeat(args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if times, ok := args[1].(Integer); ok && times >= 0 {
 				if StringLength(v)*times > verror.MaxMemSize {
-					return NilValue, nil
+					return GlobalNil, nil
 				}
 				return &String{Value: strings.Repeat(v.Value, int(times))}, nil
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textReplaceN(args ...Value) (Value, error) {
@@ -184,7 +184,7 @@ func textReplaceN(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textReplaceAll(args ...Value) (Value, error) {
@@ -197,7 +197,7 @@ func textReplaceAll(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textCenterString(s *String, width int, sep string) *String {
@@ -226,7 +226,7 @@ func textCenter(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textContains(args ...Value) (Value, error) {
@@ -237,7 +237,7 @@ func textContains(args ...Value) (Value, error) {
 			return Bool(strings.Contains(s.Value, substr.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textContainsAny(args ...Value) (Value, error) {
@@ -248,7 +248,7 @@ func textContainsAny(args ...Value) (Value, error) {
 			return Bool(strings.ContainsAny(s.Value, substr.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textIndex(args ...Value) (Value, error) {
@@ -259,7 +259,7 @@ func textIndex(args ...Value) (Value, error) {
 			return Integer(strings.Index(s.Value, substr.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textJoin(args ...Value) (Value, error) {
@@ -274,7 +274,7 @@ func textJoin(args ...Value) (Value, error) {
 			return &String{Value: strings.Join(r, sep.Value)}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textToLowerCase(args ...Value) (Value, error) {
@@ -283,7 +283,7 @@ func textToLowerCase(args ...Value) (Value, error) {
 			return &String{Value: strings.ToLower(v.Value)}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textToUpperCase(args ...Value) (Value, error) {
@@ -292,7 +292,7 @@ func textToUpperCase(args ...Value) (Value, error) {
 			return &String{Value: strings.ToUpper(v.Value)}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textCount(args ...Value) (Value, error) {
@@ -303,7 +303,7 @@ func textCount(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textIsAscii(args ...Value) (Value, error) {
@@ -457,7 +457,7 @@ func textCodepoints(args ...Value) (Value, error) {
 			return &Array{Value: result}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textIsSpaceChar(args ...Value) (Value, error) {
@@ -475,7 +475,7 @@ func textBytesLen(args ...Value) (Value, error) {
 			return Integer(len(val.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textStringToArray(slice []string) Value {
@@ -495,7 +495,7 @@ func textEqualFold(args ...Value) (Value, error) {
 			return Bool(strings.EqualFold(s.Value, t.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textCapitalize(args ...Value) (Value, error) {
@@ -511,7 +511,7 @@ func textCapitalize(args ...Value) (Value, error) {
 			return &String{Value: string(unicode.ToUpper(first)) + strings.ToLower(s.Value[size:])}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textPadLeft(args ...Value) (Value, error) {
@@ -536,7 +536,7 @@ func textPadLeft(args ...Value) (Value, error) {
 			return &String{Value: strings.Repeat(pad, int(w)-strLen) + s.Value}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textPadRight(args ...Value) (Value, error) {
@@ -561,7 +561,7 @@ func textPadRight(args ...Value) (Value, error) {
 			return &String{Value: s.Value + strings.Repeat(pad, int(w)-strLen)}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textLines(args ...Value) (Value, error) {
@@ -582,7 +582,7 @@ func textLines(args ...Value) (Value, error) {
 			return textStringToArray(parts), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textTruncate(args ...Value) (Value, error) {
@@ -607,7 +607,7 @@ func textTruncate(args ...Value) (Value, error) {
 			return &String{Value: string(s.Runes[:avail]) + suffix}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textWrap(args ...Value) (Value, error) {
@@ -642,7 +642,7 @@ func textWrap(args ...Value) (Value, error) {
 			return &String{Value: b.String()}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textSlugify(args ...Value) (Value, error) {
@@ -686,7 +686,7 @@ func textSlugify(args ...Value) (Value, error) {
 			return &String{Value: res}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func textStartsWithAny(args ...Value) (Value, error) {
@@ -727,7 +727,7 @@ func textCompare(args ...Value) (Value, error) {
 			return Integer(strings.Compare(a.Value, b.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 // textUrlEncode percent-encodes a string for safe inclusion in URLs.
@@ -773,7 +773,7 @@ func textUrlEncode(args ...Value) (Value, error) {
 			return &String{Value: b.String()}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 var upperHex = [16]byte{

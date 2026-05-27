@@ -8,20 +8,20 @@ import (
 
 func loadFoundationOS() Value {
 	m := &Object{Value: make(map[string]Value, 17)}
-	m.Value["args"] = GFn(osArgs)
-	m.Value["env"] = GFn(osEnviron)
-	m.Value["exit"] = GFn(osExit)
-	m.Value["getFromEnv"] = GFn(osGetEnv)
-	m.Value["pwd"] = GFn(osGetWD)
-	m.Value["hostname"] = GFn(osHostname)
+	m.Value["args"] = NativeFunction(osArgs)
+	m.Value["env"] = NativeFunction(osEnviron)
+	m.Value["exit"] = NativeFunction(osExit)
+	m.Value["getFromEnv"] = NativeFunction(osGetEnv)
+	m.Value["pwd"] = NativeFunction(osGetWD)
+	m.Value["hostname"] = NativeFunction(osHostname)
 	m.Value["pathSeparator"] = &String{Value: string(os.PathSeparator)}
-	m.Value["mkdir"] = GFn(osMkdir)
-	m.Value["mkdirAll"] = GFn(osMkdirAll)
-	m.Value["rm"] = GFn(osRemove)
-	m.Value["rmAll"] = GFn(osRemoveAll)
-	m.Value["name"] = GFn(osName)
-	m.Value["arch"] = GFn(osArch)
-	m.Value["run"] = GFn(osRunCMD)
+	m.Value["mkdir"] = NativeFunction(osMkdir)
+	m.Value["mkdirAll"] = NativeFunction(osMkdirAll)
+	m.Value["rm"] = NativeFunction(osRemove)
+	m.Value["rmAll"] = NativeFunction(osRemoveAll)
+	m.Value["name"] = NativeFunction(osName)
+	m.Value["arch"] = NativeFunction(osArch)
+	m.Value["run"] = NativeFunction(osRunCMD)
 	m.Value["stdin"] = &FileHandler{Handler: os.Stdin}
 	m.Value["stdout"] = &FileHandler{Handler: os.Stdout}
 	m.Value["stderr"] = &FileHandler{Handler: os.Stderr}
@@ -46,7 +46,7 @@ func osEnviron(args ...Value) (Value, error) {
 
 func osExit(args ...Value) (Value, error) {
 	os.Exit(0)
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func osGetEnv(args ...Value) (Value, error) {
@@ -63,7 +63,7 @@ func osGetEnv(args ...Value) (Value, error) {
 			return &Array{Value: xs}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func osGetWD(args ...Value) (Value, error) {
@@ -92,7 +92,7 @@ func osMkdir(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func osMkdirAll(args ...Value) (Value, error) {
@@ -105,7 +105,7 @@ func osMkdirAll(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func osRemove(args ...Value) (Value, error) {
@@ -118,7 +118,7 @@ func osRemove(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func osRemoveAll(args ...Value) (Value, error) {
@@ -131,7 +131,7 @@ func osRemoveAll(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func osName(args ...Value) (Value, error) {
@@ -163,5 +163,5 @@ func osRunCMD(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }

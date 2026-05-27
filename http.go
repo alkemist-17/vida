@@ -69,17 +69,17 @@ var httpDefaultVidaHttpClient *vidaHttpClient
 func loadFoundationHttpClient() Value {
 	httpDefaultVidaHttpClient = newVidaHttpClient()
 	m := &Object{Value: make(map[string]Value, 11)}
-	m.Value["request"] = GFn(httpRequest)
-	m.Value["get"] = GFn(httpRequest)
-	m.Value["post"] = GFn(httpPost)
-	m.Value["put"] = GFn(httpPut)
-	m.Value["delete"] = GFn(httpDelete)
-	m.Value["patch"] = GFn(httpPatch)
-	m.Value["head"] = GFn(httpHead)
-	m.Value["options"] = GFn(httpOptions)
-	m.Value["statusText"] = GFn(httpStatusCodeText)
-	m.Value["urlEncode"] = GFn(httpURLEncode)
-	m.Value["detectContentType"] = GFn(httpDetectContentType)
+	m.Value["request"] = NativeFunction(httpRequest)
+	m.Value["get"] = NativeFunction(httpRequest)
+	m.Value["post"] = NativeFunction(httpPost)
+	m.Value["put"] = NativeFunction(httpPut)
+	m.Value["delete"] = NativeFunction(httpDelete)
+	m.Value["patch"] = NativeFunction(httpPatch)
+	m.Value["head"] = NativeFunction(httpHead)
+	m.Value["options"] = NativeFunction(httpOptions)
+	m.Value["statusText"] = NativeFunction(httpStatusCodeText)
+	m.Value["urlEncode"] = NativeFunction(httpURLEncode)
+	m.Value["detectContentType"] = NativeFunction(httpDetectContentType)
 	return m
 }
 
@@ -112,7 +112,7 @@ func httpRequest(args ...Value) (Value, error) {
 			return httpResponseToObject(resp, body), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, error) {
@@ -228,7 +228,7 @@ func httpParseBody(userConfig *Object, reqConfig *requestConfig) {
 	case *String, *Object, *Bytes:
 		reqConfig.Body = v
 	default:
-		reqConfig.Body = NilValue
+		reqConfig.Body = GlobalNil
 	}
 }
 
@@ -492,7 +492,7 @@ func httpRequestWithMethod(method string, args ...Value) (Value, error) {
 		}
 		return httpRequest(args[0])
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func httpPost(args ...Value) (Value, error) {
@@ -525,7 +525,7 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 			return &String{Value: http.StatusText(int(code))}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func httpURLEncode(args ...Value) (Value, error) {
@@ -538,7 +538,7 @@ func httpURLEncode(args ...Value) (Value, error) {
 			return &String{Value: values.Encode()}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func httpDetectContentType(args ...Value) (Value, error) {
@@ -547,7 +547,7 @@ func httpDetectContentType(args ...Value) (Value, error) {
 			return &String{Value: http.DetectContentType(data.Value)}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 type vidaHttpClient struct {

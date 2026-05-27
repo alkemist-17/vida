@@ -8,19 +8,19 @@ import (
 func loadFoundationIO() Value {
 	m := &Object{Value: make(map[string]Value, 23)}
 	// fmt
-	m.Value["write"] = GFn(ioWrite)
-	m.Value["fwrite"] = GFn(ioFWrite)
-	m.Value["printf"] = GFn(ioPrintF)
-	m.Value["fprintf"] = GFn(ioFPrintF)
-	m.Value["errorf"] = GFn(ioErrorf)
+	m.Value["write"] = NativeFunction(ioWrite)
+	m.Value["fwrite"] = NativeFunction(ioFWrite)
+	m.Value["printf"] = NativeFunction(ioPrintF)
+	m.Value["fprintf"] = NativeFunction(ioFPrintF)
+	m.Value["errorf"] = NativeFunction(ioErrorf)
 	// file
-	m.Value["open"] = GFn(fileOpen)
-	m.Value["create"] = GFn(fileCreate)
-	m.Value["exists"] = GFn(fileExists)
-	m.Value["remove"] = GFn(fileRemove)
-	m.Value["size"] = GFn(fileSize)
-	m.Value["isFile"] = GFn(fileIsFile)
-	m.Value["createTemp"] = GFn(fileCreateTemp)
+	m.Value["open"] = NativeFunction(fileOpen)
+	m.Value["create"] = NativeFunction(fileCreate)
+	m.Value["exists"] = NativeFunction(fileExists)
+	m.Value["remove"] = NativeFunction(fileRemove)
+	m.Value["size"] = NativeFunction(fileSize)
+	m.Value["isFile"] = NativeFunction(fileIsFile)
+	m.Value["createTemp"] = NativeFunction(fileCreateTemp)
 	m.Value["tempDir"] = &String{Value: os.TempDir()}
 	m.Value["ok"] = Bool(true)
 	m.Value["R"] = Integer(os.O_RDONLY)
@@ -72,7 +72,7 @@ func ioFWrite(args ...Value) (Value, error) {
 			return Integer(n), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func ioFPrintF(args ...Value) (Value, error) {
@@ -116,7 +116,7 @@ func ioFPrintF(args ...Value) (Value, error) {
 			return VidaError{Message: &String{Value: noStringFormat}}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func ioWrite(args ...Value) (Value, error) {
@@ -125,7 +125,7 @@ func ioWrite(args ...Value) (Value, error) {
 		s = append(s, v)
 	}
 	fmt.Fprint(os.Stdout, s...)
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func ioPrintF(args ...Value) (Value, error) {
@@ -143,7 +143,7 @@ func ioPrintF(args ...Value) (Value, error) {
 		}
 		return VidaError{Message: &String{Value: noStringFormat}}, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func ioErrorf(args ...Value) (Value, error) {
@@ -161,5 +161,5 @@ func ioErrorf(args ...Value) (Value, error) {
 		}
 		return VidaError{Message: &String{Value: noStringFormat}}, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }

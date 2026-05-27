@@ -11,11 +11,11 @@ import (
 
 func loadFoundationColor() Value {
 	m := &Object{Value: make(map[string]Value, 5)}
-	m.Value["string"] = GFn(colorQuickSprint)
-	m.Value["format"] = GFn(colorFormatQuickSprint)
-	m.Value["reset"] = GFn(colorReset)
-	m.Value["new"] = GFn(colorNew)
-	m.Value["printPaletteChart"] = GFn(colorPaletteChart)
+	m.Value["string"] = NativeFunction(colorQuickSprint)
+	m.Value["format"] = NativeFunction(colorFormatQuickSprint)
+	m.Value["reset"] = NativeFunction(colorReset)
+	m.Value["new"] = NativeFunction(colorNew)
+	m.Value["printPaletteChart"] = NativeFunction(colorPaletteChart)
 	return m
 }
 
@@ -35,7 +35,7 @@ func colorQuickSprint(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorFormatQuickSprint(args ...Value) (Value, error) {
@@ -54,7 +54,7 @@ func colorFormatQuickSprint(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorNew(args ...Value) (Value, error) {
@@ -76,7 +76,7 @@ func colorNew(args ...Value) (Value, error) {
 
 func colorReset(args ...Value) (Value, error) {
 	fmt.Print(Sprint256(-1, -1, EmptyString))
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorPaletteChart(args ...Value) (Value, error) {
@@ -88,7 +88,7 @@ func colorPaletteChart(args ...Value) (Value, error) {
 	// Grayscale (232-255)
 	printSection("Grayscale (232-255)", 232, 255)
 	fmt.Printf("\nPalette Chart complete.\n\n\n")
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 // Library
@@ -110,20 +110,20 @@ func (c *Color) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(true), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
 func (c *Color) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
-		return NilValue, nil
+		return GlobalNil, nil
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
 		return IsMemberOf(c, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
@@ -266,12 +266,12 @@ func Sprint256(fg, bg int, a ...any) string {
 func generateColorInterface(color *Color) Value {
 	o := &Object{Value: make(map[string]Value, 7)}
 	o.Value[colorName] = color
-	o.Value["string"] = GFn(colorString)
-	o.Value["format"] = GFn(colorFormat)
-	o.Value["bg"] = GFn(colorSetBG)
-	o.Value["fg"] = GFn(colorSetFG)
-	o.Value["reset"] = GFn(colorSetReset)
-	o.Value["resets"] = GFn(colorGetReset)
+	o.Value["string"] = NativeFunction(colorString)
+	o.Value["format"] = NativeFunction(colorFormat)
+	o.Value["bg"] = NativeFunction(colorSetBG)
+	o.Value["fg"] = NativeFunction(colorSetFG)
+	o.Value["reset"] = NativeFunction(colorSetReset)
+	o.Value["resets"] = NativeFunction(colorGetReset)
 	return o
 }
 
@@ -283,7 +283,7 @@ func colorString(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorFormat(args ...Value) (Value, error) {
@@ -297,7 +297,7 @@ func colorFormat(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorSetBG(args ...Value) (Value, error) {
@@ -311,7 +311,7 @@ func colorSetBG(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorSetFG(args ...Value) (Value, error) {
@@ -325,7 +325,7 @@ func colorSetFG(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorSetReset(args ...Value) (Value, error) {
@@ -339,7 +339,7 @@ func colorSetReset(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func colorGetReset(args ...Value) (Value, error) {
@@ -350,7 +350,7 @@ func colorGetReset(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func printSection(title string, start, end int) {

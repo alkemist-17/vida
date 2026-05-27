@@ -87,7 +87,7 @@ func (th *Thread) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(false), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -100,7 +100,7 @@ func (th *Thread) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return Bool(false), nil
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (th *Thread) Equals(other Value) Bool {
@@ -140,7 +140,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 	}
 	if start && vm.Script.MainFunction.CoreFn.Arity > largs {
 		for i := largs; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
-			vm.Frame.stack[i] = NilValue
+			vm.Frame.stack[i] = GlobalNil
 		}
 	} else if !start && largs > 0 {
 		vm.Frame.stack[vm.Reg] = args[0]
@@ -631,7 +631,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 	}
 	if start && vm.Script.MainFunction.CoreFn.Arity > largs {
 		for i := largs; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
-			vm.Frame.stack[i] = NilValue
+			vm.Frame.stack[i] = GlobalNil
 		}
 	} else if !start && largs > 0 {
 		vm.Frame.stack[vm.Reg] = args[0]

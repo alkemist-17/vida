@@ -44,7 +44,7 @@ func fileOpen(args ...Value) (Value, error) {
 			}
 			return generateFileHandlerObject(file), nil
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 	if len(args) > 1 {
 		if path, ok := args[0].(*String); ok {
@@ -57,9 +57,9 @@ func fileOpen(args ...Value) (Value, error) {
 				return generateFileHandlerObject(file), nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func fileCreate(args ...Value) (Value, error) {
@@ -72,9 +72,9 @@ func fileCreate(args ...Value) (Value, error) {
 			}
 			return generateFileHandlerObject(file), nil
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func fileExists(args ...Value) (Value, error) {
@@ -86,9 +86,9 @@ func fileExists(args ...Value) (Value, error) {
 			}
 			return Bool(true), nil
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func fileRemove(args ...Value) (Value, error) {
@@ -100,9 +100,9 @@ func fileRemove(args ...Value) (Value, error) {
 			}
 			return Bool(true), nil
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func fileSize(args ...Value) (Value, error) {
@@ -114,9 +114,9 @@ func fileSize(args ...Value) (Value, error) {
 			}
 			return Integer(fileInfo.Size()), nil
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func fileIsFile(args ...Value) (Value, error) {
@@ -126,7 +126,7 @@ func fileIsFile(args ...Value) (Value, error) {
 		}
 		return Bool(false), nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func fileCreateTemp(args ...Value) (Value, error) {
@@ -142,7 +142,7 @@ func fileCreateTemp(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 // FileHandler API
@@ -163,20 +163,20 @@ func (file *FileHandler) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return !file.Boolean(), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
 func (file *FileHandler) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
-		return NilValue, nil
+		return GlobalNil, nil
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
 		return IsMemberOf(file, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
@@ -200,7 +200,7 @@ func (file *FileHandler) Clone() Value {
 }
 
 // FileHandler Methods
-func fileClose() GFn {
+func fileClose() NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
@@ -223,11 +223,11 @@ func fileClose() GFn {
 				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func fileIsClosed() GFn {
+func fileIsClosed() NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
@@ -237,11 +237,11 @@ func fileIsClosed() GFn {
 				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func fileName() GFn {
+func fileName() NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
@@ -251,11 +251,11 @@ func fileName() GFn {
 				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func fileReadLines() GFn {
+func fileReadLines() NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
@@ -282,11 +282,11 @@ func fileReadLines() GFn {
 				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func fileRead() GFn {
+func fileRead() NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if obj, ok := args[0].(*Object); ok {
@@ -308,11 +308,11 @@ func fileRead() GFn {
 				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }
 
-func fileWrite() GFn {
+func fileWrite() NativeFunction {
 	return func(args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if obj, ok := args[0].(*Object); ok {
@@ -343,6 +343,6 @@ func fileWrite() GFn {
 				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
-		return NilValue, nil
+		return GlobalNil, nil
 	}
 }

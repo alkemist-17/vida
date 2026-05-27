@@ -3,27 +3,27 @@ package vida
 func loadObjectLib() Value {
 	checkForTPAndMeta()
 	m := &Object{Value: make(map[string]Value, 21)}
-	m.Value["inject"] = GFn(objectInjectProperties)
-	m.Value["override"] = GFn(objectInjectAndOverrideProperties)
-	m.Value["extract"] = GFn(objectExtractProperties)
-	m.Value["conforms"] = GFn(objectCheckProperties)
-	m.Value["implements"] = GFn(objectCheckProperties)
-	m.Value["extends"] = GFn(objectSetMeta)
-	m.Value["setmeta"] = GFn(objectSetMeta)
-	m.Value["getmeta"] = GFn(objectGetMeta)
-	m.Value["hasmeta"] = GFn(objectHasMeta)
-	m.Value["delmeta"] = GFn(objectDelMeta)
-	m.Value["set"] = GFn(objectSetValue)
-	m.Value["get"] = GFn(objectGetValue)
-	m.Value["has"] = GFn(objectHasValue)
-	m.Value["del"] = GFn(objectDeleteProperty)
-	m.Value["keys"] = GFn(objectGetKeys)
-	m.Value["values"] = GFn(objectGetValues)
-	m.Value["isEmpty"] = GFn(objectIsEmpty)
-	m.Value["isObject"] = GFn(objectIsObject)
-	m.Value["isCallable"] = GFn(objectIsCallable)
-	m.Value["clear"] = GFn(objectClear)
-	m.Value["getset"] = GFn(objectGetOrSet)
+	m.Value["inject"] = NativeFunction(objectInjectProperties)
+	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
+	m.Value["extract"] = NativeFunction(objectExtractProperties)
+	m.Value["conforms"] = NativeFunction(objectCheckProperties)
+	m.Value["implements"] = NativeFunction(objectCheckProperties)
+	m.Value["extends"] = NativeFunction(objectSetMeta)
+	m.Value["setmeta"] = NativeFunction(objectSetMeta)
+	m.Value["getmeta"] = NativeFunction(objectGetMeta)
+	m.Value["hasmeta"] = NativeFunction(objectHasMeta)
+	m.Value["delmeta"] = NativeFunction(objectDelMeta)
+	m.Value["set"] = NativeFunction(objectSetValue)
+	m.Value["get"] = NativeFunction(objectGetValue)
+	m.Value["has"] = NativeFunction(objectHasValue)
+	m.Value["del"] = NativeFunction(objectDeleteProperty)
+	m.Value["keys"] = NativeFunction(objectGetKeys)
+	m.Value["values"] = NativeFunction(objectGetValues)
+	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
+	m.Value["isObject"] = NativeFunction(objectIsObject)
+	m.Value["isCallable"] = NativeFunction(objectIsCallable)
+	m.Value["clear"] = NativeFunction(objectClear)
+	m.Value["getset"] = NativeFunction(objectGetOrSet)
 	return m
 }
 
@@ -42,7 +42,7 @@ func objectInjectProperties(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectInjectAndOverrideProperties(args ...Value) (Value, error) {
@@ -60,7 +60,7 @@ func objectInjectAndOverrideProperties(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectCheckProperties(args ...Value) (Value, error) {
@@ -85,7 +85,7 @@ func objectCheckProperties(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectExtractProperties(args ...Value) (Value, error) {
@@ -103,7 +103,7 @@ func objectExtractProperties(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectDeleteProperty(args ...Value) (Value, error) {
@@ -115,7 +115,7 @@ func objectDeleteProperty(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectSetMeta(args ...Value) (Value, error) {
@@ -132,7 +132,7 @@ func objectSetMeta(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectGetMeta(args ...Value) (Value, error) {
@@ -146,7 +146,7 @@ func objectGetMeta(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectGetValue(args ...Value) (Value, error) {
@@ -157,7 +157,7 @@ func objectGetValue(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectSetValue(args ...Value) (Value, error) {
@@ -170,7 +170,7 @@ func objectSetValue(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectGetOrSet(args ...Value) (Value, error) {
@@ -186,7 +186,7 @@ func objectGetOrSet(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectHasValue(args ...Value) (Value, error) {
@@ -200,7 +200,7 @@ func objectHasValue(args ...Value) (Value, error) {
 			return Bool(true), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectGetKeys(args ...Value) (Value, error) {
@@ -221,7 +221,7 @@ func objectGetKeys(args ...Value) (Value, error) {
 			return &Array{Value: keys}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectGetValues(args ...Value) (Value, error) {
@@ -242,7 +242,7 @@ func objectGetValues(args ...Value) (Value, error) {
 			return &Array{Value: values}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectrecursiveMetaSearch(set map[string]bool, self *Object) {
@@ -271,7 +271,7 @@ func objectIsEmpty(args ...Value) (Value, error) {
 			return Bool(l == 0), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectIsObject(args ...Value) (Value, error) {
@@ -279,7 +279,7 @@ func objectIsObject(args ...Value) (Value, error) {
 		_, ok := args[0].(*Object)
 		return Bool(ok), nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectIsCallable(args ...Value) (Value, error) {
@@ -299,7 +299,7 @@ func objectClear(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectHasMeta(args ...Value) (Value, error) {
@@ -311,7 +311,7 @@ func objectHasMeta(args ...Value) (Value, error) {
 			return Bool(false), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func objectDelMeta(args ...Value) (Value, error) {
@@ -326,5 +326,5 @@ func objectDelMeta(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }

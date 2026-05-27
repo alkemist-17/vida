@@ -12,30 +12,30 @@ import (
 
 func loadFoundationArray() Value {
 	m := &Object{Value: make(map[string]Value, 24)}
-	m.Value["concat"] = GFn(arrayConcat)
-	m.Value["clear"] = GFn(arrayClear)
-	m.Value["index"] = GFn(arrayIndex)
-	m.Value["insert"] = GFn(arrayInsert)
-	m.Value["reverse"] = GFn(arrayReverse)
-	m.Value["reversed"] = GFn(arrayReversed)
-	m.Value["pop"] = GFn(arrayPop)
-	m.Value["sort"] = GFn(arraySort)
-	m.Value["sortBy"] = GFn(arraySortObjects)
-	m.Value["repeat"] = GFn(arrayRepeat)
-	m.Value["toObject"] = GFn(arrayToObject)
-	m.Value["new"] = GFn(coreNewArray)
-	m.Value["isArray"] = GFn(arrayIsArray)
-	m.Value["isEmpty"] = GFn(arrayIsEmpty)
-	m.Value["pairs"] = GFn(arrayPairs)
-	m.Value["compact"] = GFn(arrayCompact)
-	m.Value["compacted"] = GFn(arrayCompacted)
-	m.Value["chunk"] = GFn(arrayChunk)
-	m.Value["clip"] = GFn(arrayClip)
-	m.Value["replace"] = GFn(arrayReplace)
-	m.Value["cap"] = GFn(arrayCap)
-	m.Value["view"] = GFn(arrayView)
-	m.Value["grow"] = GFn(arrayGrow)
-	m.Value["overlaps"] = GFn(arrayOverlaps)
+	m.Value["concat"] = NativeFunction(arrayConcat)
+	m.Value["clear"] = NativeFunction(arrayClear)
+	m.Value["index"] = NativeFunction(arrayIndex)
+	m.Value["insert"] = NativeFunction(arrayInsert)
+	m.Value["reverse"] = NativeFunction(arrayReverse)
+	m.Value["reversed"] = NativeFunction(arrayReversed)
+	m.Value["pop"] = NativeFunction(arrayPop)
+	m.Value["sort"] = NativeFunction(arraySort)
+	m.Value["sortBy"] = NativeFunction(arraySortObjects)
+	m.Value["repeat"] = NativeFunction(arrayRepeat)
+	m.Value["toObject"] = NativeFunction(arrayToObject)
+	m.Value["new"] = NativeFunction(coreNewArray)
+	m.Value["isArray"] = NativeFunction(arrayIsArray)
+	m.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
+	m.Value["pairs"] = NativeFunction(arrayPairs)
+	m.Value["compact"] = NativeFunction(arrayCompact)
+	m.Value["compacted"] = NativeFunction(arrayCompacted)
+	m.Value["chunk"] = NativeFunction(arrayChunk)
+	m.Value["clip"] = NativeFunction(arrayClip)
+	m.Value["replace"] = NativeFunction(arrayReplace)
+	m.Value["cap"] = NativeFunction(arrayCap)
+	m.Value["view"] = NativeFunction(arrayView)
+	m.Value["grow"] = NativeFunction(arrayGrow)
+	m.Value["overlaps"] = NativeFunction(arrayOverlaps)
 	return m
 }
 
@@ -48,7 +48,7 @@ func arrayConcat(args ...Value) (Value, error) {
 			}
 		}
 		if size < 0 || size >= verror.MaxMemSize {
-			return NilValue, verror.ErrMaxMemSize
+			return GlobalNil, verror.ErrMaxMemSize
 		}
 		result := make([]Value, 0, size)
 		for _, v := range args {
@@ -58,7 +58,7 @@ func arrayConcat(args ...Value) (Value, error) {
 		}
 		return &Array{Value: result}, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayClear(args ...Value) (Value, error) {
@@ -68,7 +68,7 @@ func arrayClear(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayCap(args ...Value) (Value, error) {
@@ -77,7 +77,7 @@ func arrayCap(args ...Value) (Value, error) {
 			return Integer(cap(xs.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayOverlaps(args ...Value) (Value, error) {
@@ -88,7 +88,7 @@ func arrayOverlaps(args ...Value) (Value, error) {
 			return Bool(overlapsBackingArray(a.Value, b.Value)), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayView(args ...Value) (Value, error) {
@@ -102,7 +102,7 @@ func arrayView(args ...Value) (Value, error) {
 			return &Array{Value: xs.Value[start:end]}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayGrow(args ...Value) (Value, error) {
@@ -114,7 +114,7 @@ func arrayGrow(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayIndex(args ...Value) (Value, error) {
@@ -127,7 +127,7 @@ func arrayIndex(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayInsert(args ...Value) (Value, error) {
@@ -141,7 +141,7 @@ func arrayInsert(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayReverse(args ...Value) (Value, error) {
@@ -151,7 +151,7 @@ func arrayReverse(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayReversed(args ...Value) (Value, error) {
@@ -163,7 +163,7 @@ func arrayReversed(args ...Value) (Value, error) {
 			return &Array{Value: vals}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayPop(args ...Value) (Value, error) {
@@ -198,7 +198,7 @@ func arrayPop(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayToObject(args ...Value) (Value, error) {
@@ -211,7 +211,7 @@ func arrayToObject(args ...Value) (Value, error) {
 			return o, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arraySortObjects(args ...Value) (Value, error) {
@@ -293,7 +293,7 @@ func arraySortObjects(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayIsArray(args ...Value) (Value, error) {
@@ -301,7 +301,7 @@ func arrayIsArray(args ...Value) (Value, error) {
 		_, ok := args[0].(*Array)
 		return Bool(ok), nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayIsEmpty(args ...Value) (Value, error) {
@@ -310,7 +310,7 @@ func arrayIsEmpty(args ...Value) (Value, error) {
 			return Bool(len(xs.Value) == 0), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayPairs(args ...Value) (Value, error) {
@@ -325,7 +325,7 @@ func arrayPairs(args ...Value) (Value, error) {
 			return &Array{Value: entries}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayCompact(args ...Value) (Value, error) {
@@ -335,7 +335,7 @@ func arrayCompact(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayCompacted(args ...Value) (Value, error) {
@@ -346,7 +346,7 @@ func arrayCompacted(args ...Value) (Value, error) {
 			return cloned, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayChunk(args ...Value) (Value, error) {
@@ -365,7 +365,7 @@ func arrayChunk(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayClip(args ...Value) (Value, error) {
@@ -375,7 +375,7 @@ func arrayClip(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func arrayReplace(args ...Value) (Value, error) {
@@ -399,7 +399,7 @@ func arrayReplace(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func overlapsBackingArray[T any](a, b []T) bool {
@@ -487,7 +487,7 @@ func arraySort(args ...Value) (Value, error) {
 	// Auto-detect type from first non-nil element
 	var sample Value
 	for _, v := range xs.Value {
-		if v.Type() != NilValue.Type() {
+		if v.Type() != GlobalNil.Type() {
 			sample = v
 			break
 		}
@@ -522,5 +522,5 @@ func arrayRepeat(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }

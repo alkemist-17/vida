@@ -43,19 +43,19 @@ func (n Nil) Prefix(op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return Bool(true), nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (n Nil) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
-		return NilValue, nil
+		return GlobalNil, nil
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
 		return IsMemberOf(n, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
@@ -90,7 +90,7 @@ func (b Bool) Prefix(op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return !b, nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (b Bool) Binop(op uint64, rhs Value) (Value, error) {
@@ -108,12 +108,12 @@ func (b Bool) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(b, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
 func (b Bool) IGet(index Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (b Bool) ISet(index, val Value) error {
@@ -136,11 +136,11 @@ func (b Bool) IsCallable() Bool {
 }
 
 func (b Bool) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (b Bool) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (b Bool) String() string {
@@ -181,7 +181,7 @@ func (s *String) Binop(op uint64, rhs Value) (Value, error) {
 		switch op {
 		case uint64(token.ADD):
 			if len(s.Value)+len(r.Value) >= verror.MaxMemSize {
-				return NilValue, verror.ErrMaxMemSize
+				return GlobalNil, verror.ErrMaxMemSize
 			}
 			str := &String{Value: s.Value + r.Value}
 			return str, nil
@@ -205,7 +205,7 @@ func (s *String) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(s, rhs)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (s *String) IGet(index Value) (Value, error) {
@@ -223,7 +223,7 @@ func (s *String) IGet(index Value) (Value, error) {
 			return &String{Value: string(sr), Runes: sr}, nil
 		}
 	}
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (s *String) ISet(index, val Value) error {
@@ -234,7 +234,7 @@ func (s *String) Prefix(op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return Bool(false), nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (s *String) Equals(other Value) Bool {
@@ -299,7 +299,7 @@ func (i Integer) Prefix(op uint64) (Value, error) {
 	case uint64(token.TILDE):
 		return Integer(^uint32(i)), nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
@@ -314,12 +314,12 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 			return l * r, nil
 		case uint64(token.DIV):
 			if r == 0 {
-				return NilValue, verror.ErrDivisionByZero
+				return GlobalNil, verror.ErrDivisionByZero
 			}
 			return l / r, nil
 		case uint64(token.REM):
 			if r == 0 {
-				return NilValue, verror.ErrDivisionByZero
+				return GlobalNil, verror.ErrDivisionByZero
 			}
 			return l % r, nil
 		case uint64(token.LT):
@@ -375,11 +375,11 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(l, rhs)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (i Integer) IGet(index Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (i Integer) ISet(index, val Value) error {
@@ -405,7 +405,7 @@ func (i Integer) IsCallable() Bool {
 }
 
 func (i Integer) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (i Integer) Iterator() Value {
@@ -446,7 +446,7 @@ func (f Float) Prefix(op uint64) (Value, error) {
 	case uint64(token.ADD):
 		return f, nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (f Float) Binop(op uint64, rhs Value) (Value, error) {
@@ -506,11 +506,11 @@ func (f Float) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(f, rhs)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (f Float) IGet(index Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (f Float) ISet(index, val Value) error {
@@ -536,11 +536,11 @@ func (f Float) IsCallable() Bool {
 }
 
 func (f Float) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (f Float) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (f Float) String() string {
@@ -572,7 +572,7 @@ func (xs *Array) Prefix(op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return Bool(false), nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
@@ -586,7 +586,7 @@ func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
 			}
 			lLen := len(xs.Value)
 			if rLen+lLen >= verror.MaxMemSize {
-				return NilValue, verror.ErrMaxMemSize
+				return GlobalNil, verror.ErrMaxMemSize
 			}
 			values := make([]Value, lLen+rLen)
 			copy(values[:lLen], xs.Value)
@@ -604,7 +604,7 @@ func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(xs, rhs)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (xs *Array) IGet(index Value) (Value, error) {
@@ -618,7 +618,7 @@ func (xs *Array) IGet(index Value) (Value, error) {
 			return xs.Value[r], nil
 		}
 	}
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (xs *Array) ISet(index, val Value) error {
@@ -735,7 +735,7 @@ func (o *Object) Prefix(op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return Bool(false), nil
 	}
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
@@ -891,7 +891,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(o, rhs)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
@@ -917,14 +917,14 @@ func (o *Object) IGet(index Value) (Value, error) {
 			return current.execute(val, index)
 		case *Object:
 			if current == val {
-				return NilValue, nil
+				return GlobalNil, nil
 			}
 			current = val
 		default:
 			return val, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func (o *Object) ISet(index, val Value) error {
@@ -1002,7 +1002,7 @@ func (o *Object) Call(args ...Value) (Value, error) {
 					return o.execute(Fn, &Array{Value: a})
 				}
 				return o.execute(Fn, args...)
-			case GFn:
+			case NativeFunction:
 				r, _ := arrayInsert(&Array{Value: args}, Integer(0), o)
 				return Fn.Call(r.(*Array).Value...)
 			default:
@@ -1010,7 +1010,7 @@ func (o *Object) Call(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (o *Object) Iterator() Value {
@@ -1037,7 +1037,7 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 				vm.Thread.Invoker = nil
 				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
 				vm.Thread = invoker
-				return NilValue, threadError
+				return GlobalNil, threadError
 			}
 			switch vm.State {
 			case Completed, Suspended:
@@ -1057,7 +1057,7 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 				vm.Thread.Invoker = nil
 				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
 				vm.Thread = invoker
-				return NilValue, threadError
+				return GlobalNil, threadError
 			}
 			switch vm.State {
 			case Completed, Suspended:
@@ -1164,15 +1164,15 @@ func (c *CoreFunction) Boolean() Bool {
 }
 
 func (c *CoreFunction) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (c *CoreFunction) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (c *CoreFunction) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (c *CoreFunction) ISet(Value, Value) error {
@@ -1195,7 +1195,7 @@ func (c *CoreFunction) IsCallable() Bool {
 }
 
 func (c *CoreFunction) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (c *CoreFunction) Type() string {
@@ -1225,7 +1225,7 @@ func (f *Function) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(false), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -1238,11 +1238,11 @@ func (f *Function) Binop(op uint64, r Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(f, r)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (f *Function) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (f *Function) ISet(Value, Value) error {
@@ -1265,7 +1265,7 @@ func (f *Function) IsCallable() Bool {
 }
 
 func (f *Function) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (f *Function) Type() string {
@@ -1284,22 +1284,22 @@ func (f *Function) ObjectKey() string {
 	return fmt.Sprintf("Function(%p)", f.CoreFn)
 }
 
-type GFn func(args ...Value) (Value, error)
+type NativeFunction func(args ...Value) (Value, error)
 
-func (gfn GFn) Boolean() Bool {
+func (gfn NativeFunction) Boolean() Bool {
 	return Bool(true)
 }
 
-func (gfn GFn) Prefix(op uint64) (Value, error) {
+func (gfn NativeFunction) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return Bool(false), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
-func (gfn GFn) Binop(op uint64, r Value) (Value, error) {
+func (gfn NativeFunction) Binop(op uint64, r Value) (Value, error) {
 	switch op {
 	case uint64(token.OR):
 		return gfn, nil
@@ -1308,54 +1308,54 @@ func (gfn GFn) Binop(op uint64, r Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(gfn, r)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
-func (gfn GFn) IGet(index Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+func (gfn NativeFunction) IGet(index Value) (Value, error) {
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
-func (gfn GFn) ISet(index, val Value) error {
+func (gfn NativeFunction) ISet(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (gfn GFn) Equals(other Value) Bool {
+func (gfn NativeFunction) Equals(other Value) Bool {
 	return false
 }
 
-func (gfn GFn) IsIterable() Bool {
+func (gfn NativeFunction) IsIterable() Bool {
 	return false
 }
 
-func (gfn GFn) IsCallable() Bool {
+func (gfn NativeFunction) IsCallable() Bool {
 	return true
 }
 
-func (gfn GFn) Call(args ...Value) (Value, error) {
+func (gfn NativeFunction) Call(args ...Value) (Value, error) {
 	return gfn(args...)
 }
 
-func (gfn GFn) Iterator() Value {
-	return NilValue
+func (gfn NativeFunction) Iterator() Value {
+	return GlobalNil
 }
 
-func (gfn GFn) String() string {
+func (gfn NativeFunction) String() string {
 	return "GFn"
 }
 
-func (gfn GFn) ObjectKey() string {
+func (gfn NativeFunction) ObjectKey() string {
 	return "GFn"
 }
 
-func (gFn GFn) Clone() Value {
+func (gFn NativeFunction) Clone() Value {
 	return gFn
 }
 
-func (gfn GFn) Type() string {
+func (gfn NativeFunction) Type() string {
 	return "gfn"
 }
 
-func (gfn GFn) MarshalJSON() ([]byte, error) {
+func (gfn NativeFunction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nil)
 }
 
@@ -1373,7 +1373,7 @@ func (e VidaError) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(true), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -1386,7 +1386,7 @@ func (e VidaError) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(e, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
@@ -1394,7 +1394,7 @@ func (e VidaError) IGet(index Value) (Value, error) {
 	if val, ok := index.(*String); ok && val.Value == errorMessageFieldName {
 		return e.Message, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func (e VidaError) ISet(index, val Value) error {
@@ -1415,7 +1415,7 @@ func (e VidaError) IsCallable() Bool {
 }
 
 func (e VidaError) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (e VidaError) String() string {
@@ -1447,7 +1447,7 @@ func (e *Enum) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(false), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -1460,7 +1460,7 @@ func (e *Enum) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(e, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
@@ -1468,7 +1468,7 @@ func (e *Enum) IGet(index Value) (Value, error) {
 	if val, ok := e.Pairs[index.String()]; ok {
 		return val, nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func (e *Enum) ISet(Value, Value) error {
@@ -1487,7 +1487,7 @@ func (e *Enum) IsIterable() Bool {
 }
 
 func (e *Enum) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (e *Enum) IsCallable() Bool {
@@ -1495,7 +1495,7 @@ func (e *Enum) IsCallable() Bool {
 }
 
 func (e *Enum) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (e Enum) String() string {
@@ -1539,7 +1539,7 @@ func (b *Bytes) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(false), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -1554,7 +1554,7 @@ func (b *Bytes) Binop(op uint64, rhs Value) (Value, error) {
 			}
 			lLen := len(b.Value)
 			if rLen+lLen >= verror.MaxMemSize {
-				return NilValue, verror.ErrMaxMemSize
+				return GlobalNil, verror.ErrMaxMemSize
 			}
 			values := make([]byte, lLen+rLen)
 			copy(values[:lLen], b.Value)
@@ -1570,7 +1570,7 @@ func (b *Bytes) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(b, rhs)
 	}
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (b *Bytes) IGet(index Value) (Value, error) {
@@ -1584,7 +1584,7 @@ func (b *Bytes) IGet(index Value) (Value, error) {
 			return Integer(b.Value[r]), nil
 		}
 	}
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (b *Bytes) ISet(index, val Value) error {
@@ -1636,15 +1636,15 @@ func (i ValueSemanticsImpl) Boolean() Bool {
 }
 
 func (i ValueSemanticsImpl) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (i ValueSemanticsImpl) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (i ValueSemanticsImpl) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (i ValueSemanticsImpl) ISet(Value, Value) error {
@@ -1660,7 +1660,7 @@ func (i ValueSemanticsImpl) IsIterable() Bool {
 }
 
 func (i ValueSemanticsImpl) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (i ValueSemanticsImpl) IsCallable() Bool {
@@ -1668,7 +1668,7 @@ func (i ValueSemanticsImpl) IsCallable() Bool {
 }
 
 func (i ValueSemanticsImpl) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (i ValueSemanticsImpl) String() string {
@@ -1680,7 +1680,7 @@ func (i ValueSemanticsImpl) Type() string {
 }
 
 func (i ValueSemanticsImpl) Clone() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (i ValueSemanticsImpl) ObjectKey() string {
@@ -1698,15 +1698,15 @@ func (i *ReferenceSemanticsImpl) Boolean() Bool {
 }
 
 func (i *ReferenceSemanticsImpl) Prefix(uint64) (Value, error) {
-	return NilValue, verror.ErrPrefixOpNotDefined
+	return GlobalNil, verror.ErrPrefixOpNotDefined
 }
 
 func (i *ReferenceSemanticsImpl) Binop(uint64, Value) (Value, error) {
-	return NilValue, verror.ErrBinaryOpNotDefined
+	return GlobalNil, verror.ErrBinaryOpNotDefined
 }
 
 func (i *ReferenceSemanticsImpl) IGet(Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (i *ReferenceSemanticsImpl) ISet(Value, Value) error {
@@ -1722,7 +1722,7 @@ func (i *ReferenceSemanticsImpl) IsIterable() Bool {
 }
 
 func (i *ReferenceSemanticsImpl) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (i *ReferenceSemanticsImpl) IsCallable() Bool {
@@ -1730,7 +1730,7 @@ func (i *ReferenceSemanticsImpl) IsCallable() Bool {
 }
 
 func (i *ReferenceSemanticsImpl) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (i ReferenceSemanticsImpl) String() string {
@@ -1742,7 +1742,7 @@ func (i *ReferenceSemanticsImpl) Type() string {
 }
 
 func (i *ReferenceSemanticsImpl) Clone() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (i *ReferenceSemanticsImpl) ObjectKey() string {

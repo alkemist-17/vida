@@ -64,37 +64,37 @@ const bytesUUIDLen = 16
 
 func loadFoundationBytes() Value {
 	m := &Object{Value: make(map[string]Value, 32)}
-	m.Value["new"] = GFn(bytesCreateNewBytesValue)
-	m.Value["from"] = GFn(bytesFromValue)
-	m.Value["genCryptoRand"] = GFn(bytesGenerateCryptoRand)
-	m.Value["timingSafeEqual"] = GFn(bytesTimingSafeEqual)
-	m.Value["encode"] = GFn(bytesEncode)
-	m.Value["decode"] = GFn(bytesDecode)
+	m.Value["new"] = NativeFunction(bytesCreateNewBytesValue)
+	m.Value["from"] = NativeFunction(bytesFromValue)
+	m.Value["genCryptoRand"] = NativeFunction(bytesGenerateCryptoRand)
+	m.Value["timingSafeEqual"] = NativeFunction(bytesTimingSafeEqual)
+	m.Value["encode"] = NativeFunction(bytesEncode)
+	m.Value["decode"] = NativeFunction(bytesDecode)
 	m.Value["encoding"] = bytesEncodings()
 	m.Value["endian"] = bytesEndian()
-	m.Value["fromFile"] = GFn(bytesFromFile)
-	m.Value["toFile"] = GFn(bytesToFile)
-	m.Value["xor"] = GFn(bytesXOR)
-	m.Value["uuid"] = GFn(bytesUUID)
-	m.Value["parseUUID"] = GFn(bytesParseUUID)
-	m.Value["toString"] = GFn(bytesToString)
-	m.Value["bitLen"] = GFn(bytesBitLen)
-	m.Value["hexdump"] = GFn(bytesDump)
-	m.Value["getSystemEndianess"] = GFn(bytesEndianess)
-	m.Value["view"] = GFn(bytesView)
-	m.Value["copyTo"] = GFn(bytesCopyTo)
-	m.Value["fill"] = GFn(bytesFill)
-	m.Value["reverse"] = GFn(bytesReverse)
-	m.Value["reversed"] = GFn(bytesReversed)
-	m.Value["bitView"] = GFn(bytesBitView)
-	m.Value["getBit"] = GFn(bytesGetBit)
-	m.Value["setBit"] = GFn(bytesSetBit)
-	m.Value["readUInt"] = GFn(bytesReadUInt)
-	m.Value["fromUInt"] = GFn(bytesFromUInt)
-	m.Value["concat"] = GFn(bytesConcat)
+	m.Value["fromFile"] = NativeFunction(bytesFromFile)
+	m.Value["toFile"] = NativeFunction(bytesToFile)
+	m.Value["xor"] = NativeFunction(bytesXOR)
+	m.Value["uuid"] = NativeFunction(bytesUUID)
+	m.Value["parseUUID"] = NativeFunction(bytesParseUUID)
+	m.Value["toString"] = NativeFunction(bytesToString)
+	m.Value["bitLen"] = NativeFunction(bytesBitLen)
+	m.Value["hexdump"] = NativeFunction(bytesDump)
+	m.Value["getSystemEndianess"] = NativeFunction(bytesEndianess)
+	m.Value["view"] = NativeFunction(bytesView)
+	m.Value["copyTo"] = NativeFunction(bytesCopyTo)
+	m.Value["fill"] = NativeFunction(bytesFill)
+	m.Value["reverse"] = NativeFunction(bytesReverse)
+	m.Value["reversed"] = NativeFunction(bytesReversed)
+	m.Value["bitView"] = NativeFunction(bytesBitView)
+	m.Value["getBit"] = NativeFunction(bytesGetBit)
+	m.Value["setBit"] = NativeFunction(bytesSetBit)
+	m.Value["readUInt"] = NativeFunction(bytesReadUInt)
+	m.Value["fromUInt"] = NativeFunction(bytesFromUInt)
+	m.Value["concat"] = NativeFunction(bytesConcat)
 	m.Value["checksums"] = bytesChecksums()
-	m.Value["checksum"] = GFn(bytesChecksum)
-	m.Value["hmac"] = GFn(bytesHMAC)
+	m.Value["checksum"] = NativeFunction(bytesChecksum)
+	m.Value["hmac"] = NativeFunction(bytesHMAC)
 	m.Value["hmacAlgorithms"] = bytesHMACAlgorithms()
 	return m
 }
@@ -193,7 +193,7 @@ func bytesGenerateCryptoRand(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesTimingSafeEqual(args ...Value) (Value, error) {
@@ -205,7 +205,7 @@ func bytesTimingSafeEqual(args ...Value) (Value, error) {
 		}
 		return Bool(false), nil
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesEncode(args ...Value) (Value, error) {
@@ -234,7 +234,7 @@ func bytesEncode(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesDecode(args ...Value) (Value, error) {
@@ -267,7 +267,7 @@ func bytesDecode(args ...Value) (Value, error) {
 							case '0':
 								b <<= 1
 							default:
-								return NilValue, nil
+								return GlobalNil, nil
 							}
 						}
 						r[i/8] = b
@@ -286,7 +286,7 @@ func bytesDecode(args ...Value) (Value, error) {
 		}
 	}
 nilvalue:
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesEncodings() *Object {
@@ -358,7 +358,7 @@ func bytesToFile(args ...Value) (Value, error) {
 			return Integer(n), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesFromFile(args ...Value) (Value, error) {
@@ -371,7 +371,7 @@ func bytesFromFile(args ...Value) (Value, error) {
 			return &Bytes{Value: data}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesXOR(args ...Value) (Value, error) {
@@ -385,7 +385,7 @@ func bytesXOR(args ...Value) (Value, error) {
 			return &Bytes{Value: dst}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesUUID(args ...Value) (Value, error) {
@@ -412,7 +412,7 @@ func bytesParseUUID(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesToString(args ...Value) (Value, error) {
@@ -421,7 +421,7 @@ func bytesToString(args ...Value) (Value, error) {
 			return &String{Value: string(b.Value)}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesBitLen(args ...Value) (Value, error) {
@@ -430,7 +430,7 @@ func bytesBitLen(args ...Value) (Value, error) {
 			return Integer(len(b.Value) * 8), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesDump(args ...Value) (Value, error) {
@@ -459,7 +459,7 @@ func bytesDump(args ...Value) (Value, error) {
 			return &String{Value: sb.String()}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesEndianess(args ...Value) (Value, error) {
@@ -481,7 +481,7 @@ func bytesView(args ...Value) (Value, error) {
 			return &Bytes{Value: b.Value[start:end]}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesCopyTo(args ...Value) (Value, error) {
@@ -510,7 +510,7 @@ func bytesCopyTo(args ...Value) (Value, error) {
 			return Integer(length), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -525,7 +525,7 @@ func bytesFill(args ...Value) (Value, error) {
 			return b, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesReverse(args ...Value) (Value, error) {
@@ -537,7 +537,7 @@ func bytesReverse(args ...Value) (Value, error) {
 			return b, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesReversed(args ...Value) (Value, error) {
@@ -551,7 +551,7 @@ func bytesReversed(args ...Value) (Value, error) {
 			return &Bytes{Value: nb}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func bytesConcat(args ...Value) (Value, error) {

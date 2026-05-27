@@ -18,7 +18,7 @@ func (t Time) Prefix(op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return Bool(false), nil
 	default:
-		return NilValue, verror.ErrPrefixOpNotDefined
+		return GlobalNil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -31,12 +31,12 @@ func (t Time) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(t, rhs)
 	default:
-		return NilValue, verror.ErrBinaryOpNotDefined
+		return GlobalNil, verror.ErrBinaryOpNotDefined
 	}
 }
 
 func (t Time) IGet(index Value) (Value, error) {
-	return NilValue, verror.ErrValueNotIndexable
+	return GlobalNil, verror.ErrValueNotIndexable
 }
 
 func (t Time) ISet(index, val Value) error {
@@ -59,11 +59,11 @@ func (t Time) IsCallable() Bool {
 }
 
 func (t Time) Call(args ...Value) (Value, error) {
-	return NilValue, verror.ErrNotImplemented
+	return GlobalNil, verror.ErrNotImplemented
 }
 
 func (t Time) Iterator() Value {
-	return NilValue
+	return GlobalNil
 }
 
 func (t Time) String() string {
@@ -85,26 +85,26 @@ func (t Time) Clone() Value {
 func loadFoundationTime() Value {
 	m := &Object{Value: make(map[string]Value, 51)}
 	// Unix Time
-	m.Value["unixNano"] = GFn(timestampNano)
-	m.Value["unixMilli"] = GFn(timestampMilli)
-	m.Value["unixMicro"] = GFn(timestampMicro)
-	m.Value["unixSec"] = GFn(timestamp)
+	m.Value["unixNano"] = NativeFunction(timestampNano)
+	m.Value["unixMilli"] = NativeFunction(timestampMilli)
+	m.Value["unixMicro"] = NativeFunction(timestampMicro)
+	m.Value["unixSec"] = NativeFunction(timestamp)
 	// Time
-	m.Value["now"] = GFn(timeNow)
-	m.Value["date"] = GFn(timeDate)
-	m.Value["format"] = GFn(timeFormat)
+	m.Value["now"] = NativeFunction(timeNow)
+	m.Value["date"] = NativeFunction(timeDate)
+	m.Value["format"] = NativeFunction(timeFormat)
 	// Extract info from Time
-	m.Value["getYear"] = GFn(timeGetYear)
-	m.Value["getMonth"] = GFn(timeGetMonth)
-	m.Value["getDay"] = GFn(timeGetDay)
-	m.Value["getHours"] = GFn(timeGetHours)
-	m.Value["getMinutes"] = GFn(timeGetMinutes)
-	m.Value["getSeconds"] = GFn(timeGetSeconds)
-	m.Value["getNanoseconds"] = GFn(timeGetNanoseconds)
-	m.Value["getLocation"] = GFn(timeGetLocation)
-	m.Value["toUnixNano"] = GFn(timeToUnixNano)
+	m.Value["getYear"] = NativeFunction(timeGetYear)
+	m.Value["getMonth"] = NativeFunction(timeGetMonth)
+	m.Value["getDay"] = NativeFunction(timeGetDay)
+	m.Value["getHours"] = NativeFunction(timeGetHours)
+	m.Value["getMinutes"] = NativeFunction(timeGetMinutes)
+	m.Value["getSeconds"] = NativeFunction(timeGetSeconds)
+	m.Value["getNanoseconds"] = NativeFunction(timeGetNanoseconds)
+	m.Value["getLocation"] = NativeFunction(timeGetLocation)
+	m.Value["toUnixNano"] = NativeFunction(timeToUnixNano)
 	// Time Sleep
-	m.Value["sleep"] = GFn(timeSleep)
+	m.Value["sleep"] = NativeFunction(timeSleep)
 	// Time Units
 	m.Value["millisecond"] = Integer(time.Millisecond)
 	m.Value["nanosecond"] = Integer(time.Nanosecond)
@@ -133,19 +133,19 @@ func loadFoundationTime() Value {
 	m.Value["DateOnly"] = &String{Value: time.DateOnly}
 	m.Value["TimeOnly"] = &String{Value: time.TimeOnly}
 	// Time ops with TimeZones
-	m.Value["nowIn"] = GFn(timeIn)
-	m.Value["dateIn"] = GFn(timeDateIn)
+	m.Value["nowIn"] = NativeFunction(timeIn)
+	m.Value["dateIn"] = NativeFunction(timeDateIn)
 	// Basic TimeZones
 	m.Value["Local"] = &String{Value: time.Local.String()}
 	m.Value["UTC"] = &String{Value: time.UTC.String()}
 	// Parse Time
-	m.Value["parse"] = GFn(timeParse)
+	m.Value["parse"] = NativeFunction(timeParse)
 	// Time operations
-	m.Value["since"] = GFn(timeSince)
-	m.Value["add"] = GFn(timeAddDuration)
-	m.Value["sub"] = GFn(timeSub)
-	m.Value["after"] = GFn(timeAfter)
-	m.Value["before"] = GFn(timeBefore)
+	m.Value["since"] = NativeFunction(timeSince)
+	m.Value["add"] = NativeFunction(timeAddDuration)
+	m.Value["sub"] = NativeFunction(timeSub)
+	m.Value["after"] = NativeFunction(timeAfter)
+	m.Value["before"] = NativeFunction(timeBefore)
 	return m
 }
 
@@ -156,7 +156,7 @@ func timeSleep(args ...Value) (Value, error) {
 			time.Sleep(time.Duration(val))
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timestampNano(args ...Value) (Value, error) {
@@ -202,7 +202,7 @@ func timeNow(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeDate(args ...Value) (Value, error) {
@@ -226,7 +226,7 @@ func timeDate(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeFormat(args ...Value) (Value, error) {
@@ -237,7 +237,7 @@ func timeFormat(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeGetYear(args ...Value) (Value, error) {
@@ -246,7 +246,7 @@ func timeGetYear(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Year()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -256,7 +256,7 @@ func timeGetMonth(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Month()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -266,7 +266,7 @@ func timeGetDay(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Day()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -276,7 +276,7 @@ func timeGetHours(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Hour()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -286,7 +286,7 @@ func timeGetMinutes(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Minute()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -296,7 +296,7 @@ func timeGetSeconds(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Second()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -306,7 +306,7 @@ func timeGetNanoseconds(args ...Value) (Value, error) {
 			return Integer(time.Time(t).Nanosecond()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -316,7 +316,7 @@ func timeGetLocation(args ...Value) (Value, error) {
 			return &String{Value: time.Time(t).Location().String()}, nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeIn(args ...Value) (Value, error) {
@@ -324,7 +324,7 @@ func timeIn(args ...Value) (Value, error) {
 		if zone, ok := args[0].(*String); ok {
 			location, e := time.LoadLocation(zone.Value)
 			if e != nil {
-				return NilValue, nil
+				return GlobalNil, nil
 			}
 			return Time(time.Now().In(location)), nil
 		}
@@ -338,13 +338,13 @@ func timeDateIn(args ...Value) (Value, error) {
 			if zone, ok := args[1].(*String); ok {
 				location, e := time.LoadLocation(zone.Value)
 				if e != nil {
-					return NilValue, nil
+					return GlobalNil, nil
 				}
 				return Time(time.Time(t).In(location)), nil
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeToUnixNano(args ...Value) (Value, error) {
@@ -353,7 +353,7 @@ func timeToUnixNano(args ...Value) (Value, error) {
 			return Integer(time.Time(t).UnixNano()), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeParse(args ...Value) (Value, error) {
@@ -368,7 +368,7 @@ func timeParse(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeSince(args ...Value) (Value, error) {
@@ -377,7 +377,7 @@ func timeSince(args ...Value) (Value, error) {
 			return timeCreateDuration(time.Since(time.Time(t))), nil
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 
 }
 
@@ -389,7 +389,7 @@ func timeAddDuration(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeSub(args ...Value) (Value, error) {
@@ -400,7 +400,7 @@ func timeSub(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeAfter(args ...Value) (Value, error) {
@@ -411,7 +411,7 @@ func timeAfter(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeBefore(args ...Value) (Value, error) {
@@ -422,7 +422,7 @@ func timeBefore(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return NilValue, nil
+	return GlobalNil, nil
 }
 
 func timeCreateDuration(v time.Duration) *Object {

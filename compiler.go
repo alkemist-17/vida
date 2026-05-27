@@ -159,7 +159,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 	case *ast.Let:
 		to, isPresent := c.sb.addGlobal(n.Indentifier)
 		if !isPresent {
-			*c.script.Store = append(*c.script.Store, NilValue)
+			*c.script.Store = append(*c.script.Store, GlobalNil)
 		}
 		from, scope := c.compileExpr(n.Expr, true)
 		switch scope {

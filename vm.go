@@ -528,7 +528,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		e := vm.Frame.stack[sliceable+1]
 		i, ok := e.(Integer)
 		if !ok {
-			return NilValue, verror.ErrSlice
+			return GlobalNil, verror.ErrSlice
 		}
 		startIdx, hasStart = i, true
 	}
@@ -536,7 +536,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		e := vm.Frame.stack[sliceable+1]
 		i, ok := e.(Integer)
 		if !ok {
-			return NilValue, verror.ErrSlice
+			return GlobalNil, verror.ErrSlice
 		}
 		endIdx, hasEnd = i, true
 	}
@@ -544,7 +544,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		e := vm.Frame.stack[sliceable+2]
 		i, ok := e.(Integer)
 		if !ok {
-			return NilValue, verror.ErrSlice
+			return GlobalNil, verror.ErrSlice
 		}
 		endIdx, hasEnd = i, true
 	}
@@ -609,7 +609,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		return &Bytes{Value: data}, nil
 	}
 
-	return NilValue, verror.ErrSlice
+	return GlobalNil, verror.ErrSlice
 }
 
 func (vm *VM) printCallStack() {
