@@ -39,9 +39,17 @@ func exceptionCatch(args ...Value) (Value, error) {
 					_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[1:]...)
 					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 					if threadError != nil {
+						v = vm.Channel
+						invoker := vm.Thread.Invoker
+						invoker.State = Running
+						vm.Thread.Invoker = nil
+						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case verror.VidaError:
 							return VidaError{Message: &String{Value: e.Message}}, nil
+						default:
+							return VidaError{Message: &String{Value: threadError.Error()}}, nil
 						}
 					}
 					switch vm.State {
@@ -57,9 +65,17 @@ func exceptionCatch(args ...Value) (Value, error) {
 					_, threadError := vm.runThread(vm.fp, 0, true, args[1:]...)
 					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 					if threadError != nil {
+						v = vm.Channel
+						invoker := vm.Thread.Invoker
+						invoker.State = Running
+						vm.Thread.Invoker = nil
+						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case verror.VidaError:
 							return VidaError{Message: &String{Value: e.Message}}, nil
+						default:
+							return VidaError{Message: &String{Value: threadError.Error()}}, nil
 						}
 					}
 					switch vm.State {

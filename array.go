@@ -3,6 +3,7 @@ package vida
 import (
 	"cmp"
 	"fmt"
+	"os"
 	"slices"
 	"unsafe"
 
@@ -232,7 +233,13 @@ func arraySortObjects(args ...Value) (Value, error) {
 							_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, l, r)
 							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 							if threadError != nil {
-								return 0
+								invoker := vm.Thread.Invoker
+								invoker.State = Running
+								vm.Thread.Invoker = nil
+								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+								vm.Thread = invoker
+								fmt.Println("\n\nFATAL ERROR", threadError.Error())
+								os.Exit(0)
 							}
 							switch vm.State {
 							case Completed, Suspended:
@@ -253,7 +260,13 @@ func arraySortObjects(args ...Value) (Value, error) {
 							_, threadError := vm.runThread(vm.fp, 0, true, l, r)
 							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
 							if threadError != nil {
-								return 0
+								invoker := vm.Thread.Invoker
+								invoker.State = Running
+								vm.Thread.Invoker = nil
+								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+								vm.Thread = invoker
+								fmt.Println("\n\nFATAL ERROR", threadError.Error())
+								os.Exit(0)
 							}
 							switch vm.State {
 							case Completed, Suspended:
@@ -439,14 +452,6 @@ func extractInteger(v Value) (int64, error) {
 		return 0, fmt.Errorf("expected Integer, got %T", v)
 	}
 	return int64(i), nil
-}
-
-func extractByte(v Value) (uint8, error) {
-	i, ok := v.(Integer)
-	if !ok {
-		return 0, fmt.Errorf("expected Byte, got %T", v)
-	}
-	return uint8(i), nil
 }
 
 func extractFloat(v Value) (float64, error) {

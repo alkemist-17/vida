@@ -1003,7 +1003,8 @@ func (o *Object) Call(args ...Value) (Value, error) {
 				}
 				return o.execute(Fn, args...)
 			case GFn:
-				return Fn.Call(args...)
+				r, _ := arrayInsert(&Array{Value: args}, Integer(0), o)
+				return Fn.Call(r.(*Array).Value...)
 			default:
 				return Fn, nil
 			}
@@ -1086,7 +1087,7 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 				if val, err := o.execute(v); err == nil {
 					return stringWithVisited(val, visited)
 				} else {
-					fmt.Printf("\n\nRun Time error in function __str %v for object %p\n", err, o)
+					fmt.Printf("\n\nFATAL ERROR in function __str: %v. In object %v\n\n", err, o.ObjectKey())
 					os.Exit(0)
 				}
 			default:
