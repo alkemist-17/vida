@@ -1,6 +1,8 @@
 package vida
 
 import (
+	"cmp"
+	"fmt"
 	"slices"
 	"unsafe"
 
@@ -8,7 +10,7 @@ import (
 )
 
 func loadFoundationArray() Value {
-	m := &Object{Value: make(map[string]Value, 26)}
+	m := &Object{Value: make(map[string]Value, 24)}
 	m.Value["concat"] = GFn(arrayConcat)
 	m.Value["clear"] = GFn(arrayClear)
 	m.Value["index"] = GFn(arrayIndex)
@@ -16,42 +18,44 @@ func loadFoundationArray() Value {
 	m.Value["reverse"] = GFn(arrayReverse)
 	m.Value["reversed"] = GFn(arrayReversed)
 	m.Value["pop"] = GFn(arrayPop)
-	m.Value["sortI"] = GFn(arraySortInts)
-	m.Value["sortF"] = GFn(arraySortFloats)
-	m.Value["sortS"] = GFn(arraySortStrings)
+	m.Value["sort"] = GFn(arraySort)
 	m.Value["sortBy"] = GFn(arraySortObjects)
+	m.Value["repeat"] = GFn(arrayRepeat)
 	m.Value["toObject"] = GFn(arrayToObject)
 	m.Value["new"] = GFn(coreNewArray)
 	m.Value["isArray"] = GFn(arrayIsArray)
 	m.Value["isEmpty"] = GFn(arrayIsEmpty)
-	m.Value["entries"] = GFn(arrayPairs)
+	m.Value["pairs"] = GFn(arrayPairs)
 	m.Value["compact"] = GFn(arrayCompact)
 	m.Value["compacted"] = GFn(arrayCompacted)
 	m.Value["chunk"] = GFn(arrayChunk)
 	m.Value["clip"] = GFn(arrayClip)
-	m.Value["del"] = GFn(arrayDelete)
 	m.Value["replace"] = GFn(arrayReplace)
 	m.Value["cap"] = GFn(arrayCap)
 	m.Value["view"] = GFn(arrayView)
 	m.Value["grow"] = GFn(arrayGrow)
-	m.Value["sharesArray"] = GFn(arraySharesBackingArray)
+	m.Value["overlaps"] = GFn(arrayOverlaps)
 	return m
 }
 
 func arrayConcat(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		var size int
-		var arr []Value
 		for _, v := range args {
 			if xs, ok := v.(*Array); ok {
 				size += len(xs.Value)
-				if size >= verror.MaxMemSize {
-					return NilValue, verror.ErrMaxMemSize
-				}
-				arr = append(arr, xs.Value...)
 			}
 		}
-		return &Array{Value: arr}, nil
+		if size < 0 || size >= verror.MaxMemSize {
+			return NilValue, verror.ErrMaxMemSize
+		}
+		result := make([]Value, 0, size)
+		for _, v := range args {
+			if xs, ok := v.(*Array); ok {
+				result = append(result, xs.Value...)
+			}
+		}
+		return &Array{Value: result}, nil
 	}
 	return NilValue, nil
 }
@@ -59,7 +63,7 @@ func arrayConcat(args ...Value) (Value, error) {
 func arrayClear(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
-			xs.Value = make([]Value, 0)
+			xs.Value = xs.Value[:0]
 			return xs, nil
 		}
 	}
@@ -75,12 +79,12 @@ func arrayCap(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func arraySharesBackingArray(args ...Value) (Value, error) {
+func arrayOverlaps(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		a, okA := args[0].(*Array)
 		b, okB := args[1].(*Array)
 		if okA && okB {
-			return Bool(sharesBackingArray(a.Value, b.Value)), nil
+			return Bool(overlapsBackingArray(a.Value, b.Value)), nil
 		}
 	}
 	return NilValue, nil
@@ -90,13 +94,11 @@ func arrayView(args ...Value) (Value, error) {
 	if len(args) > 2 {
 		xs, ok := args[0].(*Array)
 		init, okI := args[1].(Integer)
-		end, okE := args[2].(Integer)
+		length, okE := args[2].(Integer)
 		if ok && okI && okE {
-			s, e, empty := sliceBounds(init, end, Integer(len(xs.Value)))
-			if empty {
-				return &Array{Value: xs.Value[:0]}, nil
-			}
-			return &Array{Value: xs.Value[s:e]}, nil
+			srclen := len(xs.Value)
+			start, end, _ := sliceBounds(init, init+length, Integer(srclen))
+			return &Array{Value: xs.Value[start:end]}, nil
 		}
 	}
 	return NilValue, nil
@@ -132,9 +134,6 @@ func arrayInsert(args ...Value) (Value, error) {
 		if xs, ok := args[0].(*Array); ok {
 			if idx, ok := args[1].(Integer); ok {
 				if idx >= 0 && idx <= Integer(len(xs.Value)) {
-					if xs.Equals(args[2]) {
-						args[2] = args[2].Clone()
-					}
 					xs.Value = slices.Insert(xs.Value, int(idx), args[2])
 					return xs, nil
 				}
@@ -168,91 +167,34 @@ func arrayReversed(args ...Value) (Value, error) {
 
 func arrayPop(args ...Value) (Value, error) {
 	if len(args) == 1 {
-		if xs, ok := args[0].(*Array); ok {
-			var val Value
-			l := len(xs.Value) - 1
-			val, xs.Value = xs.Value[l], xs.Value[:l]
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			lastIndex := len(xs.Value) - 1
+			val := xs.Value[lastIndex]
+			xs.Value = xs.Value[:lastIndex]
 			return val, nil
 		}
-	}
-	if len(args) > 1 {
-		if xs, ok := args[0].(*Array); ok {
+	} else if len(args) == 2 {
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			if i, ok := args[1].(Integer); ok {
 				if 0 <= i && i < Integer(len(xs.Value)) {
-					var val Value
-					val, xs.Value = xs.Value[i], append(xs.Value[:i], xs.Value[i+1:]...)
+					val := xs.Value[i]
+					xs.Value = slices.Delete(xs.Value, int(i), int(i+1))
 					return val, nil
 				}
 			}
 		}
-	}
-	return NilValue, nil
-}
-
-func arraySortInts(args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			for _, v := range xs.Value {
-				if v.Type() != Integer(0).Type() {
-					return NilValue, verror.ErrSoringMixedTypes
+	} else if len(args) == 3 {
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			if i, ok := args[1].(Integer); ok {
+				if j, ok := args[2].(Integer); ok {
+					if 0 <= i && i < Integer(len(xs.Value)) && 0 <= j && j <= Integer(len(xs.Value)) && i < j {
+						val := make([]Value, len(xs.Value[i:j]))
+						copy(val, xs.Value[i:j])
+						xs.Value = slices.Delete(xs.Value, int(i), int(j))
+						return &Array{Value: val}, nil
+					}
 				}
 			}
-			slices.SortFunc(xs.Value, func(l, r Value) int {
-				if l.(Integer) < r.(Integer) {
-					return -1
-				} else if l.(Integer) > r.(Integer) {
-					return 1
-				} else {
-					return 0
-				}
-			})
-			return xs, nil
-		}
-	}
-	return NilValue, nil
-}
-
-func arraySortFloats(args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			for _, v := range xs.Value {
-				if v.Type() != Float(0).Type() {
-					return NilValue, verror.ErrSoringMixedTypes
-				}
-			}
-			slices.SortFunc(xs.Value, func(l, r Value) int {
-				if l.(Float) < r.(Float) {
-					return -1
-				} else if l.(Float) > r.(Float) {
-					return 1
-				} else {
-					return 0
-				}
-			})
-			return xs, nil
-		}
-	}
-	return NilValue, nil
-}
-
-func arraySortStrings(args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			for _, v := range xs.Value {
-				if v.Type() != (&String{}).Type() {
-					return NilValue, verror.ErrSoringMixedTypes
-				}
-			}
-			slices.SortFunc(xs.Value, func(l, r Value) int {
-				if l.(*String).Value < r.(*String).Value {
-					return -1
-				} else if l.(*String).Value > r.(*String).Value {
-					return 1
-				} else {
-					return 0
-				}
-			})
-			return xs, nil
 		}
 	}
 	return NilValue, nil
@@ -275,11 +217,6 @@ func arraySortObjects(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
 			if fn, ok := args[1].(*Function); ok {
-				for _, v := range xs.Value {
-					if v.Type() != (&Object{}).Type() {
-						return NilValue, verror.ErrSoringMixedTypes
-					}
-				}
 				if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
 					((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
 				}
@@ -368,10 +305,9 @@ func arrayPairs(args ...Value) (Value, error) {
 		if xs, ok := args[0].(*Array); ok {
 			entries := make([]Value, len(xs.Value))
 			for i, v := range xs.Value {
-				A := make([]Value, 2)
-				A[0] = Integer(i)
-				A[1] = v
-				entries[i] = &Array{Value: A}
+				pair := &Array{Value: make([]Value, 0, 2)}
+				pair.Value = append(pair.Value, Integer(i), v)
+				entries[i] = pair
 			}
 			return &Array{Value: entries}, nil
 		}
@@ -403,8 +339,12 @@ func arrayCompacted(args ...Value) (Value, error) {
 func arrayChunk(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
-			if n, ok := args[1].(Integer); ok && n > 1 {
-				var container []Value
+			if len(xs.Value) == 0 {
+				return &Array{}, nil
+			}
+			if n, ok := args[1].(Integer); ok && n >= 1 {
+				count := (len(xs.Value) + int(n) - 1) / int(n)
+				container := make([]Value, 0, count)
 				for v := range slices.Chunk(xs.Value, int(n)) {
 					container = append(container, &Array{Value: v})
 				}
@@ -420,30 +360,6 @@ func arrayClip(args ...Value) (Value, error) {
 		if xs, ok := args[0].(*Array); ok {
 			xs.Value = slices.Clip(xs.Value)
 			return xs, nil
-		}
-	}
-	return NilValue, nil
-}
-
-func arrayDelete(args ...Value) (Value, error) {
-	if len(args) > 2 {
-		if xs, ok := args[0].(*Array); ok {
-			i, iok := args[1].(Integer)
-			j, jok := args[2].(Integer)
-			ll, rr := int(i), int(j)
-			if iok && jok {
-				xsLen := len(xs.Value)
-				if ll < 0 {
-					ll += xsLen
-				}
-				if rr < 0 {
-					rr += xsLen
-				}
-				if 0 <= ll && ll <= xsLen && 0 <= rr && rr <= xsLen && ll < rr {
-					xs.Value = slices.Delete(xs.Value, ll, rr)
-					return xs, nil
-				}
-			}
 		}
 	}
 	return NilValue, nil
@@ -473,7 +389,7 @@ func arrayReplace(args ...Value) (Value, error) {
 	return NilValue, nil
 }
 
-func sharesBackingArray[T any](a, b []T) bool {
+func overlapsBackingArray[T any](a, b []T) bool {
 	ptrA := unsafe.SliceData(a)
 	ptrB := unsafe.SliceData(b)
 
@@ -483,7 +399,7 @@ func sharesBackingArray[T any](a, b []T) bool {
 
 	size := unsafe.Sizeof(a[0])
 	if size == 0 {
-		return true
+		return false
 	}
 
 	addrA := uintptr(unsafe.Pointer(ptrA))
@@ -493,4 +409,113 @@ func sharesBackingArray[T any](a, b []T) bool {
 	endB := addrB + uintptr(cap(b))*size
 
 	return (addrA >= addrB && addrA < endB) || (addrB >= addrA && addrB < endA)
+}
+
+type ord interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+		~float32 | ~float64 |
+		~string
+}
+
+func genericSortBy[T ord](xs *[]Value, extract func(Value) (T, error)) error {
+	for i, v := range *xs {
+		if _, err := extract(v); err != nil {
+			return fmt.Errorf("sort: element[%d] type mismatch: %w", i, err)
+		}
+
+	}
+	slices.SortFunc(*xs, func(a, b Value) int {
+		ka, _ := extract(a)
+		kb, _ := extract(b)
+		return cmp.Compare(ka, kb)
+	})
+	return nil
+}
+
+func extractInteger(v Value) (int64, error) {
+	i, ok := v.(Integer)
+	if !ok {
+		return 0, fmt.Errorf("expected Integer, got %T", v)
+	}
+	return int64(i), nil
+}
+
+func extractByte(v Value) (uint8, error) {
+	i, ok := v.(Integer)
+	if !ok {
+		return 0, fmt.Errorf("expected Byte, got %T", v)
+	}
+	return uint8(i), nil
+}
+
+func extractFloat(v Value) (float64, error) {
+	f, ok := v.(Float)
+	if !ok {
+		return 0, fmt.Errorf("expected Float, got %T", v)
+	}
+	return float64(f), nil
+}
+
+func extractString(v Value) (string, error) {
+	s, ok := v.(*String)
+	if !ok {
+		return "", fmt.Errorf("expected *String, got %T", v)
+	}
+	return s.Value, nil
+}
+
+func arraySort(args ...Value) (Value, error) {
+	if len(args) == 0 {
+		return nil, fmt.Errorf("sort: expected array argument")
+	}
+
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return nil, fmt.Errorf("sort: expected array argument")
+	}
+
+	if len(xs.Value) <= 1 {
+		return xs, nil
+	}
+
+	// Auto-detect type from first non-nil element
+	var sample Value
+	for _, v := range xs.Value {
+		if v.Type() != NilValue.Type() {
+			sample = v
+			break
+		}
+	}
+
+	// Dispatch to generic SortBy
+	switch sample.(type) {
+	case Integer:
+		if err := genericSortBy(&xs.Value, extractInteger); err != nil {
+			return nil, err
+		}
+	case Float:
+		if err := genericSortBy(&xs.Value, extractFloat); err != nil {
+			return nil, err
+		}
+	case *String:
+		if err := genericSortBy(&xs.Value, extractString); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("sort: unsupported type for auto-sort: %T", sample)
+	}
+
+	return xs, nil
+}
+
+func arrayRepeat(args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if xs, ok := args[0].(*Array); ok {
+			if t, ok := args[1].(Integer); ok && t >= 0 && t < verror.MaxMemSize {
+				return &Array{Value: slices.Repeat(xs.Value, int(t))}, nil
+			}
+		}
+	}
+	return NilValue, nil
 }
