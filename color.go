@@ -82,11 +82,11 @@ func colorReset(args ...Value) (Value, error) {
 func colorPaletteChart(args ...Value) (Value, error) {
 	fmt.Println("\n\n\n256 Color Palette Chart")
 	// Standard Colors (0-15)
-	printSection("Standard Colors (0-15)", 0, 15)
+	printSection("Standard Colors (0-15)", 0, 15, 8)
 	// 216 Color Cube (16-231)
-	printSection("216 Color Cube (16-231)", 16, 231)
+	printSection("216 Color Cube (16-231)", 16, 231, 6)
 	// Grayscale (232-255)
-	printSection("Grayscale (232-255)", 232, 255)
+	printSection("Grayscale (232-255)", 232, 255, 6)
 	fmt.Printf("\nPalette Chart complete.\n\n\n")
 	return GlobalNil, nil
 }
@@ -353,11 +353,8 @@ func colorGetReset(args ...Value) (Value, error) {
 	return GlobalNil, nil
 }
 
-func printSection(title string, start, end int) {
+func printSection(title string, start, end, rowCount int) {
 	fmt.Printf("\n%s:\n", title)
-
-	// Print rowCount colors per row
-	rowCount := 10
 	count := 0
 
 	for i := start; i <= end; i++ {
