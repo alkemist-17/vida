@@ -1286,11 +1286,11 @@ func (f *Function) ObjectKey() string {
 
 type NativeFunction func(args ...Value) (Value, error)
 
-func (gfn NativeFunction) Boolean() Bool {
+func (nativeFn NativeFunction) Boolean() Bool {
 	return True
 }
 
-func (gfn NativeFunction) Prefix(op uint64) (Value, error) {
+func (nativeFn NativeFunction) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil
@@ -1299,63 +1299,63 @@ func (gfn NativeFunction) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (gfn NativeFunction) Binop(op uint64, r Value) (Value, error) {
+func (nativeFn NativeFunction) Binop(op uint64, r Value) (Value, error) {
 	switch op {
 	case uint64(token.OR):
-		return gfn, nil
+		return nativeFn, nil
 	case uint64(token.AND):
 		return r, nil
 	case uint64(token.IN):
-		return IsMemberOf(gfn, r)
+		return IsMemberOf(nativeFn, r)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (gfn NativeFunction) IGet(index Value) (Value, error) {
+func (nativeFn NativeFunction) IGet(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (gfn NativeFunction) ISet(index, val Value) error {
+func (nativeFn NativeFunction) ISet(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (gfn NativeFunction) Equals(other Value) Bool {
+func (nativeFn NativeFunction) Equals(other Value) Bool {
 	return false
 }
 
-func (gfn NativeFunction) IsIterable() Bool {
+func (nativeFn NativeFunction) IsIterable() Bool {
 	return false
 }
 
-func (gfn NativeFunction) IsCallable() Bool {
+func (nativeFn NativeFunction) IsCallable() Bool {
 	return true
 }
 
-func (gfn NativeFunction) Call(args ...Value) (Value, error) {
-	return gfn(args...)
+func (nativeFn NativeFunction) Call(args ...Value) (Value, error) {
+	return nativeFn(args...)
 }
 
-func (gfn NativeFunction) Iterator() Value {
+func (nativeFn NativeFunction) Iterator() Value {
 	return Nil
 }
 
-func (gfn NativeFunction) String() string {
-	return "GFn"
+func (nativeFn NativeFunction) String() string {
+	return "NativeFunction"
 }
 
-func (gfn NativeFunction) ObjectKey() string {
-	return "GFn"
+func (nativeFn NativeFunction) ObjectKey() string {
+	return "NativeFunction"
 }
 
-func (gFn NativeFunction) Clone() Value {
-	return gFn
+func (nativeFn NativeFunction) Clone() Value {
+	return nativeFn
 }
 
-func (gfn NativeFunction) Type() string {
-	return "gfn"
+func (nativeFn NativeFunction) Type() string {
+	return "NativeFunction"
 }
 
-func (gfn NativeFunction) MarshalJSON() ([]byte, error) {
+func (nativeFn NativeFunction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nil)
 }
 

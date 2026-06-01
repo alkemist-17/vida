@@ -12,13 +12,13 @@ const (
 const (
 	major     = 0
 	minor     = 3
-	patch     = 78
+	patch     = 79
 	inception = 25
 )
 
 const (
 	header uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
-	name          = "	Vida 🌿 🐝 🌻 🦖"
+	name          = "	Vida 🌿🌻"
 )
 
 func Name() string {
