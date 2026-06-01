@@ -35,7 +35,7 @@ func castToInt(args ...Value) (Value, error) {
 			if e == nil {
 				return Integer(f), nil
 			}
-			return GlobalNil, nil
+			return Nil, nil
 		case Integer:
 			return v, nil
 		case Bool:
@@ -45,7 +45,7 @@ func castToInt(args ...Value) (Value, error) {
 			return Integer(0), nil
 		case Float:
 			return Integer(int64(v)), nil
-		case Nil:
+		case NilValue:
 			return Integer(0), nil
 		}
 	case 2:
@@ -73,7 +73,7 @@ func castToFloat(args ...Value) (Value, error) {
 			return Float(v), nil
 		case Float:
 			return v, nil
-		case Nil:
+		case NilValue:
 			return Float(0), nil
 		case Bool:
 			if v {
@@ -90,14 +90,14 @@ func castToBool(args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			switch v.Value {
 			case "true":
-				return Bool(true), nil
+				return True, nil
 			case "false":
-				return Bool(false), nil
+				return False, nil
 			}
 		}
 		return args[0].Boolean(), nil
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func castToArray(args ...Value) (Value, error) {

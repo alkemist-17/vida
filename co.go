@@ -43,7 +43,7 @@ func coNewThread(args ...Value) (Value, error) {
 			return coNewThreadWithSizeControl(fn, script, frameSize, stackSize), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coGetThreadState(args ...Value) (Value, error) {
@@ -51,9 +51,9 @@ func coGetThreadState(args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return &String{Value: th.State.String()}, nil
 		}
-		return GlobalNil, verror.ErrNotThread
+		return Nil, verror.ErrNotThread
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coRunThread(args ...Value) (Value, error) {
@@ -71,28 +71,28 @@ func coRunThread(args ...Value) (Value, error) {
 			th.State = Running
 			th.Invoker.State = Waiting
 			vm.Thread = th
-			return GlobalNil, signal
+			return Nil, signal
 		} else if !ok {
-			return GlobalNil, verror.ErrNotThread
+			return Nil, verror.ErrNotThread
 		} else if th.State == Running || th.State == Completed || th.State == Waiting {
-			return GlobalNil, verror.ErrResumingNotSuspendedThread
+			return Nil, verror.ErrResumingNotSuspendedThread
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coSuspendThread(args ...Value) (Value, error) {
 	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
-		return GlobalNil, verror.ErrSuspendingMainThread
+		return Nil, verror.ErrSuspendingMainThread
 	}
 	th := (*clbu)[globalStateIndex].(*GlobalState).Current
 	th.State = Suspended
 	if len(args) > 0 {
 		th.Channel = args[0]
 	} else {
-		th.Channel = GlobalNil
+		th.Channel = Nil
 	}
-	return GlobalNil, verror.ErrSuspendThreadSignal
+	return Nil, verror.ErrSuspendThreadSignal
 }
 
 func coGetCurrentRunningThread(args ...Value) (Value, error) {
@@ -108,12 +108,12 @@ func coRecycleThread(args ...Value) (Value, error) {
 				return th, nil
 			}
 		} else if !ok {
-			return GlobalNil, verror.ErrNotThread
+			return Nil, verror.ErrNotThread
 		} else if th.State != Completed {
-			return GlobalNil, verror.ErrRecyclingThread
+			return Nil, verror.ErrRecyclingThread
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coCompleteThread(args ...Value) (Value, error) {
@@ -123,12 +123,12 @@ func coCompleteThread(args ...Value) (Value, error) {
 				th.State = Completed
 				return th, nil
 			} else {
-				return GlobalNil, verror.ErrClosingAThread
+				return Nil, verror.ErrClosingAThread
 			}
 		}
-		return GlobalNil, verror.ErrNotThread
+		return Nil, verror.ErrNotThread
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coIsActive(args ...Value) (Value, error) {
@@ -136,9 +136,9 @@ func coIsActive(args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State != Completed), nil
 		}
-		return GlobalNil, verror.ErrNotThread
+		return Nil, verror.ErrNotThread
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coIsCompleted(args ...Value) (Value, error) {
@@ -146,16 +146,16 @@ func coIsCompleted(args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State == Completed), nil
 		}
-		return GlobalNil, verror.ErrNotThread
+		return Nil, verror.ErrNotThread
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func coIsMain(args ...Value) (Value, error) {
 	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
-		return Bool(true), nil
+		return True, nil
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func coNewThreadWithSizeControl(fn *Function, script *Script, frameSize, stackSize Integer) *Thread {

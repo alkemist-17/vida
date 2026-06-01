@@ -65,7 +65,7 @@ func textHasPrefix(args ...Value) (Value, error) {
 			return Bool(strings.HasPrefix(v.Value, p.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textHasSuffix(args ...Value) (Value, error) {
@@ -76,7 +76,7 @@ func textHasSuffix(args ...Value) (Value, error) {
 			return Bool(strings.HasSuffix(v.Value, p.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textFromCodepoints(args ...Value) (Value, error) {
@@ -101,7 +101,7 @@ func textTrim(args ...Value) (Value, error) {
 			return &String{Value: strings.Trim(v.Value, " ")}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textTrimLeft(args ...Value) (Value, error) {
@@ -116,7 +116,7 @@ func textTrimLeft(args ...Value) (Value, error) {
 			return &String{Value: strings.TrimLeft(v.Value, " ")}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textTrimRight(args ...Value) (Value, error) {
@@ -131,7 +131,7 @@ func textTrimRight(args ...Value) (Value, error) {
 			return &String{Value: strings.TrimRight(v.Value, " ")}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textSplit(args ...Value) (Value, error) {
@@ -146,7 +146,7 @@ func textSplit(args ...Value) (Value, error) {
 			return textStringToArray(strings.Split(v.Value, " ")), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textFields(args ...Value) (Value, error) {
@@ -155,7 +155,7 @@ func textFields(args ...Value) (Value, error) {
 			return textStringToArray(strings.Fields(v.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textRepeat(args ...Value) (Value, error) {
@@ -163,13 +163,13 @@ func textRepeat(args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if times, ok := args[1].(Integer); ok && times >= 0 {
 				if StringLength(v)*times > verror.MaxMemSize {
-					return GlobalNil, nil
+					return Nil, nil
 				}
 				return &String{Value: strings.Repeat(v.Value, int(times))}, nil
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textReplaceN(args ...Value) (Value, error) {
@@ -184,7 +184,7 @@ func textReplaceN(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textReplaceAll(args ...Value) (Value, error) {
@@ -197,7 +197,7 @@ func textReplaceAll(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textCenterString(s *String, width int, sep string) *String {
@@ -226,7 +226,7 @@ func textCenter(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textContains(args ...Value) (Value, error) {
@@ -237,7 +237,7 @@ func textContains(args ...Value) (Value, error) {
 			return Bool(strings.Contains(s.Value, substr.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textContainsAny(args ...Value) (Value, error) {
@@ -248,7 +248,7 @@ func textContainsAny(args ...Value) (Value, error) {
 			return Bool(strings.ContainsAny(s.Value, substr.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textIndex(args ...Value) (Value, error) {
@@ -259,7 +259,7 @@ func textIndex(args ...Value) (Value, error) {
 			return Integer(strings.Index(s.Value, substr.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textJoin(args ...Value) (Value, error) {
@@ -274,7 +274,7 @@ func textJoin(args ...Value) (Value, error) {
 			return &String{Value: strings.Join(r, sep.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textToLowerCase(args ...Value) (Value, error) {
@@ -283,7 +283,7 @@ func textToLowerCase(args ...Value) (Value, error) {
 			return &String{Value: strings.ToLower(v.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textToUpperCase(args ...Value) (Value, error) {
@@ -292,7 +292,7 @@ func textToUpperCase(args ...Value) (Value, error) {
 			return &String{Value: strings.ToUpper(v.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textCount(args ...Value) (Value, error) {
@@ -303,71 +303,71 @@ func textCount(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textIsAscii(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			for i := 0; i < len(s.Value); i++ {
 				if s.Value[i] > unicode.MaxASCII {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textIsDecimal(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			if s.Runes == nil {
 				s.Runes = []rune(s.Value)
 			}
 			for _, r := range s.Runes {
 				if r < '0' || r > '9' {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textIsDigit(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			if s.Runes == nil {
 				s.Runes = []rune(s.Value)
 			}
 			for _, r := range s.Runes {
 				if !unicode.IsDigit(r) {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textIsHexDigit(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			if s.Runes == nil {
 				s.Runes = []rune(s.Value)
@@ -375,73 +375,73 @@ func textIsHexDigit(args ...Value) (Value, error) {
 			for _, r := range s.Runes {
 				lower := r | 32
 				if !((r >= '0' && r <= '9') || (lower >= 'a' && lower <= 'f')) {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textIsLetter(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			if s.Runes == nil {
 				s.Runes = []rune(s.Value)
 			}
 			for _, r := range s.Runes {
 				if !unicode.IsLetter(r) {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textIsNumber(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			if s.Runes == nil {
 				s.Runes = []rune(s.Value)
 			}
 			for _, r := range s.Runes {
 				if !unicode.IsNumber(r) {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textIsSpace(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
-				return Bool(false), nil
+				return False, nil
 			}
 			if s.Runes == nil {
 				s.Runes = []rune(s.Value)
 			}
 			for _, r := range s.Runes {
 				if !unicode.IsSpace(r) {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textCodepoints(args ...Value) (Value, error) {
@@ -457,7 +457,7 @@ func textCodepoints(args ...Value) (Value, error) {
 			return &Array{Value: result}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textIsSpaceChar(args ...Value) (Value, error) {
@@ -466,7 +466,7 @@ func textIsSpaceChar(args ...Value) (Value, error) {
 			return Bool(unicode.IsSpace(s.Runes[0])), nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textBytesLen(args ...Value) (Value, error) {
@@ -475,7 +475,7 @@ func textBytesLen(args ...Value) (Value, error) {
 			return Integer(len(val.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textStringToArray(slice []string) Value {
@@ -495,7 +495,7 @@ func textEqualFold(args ...Value) (Value, error) {
 			return Bool(strings.EqualFold(s.Value, t.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textCapitalize(args ...Value) (Value, error) {
@@ -511,7 +511,7 @@ func textCapitalize(args ...Value) (Value, error) {
 			return &String{Value: string(unicode.ToUpper(first)) + strings.ToLower(s.Value[size:])}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textPadLeft(args ...Value) (Value, error) {
@@ -536,7 +536,7 @@ func textPadLeft(args ...Value) (Value, error) {
 			return &String{Value: strings.Repeat(pad, int(w)-strLen) + s.Value}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textPadRight(args ...Value) (Value, error) {
@@ -561,7 +561,7 @@ func textPadRight(args ...Value) (Value, error) {
 			return &String{Value: s.Value + strings.Repeat(pad, int(w)-strLen)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textLines(args ...Value) (Value, error) {
@@ -582,7 +582,7 @@ func textLines(args ...Value) (Value, error) {
 			return textStringToArray(parts), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textTruncate(args ...Value) (Value, error) {
@@ -607,7 +607,7 @@ func textTruncate(args ...Value) (Value, error) {
 			return &String{Value: string(s.Runes[:avail]) + suffix}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textWrap(args ...Value) (Value, error) {
@@ -642,7 +642,7 @@ func textWrap(args ...Value) (Value, error) {
 			return &String{Value: b.String()}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textSlugify(args ...Value) (Value, error) {
@@ -686,7 +686,7 @@ func textSlugify(args ...Value) (Value, error) {
 			return &String{Value: res}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func textStartsWithAny(args ...Value) (Value, error) {
@@ -696,12 +696,12 @@ func textStartsWithAny(args ...Value) (Value, error) {
 		if ok1 && ok2 {
 			for _, v := range arr.Value {
 				if p, ok := v.(*String); ok && strings.HasPrefix(s.Value, p.Value) {
-					return Bool(true), nil
+					return True, nil
 				}
 			}
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textEndsWithAny(args ...Value) (Value, error) {
@@ -711,12 +711,12 @@ func textEndsWithAny(args ...Value) (Value, error) {
 		if ok1 && ok2 {
 			for _, v := range arr.Value {
 				if p, ok := v.(*String); ok && strings.HasSuffix(s.Value, p.Value) {
-					return Bool(true), nil
+					return True, nil
 				}
 			}
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func textCompare(args ...Value) (Value, error) {
@@ -727,7 +727,7 @@ func textCompare(args ...Value) (Value, error) {
 			return Integer(strings.Compare(a.Value, b.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 // textUrlEncode percent-encodes a string for safe inclusion in URLs.
@@ -773,7 +773,7 @@ func textUrlEncode(args ...Value) (Value, error) {
 			return &String{Value: b.String()}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 var upperHex = [16]byte{

@@ -159,7 +159,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 	case *ast.Let:
 		to, isPresent := c.sb.addGlobal(n.Indentifier)
 		if !isPresent {
-			*c.script.Store = append(*c.script.Store, GlobalNil)
+			*c.script.Store = append(*c.script.Store, Nil)
 		}
 		from, scope := c.compileExpr(n.Expr, true)
 		switch scope {
@@ -293,7 +293,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		idx, scope := c.compileExpr(n.Condition, true)
 		if scope == rKonst {
 			switch v := (*c.kb.Konstants)[idx].(type) {
-			case Nil:
+			case NilValue:
 				c.skipBlock(n.Block)
 				c.cleanUpLoopScope(init, true)
 				return
@@ -1124,7 +1124,7 @@ func (c *compiler) compileConditional(n *ast.If, shouldJumpOutside bool) {
 	idx, scope := c.compileExpr(n.Condition, false)
 	if scope == rKonst {
 		switch v := (*c.kb.Konstants)[idx].(type) {
-		case Nil:
+		case NilValue:
 			c.skipBlock(n.Block)
 			return
 		case Bool:

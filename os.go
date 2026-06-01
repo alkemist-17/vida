@@ -46,7 +46,7 @@ func osEnviron(args ...Value) (Value, error) {
 
 func osExit(args ...Value) (Value, error) {
 	os.Exit(0)
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func osGetEnv(args ...Value) (Value, error) {
@@ -63,7 +63,7 @@ func osGetEnv(args ...Value) (Value, error) {
 			return &Array{Value: xs}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func osGetWD(args ...Value) (Value, error) {
@@ -89,10 +89,10 @@ func osMkdir(args ...Value) (Value, error) {
 			if err != nil && !os.IsExist(err) {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func osMkdirAll(args ...Value) (Value, error) {
@@ -102,10 +102,10 @@ func osMkdirAll(args ...Value) (Value, error) {
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func osRemove(args ...Value) (Value, error) {
@@ -115,10 +115,10 @@ func osRemove(args ...Value) (Value, error) {
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func osRemoveAll(args ...Value) (Value, error) {
@@ -128,10 +128,10 @@ func osRemoveAll(args ...Value) (Value, error) {
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func osName(args ...Value) (Value, error) {
@@ -160,8 +160,8 @@ func osRunCMD(args ...Value) (Value, error) {
 			if err != nil {
 				return VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }

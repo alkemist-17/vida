@@ -19,10 +19,10 @@ func loadFoundationException() Value {
 func exceptionRaise(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n   Message : %v\n\n", verror.ExceptionErrType, args[0].String()))
-		return GlobalNil, err
+		return Nil, err
 	}
 	err := fmt.Errorf("%s", fmt.Sprintf("\n\n  [%v]\n\n", verror.ExceptionErrType))
-	return GlobalNil, err
+	return Nil, err
 }
 
 func exceptionCatch(args ...Value) (Value, error) {
@@ -97,5 +97,5 @@ func exceptionCatch(args ...Value) (Value, error) {
 			return v, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }

@@ -29,7 +29,7 @@ func regexpMatch(args ...Value) (Value, error) {
 			return Bool(re.MatchString(input.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpReplaceAll(args ...Value) (Value, error) {
@@ -45,7 +45,7 @@ func regexpReplaceAll(args ...Value) (Value, error) {
 			return &String{Value: re.ReplaceAllString(source.Value, replacement.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpReplaceAllLit(args ...Value) (Value, error) {
@@ -61,7 +61,7 @@ func regexpReplaceAllLit(args ...Value) (Value, error) {
 			return &String{Value: re.ReplaceAllLiteralString(source.Value, replacement.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpSplit(args ...Value) (Value, error) {
@@ -76,7 +76,7 @@ func regexpSplit(args ...Value) (Value, error) {
 			}
 			result := re.Split(input.Value, int(n))
 			if result == nil {
-				return GlobalNil, nil
+				return Nil, nil
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
@@ -85,7 +85,7 @@ func regexpSplit(args ...Value) (Value, error) {
 			return arr, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpFindFirstIndex(args ...Value) (Value, error) {
@@ -99,7 +99,7 @@ func regexpFindFirstIndex(args ...Value) (Value, error) {
 			}
 			res := re.FindStringIndex(input.Value)
 			if res == nil {
-				return GlobalNil, nil
+				return Nil, nil
 			}
 			arr := &Array{Value: make([]Value, 2)}
 			arr.Value[0] = Integer(res[0])
@@ -107,7 +107,7 @@ func regexpFindFirstIndex(args ...Value) (Value, error) {
 			return arr, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpFindAllIndex(args ...Value) (Value, error) {
@@ -122,7 +122,7 @@ func regexpFindAllIndex(args ...Value) (Value, error) {
 			}
 			result := re.FindAllStringIndex(input.Value, int(n))
 			if result == nil {
-				return GlobalNil, nil
+				return Nil, nil
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
@@ -135,7 +135,7 @@ func regexpFindAllIndex(args ...Value) (Value, error) {
 			return arr, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpEscape(args ...Value) (Value, error) {
@@ -144,7 +144,7 @@ func regexpEscape(args ...Value) (Value, error) {
 			return &String{Value: regexp.QuoteMeta(input.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpFindString(args ...Value) (Value, error) {
@@ -159,7 +159,7 @@ func regexpFindString(args ...Value) (Value, error) {
 			return &String{Value: re.FindString(input.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpFindAllString(args ...Value) (Value, error) {
@@ -174,7 +174,7 @@ func regexpFindAllString(args ...Value) (Value, error) {
 			}
 			result := re.FindAllString(input.Value, int(n))
 			if result == nil {
-				return GlobalNil, nil
+				return Nil, nil
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
@@ -183,7 +183,7 @@ func regexpFindAllString(args ...Value) (Value, error) {
 			return arr, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func regexpFindSubmatch(args ...Value) (Value, error) {
@@ -197,7 +197,7 @@ func regexpFindSubmatch(args ...Value) (Value, error) {
 			}
 			result := re.FindStringSubmatch(input.Value)
 			if result == nil {
-				return GlobalNil, nil
+				return Nil, nil
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
@@ -206,5 +206,5 @@ func regexpFindSubmatch(args ...Value) (Value, error) {
 			return arr, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }

@@ -44,7 +44,7 @@ func mathInf(fn func(int) float64) NativeFunction {
 				return Float(fn(int(v))), nil
 			}
 		}
-		return GlobalNil, nil
+		return Nil, nil
 	}
 }
 
@@ -58,7 +58,7 @@ func mathIsNan(fn func(float64) bool) NativeFunction {
 				return Bool(fn(float64(v))), nil
 			}
 		}
-		return GlobalNil, nil
+		return Nil, nil
 	}
 }
 
@@ -76,7 +76,7 @@ func mathIsInf(fn func(float64, int) bool) NativeFunction {
 				}
 			}
 		}
-		return GlobalNil, nil
+		return Nil, nil
 	}
 }
 
@@ -96,7 +96,7 @@ func mathFromFloatToFloat(fn func(float64) float64) NativeFunction {
 				return Float(fn(float64(v))), nil
 			}
 		}
-		return GlobalNil, nil
+		return Nil, nil
 	}
 }
 
@@ -120,6 +120,6 @@ func mathPow(fn func(float64, float64) float64) NativeFunction {
 				}
 			}
 		}
-		return GlobalNil, nil
+		return Nil, nil
 	}
 }

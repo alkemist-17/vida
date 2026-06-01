@@ -33,6 +33,6 @@ func (s *Scheduler) Acquire(fn *Function, script *Script) *Thread {
 func (s *Scheduler) Release(th *Thread) {
 	th.State = Completed
 	th.Invoker = nil
-	th.Channel = GlobalNil
+	th.Channel = Nil
 	s.Pool.releaseThread()
 }

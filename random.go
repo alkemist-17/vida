@@ -70,7 +70,7 @@ func randPerm(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func randShuffled(args ...Value) (Value, error) {
@@ -95,7 +95,7 @@ func randShuffled(args ...Value) (Value, error) {
 			return c, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func randNextU32(args ...Value) (Value, error) {
@@ -170,7 +170,7 @@ func randBytes(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func randText(args ...Value) (Value, error) {
@@ -200,7 +200,7 @@ func randNanoID(args ...Value) (Value, error) {
 			return &String{Value: string(nanoid), Runes: nanoid}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
@@ -232,7 +232,7 @@ func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
 			}), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func generateMask(length int) Integer {

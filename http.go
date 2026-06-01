@@ -112,7 +112,7 @@ func httpRequest(args ...Value) (Value, error) {
 			return httpResponseToObject(resp, body), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, error) {
@@ -228,7 +228,7 @@ func httpParseBody(userConfig *Object, reqConfig *requestConfig) {
 	case *String, *Object, *Bytes:
 		reqConfig.Body = v
 	default:
-		reqConfig.Body = GlobalNil
+		reqConfig.Body = Nil
 	}
 }
 
@@ -492,7 +492,7 @@ func httpRequestWithMethod(method string, args ...Value) (Value, error) {
 		}
 		return httpRequest(args[0])
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func httpPost(args ...Value) (Value, error) {
@@ -525,7 +525,7 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 			return &String{Value: http.StatusText(int(code))}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func httpURLEncode(args ...Value) (Value, error) {
@@ -538,7 +538,7 @@ func httpURLEncode(args ...Value) (Value, error) {
 			return &String{Value: values.Encode()}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func httpDetectContentType(args ...Value) (Value, error) {
@@ -547,7 +547,7 @@ func httpDetectContentType(args ...Value) (Value, error) {
 			return &String{Value: http.DetectContentType(data.Value)}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 type vidaHttpClient struct {

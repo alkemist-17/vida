@@ -23,7 +23,7 @@ func jsonValueToJsonString(args ...Value) (Value, error) {
 			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
-	b, _ := json.Marshal(GlobalNil)
+	b, _ := json.Marshal(Nil)
 	return &String{Value: string(b)}, nil
 }
 
@@ -31,7 +31,7 @@ func jsonParse(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		valid, _ := jsonIsValid(args[0])
 		switch t := valid.(type) {
-		case Nil:
+		case NilValue:
 			return VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 		case Bool:
 			if !t {
@@ -44,7 +44,7 @@ func jsonParse(args ...Value) (Value, error) {
 			if err := json.Unmarshal([]byte(t.Value), &value); err == nil {
 				switch v := value.(type) {
 				case nil:
-					return GlobalNil, nil
+					return Nil, nil
 				case bool:
 					return Bool(v), nil
 				case string:
@@ -64,7 +64,7 @@ func jsonParse(args ...Value) (Value, error) {
 			if err := json.Unmarshal(t.Value, &value); err == nil {
 				switch v := value.(type) {
 				case nil:
-					return GlobalNil, nil
+					return Nil, nil
 				case bool:
 					return Bool(v), nil
 				case string:
@@ -81,7 +81,7 @@ func jsonParse(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func jsonIsValid(args ...Value) (Value, error) {
@@ -92,10 +92,10 @@ func jsonIsValid(args ...Value) (Value, error) {
 		case *Bytes:
 			return Bool(json.Valid(t.Value)), nil
 		default:
-			return Bool(false), nil
+			return False, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func jsonPretty(args ...Value) (Value, error) {
@@ -106,7 +106,7 @@ func jsonPretty(args ...Value) (Value, error) {
 			return VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func parseObject(input map[string]any) *Object {
@@ -114,7 +114,7 @@ func parseObject(input map[string]any) *Object {
 	for kk, vv := range input {
 		switch tt := vv.(type) {
 		case nil:
-			o.Value[kk] = GlobalNil
+			o.Value[kk] = Nil
 		case bool:
 			o.Value[kk] = Bool(tt)
 		case string:
@@ -135,7 +135,7 @@ func parseArray(input []any) *Array {
 	for ii, vv := range input {
 		switch tt := vv.(type) {
 		case nil:
-			A.Value[ii] = GlobalNil
+			A.Value[ii] = Nil
 		case bool:
 			A.Value[ii] = Bool(tt)
 		case string:

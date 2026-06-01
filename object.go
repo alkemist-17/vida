@@ -42,7 +42,7 @@ func objectInjectProperties(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectInjectAndOverrideProperties(args ...Value) (Value, error) {
@@ -60,7 +60,7 @@ func objectInjectAndOverrideProperties(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectCheckProperties(args ...Value) (Value, error) {
@@ -79,13 +79,13 @@ func objectCheckProperties(args ...Value) (Value, error) {
 			objectrecursiveMetaSearch(set, self)
 			for _, v := range set {
 				if !v {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectExtractProperties(args ...Value) (Value, error) {
@@ -103,7 +103,7 @@ func objectExtractProperties(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectDeleteProperty(args ...Value) (Value, error) {
@@ -115,7 +115,7 @@ func objectDeleteProperty(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectSetMeta(args ...Value) (Value, error) {
@@ -132,7 +132,7 @@ func objectSetMeta(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectGetMeta(args ...Value) (Value, error) {
@@ -146,7 +146,7 @@ func objectGetMeta(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectGetValue(args ...Value) (Value, error) {
@@ -157,7 +157,7 @@ func objectGetValue(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectSetValue(args ...Value) (Value, error) {
@@ -170,7 +170,7 @@ func objectSetValue(args ...Value) (Value, error) {
 			return self, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectGetOrSet(args ...Value) (Value, error) {
@@ -186,7 +186,7 @@ func objectGetOrSet(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectHasValue(args ...Value) (Value, error) {
@@ -194,13 +194,13 @@ func objectHasValue(args ...Value) (Value, error) {
 		if self, ok := args[0].(*Object); ok {
 			for _, val := range args[1:] {
 				if _, exists := self.Value[val.ObjectKey()]; !exists {
-					return Bool(false), nil
+					return False, nil
 				}
 			}
-			return Bool(true), nil
+			return True, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectGetKeys(args ...Value) (Value, error) {
@@ -221,7 +221,7 @@ func objectGetKeys(args ...Value) (Value, error) {
 			return &Array{Value: keys}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectGetValues(args ...Value) (Value, error) {
@@ -242,7 +242,7 @@ func objectGetValues(args ...Value) (Value, error) {
 			return &Array{Value: values}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectrecursiveMetaSearch(set map[string]bool, self *Object) {
@@ -271,7 +271,7 @@ func objectIsEmpty(args ...Value) (Value, error) {
 			return Bool(l == 0), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectIsObject(args ...Value) (Value, error) {
@@ -279,7 +279,7 @@ func objectIsObject(args ...Value) (Value, error) {
 		_, ok := args[0].(*Object)
 		return Bool(ok), nil
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectIsCallable(args ...Value) (Value, error) {
@@ -288,7 +288,7 @@ func objectIsCallable(args ...Value) (Value, error) {
 			return o.IsCallable(), nil
 		}
 	}
-	return Bool(false), nil
+	return False, nil
 }
 
 func objectClear(args ...Value) (Value, error) {
@@ -299,19 +299,19 @@ func objectClear(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectHasMeta(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if self, ok := args[0].(*Object); ok {
 			if _, ok := self.Value[__meta].(*Object); ok {
-				return Bool(true), nil
+				return True, nil
 			}
-			return Bool(false), nil
+			return False, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func objectDelMeta(args ...Value) (Value, error) {
@@ -326,5 +326,5 @@ func objectDelMeta(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }

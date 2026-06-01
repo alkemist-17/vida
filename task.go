@@ -84,19 +84,19 @@ func taskRunInParallel(args ...Value) (Value, error) {
 					default:
 						wg.Wait()
 						result = nil
-						return GlobalNil, verror.ErrParallelFn
+						return Nil, verror.ErrParallelFn
 					}
 				} else {
 					wg.Wait()
 					result = nil
-					return GlobalNil, verror.ErrParallelArgs
+					return Nil, verror.ErrParallelArgs
 				}
 			}
 			wg.Wait()
 			return result, e
 		} else {
-			return GlobalNil, verror.ErrNonEmptyTaskArray
+			return Nil, verror.ErrNonEmptyTaskArray
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }

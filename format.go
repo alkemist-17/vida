@@ -798,7 +798,7 @@ func (p *pp) badVerb(verb rune) {
 		_, _ = p.WriteSingleByte('=')
 		p.printArg(p.arg, 'v')
 	default:
-		_, _ = p.WriteString(GlobalNil.String())
+		_, _ = p.WriteString(Nil.String())
 	}
 	_, _ = p.WriteSingleByte(')')
 	p.erroring = false
@@ -936,7 +936,7 @@ func (p *pp) printArg(arg Value, verb rune) {
 	p.arg = arg
 
 	if arg == nil {
-		arg = GlobalNil
+		arg = Nil
 	}
 
 	// Special processing considerations.
@@ -1223,7 +1223,7 @@ formatLoop:
 				_, _ = p.WriteString(commaSpaceString)
 			}
 			if arg == nil {
-				_, _ = p.WriteString(GlobalNil.String())
+				_, _ = p.WriteString(Nil.String())
 			} else {
 				_, _ = p.WriteString(arg.Type())
 				_, _ = p.WriteSingleByte('=')

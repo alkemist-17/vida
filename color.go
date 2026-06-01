@@ -35,7 +35,7 @@ func colorQuickSprint(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorFormatQuickSprint(args ...Value) (Value, error) {
@@ -54,7 +54,7 @@ func colorFormatQuickSprint(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorNew(args ...Value) (Value, error) {
@@ -76,7 +76,7 @@ func colorNew(args ...Value) (Value, error) {
 
 func colorReset(args ...Value) (Value, error) {
 	fmt.Print(Sprint256(-1, -1, EmptyString))
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorPaletteChart(args ...Value) (Value, error) {
@@ -88,7 +88,7 @@ func colorPaletteChart(args ...Value) (Value, error) {
 	// Grayscale (232-255)
 	printSection("Grayscale (232-255)", 232, 255, 6)
 	fmt.Printf("\nPalette Chart complete.\n\n\n")
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 // Library
@@ -108,22 +108,22 @@ func (c *Color) Boolean() Bool {
 func (c *Color) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
-		return Bool(true), nil
+		return True, nil
 	default:
-		return GlobalNil, verror.ErrPrefixOpNotDefined
+		return Nil, verror.ErrPrefixOpNotDefined
 	}
 }
 
 func (c *Color) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
-		return GlobalNil, nil
+		return Nil, nil
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
 		return IsMemberOf(c, rhs)
 	default:
-		return GlobalNil, verror.ErrBinaryOpNotDefined
+		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
@@ -283,7 +283,7 @@ func colorString(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorFormat(args ...Value) (Value, error) {
@@ -297,7 +297,7 @@ func colorFormat(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorSetBG(args ...Value) (Value, error) {
@@ -311,7 +311,7 @@ func colorSetBG(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorSetFG(args ...Value) (Value, error) {
@@ -325,7 +325,7 @@ func colorSetFG(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorSetReset(args ...Value) (Value, error) {
@@ -339,7 +339,7 @@ func colorSetReset(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func colorGetReset(args ...Value) (Value, error) {
@@ -350,7 +350,7 @@ func colorGetReset(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func printSection(title string, start, end, rowCount int) {
@@ -393,7 +393,7 @@ func colorValue(val Value) (int, bool) {
 	switch val := val.(type) {
 	case Integer:
 		return int(val), true
-	case Nil:
+	case NilValue:
 		return -1, true
 	default:
 		return 0, false

@@ -79,15 +79,15 @@ func newThread(fn *Function, script *Script) *Thread {
 }
 
 func (th *Thread) Boolean() Bool {
-	return Bool(true)
+	return True
 }
 
 func (th *Thread) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
-		return Bool(false), nil
+		return False, nil
 	default:
-		return GlobalNil, verror.ErrPrefixOpNotDefined
+		return Nil, verror.ErrPrefixOpNotDefined
 	}
 }
 
@@ -98,9 +98,9 @@ func (th *Thread) Binop(op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return Bool(false), nil
+		return False, nil
 	}
-	return GlobalNil, verror.ErrBinaryOpNotDefined
+	return Nil, verror.ErrBinaryOpNotDefined
 }
 
 func (th *Thread) Equals(other Value) Bool {
@@ -140,7 +140,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 	}
 	if start && vm.Script.MainFunction.CoreFn.Arity > largs {
 		for i := largs; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
-			vm.Frame.stack[i] = GlobalNil
+			vm.Frame.stack[i] = Nil
 		}
 	} else if !start && largs > 0 {
 		vm.Frame.stack[vm.Reg] = args[0]
@@ -631,7 +631,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 	}
 	if start && vm.Script.MainFunction.CoreFn.Arity > largs {
 		for i := largs; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
-			vm.Frame.stack[i] = GlobalNil
+			vm.Frame.stack[i] = Nil
 		}
 	} else if !start && largs > 0 {
 		vm.Frame.stack[vm.Reg] = args[0]

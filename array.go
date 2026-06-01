@@ -48,7 +48,7 @@ func arrayConcat(args ...Value) (Value, error) {
 			}
 		}
 		if size < 0 || size >= verror.MaxMemSize {
-			return GlobalNil, verror.ErrMaxMemSize
+			return Nil, verror.ErrMaxMemSize
 		}
 		result := make([]Value, 0, size)
 		for _, v := range args {
@@ -58,7 +58,7 @@ func arrayConcat(args ...Value) (Value, error) {
 		}
 		return &Array{Value: result}, nil
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayClear(args ...Value) (Value, error) {
@@ -68,7 +68,7 @@ func arrayClear(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayCap(args ...Value) (Value, error) {
@@ -77,7 +77,7 @@ func arrayCap(args ...Value) (Value, error) {
 			return Integer(cap(xs.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayOverlaps(args ...Value) (Value, error) {
@@ -88,7 +88,7 @@ func arrayOverlaps(args ...Value) (Value, error) {
 			return Bool(overlapsBackingArray(a.Value, b.Value)), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayView(args ...Value) (Value, error) {
@@ -102,7 +102,7 @@ func arrayView(args ...Value) (Value, error) {
 			return &Array{Value: xs.Value[start:end]}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayGrow(args ...Value) (Value, error) {
@@ -114,7 +114,7 @@ func arrayGrow(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayIndex(args ...Value) (Value, error) {
@@ -127,7 +127,7 @@ func arrayIndex(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayInsert(args ...Value) (Value, error) {
@@ -141,7 +141,7 @@ func arrayInsert(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayReverse(args ...Value) (Value, error) {
@@ -151,7 +151,7 @@ func arrayReverse(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayReversed(args ...Value) (Value, error) {
@@ -163,7 +163,7 @@ func arrayReversed(args ...Value) (Value, error) {
 			return &Array{Value: vals}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayPop(args ...Value) (Value, error) {
@@ -198,7 +198,7 @@ func arrayPop(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayToObject(args ...Value) (Value, error) {
@@ -211,7 +211,7 @@ func arrayToObject(args ...Value) (Value, error) {
 			return o, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arraySortObjects(args ...Value) (Value, error) {
@@ -293,7 +293,7 @@ func arraySortObjects(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayIsArray(args ...Value) (Value, error) {
@@ -301,7 +301,7 @@ func arrayIsArray(args ...Value) (Value, error) {
 		_, ok := args[0].(*Array)
 		return Bool(ok), nil
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayIsEmpty(args ...Value) (Value, error) {
@@ -310,7 +310,7 @@ func arrayIsEmpty(args ...Value) (Value, error) {
 			return Bool(len(xs.Value) == 0), nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayPairs(args ...Value) (Value, error) {
@@ -325,7 +325,7 @@ func arrayPairs(args ...Value) (Value, error) {
 			return &Array{Value: entries}, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayCompact(args ...Value) (Value, error) {
@@ -335,7 +335,7 @@ func arrayCompact(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayCompacted(args ...Value) (Value, error) {
@@ -346,7 +346,7 @@ func arrayCompacted(args ...Value) (Value, error) {
 			return cloned, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayChunk(args ...Value) (Value, error) {
@@ -365,7 +365,7 @@ func arrayChunk(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayClip(args ...Value) (Value, error) {
@@ -375,7 +375,7 @@ func arrayClip(args ...Value) (Value, error) {
 			return xs, nil
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func arrayReplace(args ...Value) (Value, error) {
@@ -399,7 +399,7 @@ func arrayReplace(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
 
 func overlapsBackingArray[T any](a, b []T) bool {
@@ -487,7 +487,7 @@ func arraySort(args ...Value) (Value, error) {
 	// Auto-detect type from first non-nil element
 	var sample Value
 	for _, v := range xs.Value {
-		if v.Type() != GlobalNil.Type() {
+		if v.Type() != Nil.Type() {
 			sample = v
 			break
 		}
@@ -522,5 +522,5 @@ func arrayRepeat(args ...Value) (Value, error) {
 			}
 		}
 	}
-	return GlobalNil, nil
+	return Nil, nil
 }
