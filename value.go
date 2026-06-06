@@ -1040,7 +1040,7 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 				return Nil, threadError
 			}
 			switch vm.State {
-			case Completed, Suspended:
+			case Done, Suspended:
 				v = vm.Channel
 				invoker := vm.Thread.Invoker
 				invoker.State = Running
@@ -1060,7 +1060,7 @@ func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
 				return Nil, threadError
 			}
 			switch vm.State {
-			case Completed, Suspended:
+			case Done, Suspended:
 				v = vm.Channel
 				invoker := vm.Thread.Invoker
 				invoker.State = Running
@@ -1157,6 +1157,30 @@ type CoreFunction struct {
 	Arity      int
 	IsVar      bool
 	ScriptName string
+}
+
+type coreFNConfigType = uint8
+
+const (
+	cZT coreFNConfigType = iota
+	cZF
+	cNT
+	cNF
+)
+
+func (c *CoreFunction) getConfigType() coreFNConfigType {
+	switch c.IsVar {
+	case true:
+		if c.Arity == 0 {
+			return cZT
+		}
+		return cNT
+	default:
+		if c.Arity == 0 {
+			return cZF
+		}
+		return cNF
+	}
 }
 
 func (c *CoreFunction) Boolean() Bool {
@@ -1360,15 +1384,15 @@ func (nativeFn NativeFunction) MarshalJSON() ([]byte, error) {
 }
 
 type VidaError struct {
-	ValueSemanticsImpl
+	ReferenceSemanticsImpl
 	Message Value
 }
 
-func (e VidaError) Boolean() Bool {
+func (e *VidaError) Boolean() Bool {
 	return false
 }
 
-func (e VidaError) Prefix(op uint64) (Value, error) {
+func (e *VidaError) Prefix(op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return True, nil
@@ -1377,7 +1401,7 @@ func (e VidaError) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (e VidaError) Binop(op uint64, rhs Value) (Value, error) {
+func (e *VidaError) Binop(op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return e, nil
@@ -1390,47 +1414,47 @@ func (e VidaError) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e VidaError) IGet(index Value) (Value, error) {
+func (e *VidaError) IGet(index Value) (Value, error) {
 	if val, ok := index.(*String); ok && val.Value == errorMessageFieldName {
 		return e.Message, nil
 	}
 	return Nil, nil
 }
 
-func (e VidaError) ISet(index, val Value) error {
+func (e *VidaError) ISet(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (e VidaError) Equals(other Value) Bool {
-	v, ok := other.(VidaError)
+func (e *VidaError) Equals(other Value) Bool {
+	v, ok := other.(*VidaError)
 	return Bool(ok) && e.Message.Equals(v.Message)
 }
 
-func (e VidaError) IsIterable() Bool {
+func (e *VidaError) IsIterable() Bool {
 	return false
 }
 
-func (e VidaError) IsCallable() Bool {
+func (e *VidaError) IsCallable() Bool {
 	return false
 }
 
-func (e VidaError) Iterator() Value {
+func (e *VidaError) Iterator() Value {
 	return Nil
 }
 
-func (e VidaError) String() string {
+func (e *VidaError) String() string {
 	return fmt.Sprintf("Error(%v)", e.Message.String())
 }
 
-func (e VidaError) ObjectKey() string {
+func (e *VidaError) ObjectKey() string {
 	return fmt.Sprintf("Error(%v)", e.Message.ObjectKey())
 }
 
-func (e VidaError) Type() string {
+func (e *VidaError) Type() string {
 	return "error"
 }
 
-func (e VidaError) Clone() Value {
+func (e *VidaError) Clone() Value {
 	return e
 }
 

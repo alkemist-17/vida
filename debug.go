@@ -8,7 +8,8 @@ import (
 
 func (vm *VM) Inspect(ip int) {
 	clear()
-	fmt.Println("Thread", ((*clbu)[globalStateIndex].(*GlobalState).Current).ObjectKey())
+	fmt.Println("Thread", ((*clbu)[globalStateIndex].(*GlobalState).Current).String())
+	fmt.Println("IsMain?", ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current)
 	fmt.Println("Running", vm.Frame.lambda.CoreFn.ScriptName)
 	fmt.Printf("Store => ")
 	for i := len(coreLibNames); i < len((*vm.Script.Store)); i++ {
@@ -371,8 +372,8 @@ func (vm *VM) debug() (Result, error) {
 				}
 				if P != 0 {
 					switch P {
-					case ellipsisFirst:
-						if xs, ok := vm.Frame.stack[B+F].(*Array); ok {
+					case spreadFirst:
+						if xs, ok := vm.Frame.stack[B+F].(*Array); ok && len(xs.Value) < len(vm.Frame.stack) {
 							nargs = len(xs.Value) + int(F) - 1
 							for i, v := range xs.Value {
 								vm.Frame.stack[int(B)+int(F)+i] = v
@@ -380,8 +381,8 @@ func (vm *VM) debug() (Result, error) {
 						} else {
 							return vm.createError(ip, verror.ErrVariadicArgs)
 						}
-					case ellipsisLast:
-						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok {
+					case spreadLast:
+						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok && len(xs.Value) < len(vm.Frame.stack) {
 							nargs += len(xs.Value) - 1
 							for i, v := range xs.Value {
 								vm.Frame.stack[int(B)+int(A)+i] = v
@@ -398,7 +399,7 @@ func (vm *VM) debug() (Result, error) {
 					init := int(B) + 1 + fn.CoreFn.Arity
 					count := nargs - fn.CoreFn.Arity
 					xs := make([]Value, count)
-					for i := 0; i < count; i++ {
+					for i := range count {
 						xs[i] = vm.Frame.stack[init+i]
 					}
 					vm.Frame.stack[init] = &Array{Value: xs}
@@ -425,8 +426,9 @@ func (vm *VM) debug() (Result, error) {
 			} else {
 				varargs := vm.Frame.stack[B+1 : B+A+1]
 				if P != 0 {
+				nonnecessary:
 					switch P {
-					case ellipsisFirst:
+					case spreadFirst:
 						if arr, ok := varargs[0].(*Array); ok {
 							for i := 0; i < len(arr.Value); i++ {
 								vm.Frame.stack[int(B)+1+i] = arr.Value[i]
@@ -435,8 +437,11 @@ func (vm *VM) debug() (Result, error) {
 						} else {
 							return vm.createError(ip, verror.ErrVariadicArgs)
 						}
-					case ellipsisLast:
+					case spreadLast:
 						if arr, ok := varargs[len(varargs)-1].(*Array); ok {
+							if len(arr.Value) == 0 {
+								break nonnecessary
+							}
 							for i, v := range arr.Value {
 								vm.Frame.stack[int(B)+len(varargs)+i] = v
 							}
@@ -450,12 +455,12 @@ func (vm *VM) debug() (Result, error) {
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
+						_, threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Completed, Suspended:
+						case Done, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
@@ -464,12 +469,12 @@ func (vm *VM) debug() (Result, error) {
 							vm.Thread = invoker
 						}
 					case verror.ErrStartThreadSignal:
-						_, threadError := vm.debugThread(vm.fp, 0, true, vm.Invoker.Frame.stack[B+1 : B+A+1][1:]...)
+						_, threadError := vm.debugThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
 						switch vm.State {
-						case Completed, Suspended:
+						case Done, Suspended:
 							v = vm.Channel
 							invoker := vm.Thread.Invoker
 							invoker.State = Running

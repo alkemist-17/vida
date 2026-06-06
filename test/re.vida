@@ -2,7 +2,7 @@ var re = load("std/re")
 
 var pattern = `^[a-z]+\[[0-9]+\]$`
 
-var input = [
+var data = [
 	"adam[23]",
 	"eve[7]",
 	"job[48]",
@@ -10,43 +10,43 @@ var input = [
 ]
 
 
-for _, v in input {
+for _, v in data {
     assert(re.match(pattern, v))
 }
 
 
-input = [
+data = [
     "345hjel",
     "Algo[2]",
     "Go[42]"
 ]
 
-for _, v in input {
+for _, v in data {
     assert(not re.match(pattern, v))
 }
 
 
 pattern = `(gopher){2}`
 
-input = [
+data = [
 	"gophergopher",
 	"gophergophergopher",
 	"gophergophergophergopher"
 ]
 
-for _, v in input {
+for _, v in data {
     assert(re.match(pattern, v))
 }
 
 
-input = [
+data = [
 	"gopher",
 	"gophergophe",
 	"gophergophegophegophe"
 ]
 
 
-for _, v in input {
+for _, v in data {
     assert(not re.match(pattern, v))
 }
 
@@ -91,13 +91,13 @@ assert(re.replaceAll(pattern, `hello world`, "a") == "hella warld")
 
 pattern = `1.5`
 
-input = `
+data = `
 	invoice 1.5
 	invoice 1.5
 	invoice 1.5
 `
 
-R = re.replaceAll(pattern, input, "0.5")
+R = re.replaceAll(pattern, data, "0.5")
 
 pattern = `0.5`
 
@@ -108,32 +108,32 @@ assert(len(R) == 3)
 
 pattern = `hello.`
 
-input = `hello.world!`
+data = `hello.world!`
 
 R = re.escape(pattern)
 
 assert(R == `hello\.`)
 
-assert(re.match(R, input))
+assert(re.match(R, data))
 
-assert(re.find(R, input) == pattern)
+assert(re.find(R, data) == pattern)
 
 
 pattern = `ox`
-input = "Fox box roxx cox brox"
-R = re.findAllIndex(pattern, input, -1)
+data = "Fox box roxx cox brox"
+R = re.findAllIndex(pattern, data, -1)
 
 
 for _, pair in R {
-	assert(input[pair[0]..pair[1]] == pattern)
+	assert(data[pair[0]..pair[1]] == pattern)
 }
 
 
 pattern = `\d+`
 
-input = "Look43453452at534543534534524the45554500542numbers7593847983745"
+data = "Look43453452at534543534534524the45554500542numbers7593847983745"
 
-R = re.split(pattern, input, -1)
+R = re.split(pattern, data, -1)
 
 assert(R[0] == "Look")
 assert(R[1] == "at")
@@ -143,9 +143,9 @@ assert(R[3] == "numbers")
 
 pattern = `\-+`
 
-input = "Look----at-the-----numbers------"
+data = "Look----at-the-----numbers------"
 
-R = re.split(pattern, input, -1)
+R = re.split(pattern, data, -1)
 
 assert(R[0] == "Look")
 assert(R[1] == "at")
@@ -155,20 +155,20 @@ assert(R[3] == "numbers")
 
 pattern = `(\+|\-)?\d+\.\d+`
 
-input = [
+data = [
 	"12.124",
 	"+1.35",
 	"-2.34",
 	"+2."
 ]
 
-R = re.findSubMatch(pattern, input[0])
+R = re.findSubMatch(pattern, data[0])
 assert(R[0] == "12.124" and R[1] == "")
 
-R = re.findSubMatch(pattern, input[1])
+R = re.findSubMatch(pattern, data[1])
 assert(R[0] == "+1.35" and R[1] == "+")
 
-R = re.findSubMatch(pattern, input[2])
+R = re.findSubMatch(pattern, data[2])
 assert(R[0] == "-2.34" and R[1] == "-")
 
-assert(re.findSubMatch(pattern, input[3]) == nil)
+assert(re.findSubMatch(pattern, data[3]) == nil)

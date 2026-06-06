@@ -299,6 +299,25 @@ func (c *compiler) refScope(id string) (int, int) {
 }
 
 func (c *compiler) generateReferenceError(ref string, line uint) {
+	c.hadError = true
 	c.lineErr = line
 	c.errMsg = fmt.Sprintf("reference '%v' not found", ref)
+}
+
+func (c *compiler) generateGlobalAlreadyDefinedError(ref string, line uint) {
+	c.hadError = true
+	c.lineErr = line
+	c.errMsg = fmt.Sprintf("global reference '%v' already defined", ref)
+}
+
+func (c *compiler) generateLocalAlreadyDefinedError(ref string, line uint) {
+	c.hadError = true
+	c.lineErr = line
+	c.errMsg = fmt.Sprintf("local reference '%v' already defined in the same scope", ref)
+}
+
+func (c *compiler) generateGlobalShadowedByLocalError(ref string, line uint) {
+	c.hadError = true
+	c.lineErr = line
+	c.errMsg = fmt.Sprintf("global reference '%v' is shadowed by local of the same name", ref)
 }

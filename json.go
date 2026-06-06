@@ -20,7 +20,7 @@ func jsonValueToJsonString(args ...Value) (Value, error) {
 		if b, err := json.Marshal(args[0]); err == nil {
 			return &String{Value: string(b)}, nil
 		} else {
-			return VidaError{Message: &String{Value: err.Error()}}, nil
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
 	b, _ := json.Marshal(Nil)
@@ -32,10 +32,10 @@ func jsonParse(args ...Value) (Value, error) {
 		valid, _ := jsonIsValid(args[0])
 		switch t := valid.(type) {
 		case NilValue:
-			return VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 		case Bool:
 			if !t {
-				return VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 			}
 		}
 		switch t := args[0].(type) {
@@ -57,7 +57,7 @@ func jsonParse(args ...Value) (Value, error) {
 					return parseArray(v), nil
 				}
 			} else {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 		case *Bytes:
 			var value any
@@ -77,7 +77,7 @@ func jsonParse(args ...Value) (Value, error) {
 					return parseArray(v), nil
 				}
 			} else {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 		}
 	}
@@ -103,7 +103,7 @@ func jsonPretty(args ...Value) (Value, error) {
 		if b, err := json.MarshalIndent(args[0], EmptyString, "  "); err == nil {
 			return &String{Value: string(b)}, nil
 		} else {
-			return VidaError{Message: &String{Value: err.Error()}}, nil
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
 	return Nil, nil

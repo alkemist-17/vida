@@ -89,25 +89,25 @@ func httpRequest(args ...Value) (Value, error) {
 		case *String:
 			config, err := resolveRequestConfig(v.Value, args...)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
 			defer cancel()
 			resp, body, err := httpExecuteRequest(ctx, config)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return httpResponseToObject(resp, body), nil
 		case *Object:
 			config, err := httpParseUserConfig(v, nil)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
 			defer cancel()
 			resp, body, err := httpExecuteRequest(ctx, config)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return httpResponseToObject(resp, body), nil
 		}

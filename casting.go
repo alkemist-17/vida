@@ -127,7 +127,7 @@ func castToArray(args ...Value) (Value, error) {
 				i++
 			}
 			return &Array{Value: pairs}, nil
-		case VidaError:
+		case *VidaError:
 			a := make([]Value, 1)
 			a[0] = v.Message
 			return &Array{Value: a}, nil
@@ -153,7 +153,7 @@ func castToObject(args ...Value) (Value, error) {
 				o.Value[Integer(i).ObjectKey()] = Integer(v)
 			}
 			return o, nil
-		case VidaError:
+		case *VidaError:
 			o := &Object{Value: make(map[string]Value, 1)}
 			o.Value[errorMessageFieldName] = val.Message
 			return o, nil

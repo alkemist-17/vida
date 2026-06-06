@@ -48,7 +48,7 @@ func colorFormatQuickSprint(args ...Value) (Value, error) {
 				fgColor, fgok := colorValue(fgval)
 				bgColor, bgok := colorValue(bgval)
 				if fgok && bgok {
-					msg, e := FormatValue(format.Value, args[2:]...)
+					msg, e := VSprintf(format.Value, args[2:]...)
 					return &String{Value: Sprint256(fgColor, bgColor, msg)}, e
 				}
 			}
@@ -291,7 +291,7 @@ func colorFormat(args ...Value) (Value, error) {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
 				if format, ok := args[1].(*String); ok {
-					message, e := FormatValue(format.Value, args[2:]...)
+					message, e := VSprintf(format.Value, args[2:]...)
 					return &String{Value: c.Sprint(message)}, e
 				}
 			}

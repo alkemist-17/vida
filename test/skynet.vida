@@ -17,7 +17,6 @@ var suspend = co.suspend
 var run = co.run
 var new = co.new
 
-
 let skynet = fun num, size {
 	if size == 1 {
 		ret suspend(num)
@@ -31,9 +30,7 @@ let skynet = fun num, size {
 	ret suspend(acc)
 }
 
+var result = run(new(skynet), 0, 1_000_000)
 
-var result = run(new(skynet), 0, 1000000)
-
-print(result)
-assert(result == 499999500000)
+assert(result == 499_999_500_000)
 

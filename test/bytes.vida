@@ -703,7 +703,7 @@ for i in 24 {
 // 16. bytes.encode / bytes.decode — all encodings, roundtrips
 // =============================================================================
 
-var plain = bytes.from([0xDE, 0xAD, 0xBE, 0xEF])
+plain = bytes.from([0xDE, 0xAD, 0xBE, 0xEF])
 
 // hex (lowercase)
 var hexStr = bytes.encode(plain, bytes.encoding.hex)
@@ -874,7 +874,7 @@ assert(len(randHex) == 16)           // hex: 2 chars per byte
 var randB64 = bytes.genCryptoRand(6, bytes.encoding.base64)
 assert(len(randB64) == 8)            // base64: ceil(6/3)*4 = 8 chars
 
-var randBin = bytes.genCryptoRand(2, bytes.encoding.binary)
+randBin = bytes.genCryptoRand(2, bytes.encoding.binary)
 assert(len(randBin) == 16)           // binary: 8 chars per byte
 
 

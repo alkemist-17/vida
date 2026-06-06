@@ -11,18 +11,18 @@ const (
 
 const (
 	major     = 0
-	minor     = 3
-	patch     = 79
+	minor     = 4
+	patch     = 0
 	inception = 25
 )
 
 const (
-	header uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
-	name          = "	Vida 🌿🌻"
+	header   uint64 = v<<56 | i<<48 | d<<40 | a<<32 | major<<24 | minor<<16 | patch<<8 | inception
+	langName        = "	Vida 🌿🌻"
 )
 
 func Name() string {
-	return name
+	return langName
 }
 
 func Version() string {
@@ -30,7 +30,7 @@ func Version() string {
 }
 
 func About() string {
-	return "\n\n\n" + name + "\n" + Version() + `
+	return "\n\n\n" + langName + "\n" + Version() + `
 	
 	
 	Welcome to Vida!

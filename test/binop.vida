@@ -199,18 +199,18 @@ konstKonst()
 konstFree(b)()
 freeFree(a, b)()
 
-var a = 100
-var b = 200
+var c = 100
+var d = 200
 
-assert(a+b == 300)
-assert(a-b == -100)
-assert(a*b == 20000)
-assert(a/b == 0)
-assert(a%b == 100)
+assert(c+d == 300)
+assert(c-d == -100)
+assert(c*d == 20000)
+assert(c/d == 0)
+assert(c%d == 100)
 
-assert(b+a == 300)
-assert(b-a == 100)
-assert(b*a == 20000)
-assert(b/a == 2)
-assert(b%a == 0)
+assert(d+a == 300)
+assert(d-a == 100)
+assert(d*a == 20000)
+assert(d/a == 2)
+assert(d%a == 0)
 

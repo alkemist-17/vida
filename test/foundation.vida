@@ -52,3 +52,8 @@ assert(color)
 
 var http = load("std/http")
 assert(http)
+
+var raised = exception.protected(exception.raise)
+
+assert(isError(raised) and raised.message)
+

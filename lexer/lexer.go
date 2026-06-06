@@ -10,9 +10,9 @@ import (
 )
 
 type Lexer struct {
-	LexicalError verror.VidaError
 	src          []byte
 	ScriptName   string
+	LexicalError *verror.VidaError
 	pointer      int
 	leadPointer  int
 	srcLen       int
@@ -22,12 +22,12 @@ type Lexer struct {
 
 const bom = 0xFEFF
 const eof = -1
-const unexpected = -2
+const unexpectedChar = -2
 const emptyString = ""
 
 func New(src []byte, scriptName string) *Lexer {
 	src = append(src, 10)
-	lexer := Lexer{
+	lexer := &Lexer{
 		src:         src,
 		c:           0,
 		line:        1,
@@ -40,11 +40,12 @@ func New(src []byte, scriptName string) *Lexer {
 	if lexer.c == bom {
 		lexer.next()
 	}
-	return &lexer
+	return lexer
 }
 
 func (l *Lexer) next() {
 	if l.leadPointer < l.srcLen {
+		line := l.line
 		l.pointer = l.leadPointer
 		if l.c == '\n' {
 			l.line++
@@ -53,11 +54,11 @@ func (l *Lexer) next() {
 		if r >= utf8.RuneSelf {
 			r, w = utf8.DecodeRune(l.src[l.leadPointer:])
 			if r == utf8.RuneError && w == 1 {
-				r = unexpected
-				l.LexicalError = verror.New(l.ScriptName, "script is not utf-8 encoded", verror.FileErrType, l.line)
+				r = unexpectedChar
+				l.LexicalError = verror.New(l.ScriptName, "the script is not utf-8 encoded", verror.FileErrType, line)
 			} else if r == bom && l.pointer > 0 {
-				r = unexpected
-				l.LexicalError = verror.New(l.ScriptName, "Bom found in an unexpected place", verror.FileErrType, l.line)
+				r = unexpectedChar
+				l.LexicalError = verror.New(l.ScriptName, "a bom was found in an unexpected place", verror.FileErrType, line)
 			}
 		}
 		l.c = r
@@ -109,6 +110,7 @@ func isDigit(c rune) bool {
 }
 
 func (l *Lexer) scanComment() token.Token {
+	line := l.line
 	if l.c == '/' {
 		l.next()
 		for l.c != '\n' && l.c >= 0 {
@@ -131,18 +133,19 @@ func (l *Lexer) scanComment() token.Token {
 			return token.COMMENT
 		}
 	}
-	l.LexicalError = verror.New(l.ScriptName, "unterminated comment", verror.LexicalErrType, l.line)
+	l.LexicalError = verror.New(l.ScriptName, "there is an unterminated comment of type /**/", verror.LexicalErrType, line)
 	return token.UNEXPECTED
 }
 
 func (l *Lexer) scanString() (token.Token, string) {
+	line := l.line
 	init := l.pointer - 1
 	for {
 		ch := l.c
 		if ch == '\n' || ch < 0 {
-			l.c = unexpected
-			l.LexicalError = verror.New(l.ScriptName, "unterminated string literal", verror.LexicalErrType, l.line)
-			return token.UNEXPECTED, emptyString
+			l.c = unexpectedChar
+			l.LexicalError = verror.New(l.ScriptName, "there is an unterminated string literal", verror.LexicalErrType, line)
+			return token.STRING, emptyString
 		}
 		l.next()
 		if ch == '"' {
@@ -156,14 +159,15 @@ func (l *Lexer) scanString() (token.Token, string) {
 }
 
 func (l *Lexer) scanRawString() (token.Token, string) {
+	line := l.line
 	init := l.pointer - 1
 	hasCR := false
 	for {
 		ch := l.c
 		if ch < 0 {
-			l.c = unexpected
-			l.LexicalError = verror.New(l.ScriptName, "unterminated string literal", verror.LexicalErrType, l.line)
-			return token.UNEXPECTED, emptyString
+			l.c = unexpectedChar
+			l.LexicalError = verror.New(l.ScriptName, "ther is an unterminated string literal", verror.LexicalErrType, line)
+			return token.STRING, emptyString
 		}
 		l.next()
 		if ch == '`' {
@@ -347,7 +351,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.NEQ
 			} else {
 				tok = token.UNEXPECTED
-				l.LexicalError = verror.New(l.ScriptName, "found an unrecognized character '!'", verror.LexicalErrType, l.line)
+				l.LexicalError = verror.New(l.ScriptName, "found an exclamation mark '!' out of place", verror.LexicalErrType, l.line)
 			}
 		case '<':
 			switch l.c {
@@ -393,10 +397,14 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			tok = token.BXOR
 		case '&':
 			tok = token.BAND
+		case ';':
+			tok = token.NOOP
 		default:
 			tok = token.UNEXPECTED
 			lit = string(ch)
-			l.LexicalError = verror.New(l.ScriptName, fmt.Sprintf("found an unrecognized character '%v'", lit), verror.LexicalErrType, l.line)
+			if l.LexicalError == nil {
+				l.LexicalError = verror.New(l.ScriptName, fmt.Sprintf("found some unexpected character '%v'", lit), verror.LexicalErrType, l.line)
+			}
 		}
 	}
 	return

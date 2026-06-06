@@ -242,7 +242,7 @@ func arraySortObjects(args ...Value) (Value, error) {
 								os.Exit(0)
 							}
 							switch vm.State {
-							case Completed, Suspended:
+							case Done, Suspended:
 								v := vm.Channel
 								invoker := vm.Thread.Invoker
 								invoker.State = Running
@@ -269,7 +269,7 @@ func arraySortObjects(args ...Value) (Value, error) {
 								os.Exit(0)
 							}
 							switch vm.State {
-							case Completed, Suspended:
+							case Done, Suspended:
 								v := vm.Channel
 								invoker := vm.Thread.Invoker
 								invoker.State = Running
@@ -484,16 +484,8 @@ func arraySort(args ...Value) (Value, error) {
 		return xs, nil
 	}
 
-	// Auto-detect type from first non-nil element
-	var sample Value
-	for _, v := range xs.Value {
-		if v.Type() != Nil.Type() {
-			sample = v
-			break
-		}
-	}
+	var sample Value = xs.Value[0]
 
-	// Dispatch to generic SortBy
 	switch sample.(type) {
 	case Integer:
 		if err := genericSortBy(&xs.Value, extractInteger); err != nil {
@@ -508,7 +500,7 @@ func arraySort(args ...Value) (Value, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("sort: unsupported type for auto-sort: %T", sample)
+		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type())
 	}
 
 	return xs, nil

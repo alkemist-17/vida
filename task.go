@@ -56,7 +56,6 @@ func taskRunInParallel(args ...Value) (Value, error) {
 	if len(args) == 1 {
 		if A, ok := args[0].(*Array); ok && len(A.Value) > 0 {
 			var wg sync.WaitGroup
-			var e error
 			result := &Array{Value: make([]Value, len(A.Value))}
 			for i := range A.Value {
 				if T, ok := A.Value[i].(*Array); ok && len(T.Value) > 0 {
@@ -69,7 +68,7 @@ func taskRunInParallel(args ...Value) (Value, error) {
 							if err == nil {
 								result.Value[i] = vm.Channel
 							} else {
-								e = err
+								result.Value[i] = &VidaError{Message: &String{Value: err.Error()}}
 							}
 						})
 					case NativeFunction:
@@ -78,7 +77,7 @@ func taskRunInParallel(args ...Value) (Value, error) {
 							if err == nil {
 								result.Value[i] = val
 							} else {
-								e = err
+								result.Value[i] = &VidaError{Message: &String{Value: err.Error()}}
 							}
 						})
 					default:
@@ -93,7 +92,7 @@ func taskRunInParallel(args ...Value) (Value, error) {
 				}
 			}
 			wg.Wait()
-			return result, e
+			return result, nil
 		} else {
 			return Nil, verror.ErrNonEmptyTaskArray
 		}

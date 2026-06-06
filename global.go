@@ -204,11 +204,7 @@ func loadCoreLib(store *[]Value) *[]Value {
 }
 
 func corePrint(args ...Value) (Value, error) {
-	var s []any
-	for _, v := range args {
-		s = append(s, v)
-	}
-	fmt.Fprintln(os.Stdout, s...)
+	VFprintln(os.Stdout, args...)
 	return Nil, nil
 }
 
@@ -249,7 +245,7 @@ func coreFormat(args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch v := args[0].(type) {
 		case *String:
-			s, e := FormatValue(v.Value, args[1:]...)
+			s, e := VSprintf(v.Value, args[1:]...)
 			return &String{Value: s}, e
 		}
 	}
@@ -798,14 +794,14 @@ func coreLoadLib(args ...Value) (Value, error) {
 
 func coreError(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return VidaError{Message: args[0]}, nil
+		return &VidaError{Message: args[0]}, nil
 	}
-	return VidaError{Message: Nil}, nil
+	return &VidaError{Message: Nil}, nil
 }
 
 func coreIsError(args ...Value) (Value, error) {
 	if len(args) > 0 {
-		_, ok := args[0].(VidaError)
+		_, ok := args[0].(*VidaError)
 		return Bool(ok), nil
 	}
 	return False, nil
