@@ -113,7 +113,7 @@ func (th *Thread) Equals(other Value) Bool {
 }
 
 func (th *Thread) String() string {
-	return fmt.Sprintf("Thread(%p) State(%v)", th, th.State.String())
+	return fmt.Sprintf("Thread(%p, %v)", th, th.State.String())
 }
 
 func (th *Thread) ObjectKey() string {
@@ -141,22 +141,10 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 		copy(vm.Frame.stack[0:], args)
 		switch vm.Frame.lambda.CoreFn.getConfigType() {
 		case cZT:
-			// (0, T)
-			println("TRACE START (0, T)")
-		case cZF:
-			// (0, F)
-			println("TRACE START (0, F)")
+			A := make([]Value, len(args))
+			copy(A, args)
+			vm.Frame.stack[0] = &Array{Value: A}
 		case cNT:
-			// (N, T)
-			println("TRACE START (N, T)")
-			println("INIT STATE")
-			for k, v := range vm.Frame.stack {
-				if v == nil {
-					break
-				}
-				println(k, v.String())
-			}
-			println("<~~~~~~~~~~~~~~~~~~~~~~~~~~>")
 			if largs == 0 {
 				var k int
 				for i := range vm.Script.MainFunction.CoreFn.Arity {
@@ -164,14 +152,6 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 					vm.Frame.stack[i] = Nil
 				}
 				vm.Frame.stack[k] = &Array{}
-				println("FINAL STATE")
-				for k, v := range vm.Frame.stack {
-					if v == nil {
-						break
-					}
-					println(k, v.String())
-				}
-				println("<~~~~~~~~~~~~~~~~~~~~~~~~~~>")
 			} else {
 				var k int
 				l := min(largs, vm.Script.MainFunction.CoreFn.Arity)
@@ -187,83 +167,37 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				}
 				if vm.Script.MainFunction.CoreFn.Arity < largs {
 					r := largs - vm.Script.MainFunction.CoreFn.Arity
-					var arr = make([]Value, r)
+					var A = make([]Value, r)
 					for i := range r {
-						arr[i] = vm.Frame.stack[k+i]
+						A[i] = vm.Frame.stack[k+i]
 					}
-					vm.Frame.stack[k] = &Array{Value: arr}
+					vm.Frame.stack[k] = &Array{Value: A}
 				} else {
 					vm.Frame.stack[k] = &Array{}
 				}
-				println("FINAL STATE")
-				for k, v := range vm.Frame.stack {
-					if v == nil {
-						break
-					}
-					println(k, v.String())
-				}
-				println("<~~~~~~~~~~~~~~~~~~~~~~~~~~>")
 			}
 		case cNF:
-			// (N, F)
-			println("TRACE START (N, F)")
+			if largs == 0 {
+				for i := range vm.Script.MainFunction.CoreFn.Arity {
+					vm.Frame.stack[i] = Nil
+				}
+			} else if largs < vm.Script.MainFunction.CoreFn.Arity {
+				var k int
+				for i := range largs {
+					k++
+					vm.Frame.stack[i] = args[i]
+				}
+				for i := k; i < vm.Script.MainFunction.CoreFn.Arity; i++ {
+					vm.Frame.stack[i] = Nil
+				}
+			}
 		}
 	} else {
-		println("TRACE SENT DATA")
-		println("INPUT ARGS STATE")
-		for k, v := range args {
-			if v == nil {
-				break
-			}
-			println(k, v.String())
-		}
-		println("<~~~~~~~~~~~~~~~~~~~~~~~~~~>")
-		// Setting up the data to return after suspension.
+		// Setting up the data to return to the suspended thread after suspension.
 		if largs > 0 {
 			vm.Frame.stack[vm.Reg] = args[0]
 		} else {
 			vm.Frame.stack[vm.Reg] = Nil
-		}
-		switch vm.Frame.lambda.CoreFn.getConfigType() {
-		case cZT:
-			// (0, T)
-			println("TRACE RESUME (0, T)")
-		case cZF:
-			// (0, F)
-			println("TRACE RESUME (0, F)")
-		case cNT:
-			// (N, T)
-			println("TRACE RESUME (N, T)")
-			println("INIT STATE")
-			for k, v := range vm.Frame.stack {
-				if v == nil {
-					break
-				}
-				println(k, v.String())
-			}
-			println("<~~~~~~~~~~~~~~~~~~~~~~~~~~>")
-			if largs == 0 {
-				// var k int
-				// for i := range vm.Script.MainFunction.CoreFn.Arity {
-				// 	k++
-				// 	vm.Frame.stack[i] = Nil
-				// }
-				// vm.Frame.stack[k] = &Array{}
-				println("FINAL STATE")
-				for k, v := range vm.Frame.stack {
-					if v == nil {
-						break
-					}
-					println(k, v.String())
-				}
-				println("<~~~~~~~~~~~~~~~~~~~~~~~~~~>")
-			} else {
-				println("FINAL STATE")
-
-			}
-		case cNF:
-			// (N, F)
-			println("TRACE RESUME (N, F)")
 		}
 	}
 	for {
