@@ -2,6 +2,8 @@ package vida
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/alkemist-17/vida/verror"
 )
@@ -647,15 +649,10 @@ func (vm *VM) createError(ip int, err error) (Result, error) {
 
 func getNonZeroLine(modName string, ip int, vm *VM) uint {
 	var nearLine uint
-	values := make([]uint, 4)
-	values[0] = vm.Script.ErrorInfo[modName][ip+1]
-	values[1] = vm.Script.ErrorInfo[modName][ip+2]
-	values[2] = vm.Script.ErrorInfo[modName][ip-1]
-	values[3] = vm.Script.ErrorInfo[modName][ip-2]
-	for _, v := range values {
-		if v != 0 {
-			nearLine = v
-			return nearLine
+	for i := ip; i < len(slices.Collect(maps.Keys(vm.Script.ErrorInfo[modName]))); i++ {
+		nearLine = vm.Script.ErrorInfo[modName][i]
+		if nearLine != 0 {
+			break
 		}
 	}
 	return nearLine
