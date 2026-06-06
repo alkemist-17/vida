@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alkemist-17/vida/token"
+	"github.com/alkemist-17/vida/verror"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -64,55 +66,94 @@ const (
 	httpDefaultJitter              = true
 )
 
-var httpDefaultVidaHttpClient *vidaHttpClient
-
 func loadFoundationHttpClient() Value {
-	httpDefaultVidaHttpClient = newVidaHttpClient()
-	m := &Object{Value: make(map[string]Value, 11)}
-	m.Value["request"] = NativeFunction(httpRequest)
-	m.Value["get"] = NativeFunction(httpRequest)
-	m.Value["post"] = NativeFunction(httpPost)
-	m.Value["put"] = NativeFunction(httpPut)
-	m.Value["delete"] = NativeFunction(httpDelete)
-	m.Value["patch"] = NativeFunction(httpPatch)
-	m.Value["head"] = NativeFunction(httpHead)
-	m.Value["options"] = NativeFunction(httpOptions)
+	m := &Object{Value: make(map[string]Value, 4)}
+	m.Value["newClient"] = NativeFunction(httpNewClient)
 	m.Value["statusText"] = NativeFunction(httpStatusCodeText)
 	m.Value["urlEncode"] = NativeFunction(httpURLEncode)
 	m.Value["detectContentType"] = NativeFunction(httpDetectContentType)
 	return m
 }
 
-func httpRequest(args ...Value) (Value, error) {
-	if len(args) > 0 {
+func httpNewClient(args ...Value) (Value, error) {
+	return buildClientObject(newVidaHttpClient()), nil
+}
+
+func buildClientObject(client *vidaHttpClient) *Object {
+	obj := &Object{Value: make(map[string]Value, 7)}
+	obj.Value["get"] = NativeFunction(makeRequestFn(client, httpGET))
+	obj.Value["post"] = NativeFunction(makeRequestFn(client, httpPOST))
+	obj.Value["put"] = NativeFunction(makeRequestFn(client, httpPUT))
+	obj.Value["delete"] = NativeFunction(makeRequestFn(client, httpDELETE))
+	obj.Value["patch"] = NativeFunction(makeRequestFn(client, httpPATCH))
+	obj.Value["head"] = NativeFunction(makeRequestFn(client, httpHEAD))
+	obj.Value["options"] = NativeFunction(makeRequestFn(client, httpOPTIONS))
+	return obj
+}
+
+func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(...Value) (Value, error) {
+	return func(args ...Value) (Value, error) {
+		if len(args) > 0 {
+			if _, isSelf := args[0].(*Object); isSelf {
+				args = args[1:]
+			}
+		}
+
+		config, err := resolveConfig(fixedMethod, args...)
+		if err != nil {
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+		defer cancel()
+
+		resp, body, err := client.executeRequest(ctx, config)
+		if err != nil {
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
+		}
+		return httpResponseToObject(resp, body), nil
+	}
+}
+
+func resolveConfig(fixedMethod string, args ...Value) (*requestConfig, error) {
+	var cfg *requestConfig
+	var err error
+
+	switch len(args) {
+	case 0:
+		return nil, errors.New("http client: no arguments provided")
+
+	case 1:
 		switch v := args[0].(type) {
 		case *String:
-			config, err := resolveRequestConfig(v.Value, args...)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
-			defer cancel()
-			resp, body, err := httpExecuteRequest(ctx, config)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			return httpResponseToObject(resp, body), nil
+			cfg, err = resolveRequestConfig(v.Value)
 		case *Object:
-			config, err := httpParseUserConfig(v, nil)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+			cfg, err = httpParseUserConfig(v, nil)
+		default:
+			return nil, errors.New("http client: argument must be a url string or config object")
+		}
+
+	default: // 2+ args: first is url string, second is config object
+		if urlStr, ok := args[0].(*String); ok {
+			if userCfg, ok := args[1].(*Object); ok {
+				cfg, err = httpParseUserConfig(userCfg, &urlStr.Value)
+			} else {
+				cfg, err = resolveRequestConfig(urlStr.Value)
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
-			defer cancel()
-			resp, body, err := httpExecuteRequest(ctx, config)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			return httpResponseToObject(resp, body), nil
+		} else {
+			return nil, errors.New("http client: first argument must be a url string")
 		}
 	}
-	return Nil, nil
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Override method only when the factory was created with a fixed verb.
+	if fixedMethod != "" {
+		cfg.Method = fixedMethod
+	}
+	return cfg, nil
 }
 
 func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, error) {
@@ -328,21 +369,6 @@ func httpResolveURL(rawURL, base string) (*url.URL, error) {
 	return parsed, nil
 }
 
-func httpExecuteRequest(ctx context.Context, requestConfig *requestConfig) (*http.Response, []byte, error) {
-	bodyReader, contentType, err := httpBuildBodyReader(requestConfig.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, requestConfig.Method, requestConfig.Url.String(), bodyReader)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	httpSetHeaders(req, requestConfig.Headers, contentType)
-	return httpDoRequest(req, requestConfig)
-}
-
 func httpBuildBodyReader(body Value) (io.Reader, string, error) {
 	if body == nil {
 		return http.NoBody, EmptyString, nil
@@ -372,67 +398,6 @@ func httpSetHeaders(req *http.Request, headers map[string]string, contentType st
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-}
-
-func httpDoRequest(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
-	if requestConfig.Retry == nil {
-		return httpDoSimpleRequest(req, requestConfig)
-	}
-	return httpDoRequestWithRetry(req, requestConfig)
-}
-
-func httpDoSimpleRequest(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
-	resp, err := httpDefaultVidaHttpClient.httpClient.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer resp.Body.Close()
-	defer io.Copy(io.Discard, resp.Body)
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, requestConfig.MaxBodySize+1))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if int64(len(body)) > requestConfig.MaxBodySize {
-		return nil, nil, fmt.Errorf("response exceeds %d bytes", requestConfig.MaxBodySize)
-	}
-
-	return resp, body, nil
-}
-
-func httpDoRequestWithRetry(req *http.Request, requestConfig *requestConfig) (*http.Response, []byte, error) {
-	// Should handle body, context and idempotency
-	for attemp := 0; attemp < requestConfig.Retry.MaxAttempts; attemp++ {
-		res, body, err := httpDoSimpleRequest(req, requestConfig)
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := req.Context().Err(); err != nil {
-			return nil, nil, err
-		}
-		if !requestConfig.Retry.shouldRetry(res.StatusCode) {
-			return res, body, nil
-		}
-
-		clonedReq := req.Clone(req.Context())
-		if body != nil {
-			clonedReq.Body = io.NopCloser(bytes.NewReader(body))
-			clonedReq.ContentLength = int64(len(body))
-			clonedReq.GetBody = func() (io.ReadCloser, error) {
-				return io.NopCloser(bytes.NewReader(body)), nil
-			}
-		}
-		req = clonedReq
-
-		delay := httpCalculateDelayWithServerHint(res, requestConfig.Retry.calculateBackoff(attemp))
-		select {
-		case <-req.Context().Done():
-			return nil, nil, req.Context().Err()
-		case <-time.After(delay):
-		}
-	}
-	return nil, nil, fmt.Errorf("max retries exceeded: max attempts: %v", requestConfig.Retry.MaxAttempts)
 }
 
 func httpCalculateDelayWithServerHint(res *http.Response, internalDelay time.Duration) time.Duration {
@@ -468,57 +433,6 @@ func parseRetryAfter(res *http.Response) time.Duration {
 	return 0
 }
 
-func httpRequestWithMethod(method string, args ...Value) (Value, error) {
-	switch len(args) {
-	case 1:
-		switch v := args[0].(type) {
-		case *String:
-			userOptions := &Object{
-				Value: map[string]Value{
-					httpMethodField: &String{Value: method},
-				},
-			}
-			return httpRequest(v, userOptions)
-		case *Object:
-			newUO := v.Clone()
-			newUO.(*Object).Value[httpMethodField] = &String{Value: method}
-			return httpRequest(newUO)
-		}
-	case 2:
-		if userOptions, ok := args[1].(*Object); ok {
-			newUO := userOptions.Clone()
-			newUO.(*Object).Value[httpMethodField] = &String{Value: method}
-			return httpRequest(args[0], newUO)
-		}
-		return httpRequest(args[0])
-	}
-	return Nil, nil
-}
-
-func httpPost(args ...Value) (Value, error) {
-	return httpRequestWithMethod(httpPOST, args...)
-}
-
-func httpPut(args ...Value) (Value, error) {
-	return httpRequestWithMethod(httpPUT, args...)
-}
-
-func httpDelete(args ...Value) (Value, error) {
-	return httpRequestWithMethod(httpDELETE, args...)
-}
-
-func httpPatch(args ...Value) (Value, error) {
-	return httpRequestWithMethod(httpPATCH, args...)
-}
-
-func httpHead(args ...Value) (Value, error) {
-	return httpRequestWithMethod(httpHEAD, args...)
-}
-
-func httpOptions(args ...Value) (Value, error) {
-	return httpRequestWithMethod(httpOPTIONS, args...)
-}
-
 func httpStatusCodeText(args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if code, ok := args[0].(Integer); ok {
@@ -551,7 +465,115 @@ func httpDetectContentType(args ...Value) (Value, error) {
 }
 
 type vidaHttpClient struct {
+	ReferenceSemanticsImpl
 	httpClient *http.Client
+}
+
+func (client *vidaHttpClient) Boolean() Bool {
+	return True
+}
+
+func (client *vidaHttpClient) Prefix(op uint64) (Value, error) {
+	switch op {
+	case uint64(token.NOT):
+		return False, nil
+	default:
+		return Nil, verror.ErrPrefixOpNotDefined
+	}
+}
+
+func (client *vidaHttpClient) Equals(other Value) Bool {
+	x, ok := other.(*vidaHttpClient)
+	return Bool(ok && x == client)
+}
+
+func (client *vidaHttpClient) String() string {
+	return fmt.Sprintf("HttpClient(%p)", client)
+}
+
+func (client *vidaHttpClient) Type() string {
+	return "httpClient"
+}
+
+func (client *vidaHttpClient) Clone() Value {
+	return Nil
+}
+
+func (client *vidaHttpClient) ObjectKey() string {
+	return fmt.Sprintf("HttpClient(%p)", client)
+}
+
+func (c *vidaHttpClient) executeRequest(ctx context.Context, cfg *requestConfig) (*http.Response, []byte, error) {
+	bodyReader, contentType, err := httpBuildBodyReader(cfg.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, cfg.Method, cfg.Url.String(), bodyReader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	httpSetHeaders(req, cfg.Headers, contentType)
+	return c.doRequest(req, cfg)
+}
+
+func (c *vidaHttpClient) doRequest(req *http.Request, cfg *requestConfig) (*http.Response, []byte, error) {
+	if cfg.Retry == nil {
+		return c.doSimpleRequest(req, cfg)
+	}
+	return c.doRequestWithRetry(req, cfg)
+}
+
+func (c *vidaHttpClient) doSimpleRequest(req *http.Request, cfg *requestConfig) (*http.Response, []byte, error) {
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	defer io.Copy(io.Discard, resp.Body)
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, cfg.MaxBodySize+1))
+	if err != nil {
+		return nil, nil, err
+	}
+	if int64(len(body)) > cfg.MaxBodySize {
+		return nil, nil, fmt.Errorf("response exceeds %d bytes", cfg.MaxBodySize)
+	}
+	return resp, body, nil
+}
+
+func (c *vidaHttpClient) doRequestWithRetry(req *http.Request, cfg *requestConfig) (*http.Response, []byte, error) {
+	for attempt := 0; attempt < cfg.Retry.MaxAttempts; attempt++ {
+		res, body, err := c.doSimpleRequest(req, cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := req.Context().Err(); err != nil {
+			return nil, nil, err
+		}
+		if !cfg.Retry.shouldRetry(res.StatusCode) {
+			return res, body, nil
+		}
+
+		clonedReq := req.Clone(req.Context())
+		if body != nil {
+			clonedReq.Body = io.NopCloser(bytes.NewReader(body))
+			clonedReq.ContentLength = int64(len(body))
+			clonedReq.GetBody = func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewReader(body)), nil
+			}
+		}
+		req = clonedReq
+
+		delay := httpCalculateDelayWithServerHint(res, cfg.Retry.calculateBackoff(attempt))
+		select {
+		case <-req.Context().Done():
+			return nil, nil, req.Context().Err()
+		case <-time.After(delay):
+		}
+	}
+	return nil, nil, fmt.Errorf("max retries exceeded: max attempts: %v", cfg.Retry.MaxAttempts)
 }
 
 func newVidaHttpClient() *vidaHttpClient {
