@@ -1236,6 +1236,10 @@ func (f *Function) Equals(other Value) Bool {
 	return Bool(ok && f == of)
 }
 
+func (f *Function) IsCallable() Bool {
+	return true
+}
+
 func (f *Function) Type() string {
 	return "function"
 }
