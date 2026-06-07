@@ -7,16 +7,13 @@ import (
 )
 
 func loadFoundationException() Value {
-	if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
-		((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
-	}
 	m := &Object{Value: make(map[string]Value, 2)}
 	m.Value["raise"] = NativeFunction(exceptionRaise)
 	m.Value["protected"] = NativeFunction(exceptionProtectedCall)
 	return m
 }
 
-func exceptionRaise(args ...Value) (Value, error) {
+func exceptionRaise(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		err := fmt.Errorf("\n\n\t[%v]\n\tMessage : %v\n\n", verror.ExceptionErrType, args[0].String())
 		return Nil, err
@@ -25,26 +22,25 @@ func exceptionRaise(args ...Value) (Value, error) {
 	return Nil, err
 }
 
-func exceptionProtectedCall(args ...Value) (Value, error) {
+func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch fn := args[0].(type) {
 		case *Function:
-			th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
+			th := newInternalThread(fn, ctx.script)
 			th.State = Ready
 			th.Script.MainFunction = fn
-			v, err := coRunThread(th)
-			vm := (*clbu)[globalStateIndex].(*GlobalState).VM
+			v, err := coRunThread(ctx, th)
+			vm := ctx.vm
 			if err != nil {
 				switch err {
 				case verror.ErrResumeThreadSignal:
-					_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[1:]...)
-					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+					threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[1:]...)
 					if threadError != nil {
 						v = vm.Channel
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
@@ -59,18 +55,17 @@ func exceptionProtectedCall(args ...Value) (Value, error) {
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 					}
 				case verror.ErrStartThreadSignal:
-					_, threadError := vm.runThread(vm.fp, 0, true, args[1:]...)
-					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+					threadError := vm.runThread(vm.fp, 0, true, args[1:]...)
 					if threadError != nil {
 						v = vm.Channel
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
@@ -85,7 +80,7 @@ func exceptionProtectedCall(args ...Value) (Value, error) {
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 					}
 				default:
@@ -99,19 +94,18 @@ func exceptionProtectedCall(args ...Value) (Value, error) {
 			}
 			return v, nil
 		case NativeFunction:
-			v, err := fn.Call(args[1:]...)
-			vm := (*clbu)[globalStateIndex].(*GlobalState).VM
+			v, err := fn.Call(ctx, args[1:]...)
+			vm := ctx.vm
 			if err != nil {
 				switch err {
 				case verror.ErrResumeThreadSignal:
-					_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[2:]...)
-					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+					threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[2:]...)
 					if threadError != nil {
 						v = vm.Channel
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
@@ -126,18 +120,17 @@ func exceptionProtectedCall(args ...Value) (Value, error) {
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 					}
 				case verror.ErrStartThreadSignal:
-					_, threadError := vm.runThread(vm.fp, 0, true, args[2:]...)
-					((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
+					threadError := vm.runThread(vm.fp, 0, true, args[2:]...)
 					if threadError != nil {
 						v = vm.Channel
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
@@ -152,7 +145,7 @@ func exceptionProtectedCall(args ...Value) (Value, error) {
 						invoker := vm.Thread.Invoker
 						invoker.State = Running
 						vm.Thread.Invoker = nil
-						(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+						ctx.currentThread = invoker
 						vm.Thread = invoker
 					}
 				default:

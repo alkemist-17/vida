@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func PrintAST(node Node) string {
+func StringifyAST(node Node) string {
 	count := countNodes(node)
 	var sb strings.Builder
 	printNode(node, &sb, "", "", false)

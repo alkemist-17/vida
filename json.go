@@ -15,7 +15,7 @@ func loadFoundationJSON() Value {
 	return m
 }
 
-func jsonValueToJsonString(args ...Value) (Value, error) {
+func jsonValueToJsonString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.Marshal(args[0]); err == nil {
 			return &String{Value: string(b)}, nil
@@ -27,9 +27,9 @@ func jsonValueToJsonString(args ...Value) (Value, error) {
 	return &String{Value: string(b)}, nil
 }
 
-func jsonParse(args ...Value) (Value, error) {
+func jsonParse(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		valid, _ := jsonIsValid(args[0])
+		valid, _ := jsonIsValid(ctx, args[0])
 		switch t := valid.(type) {
 		case NilValue:
 			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
@@ -84,7 +84,7 @@ func jsonParse(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func jsonIsValid(args ...Value) (Value, error) {
+func jsonIsValid(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch t := args[0].(type) {
 		case *String:
@@ -98,7 +98,7 @@ func jsonIsValid(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func jsonPretty(args ...Value) (Value, error) {
+func jsonPretty(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.MarshalIndent(args[0], EmptyString, "  "); err == nil {
 			return &String{Value: string(b)}, nil

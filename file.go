@@ -33,7 +33,7 @@ func generateFileHandlerObject(file *os.File) Value {
 }
 
 // File API
-func fileOpen(args ...Value) (Value, error) {
+func fileOpen(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l == 1 {
 		if fname, ok := args[0].(*String); ok {
@@ -62,7 +62,7 @@ func fileOpen(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileCreate(args ...Value) (Value, error) {
+func fileCreate(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if fname, ok := args[0].(*String); ok {
 			file, err := os.Create(fname.Value)
@@ -77,7 +77,7 @@ func fileCreate(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileExists(args ...Value) (Value, error) {
+func fileExists(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			_, err := os.Stat(path.Value)
@@ -91,7 +91,7 @@ func fileExists(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileRemove(args ...Value) (Value, error) {
+func fileRemove(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			err := os.Remove(path.Value)
@@ -105,7 +105,7 @@ func fileRemove(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileSize(args ...Value) (Value, error) {
+func fileSize(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			fileInfo, err := os.Stat(path.Value)
@@ -119,7 +119,7 @@ func fileSize(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileIsFile(args ...Value) (Value, error) {
+func fileIsFile(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if _, ok := args[0].(*FileHandler); ok {
 			return Bool(ok), nil
@@ -129,7 +129,7 @@ func fileIsFile(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileCreateTemp(args ...Value) (Value, error) {
+func fileCreateTemp(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if dir, ok := args[0].(*String); ok {
 			if pattern, ok := args[1].(*String); ok {
@@ -201,7 +201,7 @@ func (file *FileHandler) Clone() Value {
 
 // FileHandler Methods
 func fileClose() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
@@ -228,7 +228,7 @@ func fileClose() NativeFunction {
 }
 
 func fileIsClosed() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
@@ -242,7 +242,7 @@ func fileIsClosed() NativeFunction {
 }
 
 func fileName() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
@@ -256,7 +256,7 @@ func fileName() NativeFunction {
 }
 
 func fileReadLines() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
@@ -287,7 +287,7 @@ func fileReadLines() NativeFunction {
 }
 
 func fileRead() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
@@ -313,7 +313,7 @@ func fileRead() NativeFunction {
 }
 
 func fileWrite() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {

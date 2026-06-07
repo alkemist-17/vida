@@ -75,7 +75,7 @@ func loadFoundationHttpClient() Value {
 	return m
 }
 
-func httpNewClient(args ...Value) (Value, error) {
+func httpNewClient(ctx *Context, args ...Value) (Value, error) {
 	return buildClientObject(newVidaHttpClient()), nil
 }
 
@@ -91,8 +91,8 @@ func buildClientObject(client *vidaHttpClient) *Object {
 	return obj
 }
 
-func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(...Value) (Value, error) {
-	return func(args ...Value) (Value, error) {
+func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(*Context, ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if _, isSelf := args[0].(*Object); isSelf {
 				args = args[1:]
@@ -104,10 +104,10 @@ func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(...Value) (V
 			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+		context, cancel := context.WithTimeout(context.Background(), config.Timeout)
 		defer cancel()
 
-		resp, body, err := client.executeRequest(ctx, config)
+		resp, body, err := client.executeRequest(context, config)
 		if err != nil {
 			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
@@ -433,7 +433,7 @@ func parseRetryAfter(res *http.Response) time.Duration {
 	return 0
 }
 
-func httpStatusCodeText(args ...Value) (Value, error) {
+func httpStatusCodeText(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if code, ok := args[0].(Integer); ok {
 			return &String{Value: http.StatusText(int(code))}, nil
@@ -442,7 +442,7 @@ func httpStatusCodeText(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func httpURLEncode(args ...Value) (Value, error) {
+func httpURLEncode(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if data, ok := args[0].(*Object); ok && len(data.Value) > 0 {
 			values := url.Values{}
@@ -455,7 +455,7 @@ func httpURLEncode(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func httpDetectContentType(args ...Value) (Value, error) {
+func httpDetectContentType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if data, ok := args[0].(*Bytes); ok && len(data.Value) > 0 {
 			return &String{Value: http.DetectContentType(data.Value)}, nil

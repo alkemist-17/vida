@@ -36,7 +36,7 @@ func loadFoundationIO() Value {
 }
 
 // fmt API
-func ioFWrite(args ...Value) (Value, error) {
+func ioFWrite(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch handler := args[0].(type) {
 		case *Object:
@@ -66,7 +66,7 @@ func ioFWrite(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func ioFPrintF(args ...Value) (Value, error) {
+func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		switch handler := args[0].(type) {
 		case *Object:
@@ -102,12 +102,12 @@ func ioFPrintF(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func ioWrite(args ...Value) (Value, error) {
+func ioWrite(ctx *Context, args ...Value) (Value, error) {
 	VFprint(os.Stdout, args...)
 	return Nil, nil
 }
 
-func ioPrintF(args ...Value) (Value, error) {
+func ioPrintF(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if formatstr, ok := args[0].(*String); ok {
 			n, err := VFprintf(os.Stdout, formatstr.Value, args[1:]...)
@@ -121,7 +121,7 @@ func ioPrintF(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func ioErrorf(args ...Value) (Value, error) {
+func ioErrorf(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if formatstr, ok := args[0].(*String); ok {
 			n, err := VFprintf(os.Stderr, formatstr.Value, args[1:]...)

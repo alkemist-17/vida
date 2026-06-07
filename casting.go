@@ -15,14 +15,14 @@ func loadFoundationCasting() Value {
 	return m
 }
 
-func castToString(args ...Value) (Value, error) {
+func castToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].String()}, nil
 	}
 	return &String{Value: EmptyString}, nil
 }
 
-func castToInt(args ...Value) (Value, error) {
+func castToInt(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 1:
 		switch v := args[0].(type) {
@@ -61,7 +61,7 @@ func castToInt(args ...Value) (Value, error) {
 	return Integer(0), nil
 }
 
-func castToFloat(args ...Value) (Value, error) {
+func castToFloat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *String:
@@ -85,7 +85,7 @@ func castToFloat(args ...Value) (Value, error) {
 	return Float(0), nil
 }
 
-func castToBool(args ...Value) (Value, error) {
+func castToBool(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
 			switch v.Value {
@@ -100,7 +100,7 @@ func castToBool(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func castToArray(args ...Value) (Value, error) {
+func castToArray(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *Array:
@@ -136,7 +136,7 @@ func castToArray(args ...Value) (Value, error) {
 	return &Array{Value: make([]Value, 0)}, nil
 }
 
-func castToObject(args ...Value) (Value, error) {
+func castToObject(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch val := args[0].(type) {
 		case *Object:

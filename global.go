@@ -2,7 +2,6 @@ package vida
 
 import (
 	"bufio"
-	cryptoRand "crypto/rand"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -25,38 +24,11 @@ type ExtensionsLoader map[string]func() Value
 
 type ErrorInfo map[string]map[int]uint
 
-var extensionsLoader ExtensionsLoader
-
-var __meta string = inititalMetaName
-
 const (
 	VidaFileExtension       = ".vida"
-	inititalMetaName        = "$$__meta__$$"
-	globalStateIndex        = 0
-	maxMetaSearch           = 1_000
 	errorMessageFieldName   = "message"
 	DefaultInputPrompt      = "Input > "
 	foundationInterfaceName = "std/"
-	__getmeta               = "__getmeta"
-	__setmeta               = "__setmeta"
-	__call                  = "__call"
-	__str                   = "__str"
-	__type                  = "__type"
-	__get                   = "__get"
-	__set                   = "__set"
-	__add                   = "__add"
-	__sub                   = "__sub"
-	__mul                   = "__mul"
-	__div                   = "__div"
-	__rem                   = "__rem"
-	__pow                   = "__pow"
-	__eq                    = "__eq"
-	__le                    = "__le"
-	__lt                    = "__lt"
-	__ge                    = "__ge"
-	__gt                    = "__gt"
-	__umin                  = "__umin"
-	__uplus                 = "__uplus"
 	EmptyString             = ""
 	DefaultValField         = "value"
 )
@@ -76,53 +48,10 @@ const (
 	foundationCO        = "co"
 	foundationHttp      = "http"
 	foundationJSON      = "json"
-	foundationCore      = "core"
 	foundationTask      = "task"
 	foundationRegex     = "re"
 	foundationColor     = "color"
 )
-
-var clbu *[]Value
-
-var threadPoolIsDown = true
-
-type threadPool struct {
-	ThreadMap map[int]*Thread
-	Key       int
-}
-
-func newThreadPool() *threadPool {
-	return &threadPool{
-		ThreadMap: make(map[int]*Thread),
-	}
-}
-
-func checkForTPAndMeta() {
-	if threadPoolIsDown {
-		if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
-			((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
-		}
-		if __meta == inititalMetaName {
-			__meta = cryptoRand.Text()
-		}
-		threadPoolIsDown = false
-	}
-}
-
-func (tp *threadPool) getThread() *Thread {
-	if t, ok := tp.ThreadMap[tp.Key]; ok {
-		tp.Key++
-		return t
-	}
-	t := newThread(nil, ((*clbu)[globalStateIndex].(*GlobalState)).Script)
-	tp.ThreadMap[tp.Key] = t
-	tp.Key++
-	return t
-}
-
-func (tp *threadPool) releaseThread() {
-	tp.Key--
-}
 
 func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {
@@ -135,15 +64,7 @@ func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	}
 }
 
-type GlobalState struct {
-	*VM
-	Main    *Thread
-	Current *Thread
-	Pool    *threadPool
-}
-
 var coreLibNames = []string{
-	"--G--",
 	"print",
 	"len",
 	"append",
@@ -158,14 +79,13 @@ var coreLibNames = []string{
 	"isError",
 }
 
-func loadCoreLib(store *[]Value) *[]Value {
+func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 	*store = append(*store,
-		Nil,
 		NativeFunction(corePrint),
 		NativeFunction(coreLen),
 		NativeFunction(coreAppend),
 		NativeFunction(coreNewArray),
-		NativeFunction(coreLoadExtension),
+		generateLoadFunction(extensionsLoader),
 		NativeFunction(coreType),
 		NativeFunction(coreAssert),
 		NativeFunction(coreFormat),
@@ -177,12 +97,12 @@ func loadCoreLib(store *[]Value) *[]Value {
 	return store
 }
 
-func corePrint(args ...Value) (Value, error) {
+func corePrint(ctx *Context, args ...Value) (Value, error) {
 	VFprintln(os.Stdout, args...)
 	return Nil, nil
 }
 
-func coreLen(args ...Value) (Value, error) {
+func coreLen(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *Array:
@@ -191,9 +111,6 @@ func coreLen(args ...Value) (Value, error) {
 			lobj := len(v.Value)
 			if lobj == 0 {
 				return Integer(lobj), nil
-			}
-			if _, ok := v.Value[__meta]; ok {
-				lobj--
 			}
 			return Integer(lobj), nil
 		case *String:
@@ -208,14 +125,14 @@ func coreLen(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coreType(args ...Value) (Value, error) {
+func coreType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].Type()}, nil
 	}
 	return Nil, nil
 }
 
-func coreFormat(args ...Value) (Value, error) {
+func coreFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch v := args[0].(type) {
 		case *String:
@@ -226,7 +143,7 @@ func coreFormat(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coreAssert(args ...Value) (Value, error) {
+func coreAssert(ctx *Context, args ...Value) (Value, error) {
 	argsLength := len(args)
 	if argsLength == 1 {
 		if args[0].Boolean() {
@@ -246,7 +163,7 @@ func coreAssert(args ...Value) (Value, error) {
 	return Nil, err
 }
 
-func coreAppend(args ...Value) (Value, error) {
+func coreAppend(ctx *Context, args ...Value) (Value, error) {
 	if len(args) >= 2 {
 		switch v := args[0].(type) {
 		case *Array:
@@ -264,7 +181,7 @@ func coreAppend(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coreNewArray(args ...Value) (Value, error) {
+func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l == 0 {
 		return &Array{}, nil
@@ -402,12 +319,12 @@ func coreNewArray(args ...Value) (Value, error) {
 				switch random.Value {
 				case "string":
 					for i := range size {
-						nanoid, _ := randNanoID(Integer(nanoIDMaxSize))
+						nanoid, _ := randNanoID(ctx, Integer(nanoIDMaxSize))
 						A[i] = nanoid
 					}
 				case "int":
 					for i := range size {
-						n, _ := randN()
+						n, _ := randN(ctx)
 						A[i] = n
 					}
 				case "float":
@@ -690,7 +607,7 @@ func catalanNumber(n Integer) Integer {
 	return result / (n + 1)
 }
 
-func coreReadLine(args ...Value) (Value, error) {
+func coreReadLine(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		fmt.Print(args[0])
 	} else {
@@ -706,77 +623,78 @@ func coreReadLine(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coreClone(args ...Value) (Value, error) {
+func coreClone(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return args[0].Clone(), nil
 	}
 	return Nil, nil
 }
 
-func coreLoadExtension(args ...Value) (Value, error) {
-	l := len(args)
-	if l > 0 {
-		if v, ok := args[0].(*String); ok {
-			if strings.HasPrefix(v.Value, foundationInterfaceName) {
-				var module Value
-				switch v.Value[len(foundationInterfaceName):] {
-				case foundationText:
-					module = loadFoundationText()
-				case foundationMath:
-					module = loadFoundationMath()
-				case foundationObj:
-					module = loadObjectLib()
-				case foundationArray:
-					module = loadFoundationArray()
-				case foundationBytes:
-					module = loadFoundationBytes()
-				case foundationTime:
-					module = loadFoundationTime()
-				case foundationCast:
-					module = loadFoundationCasting()
-				case foundationRand:
-					module = loadFoundationRandom()
-				case foundationIO:
-					module = loadFoundationIO()
-				case foundationOS:
-					module = loadFoundationOS()
-				case foundationException:
-					module = loadFoundationException()
-				case foundationCO:
-					module = loadFoundationCoroutine()
-				case foundationHttp:
-					module = loadFoundationHttpClient()
-				case foundationJSON:
-					module = loadFoundationJSON()
-				case foundationCore:
-					module = loadFoundationCorelib()
-				case foundationTask:
-					module = loadFoundationTask()
-				case foundationRegex:
-					module = loadFoundationRegexp()
-				case foundationColor:
-					module = loadFoundationColor()
+func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
+	return func(ctx *Context, args ...Value) (Value, error) {
+		if len(args) > 0 {
+			if v, ok := args[0].(*String); ok {
+				if strings.HasPrefix(v.Value, foundationInterfaceName) {
+					var module Value
+					switch v.Value[len(foundationInterfaceName):] {
+					case foundationText:
+						module = loadFoundationText()
+					case foundationMath:
+						module = loadFoundationMath()
+					case foundationObj:
+						module = loadObjectLib()
+					case foundationArray:
+						module = loadFoundationArray()
+					case foundationBytes:
+						module = loadFoundationBytes()
+					case foundationTime:
+						module = loadFoundationTime()
+					case foundationCast:
+						module = loadFoundationCasting()
+					case foundationRand:
+						module = loadFoundationRandom()
+					case foundationIO:
+						module = loadFoundationIO()
+					case foundationOS:
+						module = loadFoundationOS()
+					case foundationException:
+						module = loadFoundationException()
+					case foundationCO:
+						module = loadFoundationCoroutine()
+					case foundationHttp:
+						module = loadFoundationHttpClient()
+					case foundationJSON:
+						module = loadFoundationJSON()
+					case foundationTask:
+						module = loadFoundationTask()
+					case foundationRegex:
+						module = loadFoundationRegexp()
+					case foundationColor:
+						module = loadFoundationColor()
+					default:
+						module = Nil
+					}
+					return module, nil
+				} else if extensionsLoader != nil {
+					if l, isPresent := extensionsLoader[v.Value]; isPresent {
+						return l(), nil
+					}
 				}
-				return module, nil
-			} else if extensionsLoader != nil {
-				if l, isPresent := extensionsLoader[v.Value]; isPresent {
-					return l(), nil
-				}
+				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", v.Value)}}, nil
 			}
-			return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", v.Value)}}, nil
 		}
+		return &VidaError{Message: &String{Value: "load function should have one argument of type string"}}, nil
 	}
-	return &VidaError{Message: &String{Value: "load function should have one argument of type string"}}, nil
 }
 
-func coreError(args ...Value) (Value, error) {
+func coreError(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &VidaError{Message: args[0]}, nil
 	}
 	return &VidaError{Message: Nil}, nil
 }
 
-func coreIsError(args ...Value) (Value, error) {
+func coreIsError(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		_, ok := args[0].(*VidaError)
 		return Bool(ok), nil
@@ -784,19 +702,11 @@ func coreIsError(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func DeepEqual(args ...Value) (Value, error) {
+func DeepEqual(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		return Bool(reflect.DeepEqual(args[0], args[1])), nil
 	}
 	return Nil, nil
-}
-
-func loadFoundationCorelib() Value {
-	m := &Object{Value: make(map[string]Value, len((*clbu)))}
-	for i := 0; i < len((*clbu)); i++ {
-		m.Value[coreLibNames[i]] = (*clbu)[i]
-	}
-	return m
 }
 
 func StringLength(input *String) Integer {

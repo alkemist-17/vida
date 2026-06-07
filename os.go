@@ -28,7 +28,7 @@ func loadFoundationOS() Value {
 	return m
 }
 
-func osArgs(args ...Value) (Value, error) {
+func osArgs(ctx *Context, args ...Value) (Value, error) {
 	xs := &Array{}
 	for _, v := range os.Args {
 		xs.Value = append(xs.Value, &String{Value: v})
@@ -36,7 +36,7 @@ func osArgs(args ...Value) (Value, error) {
 	return xs, nil
 }
 
-func osEnviron(args ...Value) (Value, error) {
+func osEnviron(ctx *Context, args ...Value) (Value, error) {
 	xs := &Array{}
 	for _, v := range os.Environ() {
 		xs.Value = append(xs.Value, &String{Value: v})
@@ -44,12 +44,12 @@ func osEnviron(args ...Value) (Value, error) {
 	return xs, nil
 }
 
-func osExit(args ...Value) (Value, error) {
+func osExit(ctx *Context, args ...Value) (Value, error) {
 	os.Exit(0)
 	return Nil, nil
 }
 
-func osGetEnv(args ...Value) (Value, error) {
+func osGetEnv(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if val, ok := args[0].(*String); ok {
 			xs := make([]Value, 0, 2)
@@ -66,7 +66,7 @@ func osGetEnv(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func osGetWD(args ...Value) (Value, error) {
+func osGetWD(ctx *Context, args ...Value) (Value, error) {
 	if d, e := os.Getwd(); e == nil {
 		return &String{Value: d}, nil
 	} else {
@@ -74,7 +74,7 @@ func osGetWD(args ...Value) (Value, error) {
 	}
 }
 
-func osHostname(args ...Value) (Value, error) {
+func osHostname(ctx *Context, args ...Value) (Value, error) {
 	if h, e := os.Hostname(); e == nil {
 		return &String{Value: h}, nil
 	} else {
@@ -82,7 +82,7 @@ func osHostname(args ...Value) (Value, error) {
 	}
 }
 
-func osMkdir(args ...Value) (Value, error) {
+func osMkdir(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if d, ok := args[0].(*String); ok {
 			err := os.Mkdir(d.Value, 0660)
@@ -95,7 +95,7 @@ func osMkdir(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func osMkdirAll(args ...Value) (Value, error) {
+func osMkdirAll(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if d, ok := args[0].(*String); ok {
 			err := os.MkdirAll(d.Value, 0660)
@@ -108,7 +108,7 @@ func osMkdirAll(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func osRemove(args ...Value) (Value, error) {
+func osRemove(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if d, ok := args[0].(*String); ok {
 			err := os.Remove(d.Value)
@@ -121,7 +121,7 @@ func osRemove(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func osRemoveAll(args ...Value) (Value, error) {
+func osRemoveAll(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if d, ok := args[0].(*String); ok {
 			err := os.RemoveAll(d.Value)
@@ -134,15 +134,15 @@ func osRemoveAll(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func osName(args ...Value) (Value, error) {
+func osName(ctx *Context, args ...Value) (Value, error) {
 	return &String{Value: runtime.GOOS}, nil
 }
 
-func osArch(args ...Value) (Value, error) {
+func osArch(ctx *Context, args ...Value) (Value, error) {
 	return &String{Value: runtime.GOARCH}, nil
 }
 
-func osRunCMD(args ...Value) (Value, error) {
+func osRunCMD(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		if val, ok := args[0].(*String); ok {

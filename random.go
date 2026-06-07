@@ -36,7 +36,7 @@ func loadFoundationRandom() Value {
 	return m
 }
 
-func randNextI(args ...Value) (Value, error) {
+func randNextI(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(Integer); ok {
 			if v > 0 {
@@ -51,12 +51,12 @@ func randNextI(args ...Value) (Value, error) {
 }
 
 func randNextF(fn func() float64) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		return Float(fn()), nil
 	}
 }
 
-func randPerm(args ...Value) (Value, error) {
+func randPerm(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if inputVal, ok := args[0].(Integer); ok {
 			size := int(inputVal)
@@ -73,7 +73,7 @@ func randPerm(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func randShuffled(args ...Value) (Value, error) {
+func randShuffled(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *Array:
@@ -98,7 +98,7 @@ func randShuffled(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func randNextU32(args ...Value) (Value, error) {
+func randNextU32(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(Integer); ok {
 			if v > 0 {
@@ -113,7 +113,7 @@ func randNextU32(args ...Value) (Value, error) {
 }
 
 func randNextZipf(zipf *rand.Zipf) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		i64 := Integer(zipf.Uint64())
 		if i64 < 0 {
 			return -i64, nil
@@ -123,7 +123,7 @@ func randNextZipf(zipf *rand.Zipf) NativeFunction {
 }
 
 func reandNewPermutedCongruentialGenerator(pcg *rand.PCG) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		i64 := Integer(pcg.Uint64())
 		if i64 < 0 {
 			return -i64, nil
@@ -132,7 +132,7 @@ func reandNewPermutedCongruentialGenerator(pcg *rand.PCG) NativeFunction {
 	}
 }
 
-func randN(args ...Value) (Value, error) {
+func randN(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(Integer); ok {
 			if v > 0 {
@@ -150,7 +150,7 @@ func randNewChaCha8() NativeFunction {
 	b := make([]byte, 32)
 	cryptoRand.Read(b)
 	chacha8 := rand.NewChaCha8([32]byte(b))
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		i64 := Integer(chacha8.Uint64())
 		if i64 < 0 {
 			return -i64, nil
@@ -159,7 +159,7 @@ func randNewChaCha8() NativeFunction {
 	}
 }
 
-func randBytes(args ...Value) (Value, error) {
+func randBytes(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if inputValue, ok := args[0].(Integer); ok {
 			size := int(inputValue)
@@ -173,11 +173,11 @@ func randBytes(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func randText(args ...Value) (Value, error) {
+func randText(ctx *Context, args ...Value) (Value, error) {
 	return &String{Value: cryptoRand.Text()}, nil
 }
 
-func randNanoID(args ...Value) (Value, error) {
+func randNanoID(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 0:
 		b := make([]byte, nanoIDDefaultSize)
@@ -203,7 +203,7 @@ func randNanoID(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
+func randNanoIDCustomAlphabeth(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		alpha, okAlpha := args[0].(*String)
 		size, oksize := args[1].(Integer)
@@ -214,7 +214,7 @@ func randNanoIDCustomAlphabeth(args ...Value) (Value, error) {
 			b := make([]byte, steps)
 			r := []rune(alpha.Value)
 			lenr := len(r)
-			return NativeFunction(func(args ...Value) (Value, error) {
+			return NativeFunction(func(ctx *Context, args ...Value) (Value, error) {
 				for {
 					cryptoRand.Read(b)
 					var j int

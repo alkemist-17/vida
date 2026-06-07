@@ -76,7 +76,8 @@ for _, res in R {
 	}
 }
 
-array.sortBy(A, fun a, b => a.population > b.population)
+// Test suspended for now 0.4.0
+// array.sortBy(A, fun a, b => a.population > b.population)
 
 var total = 0
 

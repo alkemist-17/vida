@@ -8,11 +8,6 @@ import (
 	"github.com/alkemist-17/vida/verror"
 )
 
-type Result string
-
-const Success Result = "Success"
-const Failure Result = "Failure"
-
 const frameSize = 1024
 const stacksize = 1024
 
@@ -27,9 +22,10 @@ type frame struct {
 
 type VM struct {
 	*Thread
+	ctx *Context
 }
 
-func (vm *VM) run() (Result, error) {
+func (vm *VM) run() error {
 	vm.Frame = &vm.Frames[vm.fp]
 	vm.Frame.code = vm.Script.MainFunction.CoreFn.Code
 	vm.Frame.lambda = vm.Script.MainFunction
@@ -440,11 +436,11 @@ func (vm *VM) run() (Result, error) {
 						}
 					}
 				}
-				v, err := val.Call(varargs...)
+				v, err := val.Call(vm.ctx, varargs...)
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
+						threadError := vm.runThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -454,11 +450,11 @@ func (vm *VM) run() (Result, error) {
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					case verror.ErrStartThreadSignal:
-						_, threadError := vm.runThread(vm.fp, 0, true, varargs[1:]...)
+						threadError := vm.runThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -468,7 +464,7 @@ func (vm *VM) run() (Result, error) {
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					default:
@@ -495,10 +491,10 @@ func (vm *VM) run() (Result, error) {
 			vm.Frame.stack = vm.Stack[vm.Frame.bp:]
 			vm.Frame.stack[vm.Frame.ret] = val
 		case end:
-			return Success, nil
+			return nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
+			return verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
 		}
 	}
 }
@@ -634,7 +630,7 @@ func (vm *VM) printCallStack() {
 	}
 }
 
-func (vm *VM) createError(ip int, err error) (Result, error) {
+func (vm *VM) createError(ip int, err error) error {
 	vm.Thread.State = Done
 	modName := vm.Frame.lambda.CoreFn.ScriptID
 	vm.Frame.ip = ip
@@ -644,7 +640,7 @@ func (vm *VM) createError(ip int, err error) (Result, error) {
 	} else {
 		nearLine = vm.Script.ErrorInfo[modName][ip]
 	}
-	return Failure, verror.New(modName, err.Error(), verror.RunTimeErrType, nearLine)
+	return verror.New(modName, err.Error(), verror.RunTimeErrType, nearLine)
 }
 
 func getNonZeroLine(modName string, ip int, vm *VM) uint {

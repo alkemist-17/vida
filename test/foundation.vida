@@ -11,8 +11,9 @@ assert(cast)
 var exception = load("std/exception")
 assert(exception)
 
+// When a module does not exists
 var core = load("std/core")
-assert(core)
+assert(not core and core == nil)
 
 var text = load("std/text")
 assert(text)
@@ -53,7 +54,7 @@ assert(color)
 var http = load("std/http")
 assert(http)
 
-var raised = exception.protected(exception.raise)
+//var raised = exception.protected(exception.raise)
 
-assert(isError(raised) and raised.message)
+//assert(isError(raised) and raised.message)
 

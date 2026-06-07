@@ -57,7 +57,7 @@ func loadFoundationText() Value {
 	return m
 }
 
-func textHasPrefix(args ...Value) (Value, error) {
+func textHasPrefix(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		v, okV := args[0].(*String)
 		p, okP := args[1].(*String)
@@ -68,7 +68,7 @@ func textHasPrefix(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textHasSuffix(args ...Value) (Value, error) {
+func textHasSuffix(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		v, okV := args[0].(*String)
 		p, okP := args[1].(*String)
@@ -79,7 +79,7 @@ func textHasSuffix(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textFromCodepoints(args ...Value) (Value, error) {
+func textFromCodepoints(ctx *Context, args ...Value) (Value, error) {
 	runes := make([]rune, 0, len(args))
 	for _, a := range args {
 		if v, ok := a.(Integer); ok && v > 0 {
@@ -89,7 +89,7 @@ func textFromCodepoints(args ...Value) (Value, error) {
 	return &String{Value: string(runes), Runes: runes}, nil
 }
 
-func textTrim(args ...Value) (Value, error) {
+func textTrim(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		if v, ok := args[0].(*String); ok {
@@ -104,7 +104,7 @@ func textTrim(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textTrimLeft(args ...Value) (Value, error) {
+func textTrimLeft(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		if v, ok := args[0].(*String); ok {
@@ -119,7 +119,7 @@ func textTrimLeft(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textTrimRight(args ...Value) (Value, error) {
+func textTrimRight(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		if v, ok := args[0].(*String); ok {
@@ -134,7 +134,7 @@ func textTrimRight(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textSplit(args ...Value) (Value, error) {
+func textSplit(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		if v, ok := args[0].(*String); ok {
@@ -149,7 +149,7 @@ func textSplit(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textFields(args ...Value) (Value, error) {
+func textFields(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
 			return textStringToArray(strings.Fields(v.Value)), nil
@@ -158,7 +158,7 @@ func textFields(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textRepeat(args ...Value) (Value, error) {
+func textRepeat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if v, ok := args[0].(*String); ok {
 			if times, ok := args[1].(Integer); ok && times >= 0 {
@@ -172,7 +172,7 @@ func textRepeat(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textReplaceN(args ...Value) (Value, error) {
+func textReplaceN(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 3 {
 		if s, ok := args[0].(*String); ok {
 			if old, ok := args[1].(*String); ok {
@@ -187,7 +187,7 @@ func textReplaceN(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textReplaceAll(args ...Value) (Value, error) {
+func textReplaceAll(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if s, ok := args[0].(*String); ok {
 			if old, ok := args[1].(*String); ok {
@@ -211,7 +211,7 @@ func textCenterString(s *String, width int, sep string) *String {
 	return &String{Value: strings.Repeat(sep, leftPad) + s.Value + strings.Repeat(sep, rightPad)}
 }
 
-func textCenter(args ...Value) (Value, error) {
+func textCenter(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 1 {
 		if str, ok := args[0].(*String); ok {
@@ -229,7 +229,7 @@ func textCenter(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textContains(args ...Value) (Value, error) {
+func textContains(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, okS := args[0].(*String)
 		substr, okV := args[1].(*String)
@@ -240,7 +240,7 @@ func textContains(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textContainsAny(args ...Value) (Value, error) {
+func textContainsAny(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, okS := args[0].(*String)
 		substr, okV := args[1].(*String)
@@ -251,7 +251,7 @@ func textContainsAny(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textIndex(args ...Value) (Value, error) {
+func textIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, okS := args[0].(*String)
 		substr, okV := args[1].(*String)
@@ -262,7 +262,7 @@ func textIndex(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textJoin(args ...Value) (Value, error) {
+func textJoin(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		xs, ok := args[0].(*Array)
 		sep, okSep := args[1].(*String)
@@ -277,7 +277,7 @@ func textJoin(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textToLowerCase(args ...Value) (Value, error) {
+func textToLowerCase(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
 			return &String{Value: strings.ToLower(v.Value)}, nil
@@ -286,7 +286,7 @@ func textToLowerCase(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textToUpperCase(args ...Value) (Value, error) {
+func textToUpperCase(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
 			return &String{Value: strings.ToUpper(v.Value)}, nil
@@ -295,7 +295,7 @@ func textToUpperCase(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textCount(args ...Value) (Value, error) {
+func textCount(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if s, ok := args[0].(*String); ok {
 			if substr, ok := args[1].(*String); ok {
@@ -306,7 +306,7 @@ func textCount(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textIsAscii(args ...Value) (Value, error) {
+func textIsAscii(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -323,7 +323,7 @@ func textIsAscii(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textIsDecimal(args ...Value) (Value, error) {
+func textIsDecimal(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -343,7 +343,7 @@ func textIsDecimal(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textIsDigit(args ...Value) (Value, error) {
+func textIsDigit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -363,7 +363,7 @@ func textIsDigit(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textIsHexDigit(args ...Value) (Value, error) {
+func textIsHexDigit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -384,7 +384,7 @@ func textIsHexDigit(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textIsLetter(args ...Value) (Value, error) {
+func textIsLetter(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -404,7 +404,7 @@ func textIsLetter(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textIsNumber(args ...Value) (Value, error) {
+func textIsNumber(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -424,7 +424,7 @@ func textIsNumber(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textIsSpace(args ...Value) (Value, error) {
+func textIsSpace(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -444,7 +444,7 @@ func textIsSpace(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textCodepoints(args ...Value) (Value, error) {
+func textCodepoints(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Runes == nil {
@@ -460,7 +460,7 @@ func textCodepoints(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textIsSpaceChar(args ...Value) (Value, error) {
+func textIsSpaceChar(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok && StringLength(s) == 1 {
 			return Bool(unicode.IsSpace(s.Runes[0])), nil
@@ -469,7 +469,7 @@ func textIsSpaceChar(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textBytesLen(args ...Value) (Value, error) {
+func textBytesLen(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if val, ok := args[0].(*String); ok {
 			return Integer(len(val.Value)), nil
@@ -487,7 +487,7 @@ func textStringToArray(slice []string) Value {
 	return &Array{Value: xs}
 }
 
-func textEqualFold(args ...Value) (Value, error) {
+func textEqualFold(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, oks := args[0].(*String)
 		t, okt := args[1].(*String)
@@ -498,7 +498,7 @@ func textEqualFold(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textCapitalize(args ...Value) (Value, error) {
+func textCapitalize(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -514,7 +514,7 @@ func textCapitalize(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textPadLeft(args ...Value) (Value, error) {
+func textPadLeft(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 1 {
 		s, ok1 := args[0].(*String)
@@ -539,7 +539,7 @@ func textPadLeft(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textPadRight(args ...Value) (Value, error) {
+func textPadRight(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 1 {
 		s, ok1 := args[0].(*String)
@@ -564,7 +564,7 @@ func textPadRight(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textLines(args ...Value) (Value, error) {
+func textLines(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			if s.Value == EmptyString {
@@ -585,7 +585,7 @@ func textLines(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textTruncate(args ...Value) (Value, error) {
+func textTruncate(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 1 {
 		s, ok1 := args[0].(*String)
@@ -610,7 +610,7 @@ func textTruncate(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textWrap(args ...Value) (Value, error) {
+func textWrap(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, ok1 := args[0].(*String)
 		w, ok2 := args[1].(Integer)
@@ -645,7 +645,7 @@ func textWrap(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textSlugify(args ...Value) (Value, error) {
+func textSlugify(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
@@ -689,7 +689,7 @@ func textSlugify(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textStartsWithAny(args ...Value) (Value, error) {
+func textStartsWithAny(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, ok1 := args[0].(*String)
 		arr, ok2 := args[1].(*Array)
@@ -704,7 +704,7 @@ func textStartsWithAny(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textEndsWithAny(args ...Value) (Value, error) {
+func textEndsWithAny(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, ok1 := args[0].(*String)
 		arr, ok2 := args[1].(*Array)
@@ -719,7 +719,7 @@ func textEndsWithAny(args ...Value) (Value, error) {
 	return False, nil
 }
 
-func textCompare(args ...Value) (Value, error) {
+func textCompare(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		a, ok1 := args[0].(*String)
 		b, ok2 := args[1].(*String)
@@ -748,7 +748,7 @@ func textCompare(args ...Value) (Value, error) {
 //
 //	text.slugify("Hello αβγ!") → "hello-αβγ"
 //	text.urlEncode(...)        → "hello-%CE%B1%CE%B2%CE%B3"
-func textUrlEncode(args ...Value) (Value, error) {
+func textUrlEncode(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok {
 			// RFC 3986 unreserved characters: do NOT encode these
@@ -805,7 +805,7 @@ var upperHex = [16]byte{
 //	original = "Hello αβγ!"
 //	encoded  = text.urlEncode(original)
 //	decoded  = text.urlDecode(encoded)  // → original
-func textUrlDecode(args ...Value) (Value, error) {
+func textUrlDecode(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 1 {
 		return nil, errors.New("text.urlDecode, expected 1 argument: (str: String)")
 	}

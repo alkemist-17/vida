@@ -13,7 +13,7 @@ func loadFoundationTask() Value {
 	return m
 }
 
-func taksConcepts(args ...Value) (Value, error) {
+func taksConcepts(ctx *Context, args ...Value) (Value, error) {
 	var c string
 	c = `
 	
@@ -52,7 +52,7 @@ func taksConcepts(args ...Value) (Value, error) {
 	return &String{Value: c}, nil
 }
 
-func taskRunInParallel(args ...Value) (Value, error) {
+func taskRunInParallel(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 1 {
 		if A, ok := args[0].(*Array); ok && len(A.Value) > 0 {
 			var wg sync.WaitGroup
@@ -62,9 +62,9 @@ func taskRunInParallel(args ...Value) (Value, error) {
 					switch fn := T.Value[0].(type) {
 					case *Function:
 						wg.Go(func() {
-							th := newThread(fn, ((*clbu)[globalStateIndex].(*GlobalState)).Script)
-							vm := &VM{th}
-							_, err := vm.runThread(vm.fp, 0, true, T.Value[1:]...)
+							th := newInternalThread(fn, ctx.script)
+							vm := &VM{th, ctx}
+							err := vm.runThread(vm.fp, 0, true, T.Value[1:]...)
 							if err == nil {
 								result.Value[i] = vm.Channel
 							} else {
@@ -73,7 +73,7 @@ func taskRunInParallel(args ...Value) (Value, error) {
 						})
 					case NativeFunction:
 						wg.Go(func() {
-							val, err := fn.Call(T.Value[1:]...)
+							val, err := fn.Call(ctx, T.Value[1:]...)
 							if err == nil {
 								result.Value[i] = val
 							} else {

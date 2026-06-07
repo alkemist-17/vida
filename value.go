@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"math"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ type Value interface {
 	IsIterable() Bool
 	Iterator() Value
 	IsCallable() Bool
-	Call(args ...Value) (Value, error)
+	Call(ctx *Context, args ...Value) (Value, error)
 	String() string
 	Type() string
 	Clone() Value
@@ -133,7 +132,7 @@ func (b Bool) IsCallable() Bool {
 	return false
 }
 
-func (b Bool) Call(args ...Value) (Value, error) {
+func (b Bool) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -402,7 +401,7 @@ func (i Integer) IsCallable() Bool {
 	return false
 }
 
-func (i Integer) Call(args ...Value) (Value, error) {
+func (i Integer) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -533,7 +532,7 @@ func (f Float) IsCallable() Bool {
 	return false
 }
 
-func (f Float) Call(args ...Value) (Value, error) {
+func (f Float) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -706,28 +705,6 @@ func (o *Object) Boolean() Bool {
 }
 
 func (o *Object) Prefix(op uint64) (Value, error) {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		switch op {
-		case uint64(token.SUB):
-			if generic, ok := meta.Value[__umin]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.ADD):
-			if generic, ok := meta.Value[__uplus]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val)
-				default:
-					return val, nil
-				}
-			}
-		}
-	}
 	if op == uint64(token.NOT) {
 		return False, nil
 	}
@@ -735,100 +712,6 @@ func (o *Object) Prefix(op uint64) (Value, error) {
 }
 
 func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		switch op {
-		case uint64(token.ADD):
-			if generic, ok := meta.Value[__add]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.SUB):
-			if generic, ok := meta.Value[__sub]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.MUL):
-			if generic, ok := meta.Value[__mul]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.DIV):
-			if generic, ok := meta.Value[__div]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.REM):
-			if generic, ok := meta.Value[__rem]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.LE):
-			if generic, ok := meta.Value[__le]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.LT):
-			if generic, ok := meta.Value[__lt]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.GE):
-			if generic, ok := meta.Value[__ge]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.GT):
-			if generic, ok := meta.Value[__gt]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		case uint64(token.POW):
-			if generic, ok := meta.Value[__pow]; ok {
-				switch val := generic.(type) {
-				case *Function:
-					return o.execute(val, rhs)
-				default:
-					return val, nil
-				}
-			}
-		}
-	}
 	switch r := rhs.(type) {
 	case *Object:
 		switch op {
@@ -858,26 +741,7 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
-		case uint64(token.META):
-			if threadPoolIsDown {
-				checkForTPAndMeta()
-			}
-			if meta, ok := o.Value[__meta].(*Object); ok {
-				if v, ok := meta.Value[__setmeta]; ok {
-					return v, nil
-				}
-			}
-			o.Value[__meta] = r
-			return o, nil
 		}
-	case NilValue:
-		if meta, ok := o.Value[__meta].(*Object); ok {
-			if v, ok := meta.Value[__setmeta]; ok {
-				return v, nil
-			}
-		}
-		delete(o.Value, __meta)
-		return o, nil
 	}
 	switch op {
 	case uint64(token.OR):
@@ -891,87 +755,20 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) IGet(index Value) (Value, error) {
-	current := o
-	for range maxMetaSearch {
-		if val, ok := current.Value[index.ObjectKey()]; ok {
-			return val, nil
-		}
-
-		meta, ok := current.Value[__meta].(*Object)
-		if !ok {
-			break
-		}
-
-		get, hasGet := meta.Value[__get]
-		if !hasGet {
-			current = meta
-			continue
-		}
-
-		switch val := get.(type) {
-		case *Function:
-			return current.execute(val, index)
-		case *Object:
-			if current == val {
-				return Nil, nil
-			}
-			current = val
-		default:
-			return val, nil
-		}
+	if val, ok := o.Value[index.ObjectKey()]; ok {
+		return val, nil
 	}
 	return Nil, nil
 }
 
 func (o *Object) ISet(index, val Value) error {
-	current := o
-	for range maxMetaSearch {
-		meta, ok := current.Value[__meta].(*Object)
-		if !ok {
-			current.Value[index.ObjectKey()] = val
-			return nil
-		}
-		set, ok := meta.Value[__set]
-		if !ok {
-			current.Value[index.ObjectKey()] = val
-			return nil
-		}
-		switch v := set.(type) {
-		case *Function:
-			_, err := current.execute(v, index, val)
-			return err
-		case *Object:
-			if current == v {
-				current.Value[index.ObjectKey()] = val
-				return nil
-			}
-			current = v
-		default:
-			return nil
-		}
-	}
+	o.Value[index.ObjectKey()] = val
 	return nil
 }
 
 func (o *Object) Equals(other Value) Bool {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if generic, ok := meta.Value[__eq]; ok {
-			switch val := generic.(type) {
-			case *Function:
-				res, err := o.execute(val, other)
-				if err != nil {
-					return False
-				}
-				return res.Boolean()
-			default:
-				return val.Boolean()
-			}
-		}
-	}
-	if val, ok := other.(*Object); ok {
-		return o == val
-	}
-	return false
+	val, isObject := other.(*Object)
+	return Bool(isObject && o == val)
 }
 
 func (o *Object) IsIterable() Bool {
@@ -979,33 +776,10 @@ func (o *Object) IsIterable() Bool {
 }
 
 func (o *Object) IsCallable() Bool {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if _, ok := meta.Value[__call]; ok {
-			return true
-		}
-	}
 	return false
 }
 
-func (o *Object) Call(args ...Value) (Value, error) {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if callable, ok := meta.Value[__call]; ok {
-			switch Fn := callable.(type) {
-			case *Function:
-				if Fn.CoreFn.IsVarArg {
-					a := make([]Value, len(args))
-					copy(a, args)
-					return o.execute(Fn, &Array{Value: a})
-				}
-				return o.execute(Fn, args...)
-			case NativeFunction:
-				r, _ := arrayInsert(&Array{Value: args}, Integer(0), o)
-				return Fn.Call(r.(*Array).Value...)
-			default:
-				return Fn, nil
-			}
-		}
-	}
+func (o *Object) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -1013,91 +787,16 @@ func (o *Object) Iterator() Value {
 	return newObjectIterator(o)
 }
 
-func (o *Object) execute(fn *Function, args ...Value) (Value, error) {
-	th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
-	th.State = Ready
-	th.Script.MainFunction = fn
-	var A []Value
-	A = append(A, o)
-	A = append(A, args...)
-	v, err := coRunThread(th)
-	if err != nil {
-		vm := (*clbu)[globalStateIndex].(*GlobalState).VM
-		switch err {
-		case verror.ErrResumeThreadSignal:
-			_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, A...)
-			((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
-			if threadError != nil {
-				invoker := vm.Thread.Invoker
-				invoker.State = Running
-				vm.Thread.Invoker = nil
-				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-				vm.Thread = invoker
-				return Nil, threadError
-			}
-			switch vm.State {
-			case Done, Suspended:
-				v = vm.Channel
-				invoker := vm.Thread.Invoker
-				invoker.State = Running
-				vm.Thread.Invoker = nil
-				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-				vm.Thread = invoker
-			}
-		case verror.ErrStartThreadSignal:
-			_, threadError := vm.runThread(vm.fp, 0, true, A...)
-			((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
-			if threadError != nil {
-				invoker := vm.Thread.Invoker
-				invoker.State = Running
-				vm.Thread.Invoker = nil
-				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-				vm.Thread = invoker
-				return Nil, threadError
-			}
-			switch vm.State {
-			case Done, Suspended:
-				v = vm.Channel
-				invoker := vm.Thread.Invoker
-				invoker.State = Running
-				vm.Thread.Invoker = nil
-				(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-				vm.Thread = invoker
-			}
-		default:
-			return v, err
-		}
-	}
-	return v, nil
-}
-
 func (o *Object) String() string {
 	return o.stringify(make(map[uintptr]bool))
 }
 
 func (o *Object) stringify(visited map[uintptr]bool) string {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if str, ok := meta.Value[__str]; ok {
-			switch v := str.(type) {
-			case *Function:
-				if val, err := o.execute(v); err == nil {
-					return stringWithVisited(val, visited)
-				} else {
-					fmt.Printf("\n\nFATAL ERROR in function __str: %v. In object %v\n\n", err, o.ObjectKey())
-					os.Exit(0)
-				}
-			default:
-				return stringWithVisited(v, visited)
-			}
-		}
-	}
-
 	if len(o.Value) == 0 {
 		return "{}"
 	}
 
 	ptr := reflect.ValueOf(o).Pointer()
-
 	if visited[ptr] {
 		return "{...}"
 	}
@@ -1107,9 +806,7 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 
 	var r []string
 	for k, v := range o.Value {
-		if k != __meta {
-			r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
-		}
+		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
 	}
 	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
 }
@@ -1119,11 +816,6 @@ func (o *Object) ObjectKey() string {
 }
 
 func (o *Object) Type() string {
-	if meta, ok := o.Value[__meta].(*Object); ok {
-		if metatype, ok := meta.Value[__type]; ok {
-			return metatype.String()
-		}
-	}
 	return "object"
 }
 
@@ -1256,7 +948,7 @@ func (f *Function) ObjectKey() string {
 	return fmt.Sprintf("Function(%p)", f.CoreFn)
 }
 
-type NativeFunction func(args ...Value) (Value, error)
+type NativeFunction func(ctx *Context, args ...Value) (Value, error)
 
 func (nativeFn NativeFunction) Boolean() Bool {
 	return True
@@ -1303,8 +995,8 @@ func (nativeFn NativeFunction) IsCallable() Bool {
 	return true
 }
 
-func (nativeFn NativeFunction) Call(args ...Value) (Value, error) {
-	return nativeFn(args...)
+func (nativeFn NativeFunction) Call(ctx *Context, args ...Value) (Value, error) {
+	return nativeFn(ctx, args...)
 }
 
 func (nativeFn NativeFunction) Iterator() Value {
@@ -1464,7 +1156,7 @@ func (e *Enum) IsCallable() Bool {
 	return false
 }
 
-func (e *Enum) Call(args ...Value) (Value, error) {
+func (e *Enum) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -1637,7 +1329,7 @@ func (i ValueSemanticsImpl) IsCallable() Bool {
 	return false
 }
 
-func (i ValueSemanticsImpl) Call(args ...Value) (Value, error) {
+func (i ValueSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -1699,7 +1391,7 @@ func (i *ReferenceSemanticsImpl) IsCallable() Bool {
 	return false
 }
 
-func (i *ReferenceSemanticsImpl) Call(args ...Value) (Value, error) {
+func (i *ReferenceSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 

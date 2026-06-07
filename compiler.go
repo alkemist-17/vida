@@ -9,49 +9,51 @@ import (
 )
 
 type compiler struct {
-	jumps         []int
-	breakJumps    []int
-	breakCount    []int
-	continueJumps []int
-	continueCount []int
-	fn            []*CoreFunction
-	errMsg        string
-	mainScriptID  string
-	currentFn     *CoreFunction
-	ast           *ast.Ast
-	script        *Script
-	kb            *konstBuilder
-	sb            *symbolBuilder
-	scriptMap     map[string]int
-	depMap        map[string]struct{}
-	errorInfo     ErrorInfo
-	lineErr       uint
-	scope         int
-	level         int
-	rAlloc        int
-	rDest         int
-	fromRefStmt   bool
-	mutLoc        bool
-	hadError      bool
-	isSubcompiler bool
+	jumps            []int
+	breakJumps       []int
+	breakCount       []int
+	continueJumps    []int
+	continueCount    []int
+	fn               []*CoreFunction
+	errMsg           string
+	mainScriptID     string
+	currentFn        *CoreFunction
+	ast              *ast.Ast
+	script           *Script
+	kb               *konstBuilder
+	sb               *symbolBuilder
+	scriptMap        map[string]int
+	depMap           map[string]struct{}
+	extensionsLoader ExtensionsLoader
+	errorInfo        ErrorInfo
+	lineErr          uint
+	scope            int
+	level            int
+	rAlloc           int
+	rDest            int
+	fromRefStmt      bool
+	mutLoc           bool
+	hadError         bool
+	isSubcompiler    bool
 }
 
 var dummy = struct{}{}
 
-func newCompiler(ast *ast.Ast, scriptID string) *compiler {
+func newCompiler(ast *ast.Ast, scriptID string, extensionsLoader ExtensionsLoader) *compiler {
 	dm := make(map[string]struct{})
 	dm[scriptID] = dummy
 	ei := make(ErrorInfo)
 	ei[scriptID] = make(map[int]uint)
 	c := &compiler{
-		ast:          ast,
-		script:       newScript(scriptID),
-		kb:           newKonstBuilder(),
-		sb:           newSymbolBuilder(0),
-		scriptMap:    make(map[string]int),
-		depMap:       dm,
-		errorInfo:    ei,
-		mainScriptID: scriptID,
+		ast:              ast,
+		script:           newScript(scriptID, extensionsLoader),
+		kb:               newKonstBuilder(),
+		sb:               newSymbolBuilder(0),
+		scriptMap:        make(map[string]int),
+		depMap:           dm,
+		errorInfo:        ei,
+		mainScriptID:     scriptID,
+		extensionsLoader: extensionsLoader,
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -60,11 +62,11 @@ func newCompiler(ast *ast.Ast, scriptID string) *compiler {
 	return c
 }
 
-func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Value, scriptMap map[string]int, depMap map[string]struct{}, ei ErrorInfo, initialIndex int) *compiler {
+func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Value, scriptMap map[string]int, depMap map[string]struct{}, ei ErrorInfo, initialIndex int, extensionsLoader ExtensionsLoader) *compiler {
 	ei[scriptID] = make(map[int]uint)
 	c := &compiler{
 		ast:           ast,
-		script:        newSubScript(scriptID, store),
+		script:        newSubScript(scriptID, store, extensionsLoader),
 		kb:            kb,
 		sb:            newSymbolBuilder(initialIndex),
 		isSubcompiler: true,
@@ -1043,7 +1045,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			c.lineErr = n.Line
 			return 0, rGlob
 		}
-		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.GlobalStore, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.GlobalStore))
+		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.GlobalStore, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.GlobalStore), c.extensionsLoader)
 		m, err := subCompiler.compileSubScript()
 		c.sb.index = len(*c.script.GlobalStore)
 		if err != nil {

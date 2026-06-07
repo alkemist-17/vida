@@ -99,7 +99,7 @@ func loadFoundationBytes() Value {
 	return m
 }
 
-func bytesCreateNewBytesValue(args ...Value) (Value, error) {
+func bytesCreateNewBytesValue(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		switch v := args[0].(type) {
@@ -134,7 +134,7 @@ func bytesCreateNewBytesValue(args ...Value) (Value, error) {
 	return &Bytes{}, nil
 }
 
-func bytesFromValue(args ...Value) (Value, error) {
+func bytesFromValue(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch v := args[0].(type) {
 		case *String:
@@ -154,7 +154,7 @@ func bytesFromValue(args ...Value) (Value, error) {
 	return &Bytes{}, nil
 }
 
-func bytesGenerateCryptoRand(args ...Value) (Value, error) {
+func bytesGenerateCryptoRand(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 1:
 		if inputValue, ok := args[0].(Integer); ok {
@@ -196,7 +196,7 @@ func bytesGenerateCryptoRand(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesTimingSafeEqual(args ...Value) (Value, error) {
+func bytesTimingSafeEqual(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		lhs, okl := args[0].(*Bytes)
 		rhs, okr := args[1].(*Bytes)
@@ -208,7 +208,7 @@ func bytesTimingSafeEqual(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesEncode(args ...Value) (Value, error) {
+func bytesEncode(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		b, okI := args[0].(*Bytes)
 		e, okE := args[1].(Integer)
@@ -237,7 +237,7 @@ func bytesEncode(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesDecode(args ...Value) (Value, error) {
+func bytesDecode(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		s, okS := args[0].(*String)
 		e, okE := args[1].(Integer)
@@ -328,7 +328,7 @@ func bytesHMACAlgorithms() *Object {
 	return &Object{Value: m}
 }
 
-func bytesToFile(args ...Value) (Value, error) {
+func bytesToFile(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		b, okB := args[0].(*Bytes)
 		p, okP := args[1].(*String)
@@ -361,7 +361,7 @@ func bytesToFile(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesFromFile(args ...Value) (Value, error) {
+func bytesFromFile(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			data, err := os.ReadFile(path.Value)
@@ -374,7 +374,7 @@ func bytesFromFile(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesXOR(args ...Value) (Value, error) {
+func bytesXOR(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		lhs, okl := args[0].(*Bytes)
 		rhs, okr := args[1].(*Bytes)
@@ -388,7 +388,7 @@ func bytesXOR(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesUUID(args ...Value) (Value, error) {
+func bytesUUID(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 1 {
 		if _, ok := args[0].(NilValue); ok {
 			return &String{Value: "00000000-0000-0000-0000-000000000000"}, nil
@@ -403,7 +403,7 @@ func bytesUUID(args ...Value) (Value, error) {
 	return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])}, nil
 }
 
-func bytesParseUUID(args ...Value) (Value, error) {
+func bytesParseUUID(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if s, ok := args[0].(*String); ok && len(s.Value) == 2*bytesUUIDLen+4 && s.Value[8] == '-' && s.Value[13] == '-' && s.Value[18] == '-' && s.Value[23] == '-' {
 			decoded, err := hex.DecodeString(fmt.Sprintf("%v%v%v%v%v", s.Value[0:8], s.Value[9:13], s.Value[14:18], s.Value[19:23], s.Value[24:36]))
@@ -415,7 +415,7 @@ func bytesParseUUID(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesToString(args ...Value) (Value, error) {
+func bytesToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {
 			return &String{Value: string(b.Value)}, nil
@@ -424,7 +424,7 @@ func bytesToString(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesBitLen(args ...Value) (Value, error) {
+func bytesBitLen(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {
 			return Integer(len(b.Value) * 8), nil
@@ -433,7 +433,7 @@ func bytesBitLen(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesDump(args ...Value) (Value, error) {
+func bytesDump(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {
 			const rowSize = 16
@@ -462,7 +462,7 @@ func bytesDump(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesEndianess(args ...Value) (Value, error) {
+func bytesEndianess(ctx *Context, args ...Value) (Value, error) {
 	b := uint16(0xFF)
 	if *(*byte)(unsafe.Pointer(&b)) == 0 {
 		return &String{Value: bigEndian}, nil
@@ -470,7 +470,7 @@ func bytesEndianess(args ...Value) (Value, error) {
 	return &String{Value: littleEndian}, nil
 }
 
-func bytesView(args ...Value) (Value, error) {
+func bytesView(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		b, okB := args[0].(*Bytes)
 		offset, okO := args[1].(Integer)
@@ -484,7 +484,7 @@ func bytesView(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesCopyTo(args ...Value) (Value, error) {
+func bytesCopyTo(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if len(args) > 2 {
 		dst, okD := args[0].(*Bytes)
@@ -514,7 +514,7 @@ func bytesCopyTo(args ...Value) (Value, error) {
 
 }
 
-func bytesFill(args ...Value) (Value, error) {
+func bytesFill(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		b, okB := args[0].(*Bytes)
 		val, okV := args[1].(Integer)
@@ -528,7 +528,7 @@ func bytesFill(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesReverse(args ...Value) (Value, error) {
+func bytesReverse(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, okB := args[0].(*Bytes); okB {
 			for i, j := 0, len(b.Value)-1; i < j; i, j = i+1, j-1 {
@@ -540,7 +540,7 @@ func bytesReverse(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesReversed(args ...Value) (Value, error) {
+func bytesReversed(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, okB := args[0].(*Bytes); okB {
 			n := len(b.Value)
@@ -554,7 +554,7 @@ func bytesReversed(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func bytesConcat(args ...Value) (Value, error) {
+func bytesConcat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 0 {
 		return &Bytes{}, nil
 	}
@@ -586,7 +586,7 @@ func bytesConcat(args ...Value) (Value, error) {
 	return &Bytes{Value: dst}, nil
 }
 
-func bytesChecksum(args ...Value) (Value, error) {
+func bytesChecksum(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 2 {
 		return &VidaError{Message: &String{Value: "bytes checksum requires: data, algorithm"}}, nil
 	}
@@ -650,7 +650,7 @@ func bytesChecksum(args ...Value) (Value, error) {
 	return &Bytes{Value: hashBytes}, nil
 }
 
-func bytesHMAC(args ...Value) (Value, error) {
+func bytesHMAC(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 3 {
 		return &VidaError{Message: &String{Value: "bytes hmac requires: data, key, algorithm"}}, nil
 	}
@@ -730,7 +730,7 @@ func bitByteIdx(i int) (byteIndex int, mask byte) {
 // using MSB-first numbering.
 //
 // Signature: getBit(buf Bytes, bitIdx Int) → Int | &VidaError
-func bytesGetBit(args ...Value) (Value, error) {
+func bytesGetBit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 2 {
 		return &VidaError{Message: &String{Value: "bytes.getBit requires: bytes, bitIndex"}}, nil
 	}
@@ -758,7 +758,7 @@ func bytesGetBit(args ...Value) (Value, error) {
 // set to val (0 or 1). The original buffer is not modified.
 //
 // Signature: setBit(buf Bytes, bitIdx Int, val Int) → Bytes | &VidaError
-func bytesSetBit(args ...Value) (Value, error) {
+func bytesSetBit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 3 {
 		return &VidaError{Message: &String{Value: "bytes.setBit requires: bytes, bitIndex, value (0 or 1)"}}, nil
 	}
@@ -799,7 +799,7 @@ func bytesSetBit(args ...Value) (Value, error) {
 //	packs as 0b11000000 → result = [0xC0]
 //
 // Signature: bitView(buf Bytes, start Int, length Int) → Bytes | &VidaError
-func bytesBitView(args ...Value) (Value, error) {
+func bytesBitView(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 3 {
 		return &VidaError{Message: &String{Value: "bytes.bitView requires: bytes, startBit, bitLength"}}, nil
 	}
@@ -850,7 +850,7 @@ func bytesBitView(args ...Value) (Value, error) {
 // bitLength must be in [1, 64].
 //
 // Signature: readUInt(buf Bytes, startBit Int, bitLength Int, endian String) → Int | &VidaError
-func bytesReadUInt(args ...Value) (Value, error) {
+func bytesReadUInt(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 4 {
 		return &VidaError{Message: &String{Value: "bytes.readUInt requires: bytes, startBit, bitLength, endian"}}, nil
 	}
@@ -867,7 +867,7 @@ func bytesReadUInt(args ...Value) (Value, error) {
 	}
 
 	// Extract the raw bits, MSB-first packed.
-	extracted, err := bytesBitView(b, start, bitLen)
+	extracted, err := bytesBitView(ctx, b, start, bitLen)
 	if err != nil {
 		return extracted, err
 	}
@@ -919,7 +919,7 @@ func bytesReadUInt(args ...Value) (Value, error) {
 //	little-endian: result[0] is least-significant (x86 order)
 //
 // Signature: fromUInt(value Int, bitLength Int, endian String) → Bytes | &VidaError
-func bytesFromUInt(args ...Value) (Value, error) {
+func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 3 {
 		return &VidaError{Message: &String{Value: "bytes.fromUInt requires: value, bitLength, endian"}}, nil
 	}

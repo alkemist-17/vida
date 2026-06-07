@@ -9,12 +9,9 @@ assert(
     object.keys and
     object.getset and
     object.inject and
-    object.extends and
     object.conforms and
     object.implements and
     object.del and
-    object.setmeta and
-    object.getmeta and
     object.extract and
     object.override and
     object.has and
@@ -22,8 +19,6 @@ assert(
     object.get and
     object.isEmpty and
     object.clear and
-    object.hasmeta and
-    object.delmeta and
     object.isObject and
     object.isCallable
 )

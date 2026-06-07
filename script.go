@@ -15,19 +15,19 @@ type Script struct {
 	ErrorInfo
 }
 
-func newScript(scriptID string) *Script {
+func newScript(scriptID string, extensionsLoader ExtensionsLoader) *Script {
 	s := Script{
 		Konstants:    nil,
-		GlobalStore:  loadCoreLib(new([]Value)),
+		GlobalStore:  loadCoreLib(new([]Value), extensionsLoader),
 		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID}},
 	}
 	return &s
 }
 
-func newSubScript(scriptID string, store *[]Value) *Script {
+func newSubScript(scriptID string, store *[]Value, extensionsLoader ExtensionsLoader) *Script {
 	s := Script{
 		Konstants:    nil,
-		GlobalStore:  loadCoreLib(store),
+		GlobalStore:  loadCoreLib(store, extensionsLoader),
 		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID}},
 	}
 	return &s

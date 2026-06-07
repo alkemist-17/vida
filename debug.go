@@ -8,8 +8,8 @@ import (
 
 func (vm *VM) Inspect(ip int) {
 	clear()
-	fmt.Println("Thread", ((*clbu)[globalStateIndex].(*GlobalState).Current).String())
-	fmt.Println("IsMain", ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current)
+	fmt.Println("Thread", vm.ctx.currentThread.String())
+	fmt.Println("IsMain", vm.ctx.IsMainThreadRunning())
 	fmt.Println("ScriptID", vm.Frame.lambda.CoreFn.ScriptID)
 	fmt.Printf("Store: ")
 	for i := len(coreLibNames); i < len((*vm.Script.GlobalStore)); i++ {
@@ -39,7 +39,7 @@ func (vm *VM) Inspect(ip int) {
 	fmt.Scanf(" ")
 }
 
-func (vm *VM) debug() (Result, error) {
+func (vm *VM) debug() error {
 	vm.Frame = &vm.Frames[vm.fp]
 	vm.Frame.code = vm.Script.MainFunction.CoreFn.Code
 	vm.Frame.lambda = vm.Script.MainFunction
@@ -451,11 +451,11 @@ func (vm *VM) debug() (Result, error) {
 						}
 					}
 				}
-				v, err := val.Call(varargs...)
+				v, err := val.Call(vm.ctx, varargs...)
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
+						threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -465,11 +465,11 @@ func (vm *VM) debug() (Result, error) {
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					case verror.ErrStartThreadSignal:
-						_, threadError := vm.debugThread(vm.fp, 0, true, varargs[1:]...)
+						threadError := vm.debugThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -479,7 +479,7 @@ func (vm *VM) debug() (Result, error) {
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					default:
@@ -506,10 +506,10 @@ func (vm *VM) debug() (Result, error) {
 			vm.Frame.stack = vm.Stack[vm.Frame.bp:]
 			vm.Frame.stack[vm.Frame.ret] = val
 		case end:
-			return Success, nil
+			return nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
+			return verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
 		}
 	}
 }

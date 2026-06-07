@@ -54,19 +54,17 @@ type Thread struct {
 	fp      int
 }
 
-func newMainThread(script *Script, extensionlibsloader ExtensionsLoader) (*Thread, error) {
-	extensionsLoader, clbu = extensionlibsloader, script.GlobalStore
-	th := &Thread{
+func newThread(script *Script) *Thread {
+	return &Thread{
 		Frames:  make([]frame, frameSize),
 		Stack:   make([]Value, stacksize),
 		Script:  script,
 		State:   Running,
 		Channel: Nil,
 	}
-	return th, nil
 }
 
-func newThread(fn *Function, script *Script) *Thread {
+func newInternalThread(fn *Function, script *Script) *Thread {
 	return &Thread{
 		Script: &Script{
 			Konstants:    script.Konstants,
@@ -128,7 +126,7 @@ func (th *Thread) Clone() Value {
 	return th
 }
 
-func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, error) {
+func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 	ip := givenIP
 	var i, op, A, B, P uint64
 	largs := len(args)
@@ -604,11 +602,11 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 						}
 					}
 				}
-				v, err := val.Call(varargs...)
+				v, err := val.Call(vm.ctx, varargs...)
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
+						threadError := vm.runThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -618,11 +616,11 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					case verror.ErrStartThreadSignal:
-						_, threadError := vm.runThread(vm.fp, 0, true, varargs[1:]...)
+						threadError := vm.runThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -632,13 +630,13 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					case verror.ErrSuspendThreadSignal:
 						vm.Frame.ip = ip
 						vm.Reg = B
-						return Success, nil
+						return nil
 					default:
 						return vm.createError(ip, err)
 					}
@@ -660,7 +658,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			if vm.fp == 0 {
 				vm.Channel = val
 				vm.State = Done
-				return Success, nil
+				return nil
 			}
 			vm.fp--
 			vm.Frame = &vm.Frames[vm.fp]
@@ -668,15 +666,15 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			vm.Frame.stack = vm.Stack[vm.Frame.bp:]
 			vm.Frame.stack[vm.Frame.ret] = val
 		case end:
-			return Success, nil
+			return nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
+			return verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
 		}
 	}
 }
 
-func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, error) {
+func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 	ip := givenIP
 	var i, op, A, B, P uint64
 	largs := len(args)
@@ -1110,11 +1108,11 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 						}
 					}
 				}
-				v, err := val.Call(varargs...)
+				v, err := val.Call(vm.ctx, varargs...)
 				if err != nil {
 					switch err {
 					case verror.ErrResumeThreadSignal:
-						_, threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
+						threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -1124,11 +1122,11 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					case verror.ErrStartThreadSignal:
-						_, threadError := vm.debugThread(vm.fp, 0, true, varargs[1:]...)
+						threadError := vm.debugThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
 						}
@@ -1138,13 +1136,13 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 							invoker := vm.Thread.Invoker
 							invoker.State = Running
 							vm.Thread.Invoker = nil
-							(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
+							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
 					case verror.ErrSuspendThreadSignal:
 						vm.Frame.ip = ip
 						vm.Reg = B
-						return Success, nil
+						return nil
 					default:
 						return vm.createError(ip, err)
 					}
@@ -1166,7 +1164,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 			if vm.fp == 0 {
 				vm.Channel = val
 				vm.State = Done
-				return Success, nil
+				return nil
 			}
 			vm.fp--
 			vm.Frame = &vm.Frames[vm.fp]
@@ -1174,10 +1172,10 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 			vm.Frame.stack = vm.Stack[vm.Frame.bp:]
 			vm.Frame.stack[vm.Frame.ret] = val
 		case end:
-			return Success, nil
+			return nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
+			return verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
 		}
 	}
 }

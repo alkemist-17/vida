@@ -29,41 +29,37 @@ func loadFoundationCoroutine() Value {
 	return m
 }
 
-func coNewThread(args ...Value) (Value, error) {
+func coNewThread(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	switch l {
 	case 1:
 		if fn, ok := args[0].(*Function); ok {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, minFrameSize, minStackSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, minFrameSize, minStackSize), nil
 		}
 	case 2:
 		fn, okFn := args[0].(*Function)
 		frameSize, ok := args[1].(Integer)
 		if okFn && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, frameSize, minStackSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, frameSize, minStackSize), nil
 		}
 		config, okConfig := args[1].(*Object)
 		fSize, okFSize := config.Value["frame"].(Integer)
 		sSize, okSSize := config.Value["stack"].(Integer)
 		if okFn && okConfig && okFSize && okSSize && minFrameSize <= fSize && fSize <= maxFrameSize && minStackSize <= sSize && sSize <= maxStackSize {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, fSize, sSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, fSize, sSize), nil
 		}
 	case 3:
 		fn, okFn := args[0].(*Function)
 		frameSize, okFS := args[1].(Integer)
 		stackSize, ok := args[2].(Integer)
 		if okFn && okFS && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize && minStackSize <= stackSize && stackSize <= maxStackSize {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, frameSize, stackSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, frameSize, stackSize), nil
 		}
 	}
 	return Nil, errors.New("expected a function as first argument")
 }
 
-func coGetThreadState(args ...Value) (Value, error) {
+func coGetThreadState(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return &String{Value: th.State.String()}, nil
@@ -73,7 +69,7 @@ func coGetThreadState(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coRunThread(args ...Value) (Value, error) {
+func coRunThread(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok && (th.State == Suspended || th.State == Ready) {
 			var signal error
@@ -82,12 +78,11 @@ func coRunThread(args ...Value) (Value, error) {
 			} else {
 				signal = verror.ErrResumeThreadSignal
 			}
-			vm := (*clbu)[globalStateIndex].(*GlobalState).VM
-			th.Invoker = (*clbu)[globalStateIndex].(*GlobalState).Current
-			(*clbu)[globalStateIndex].(*GlobalState).Current = th
+			th.Invoker = ctx.currentThread
+			ctx.currentThread = th
 			th.State = Running
 			th.Invoker.State = Waiting
-			vm.Thread = th
+			ctx.vm.Thread = th
 			return Nil, signal
 		} else if !ok {
 			return Nil, verror.ErrNotThread
@@ -98,11 +93,11 @@ func coRunThread(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coSuspendThread(args ...Value) (Value, error) {
-	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
+func coSuspendThread(ctx *Context, args ...Value) (Value, error) {
+	if ctx.IsMainThreadRunning() {
 		return Nil, verror.ErrSuspendingMainThread
 	}
-	th := (*clbu)[globalStateIndex].(*GlobalState).Current
+	th := ctx.currentThread
 	th.State = Suspended
 	if len(args) > 0 {
 		th.Channel = args[0]
@@ -112,11 +107,11 @@ func coSuspendThread(args ...Value) (Value, error) {
 	return Nil, verror.ErrSuspendThreadSignal
 }
 
-func coGetCurrentRunningThread(args ...Value) (Value, error) {
-	return ((*clbu)[globalStateIndex].(*GlobalState)).Current, nil
+func coGetCurrentRunningThread(ctx *Context, args ...Value) (Value, error) {
+	return ctx.currentThread, nil
 }
 
-func coRecycleThread(args ...Value) (Value, error) {
+func coRecycleThread(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if th, ok := args[0].(*Thread); ok && th.State == Done {
 			if fn, okfn := args[1].(*Function); okfn {
@@ -134,7 +129,7 @@ func coRecycleThread(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coCompleteThread(args ...Value) (Value, error) {
+func coCompleteThread(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			if th.State == Ready || th.State == Suspended {
@@ -150,7 +145,7 @@ func coCompleteThread(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coIsActive(args ...Value) (Value, error) {
+func coIsActive(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State != Done), nil
@@ -160,7 +155,7 @@ func coIsActive(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coIsDone(args ...Value) (Value, error) {
+func coIsDone(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State == Done), nil
@@ -170,14 +165,11 @@ func coIsDone(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coIsMain(args ...Value) (Value, error) {
-	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
-		return True, nil
-	}
-	return False, nil
+func coIsMain(ctx *Context, args ...Value) (Value, error) {
+	return Bool(ctx.IsMainThreadRunning()), nil
 }
 
-func coGetStackSize(args ...Value) (Value, error) {
+func coGetStackSize(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Integer(len(th.Stack)), nil
@@ -187,7 +179,7 @@ func coGetStackSize(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coGetFrameSize(args ...Value) (Value, error) {
+func coGetFrameSize(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return Integer(len(th.Frames)), nil
@@ -197,7 +189,7 @@ func coGetFrameSize(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coValue(args ...Value) (Value, error) {
+func coValue(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return th.Channel, nil
