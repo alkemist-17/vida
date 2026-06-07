@@ -16,7 +16,7 @@ type compiler struct {
 	continueCount []int
 	fn            []*CoreFunction
 	errMsg        string
-	mainPath      string
+	mainScriptID  string
 	currentFn     *CoreFunction
 	ast           *ast.Ast
 	script        *Script
@@ -38,20 +38,20 @@ type compiler struct {
 
 var dummy = struct{}{}
 
-func newMainCompiler(ast *ast.Ast, scriptName string) *compiler {
+func newCompiler(ast *ast.Ast, scriptID string) *compiler {
 	dm := make(map[string]struct{})
-	dm[scriptName] = dummy
+	dm[scriptID] = dummy
 	ei := make(ErrorInfo)
-	ei[scriptName] = make(map[int]uint)
+	ei[scriptID] = make(map[int]uint)
 	c := &compiler{
-		ast:       ast,
-		script:    newMainScript(scriptName),
-		kb:        newKonstBuilder(),
-		sb:        newSymbolBuilder(0),
-		scriptMap: make(map[string]int),
-		depMap:    dm,
-		errorInfo: ei,
-		mainPath:  scriptName,
+		ast:          ast,
+		script:       newScript(scriptID),
+		kb:           newKonstBuilder(),
+		sb:           newSymbolBuilder(0),
+		scriptMap:    make(map[string]int),
+		depMap:       dm,
+		errorInfo:    ei,
+		mainScriptID: scriptID,
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -60,18 +60,18 @@ func newMainCompiler(ast *ast.Ast, scriptName string) *compiler {
 	return c
 }
 
-func newSubCompiler(ast *ast.Ast, scriptName string, kb *konstBuilder, store *[]Value, scriptMap map[string]int, depMap map[string]struct{}, ei ErrorInfo, initialIndex int) *compiler {
-	ei[scriptName] = make(map[int]uint)
+func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Value, scriptMap map[string]int, depMap map[string]struct{}, ei ErrorInfo, initialIndex int) *compiler {
+	ei[scriptID] = make(map[int]uint)
 	c := &compiler{
 		ast:           ast,
-		script:        newScript(scriptName, store),
+		script:        newSubScript(scriptID, store),
 		kb:            kb,
 		sb:            newSymbolBuilder(initialIndex),
 		isSubcompiler: true,
 		scriptMap:     scriptMap,
 		depMap:        depMap,
 		errorInfo:     ei,
-		mainPath:      scriptName,
+		mainScriptID:  scriptID,
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -1012,7 +1012,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		if filepath.IsAbs(n.Path) {
 			importFilePath = n.Path
 		} else {
-			importFilePath = filepath.Join(filepath.Dir(c.mainPath), n.Path)
+			importFilePath = filepath.Join(filepath.Dir(c.mainScriptID), n.Path)
 		}
 		if _, isCycle := c.depMap[importFilePath]; isCycle {
 			c.hadError = true
@@ -1028,7 +1028,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			c.emitCall(c.rAlloc, 0, 0, 1)
 			return c.rAlloc, rLoc
 		}
-		src, err := readScript(importFilePath)
+		src, err := LoadScriptFromFile(importFilePath)
 		if err != nil {
 			c.hadError = true
 			c.errMsg = err.Error()

@@ -17,46 +17,46 @@ const (
 )
 
 type VidaError struct {
-	ScriptName string
-	Message    string
-	ErrType    string
-	Line       uint
+	ScriptID string
+	Message  string
+	ErrType  string
+	Line     uint
 }
 
 func (e *VidaError) Error() string {
 	switch e.ErrType {
 	case ExceptionErrType:
-		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	case AssertionErrType:
-		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	default:
-		return fmt.Sprintf("\n\n\t[%v Error]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v Error]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	}
 }
 
-func New(scriptName string, message string, errorType string, line uint) *VidaError {
+func New(scriptID string, message string, errorType string, line uint) *VidaError {
 	return &VidaError{
-		ScriptName: scriptName,
-		Line:       line,
-		Message:    message,
-		ErrType:    errorType,
+		ScriptID: scriptID,
+		Line:     line,
+		Message:  message,
+		ErrType:  errorType,
 	}
 }
 
 type StackFrameInfo struct {
-	ScriptName string
-	Line       uint
+	ScriptID string
+	Line     uint
 }
 
-func NewStackFrameInfo(scriptName string, line uint) StackFrameInfo {
+func NewStackFrameInfo(scriptID string, line uint) StackFrameInfo {
 	return StackFrameInfo{
-		ScriptName: scriptName,
-		Line:       line,
+		ScriptID: scriptID,
+		Line:     line,
 	}
 }
 
 func (sfi StackFrameInfo) Error() string {
-	return fmt.Sprintf("\tScript    : %v\n\tNear line : %v\n", sfi.ScriptName, sfi.Line)
+	return fmt.Sprintf("\tScript    : %v\n\tNear line : %v\n", sfi.ScriptID, sfi.Line)
 }
 
 var (

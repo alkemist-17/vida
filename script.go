@@ -8,8 +8,6 @@ import (
 	"github.com/alkemist-17/vida/verror"
 )
 
-const VidaFileExtension = ".vida"
-
 type Script struct {
 	GlobalStore  *[]Value
 	Konstants    *[]Value
@@ -17,20 +15,20 @@ type Script struct {
 	ErrorInfo
 }
 
-func newMainScript(name string) *Script {
+func newScript(scriptID string) *Script {
 	s := Script{
 		Konstants:    nil,
 		GlobalStore:  loadCoreLib(new([]Value)),
-		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: name}},
+		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID}},
 	}
 	return &s
 }
 
-func newScript(name string, store *[]Value) *Script {
+func newSubScript(scriptID string, store *[]Value) *Script {
 	s := Script{
 		Konstants:    nil,
 		GlobalStore:  loadCoreLib(store),
-		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: name}},
+		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID}},
 	}
 	return &s
 }
@@ -39,13 +37,13 @@ func (s Script) String() string {
 	return fmt.Sprintf("Script(%v)", s.MainFunction.CoreFn.ScriptID)
 }
 
-func readScript(scriptName string) ([]byte, error) {
-	if strings.HasSuffix(scriptName, VidaFileExtension) {
-		if data, err := os.ReadFile(scriptName); err == nil {
+func LoadScriptFromFile(path string) ([]byte, error) {
+	if strings.HasSuffix(path, VidaFileExtension) {
+		if data, err := os.ReadFile(path); err == nil {
 			return data, nil
 		} else {
-			return nil, verror.New(scriptName, err.Error(), verror.FileErrType, 0)
+			return nil, verror.New(path, err.Error(), verror.FileErrType, 0)
 		}
 	}
-	return nil, verror.New(scriptName, "It is not a vida script", verror.FileErrType, 0)
+	return nil, verror.New(path, "It is not a vida script", verror.FileErrType, 0)
 }

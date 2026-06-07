@@ -17,7 +17,7 @@ type Interpreter struct {
 
 func NewInterpreter(path string, extensionsLoader ExtensionsLoader) (*Interpreter, error) {
 	threadPoolIsDown = true
-	src, err := readScript(path)
+	src, err := LoadScriptFromFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func NewInterpreter(path string, extensionsLoader ExtensionsLoader) (*Interprete
 	if err != nil {
 		return nil, err
 	}
-	c := newMainCompiler(rAst, path)
+	c := newCompiler(rAst, path)
 	script, err := c.compileScript()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func NewInterpreter(path string, extensionsLoader ExtensionsLoader) (*Interprete
 }
 
 func NewDebugger(path string, extensionsLoader ExtensionsLoader) (*Interpreter, error) {
-	src, err := readScript(path)
+	src, err := LoadScriptFromFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func NewDebugger(path string, extensionsLoader ExtensionsLoader) (*Interpreter, 
 	fmt.Println(ast.PrintAST(rAst))
 	fmt.Print("\n\nPress 'Enter' to continue => ")
 	fmt.Scanf(" ")
-	c := newMainCompiler(rAst, path)
+	c := newCompiler(rAst, path)
 	script, err := c.compileScript()
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func NewDebugger(path string, extensionsLoader ExtensionsLoader) (*Interpreter, 
 }
 
 func PrintAST(path string, colorized bool) error {
-	src, err := readScript(path)
+	src, err := LoadScriptFromFile(path)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func PrintAST(path string, colorized bool) error {
 }
 
 func PrintTokens(path string) error {
-	src, err := readScript(path)
+	src, err := LoadScriptFromFile(path)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func PrintTokens(path string) error {
 }
 
 func PrintMachineCode(path string) error {
-	src, err := readScript(path)
+	src, err := LoadScriptFromFile(path)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func PrintMachineCode(path string) error {
 	if err != nil {
 		return err
 	}
-	c := newMainCompiler(rAst, path)
+	c := newCompiler(rAst, path)
 	script, err := c.compileScript()
 	if err != nil {
 		return err

@@ -30,61 +30,35 @@ var extensionsLoader ExtensionsLoader
 var __meta string = inititalMetaName
 
 const (
-	inititalMetaName = "$$__meta__$$"
-
-	globalStateIndex = 0
-
-	maxMetaSearch = 10_000
-
-	errorMessageFieldName = "message"
-
-	DefaultInputPrompt = "Input > "
-
+	VidaFileExtension       = ".vida"
+	inititalMetaName        = "$$__meta__$$"
+	globalStateIndex        = 0
+	maxMetaSearch           = 1_000
+	errorMessageFieldName   = "message"
+	DefaultInputPrompt      = "Input > "
 	foundationInterfaceName = "std/"
-
-	__getmeta = "__getmeta"
-
-	__setmeta = "__setmeta"
-
-	__call = "__call"
-
-	__str = "__str"
-
-	__type = "__type"
-
-	__get = "__get"
-
-	__set = "__set"
-
-	__add = "__add"
-
-	__sub = "__sub"
-
-	__mul = "__mul"
-
-	__div = "__div"
-
-	__rem = "__rem"
-
-	__pow = "__pow"
-
-	__eq = "__eq"
-
-	__le = "__le"
-
-	__lt = "__lt"
-
-	__ge = "__ge"
-
-	__gt = "__gt"
-
-	__umin = "__umin"
-
-	__uplus = "__uplus"
-
-	EmptyString = ""
-
-	DefaultValField = "value"
+	__getmeta               = "__getmeta"
+	__setmeta               = "__setmeta"
+	__call                  = "__call"
+	__str                   = "__str"
+	__type                  = "__type"
+	__get                   = "__get"
+	__set                   = "__set"
+	__add                   = "__add"
+	__sub                   = "__sub"
+	__mul                   = "__mul"
+	__div                   = "__div"
+	__rem                   = "__rem"
+	__pow                   = "__pow"
+	__eq                    = "__eq"
+	__le                    = "__le"
+	__lt                    = "__lt"
+	__ge                    = "__ge"
+	__gt                    = "__gt"
+	__umin                  = "__umin"
+	__uplus                 = "__uplus"
+	EmptyString             = ""
+	DefaultValField         = "value"
 )
 
 const (
@@ -784,12 +758,15 @@ func coreLoadExtension(args ...Value) (Value, error) {
 					module = loadFoundationColor()
 				}
 				return module, nil
-			} else if l, isPresent := extensionsLoader[v.Value]; isPresent {
-				return l(), nil
+			} else if extensionsLoader != nil {
+				if l, isPresent := extensionsLoader[v.Value]; isPresent {
+					return l(), nil
+				}
 			}
+			return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", v.Value)}}, nil
 		}
 	}
-	return Nil, nil
+	return &VidaError{Message: &String{Value: "load function should have one argument of type string"}}, nil
 }
 
 func coreError(args ...Value) (Value, error) {
