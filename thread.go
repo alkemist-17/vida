@@ -217,7 +217,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			case loadFromGlobal:
 				vm.Frame.stack[B] = (*vm.Script.Store)[A]
 			default:
-				vm.Frame.stack[B] = vm.Frame.lambda.Free[A]
+				vm.Frame.stack[B] = vm.Frame.lambda.FreeVarStore[A]
 			}
 		case store:
 			switch P >> shift16 {
@@ -230,18 +230,18 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					(*vm.Script.Store)[B] = (*vm.Script.Store)[A]
 				default:
-					(*vm.Script.Store)[B] = vm.Frame.lambda.Free[A]
+					(*vm.Script.Store)[B] = vm.Frame.lambda.FreeVarStore[A]
 				}
 			default:
 				switch P & clean16 {
 				case storeFromLocal:
-					vm.Frame.lambda.Free[B] = vm.Frame.stack[A]
+					vm.Frame.lambda.FreeVarStore[B] = vm.Frame.stack[A]
 				case storeFromKonst:
-					vm.Frame.lambda.Free[B] = (*vm.Script.Konstants)[A]
+					vm.Frame.lambda.FreeVarStore[B] = (*vm.Script.Konstants)[A]
 				case storeFromGlobal:
-					vm.Frame.lambda.Free[B] = (*vm.Script.Store)[A]
+					vm.Frame.lambda.FreeVarStore[B] = (*vm.Script.Store)[A]
 				default:
-					vm.Frame.lambda.Free[B] = vm.Frame.stack[A]
+					vm.Frame.lambda.FreeVarStore[B] = vm.Frame.stack[A]
 				}
 			}
 		case check:
@@ -289,7 +289,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromKonst:
 				switch r {
@@ -298,7 +298,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					val = (*vm.Script.Konstants)[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromGlobal:
 				switch r {
@@ -309,18 +309,18 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					val = (*vm.Script.Store)[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = (*vm.Script.Store)[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = (*vm.Script.Store)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			default:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.lambda.Free[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.lambda.Free[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.lambda.Free[P&clean16].Equals((*vm.Script.Store)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = vm.Frame.lambda.Free[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if s>>4 == 1 {
@@ -346,7 +346,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					val, err = (*vm.Script.Store)[P&clean16].IGet(vm.Frame.stack[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet(vm.Frame.stack[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet(vm.Frame.stack[A])
 				}
 			case storeFromKonst:
 				switch scopeIndexable {
@@ -355,7 +355,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					val, err = (*vm.Script.Store)[P&clean16].IGet((*vm.Script.Konstants)[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet((*vm.Script.Konstants)[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet((*vm.Script.Konstants)[A])
 				}
 			case storeFromGlobal:
 				switch scopeIndexable {
@@ -364,16 +364,16 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					val, err = (*vm.Script.Store)[P&clean16].IGet((*vm.Script.Store)[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet((*vm.Script.Store)[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet((*vm.Script.Store)[A])
 				}
 			default:
 				switch scopeIndexable {
 				case storeFromLocal:
-					val, err = vm.Frame.stack[P&clean16].IGet(vm.Frame.lambda.Free[A])
+					val, err = vm.Frame.stack[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
 				case storeFromGlobal:
-					val, err = (*vm.Script.Store)[P&clean16].IGet(vm.Frame.lambda.Free[A])
+					val, err = (*vm.Script.Store)[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet(vm.Frame.lambda.Free[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if err != nil {
@@ -394,7 +394,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			case storeFromKonst:
 				switch scopeExp {
@@ -405,7 +405,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			case storeFromGlobal:
 				switch scopeExp {
@@ -416,18 +416,18 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 				case storeFromGlobal:
 					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Store)[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Store)[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Store)[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			default:
 				switch scopeExp {
 				case storeFromLocal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], vm.Frame.stack[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], vm.Frame.stack[B])
 				case storeFromKonst:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], (*vm.Script.Konstants)[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.Konstants)[B])
 				case storeFromGlobal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], (*vm.Script.Store)[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			}
 			if err != nil {
@@ -500,15 +500,15 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			fn := &Function{CoreFn: (*vm.Script.Konstants)[A].(*CoreFunction)}
 			if fn.CoreFn.FreeVarsCount > 0 {
 				vm.Frame.stack[B] = fn
-				var free []Value
+				freeVarStore := make([]Value, 0, fn.CoreFn.FreeVarsCount)
 				for i := 0; i < fn.CoreFn.FreeVarsCount; i++ {
 					if fn.CoreFn.FreeVarsInfo[i].IsLocal {
-						free = append(free, vm.Frame.stack[fn.CoreFn.FreeVarsInfo[i].Index])
+						freeVarStore = append(freeVarStore, vm.Frame.stack[fn.CoreFn.FreeVarsInfo[i].Index])
 					} else {
-						free = append(free, vm.Frame.lambda.Free[fn.CoreFn.FreeVarsInfo[i].Index])
+						freeVarStore = append(freeVarStore, vm.Frame.lambda.FreeVarStore[fn.CoreFn.FreeVarsInfo[i].Index])
 					}
 				}
-				fn.Free = free
+				fn.FreeVarStore = freeVarStore
 			}
 			vm.Frame.stack[B] = fn
 		case call:
@@ -655,7 +655,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) (Result, err
 			case storeFromGlobal:
 				val = (*vm.Script.Store)[A]
 			default:
-				val = vm.Frame.lambda.Free[A]
+				val = vm.Frame.lambda.FreeVarStore[A]
 			}
 			if vm.fp == 0 {
 				vm.Channel = val
@@ -723,7 +723,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 			case loadFromGlobal:
 				vm.Frame.stack[B] = (*vm.Script.Store)[A]
 			default:
-				vm.Frame.stack[B] = vm.Frame.lambda.Free[A]
+				vm.Frame.stack[B] = vm.Frame.lambda.FreeVarStore[A]
 			}
 		case store:
 			switch P >> shift16 {
@@ -736,18 +736,18 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					(*vm.Script.Store)[B] = (*vm.Script.Store)[A]
 				default:
-					(*vm.Script.Store)[B] = vm.Frame.lambda.Free[A]
+					(*vm.Script.Store)[B] = vm.Frame.lambda.FreeVarStore[A]
 				}
 			default:
 				switch P & clean16 {
 				case storeFromLocal:
-					vm.Frame.lambda.Free[B] = vm.Frame.stack[A]
+					vm.Frame.lambda.FreeVarStore[B] = vm.Frame.stack[A]
 				case storeFromKonst:
-					vm.Frame.lambda.Free[B] = (*vm.Script.Konstants)[A]
+					vm.Frame.lambda.FreeVarStore[B] = (*vm.Script.Konstants)[A]
 				case storeFromGlobal:
-					vm.Frame.lambda.Free[B] = (*vm.Script.Store)[A]
+					vm.Frame.lambda.FreeVarStore[B] = (*vm.Script.Store)[A]
 				default:
-					vm.Frame.lambda.Free[B] = vm.Frame.stack[A]
+					vm.Frame.lambda.FreeVarStore[B] = vm.Frame.stack[A]
 				}
 			}
 		case check:
@@ -795,7 +795,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromKonst:
 				switch r {
@@ -804,7 +804,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					val = (*vm.Script.Konstants)[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromGlobal:
 				switch r {
@@ -815,18 +815,18 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					val = (*vm.Script.Store)[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = (*vm.Script.Store)[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = (*vm.Script.Store)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			default:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.lambda.Free[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.lambda.Free[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.lambda.Free[P&clean16].Equals((*vm.Script.Store)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Store)[A])
 				default:
-					val = vm.Frame.lambda.Free[P&clean16].Equals(vm.Frame.lambda.Free[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if s>>4 == 1 {
@@ -852,7 +852,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					val, err = (*vm.Script.Store)[P&clean16].IGet(vm.Frame.stack[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet(vm.Frame.stack[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet(vm.Frame.stack[A])
 				}
 			case storeFromKonst:
 				switch scopeIndexable {
@@ -861,7 +861,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					val, err = (*vm.Script.Store)[P&clean16].IGet((*vm.Script.Konstants)[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet((*vm.Script.Konstants)[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet((*vm.Script.Konstants)[A])
 				}
 			case storeFromGlobal:
 				switch scopeIndexable {
@@ -870,16 +870,16 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					val, err = (*vm.Script.Store)[P&clean16].IGet((*vm.Script.Store)[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet((*vm.Script.Store)[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet((*vm.Script.Store)[A])
 				}
 			default:
 				switch scopeIndexable {
 				case storeFromLocal:
-					val, err = vm.Frame.stack[P&clean16].IGet(vm.Frame.lambda.Free[A])
+					val, err = vm.Frame.stack[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
 				case storeFromGlobal:
-					val, err = (*vm.Script.Store)[P&clean16].IGet(vm.Frame.lambda.Free[A])
+					val, err = (*vm.Script.Store)[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
 				default:
-					val, err = vm.Frame.lambda.Free[P&clean16].IGet(vm.Frame.lambda.Free[A])
+					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if err != nil {
@@ -900,7 +900,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			case storeFromKonst:
 				switch scopeExp {
@@ -911,7 +911,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			case storeFromGlobal:
 				switch scopeExp {
@@ -922,18 +922,18 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 				case storeFromGlobal:
 					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Store)[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Store)[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Store)[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			default:
 				switch scopeExp {
 				case storeFromLocal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], vm.Frame.stack[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], vm.Frame.stack[B])
 				case storeFromKonst:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], (*vm.Script.Konstants)[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.Konstants)[B])
 				case storeFromGlobal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], (*vm.Script.Store)[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.Store)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.Free[A], vm.Frame.lambda.Free[B])
+					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			}
 			if err != nil {
@@ -1006,15 +1006,15 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 			fn := &Function{CoreFn: (*vm.Script.Konstants)[A].(*CoreFunction)}
 			if fn.CoreFn.FreeVarsCount > 0 {
 				vm.Frame.stack[B] = fn
-				var free []Value
+				freeVarStore := make([]Value, 0, fn.CoreFn.FreeVarsCount)
 				for i := 0; i < fn.CoreFn.FreeVarsCount; i++ {
 					if fn.CoreFn.FreeVarsInfo[i].IsLocal {
-						free = append(free, vm.Frame.stack[fn.CoreFn.FreeVarsInfo[i].Index])
+						freeVarStore = append(freeVarStore, vm.Frame.stack[fn.CoreFn.FreeVarsInfo[i].Index])
 					} else {
-						free = append(free, vm.Frame.lambda.Free[fn.CoreFn.FreeVarsInfo[i].Index])
+						freeVarStore = append(freeVarStore, vm.Frame.lambda.FreeVarStore[fn.CoreFn.FreeVarsInfo[i].Index])
 					}
 				}
-				fn.Free = free
+				fn.FreeVarStore = freeVarStore
 			}
 			vm.Frame.stack[B] = fn
 		case call:
@@ -1161,7 +1161,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) (Result, e
 			case storeFromGlobal:
 				val = (*vm.Script.Store)[A]
 			default:
-				val = vm.Frame.lambda.Free[A]
+				val = vm.Frame.lambda.FreeVarStore[A]
 			}
 			if vm.fp == 0 {
 				vm.Channel = val

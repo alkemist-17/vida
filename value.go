@@ -121,10 +121,8 @@ func (b Bool) ISet(index, val Value) error {
 }
 
 func (b Bool) Equals(other Value) Bool {
-	if val, ok := other.(Bool); ok {
-		return b == val
-	}
-	return false
+	val, isBool := other.(Bool)
+	return Bool(isBool && b == val)
 }
 
 func (b Bool) IsIterable() Bool {
@@ -637,10 +635,8 @@ func (xs *Array) ISet(index, val Value) error {
 }
 
 func (xs *Array) Equals(other Value) Bool {
-	if val, ok := other.(*Array); ok {
-		return xs == val
-	}
-	return false
+	val, isArray := other.(*Array)
+	return Bool(isArray && xs == val)
 }
 
 func (xs *Array) IsIterable() Bool {
@@ -1206,8 +1202,8 @@ func (f *CoreFunction) Clone() Value {
 
 type Function struct {
 	ReferenceSemanticsImpl
-	Free   []Value
-	CoreFn *CoreFunction
+	FreeVarStore []Value
+	CoreFn       *CoreFunction
 }
 
 func (f *Function) Boolean() Bool {
@@ -1235,31 +1231,9 @@ func (f *Function) Binop(op uint64, r Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (f *Function) IGet(Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
-}
-
-func (f *Function) ISet(Value, Value) error {
-	return verror.ErrValueNotIndexable
-}
-
 func (f *Function) Equals(other Value) Bool {
-	if o, ok := other.(*Function); ok {
-		return f == o
-	}
-	return false
-}
-
-func (f *Function) IsIterable() Bool {
-	return false
-}
-
-func (f *Function) IsCallable() Bool {
-	return true
-}
-
-func (f *Function) Iterator() Value {
-	return Nil
+	of, ok := other.(*Function)
+	return Bool(ok && f == of)
 }
 
 func (f *Function) Type() string {
@@ -1396,8 +1370,8 @@ func (e *VidaError) ISet(index, val Value) error {
 }
 
 func (e *VidaError) Equals(other Value) Bool {
-	v, ok := other.(*VidaError)
-	return Bool(ok) && e.Message.Equals(v.Message)
+	v, isError := other.(*VidaError)
+	return Bool(isError) && e.Message.Equals(v.Message)
 }
 
 func (e *VidaError) IsIterable() Bool {
@@ -1470,10 +1444,8 @@ func (e *Enum) ISet(Value, Value) error {
 }
 
 func (e *Enum) Equals(other Value) Bool {
-	if val, ok := other.(*Enum); ok {
-		return Bool(val == other)
-	}
-	return false
+	val, isEnum := other.(*Enum)
+	return Bool(isEnum && val == other)
 }
 
 func (e *Enum) IsIterable() Bool {
