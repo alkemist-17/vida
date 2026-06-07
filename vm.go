@@ -334,14 +334,14 @@ func (vm *VM) run() (Result, error) {
 			}
 		case fun:
 			fn := &Function{CoreFn: (*vm.Script.Konstants)[A].(*CoreFunction)}
-			if fn.CoreFn.Free > 0 {
+			if fn.CoreFn.FreeVarsCount > 0 {
 				vm.Frame.stack[B] = fn
 				var free []Value
-				for i := 0; i < fn.CoreFn.Free; i++ {
-					if fn.CoreFn.Info[i].IsLocal {
-						free = append(free, vm.Frame.stack[fn.CoreFn.Info[i].Index])
+				for i := 0; i < fn.CoreFn.FreeVarsCount; i++ {
+					if fn.CoreFn.FreeVarsInfo[i].IsLocal {
+						free = append(free, vm.Frame.stack[fn.CoreFn.FreeVarsInfo[i].Index])
 					} else {
-						free = append(free, vm.Frame.lambda.Free[fn.CoreFn.Info[i].Index])
+						free = append(free, vm.Frame.lambda.Free[fn.CoreFn.FreeVarsInfo[i].Index])
 					}
 				}
 				fn.Free = free
@@ -381,7 +381,7 @@ func (vm *VM) run() (Result, error) {
 						}
 					}
 				}
-				if fn.CoreFn.IsVar {
+				if fn.CoreFn.IsVarArg {
 					if fn.CoreFn.Arity > nargs {
 						return vm.createError(ip, verror.ErrNotEnoughArgs)
 					}
@@ -498,7 +498,7 @@ func (vm *VM) run() (Result, error) {
 			return Success, nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptName, message, verror.RunTimeErrType, 0)
+			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
 		}
 	}
 }
@@ -621,7 +621,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 func (vm *VM) printCallStack() {
 	fmt.Printf("\t[Call Stack]\n")
 	for i := vm.fp; i >= 0; i-- {
-		modName := vm.Frames[i].lambda.CoreFn.ScriptName
+		modName := vm.Frames[i].lambda.CoreFn.ScriptID
 		ip := vm.Frames[i].ip
 		var nearLine uint
 		if vm.Script.ErrorInfo[modName][ip] == 0 {
@@ -636,7 +636,7 @@ func (vm *VM) printCallStack() {
 
 func (vm *VM) createError(ip int, err error) (Result, error) {
 	vm.Thread.State = Done
-	modName := vm.Frame.lambda.CoreFn.ScriptName
+	modName := vm.Frame.lambda.CoreFn.ScriptID
 	vm.Frame.ip = ip
 	var nearLine uint
 	if vm.Script.ErrorInfo[modName][ip] == 0 {
@@ -663,5 +663,5 @@ func checkISACompatibility(script *Script) error {
 	if majorFromCode == major {
 		return nil
 	}
-	return verror.New(script.MainFunction.CoreFn.ScriptName, "script compiled with an uncompatible interpreter version", verror.FileErrType, 0)
+	return verror.New(script.MainFunction.CoreFn.ScriptID, "script compiled with an uncompatible interpreter version", verror.FileErrType, 0)
 }

@@ -9,23 +9,23 @@ import (
 func (vm *VM) Inspect(ip int) {
 	clear()
 	fmt.Println("Thread", ((*clbu)[globalStateIndex].(*GlobalState).Current).String())
-	fmt.Println("IsMain?", ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current)
-	fmt.Println("Running", vm.Frame.lambda.CoreFn.ScriptName)
-	fmt.Printf("Store => ")
+	fmt.Println("IsMain", ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current)
+	fmt.Println("ScriptID", vm.Frame.lambda.CoreFn.ScriptID)
+	fmt.Printf("Store: ")
 	for i := len(coreLibNames); i < len((*vm.Script.Store)); i++ {
-		fmt.Printf("[%v -> %v], ", i, (*vm.Script.Store)[i])
+		fmt.Printf("[%v => %v], ", i, (*vm.Script.Store)[i])
 	}
 	fmt.Println()
-	fmt.Print("Konst => ")
+	fmt.Print("Konsts: ")
 	for i, v := range *vm.Script.Konstants {
-		fmt.Printf("[%v -> %v], ", i, v)
+		fmt.Printf("[%v => %v], ", i, v)
 	}
 	fmt.Println()
-	fmt.Printf("Frame => %v\n", vm.fp)
-	fmt.Printf("Ip    => %v\n", ip)
+	fmt.Printf("Frame: %v\n", vm.fp)
+	fmt.Printf("Ip   : %v\n", ip)
 	s := printInstr(vm.Frame.code[ip], uint64(ip), true)
-	fmt.Printf("Instr => %v\n", s)
-	fmt.Println("Stack =>")
+	fmt.Printf("Instr: %v\n", s)
+	fmt.Println("Stack:")
 	for i, v := range vm.Stack {
 		if v != nil {
 			if vm.Frame.bp == i {
@@ -345,14 +345,14 @@ func (vm *VM) debug() (Result, error) {
 			}
 		case fun:
 			fn := &Function{CoreFn: (*vm.Script.Konstants)[A].(*CoreFunction)}
-			if fn.CoreFn.Free > 0 {
+			if fn.CoreFn.FreeVarsCount > 0 {
 				vm.Frame.stack[B] = fn
 				var free []Value
-				for i := 0; i < fn.CoreFn.Free; i++ {
-					if fn.CoreFn.Info[i].IsLocal {
-						free = append(free, vm.Frame.stack[fn.CoreFn.Info[i].Index])
+				for i := 0; i < fn.CoreFn.FreeVarsCount; i++ {
+					if fn.CoreFn.FreeVarsInfo[i].IsLocal {
+						free = append(free, vm.Frame.stack[fn.CoreFn.FreeVarsInfo[i].Index])
 					} else {
-						free = append(free, vm.Frame.lambda.Free[fn.CoreFn.Info[i].Index])
+						free = append(free, vm.Frame.lambda.Free[fn.CoreFn.FreeVarsInfo[i].Index])
 					}
 				}
 				fn.Free = free
@@ -392,7 +392,7 @@ func (vm *VM) debug() (Result, error) {
 						}
 					}
 				}
-				if fn.CoreFn.IsVar {
+				if fn.CoreFn.IsVarArg {
 					if fn.CoreFn.Arity > nargs {
 						return vm.createError(ip, verror.ErrNotEnoughArgs)
 					}
@@ -509,7 +509,7 @@ func (vm *VM) debug() (Result, error) {
 			return Success, nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptName, message, verror.RunTimeErrType, 0)
+			return Failure, verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
 		}
 	}
 }

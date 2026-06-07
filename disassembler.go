@@ -19,7 +19,7 @@ func PrintBytecode(script *Script, name string) string {
 	}
 	for idx, v := range *script.Konstants {
 		if f, ok := v.(*CoreFunction); ok {
-			fmt.Fprintf(&sb, "\n\n\n\nFunction %v/%v/%v", idx, f.Arity, f.Free)
+			fmt.Fprintf(&sb, "\n\n\n\nFunction idx(%v)/arity(%v)/freeVarsCount(%v)/varargs(%v)", idx, f.Arity, f.FreeVarsCount, f.IsVarArg)
 			var s string
 			for i := 0; i < len(f.Code); i++ {
 				s = printInstr(f.Code[i], uint64(i), false)

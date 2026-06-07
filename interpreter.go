@@ -62,7 +62,7 @@ func NewDebugger(path string, extensionlibloader ExtensionsLoader) (*Interpreter
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(PrintBytecode(script, script.MainFunction.CoreFn.ScriptName))
+	fmt.Println(PrintBytecode(script, script.MainFunction.CoreFn.ScriptID))
 	fmt.Print("\n\nPress 'Enter' to continue => ")
 	fmt.Scanf(" ")
 	mainThread, err := newMainThread(script, extensionlibloader)
@@ -137,7 +137,7 @@ func PrintMachineCode(path string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(PrintBytecode(script, script.MainFunction.CoreFn.ScriptName))
+	fmt.Println(PrintBytecode(script, script.MainFunction.CoreFn.ScriptID))
 	return nil
 }
 

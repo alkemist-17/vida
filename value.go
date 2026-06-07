@@ -996,7 +996,7 @@ func (o *Object) Call(args ...Value) (Value, error) {
 		if callable, ok := meta.Value[__call]; ok {
 			switch Fn := callable.(type) {
 			case *Function:
-				if Fn.CoreFn.IsVar {
+				if Fn.CoreFn.IsVarArg {
 					a := make([]Value, len(args))
 					copy(a, args)
 					return o.execute(Fn, &Array{Value: a})
@@ -1143,20 +1143,20 @@ func (o *Object) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.Value)
 }
 
-type freeInfo struct {
+type freeVarsInfo struct {
+	Id      string
 	Index   int
 	IsLocal Bool
-	Id      string
 }
 
 type CoreFunction struct {
 	ReferenceSemanticsImpl
-	Code       []uint64
-	Info       []freeInfo
-	Free       int
-	Arity      int
-	IsVar      bool
-	ScriptName string
+	Code          []uint64
+	FreeVarsInfo  []freeVarsInfo
+	ScriptID      string
+	FreeVarsCount int
+	Arity         int
+	IsVarArg      bool
 }
 
 type coreFNConfigType = uint8
@@ -1169,7 +1169,7 @@ const (
 )
 
 func (c *CoreFunction) getConfigType() coreFNConfigType {
-	switch c.IsVar {
+	switch c.IsVarArg {
 	case true:
 		if c.Arity == 0 {
 			return cZT
@@ -1187,47 +1187,17 @@ func (c *CoreFunction) Boolean() Bool {
 	return true
 }
 
-func (c *CoreFunction) Prefix(uint64) (Value, error) {
-	return Nil, verror.ErrPrefixOpNotDefined
-}
-
-func (c *CoreFunction) Binop(uint64, Value) (Value, error) {
-	return Nil, verror.ErrBinaryOpNotDefined
-}
-
-func (c *CoreFunction) IGet(Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
-}
-
-func (c *CoreFunction) ISet(Value, Value) error {
-	return verror.ErrValueNotIndexable
-}
-
 func (c *CoreFunction) Equals(other Value) Bool {
-	if f, ok := other.(*CoreFunction); ok {
-		return c == f
-	}
-	return false
-}
-
-func (c *CoreFunction) IsIterable() Bool {
-	return false
-}
-
-func (c *CoreFunction) IsCallable() Bool {
-	return false
-}
-
-func (c *CoreFunction) Iterator() Value {
-	return Nil
+	f, ok := other.(*CoreFunction)
+	return Bool(ok && c == f)
 }
 
 func (c *CoreFunction) Type() string {
-	return "corefunction"
+	return "coreFunction"
 }
 
 func (f CoreFunction) String() string {
-	return fmt.Sprintf("CoreFunction(arity = %v, isVar = %v, free = %v)", f.Arity, f.IsVar, f.Free)
+	return fmt.Sprintf("CoreFunction(arity = %v, isVar = %v, freeVarsInfo = %v)", f.Arity, f.IsVarArg, f.FreeVarsCount)
 }
 
 func (f *CoreFunction) Clone() Value {

@@ -266,28 +266,28 @@ func (c *compiler) refScope(id string) (int, int) {
 	if to, isLocal, key := c.sb.isLocal(id); isLocal {
 		if key.level != c.level {
 			fn := c.fn[c.level]
-			for i := 0; i < len(fn.Info); i++ {
-				if fn.Info[i].Id == id {
+			for i := 0; i < len(fn.FreeVarsInfo); i++ {
+				if fn.FreeVarsInfo[i].Id == id {
 					return i, rFree
 				}
 			}
-			fn.Free++
+			fn.FreeVarsCount++
 			if key.level+1 == c.level {
-				fn.Info = append(fn.Info, freeInfo{Index: int(to), IsLocal: true, Id: key.id})
+				fn.FreeVarsInfo = append(fn.FreeVarsInfo, freeVarsInfo{Index: int(to), IsLocal: true, Id: key.id})
 			} else {
 				for i := key.level + 1; i < c.level; i++ {
 					if i == key.level+1 {
-						c.fn[i].Free++
-						c.fn[i].Info = append(c.fn[i].Info, freeInfo{Index: int(to), IsLocal: true, Id: key.id})
+						c.fn[i].FreeVarsCount++
+						c.fn[i].FreeVarsInfo = append(c.fn[i].FreeVarsInfo, freeVarsInfo{Index: int(to), IsLocal: true, Id: key.id})
 					} else {
-						idx := len(c.fn[i-1].Info) - 1
-						c.fn[i].Info = append(c.fn[i].Info, freeInfo{Index: idx, IsLocal: false, Id: key.id})
-						c.fn[i].Free++
+						idx := len(c.fn[i-1].FreeVarsInfo) - 1
+						c.fn[i].FreeVarsInfo = append(c.fn[i].FreeVarsInfo, freeVarsInfo{Index: idx, IsLocal: false, Id: key.id})
+						c.fn[i].FreeVarsCount++
 					}
 				}
-				fn.Info = append(fn.Info, freeInfo{Index: len(c.fn[c.level-1].Info) - 1, IsLocal: false, Id: key.id})
+				fn.FreeVarsInfo = append(fn.FreeVarsInfo, freeVarsInfo{Index: len(c.fn[c.level-1].FreeVarsInfo) - 1, IsLocal: false, Id: key.id})
 			}
-			return len(fn.Info) - 1, rFree
+			return len(fn.FreeVarsInfo) - 1, rFree
 		}
 		return to, rLoc
 	}

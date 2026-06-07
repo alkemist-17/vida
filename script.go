@@ -21,7 +21,7 @@ func newMainScript(name string) *Script {
 	s := Script{
 		Konstants:    nil,
 		Store:        loadCoreLib(new([]Value)),
-		MainFunction: &Function{CoreFn: &CoreFunction{ScriptName: name}},
+		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: name}},
 	}
 	return &s
 }
@@ -30,13 +30,13 @@ func newScript(name string, store *[]Value) *Script {
 	s := Script{
 		Konstants:    nil,
 		Store:        loadCoreLib(store),
-		MainFunction: &Function{CoreFn: &CoreFunction{ScriptName: name}},
+		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: name}},
 	}
 	return &s
 }
 
 func (s Script) String() string {
-	return fmt.Sprintf("Script(%v)", s.MainFunction.CoreFn.ScriptName)
+	return fmt.Sprintf("Script(%v)", s.MainFunction.CoreFn.ScriptID)
 }
 
 func readScript(scriptName string) ([]byte, error) {
