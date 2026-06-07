@@ -15,7 +15,7 @@ type Interpreter struct {
 	vm       *VM
 }
 
-func NewInterpreter(path string, extensionlibloader ExtensionsLoader) (*Interpreter, error) {
+func NewInterpreter(path string, extensionsLoader ExtensionsLoader) (*Interpreter, error) {
 	threadPoolIsDown = true
 	src, err := readScript(path)
 	if err != nil {
@@ -31,12 +31,12 @@ func NewInterpreter(path string, extensionlibloader ExtensionsLoader) (*Interpre
 	if err != nil {
 		return nil, err
 	}
-	mainThread, err := newMainThread(script, extensionlibloader)
+	mainThread, err := newMainThread(script, extensionsLoader)
 	if err != nil {
 		return nil, err
 	}
 	vm := &VM{mainThread}
-	(*(script.Store))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
+	(*(script.GlobalStore))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
 	return &Interpreter{
 		parser:   p,
 		compiler: c,
@@ -44,7 +44,7 @@ func NewInterpreter(path string, extensionlibloader ExtensionsLoader) (*Interpre
 	}, nil
 }
 
-func NewDebugger(path string, extensionlibloader ExtensionsLoader) (*Interpreter, error) {
+func NewDebugger(path string, extensionsLoader ExtensionsLoader) (*Interpreter, error) {
 	src, err := readScript(path)
 	if err != nil {
 		return nil, err
@@ -65,12 +65,12 @@ func NewDebugger(path string, extensionlibloader ExtensionsLoader) (*Interpreter
 	fmt.Println(PrintBytecode(script, script.MainFunction.CoreFn.ScriptID))
 	fmt.Print("\n\nPress 'Enter' to continue => ")
 	fmt.Scanf(" ")
-	mainThread, err := newMainThread(script, extensionlibloader)
+	mainThread, err := newMainThread(script, extensionsLoader)
 	if err != nil {
 		return nil, err
 	}
 	vm := &VM{mainThread}
-	(*(script.Store))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
+	(*(script.GlobalStore))[globalStateIndex] = &GlobalState{Main: mainThread, Current: mainThread, VM: vm}
 	return &Interpreter{
 		parser:   p,
 		compiler: c,

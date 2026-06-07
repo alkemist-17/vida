@@ -11,7 +11,7 @@ import (
 const VidaFileExtension = ".vida"
 
 type Script struct {
-	Store        *[]Value
+	GlobalStore  *[]Value
 	Konstants    *[]Value
 	MainFunction *Function
 	ErrorInfo
@@ -20,7 +20,7 @@ type Script struct {
 func newMainScript(name string) *Script {
 	s := Script{
 		Konstants:    nil,
-		Store:        loadCoreLib(new([]Value)),
+		GlobalStore:  loadCoreLib(new([]Value)),
 		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: name}},
 	}
 	return &s
@@ -29,7 +29,7 @@ func newMainScript(name string) *Script {
 func newScript(name string, store *[]Value) *Script {
 	s := Script{
 		Konstants:    nil,
-		Store:        loadCoreLib(store),
+		GlobalStore:  loadCoreLib(store),
 		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: name}},
 	}
 	return &s

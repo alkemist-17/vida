@@ -211,7 +211,7 @@ func coNewThreadWithSizeControl(fn *Function, script *Script, frameSize, stackSi
 	return &Thread{
 		Script: &Script{
 			Konstants:    script.Konstants,
-			Store:        script.Store,
+			GlobalStore:  script.GlobalStore,
 			ErrorInfo:    script.ErrorInfo,
 			MainFunction: fn,
 		},

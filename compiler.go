@@ -167,7 +167,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.generateGlobalShadowedByLocalError(n.Identifier, n.Line)
 			return
 		}
-		*c.script.Store = append(*c.script.Store, Nil)
+		*c.script.GlobalStore = append(*c.script.GlobalStore, Nil)
 		from, scope := c.compileExpr(n.Expr, true)
 		switch scope {
 		case rKonst:
@@ -1043,9 +1043,9 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			c.lineErr = n.Line
 			return 0, rGlob
 		}
-		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.Store, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.Store))
+		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.GlobalStore, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.GlobalStore))
 		m, err := subCompiler.compileSubScript()
-		c.sb.index = len(*c.script.Store)
+		c.sb.index = len(*c.script.GlobalStore)
 		if err != nil {
 			c.hadError = true
 			c.errMsg = err.Error()
