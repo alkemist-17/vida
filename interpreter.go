@@ -15,7 +15,7 @@ type Interpreter struct {
 	vm       *VM
 }
 
-func NewInterpreter(path string, extensionlibloader map[string]func() Value) (*Interpreter, error) {
+func NewInterpreter(path string, extensionlibloader ExtensionsLoader) (*Interpreter, error) {
 	threadPoolIsDown = true
 	src, err := readScript(path)
 	if err != nil {
@@ -44,7 +44,7 @@ func NewInterpreter(path string, extensionlibloader map[string]func() Value) (*I
 	}, nil
 }
 
-func NewDebugger(path string, extensionlibloader map[string]func() Value) (*Interpreter, error) {
+func NewDebugger(path string, extensionlibloader ExtensionsLoader) (*Interpreter, error) {
 	src, err := readScript(path)
 	if err != nil {
 		return nil, err

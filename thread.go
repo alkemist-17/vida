@@ -54,8 +54,8 @@ type Thread struct {
 	fp      int
 }
 
-func newMainThread(script *Script, extensionlibsloader LibsLoader) (*Thread, error) {
-	extensionlibsLoader, clbu = extensionlibsloader, script.Store
+func newMainThread(script *Script, extensionlibsloader ExtensionsLoader) (*Thread, error) {
+	extensionsLoader, clbu = extensionlibsloader, script.Store
 	th := &Thread{
 		Frames:  make([]frame, frameSize),
 		Stack:   make([]Value, stacksize),

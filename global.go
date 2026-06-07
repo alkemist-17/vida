@@ -21,11 +21,11 @@ const True = Bool(true)
 
 const False = Bool(false)
 
-type LibsLoader map[string]func() Value
+type ExtensionsLoader map[string]func() Value
 
 type ErrorInfo map[string]map[int]uint
 
-var extensionlibsLoader LibsLoader
+var extensionsLoader ExtensionsLoader
 
 var __meta string = inititalMetaName
 
@@ -191,7 +191,7 @@ func loadCoreLib(store *[]Value) *[]Value {
 		NativeFunction(coreLen),
 		NativeFunction(coreAppend),
 		NativeFunction(coreNewArray),
-		NativeFunction(coreLoadLib),
+		NativeFunction(coreLoadExtension),
 		NativeFunction(coreType),
 		NativeFunction(coreAssert),
 		NativeFunction(coreFormat),
@@ -739,7 +739,7 @@ func coreClone(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coreLoadLib(args ...Value) (Value, error) {
+func coreLoadExtension(args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
 		if v, ok := args[0].(*String); ok {
@@ -784,7 +784,7 @@ func coreLoadLib(args ...Value) (Value, error) {
 					module = loadFoundationColor()
 				}
 				return module, nil
-			} else if l, isPresent := extensionlibsLoader[v.Value]; isPresent {
+			} else if l, isPresent := extensionsLoader[v.Value]; isPresent {
 				return l(), nil
 			}
 		}

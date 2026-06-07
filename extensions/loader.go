@@ -2,9 +2,9 @@ package extensions
 
 import "github.com/alkemist-17/vida"
 
-var Success = vida.True
+const Success = vida.True
 
-func GetLoader() vida.LibsLoader {
+func GetLoader() vida.ExtensionsLoader {
 	l := make(map[string]func() vida.Value)
 	l["example"] = loadExampleExtension
 	return l
