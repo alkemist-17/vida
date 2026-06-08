@@ -13,7 +13,7 @@ assert(exception)
 
 // When a module does not exists
 var core = load("std/core")
-assert(not core and core == nil)
+assert(not core and isError(core))
 
 var text = load("std/text")
 assert(text)
