@@ -756,9 +756,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 	return False, nil
 }
 
-func pauseExecution(message string) {
-	fmt.Printf("\n\n\n\t\tExecution Paused")
-	fmt.Printf("\n\t\t%v", message)
-	fmt.Printf("\n\n\n")
+func pressEnterToContinue() {
+	fmt.Print("\n\nPress 'Enter' to continue  ")
 	fmt.Scanf(" ")
 }

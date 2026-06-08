@@ -102,11 +102,13 @@ func (ctx *Context) PrintAST(withColors bool) error {
 	if err != nil {
 		return err
 	}
+	var ASTdescription string
 	if withColors {
-		fmt.Println(ast.PrintASTColor(scriptAST))
+		ASTdescription = ast.PrintASTColor(scriptAST)
 	} else {
-		fmt.Println(ast.StringifyAST(scriptAST))
+		ASTdescription = ast.StringifyAST(scriptAST)
 	}
+	fmt.Println(ASTdescription)
 	return nil
 }
 
@@ -116,16 +118,14 @@ func (ctx *Context) RunDebugSession() (err error) {
 		return
 	}
 	fmt.Println(ast.StringifyAST(scriptAST))
-	fmt.Print("\n\nPress 'Enter' to continue => ")
-	fmt.Scanf(" ")
+	pressEnterToContinue()
 	script, err := newCompiler(scriptAST, ctx.contextID, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}
 	ctx.script = script
 	ctx.PrintMachineCode()
-	fmt.Print("\n\nPress 'Enter' to continue => ")
-	fmt.Scanf(" ")
+	pressEnterToContinue()
 	ctx.vm = &VM{ctx.setMainThread(newThread(ctx.script)), ctx}
 	return ctx.vm.debug()
 }
