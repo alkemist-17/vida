@@ -633,10 +633,16 @@ func coreClone(ctx *Context, args ...Value) (Value, error) {
 func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
-			if v, ok := args[0].(*String); ok {
-				if strings.HasPrefix(v.Value, foundationInterfaceName) {
+			if extensionName, ok := args[0].(*String); ok {
+				if strings.HasPrefix(extensionName.Value, foundationInterfaceName) {
+					if ctx.extensionCache == nil {
+						ctx.extensionCache = make(map[string]*Object, 10)
+					}
+					if m, isPresent := ctx.extensionCache[extensionName.Value]; isPresent {
+						return m, nil
+					}
 					var module Value
-					switch v.Value[len(foundationInterfaceName):] {
+					switch extensionName.Value[len(foundationInterfaceName):] {
 					case foundationText:
 						module = loadFoundationText()
 					case foundationMath:
@@ -673,14 +679,24 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationColor()
 					default:
 						module = Nil
+						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil
 					}
+					ctx.extensionCache[extensionName.Value] = module.(*Object)
 					return module, nil
 				} else if extensionsLoader != nil {
-					if l, isPresent := extensionsLoader[v.Value]; isPresent {
-						return l(), nil
+					if ctx.extensionCache == nil {
+						ctx.extensionCache = make(map[string]*Object, 10)
+					}
+					if m, isPresent := ctx.extensionCache[extensionName.Value]; isPresent {
+						return m, nil
+					}
+					if l, isPresent := extensionsLoader[extensionName.Value]; isPresent {
+						module := l()
+						ctx.extensionCache[extensionName.Value] = module.(*Object)
+						return module, nil
 					}
 				}
-				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", v.Value)}}, nil
+				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil
 			}
 		}
 		return &VidaError{Message: &String{Value: "load function should have one argument of type string"}}, nil

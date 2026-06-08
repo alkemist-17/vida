@@ -18,6 +18,7 @@ type Context struct {
 	script           *Script
 	extensionsLoader ExtensionsLoader
 	vm               *VM
+	extensionCache   map[string]*Object
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
@@ -139,7 +140,7 @@ func (ctx *Context) PrintCallStack() error {
 }
 
 func (ctx *Context) MeasureRunTime() (end time.Duration, err error) {
-	if ctx.script == nil && ctx.vm == nil {
+	if ctx.script == nil {
 		return end, errors.New("error when running ctx.MeasureRunTime: source must be compiled first")
 	}
 	if ctx.vm != nil {
