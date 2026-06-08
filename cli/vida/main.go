@@ -106,6 +106,7 @@ func measureRunTime(args []string) {
 		src, err := vida.LoadScriptFromFile(p)
 		handleError(err)
 		ctx := vida.NewContext(src, p, extensions.GetLoader())
+		ctx.Compile()
 		duration, err := ctx.MeasureRunTime()
 		if err != nil {
 			printError(err)
