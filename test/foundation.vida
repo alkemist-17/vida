@@ -1,60 +1,48 @@
+let objType = type({})
 
-var bytes = load("std/bytes")
-assert(bytes)
+let assertModule = fun mod {
+    assert(mod and type(mod) == objType and len(mod) > 0)
+}
 
-var time = load("std/time")
-assert(time)
+let assertCache = fun dup, ext {
+    assert(dup == ext and type(dup) == objType and type(ext) == objType and len(dup) == len(ext))
+}
 
-var cast = load("std/cast")
-assert(cast)
+let currentFoundationExtensions = [
+    "std/bytes",
+    "std/time",
+    "std/cast",
+    "std/exception",
+    "std/text",
+    "std/math",
+    "std/object",
+    "std/array",
+    "std/rand",
+    "std/io",
+    "std/os",
+    "std/co",
+    "std/json",
+    "std/task",
+    "std/re",
+    "std/color",
+    "std/http",
+]
 
-var exception = load("std/exception")
-assert(exception)
+for _, v in currentFoundationExtensions {
+    assertModule(load(v))
+    assertCache(load(v), load(v))
+}
 
-// When a module does not exists
-var core = load("std/core")
-assert(not core and isError(core))
 
-var text = load("std/text")
-assert(text)
 
-var math = load("std/math")
-assert(math)
+// Test when an extension does not exists
+var e = load("hello-world-42")
+assert(not e and isError(e))
 
-var object = load("std/object")
-assert(object)
 
-var a = load("std/array")
-assert(a)
 
-var rand = load("std/rand")
-assert(rand)
-
-var io = load("std/io")
-assert(io)
-
-var os = load("std/os")
-assert(os)
-
-var co = load("std/co")
-assert(co)
-
-var json = load("std/json")
-assert(json)
-
-var task = load("std/task")
-assert(task)
-
-var re = load("std/re")
-assert(re)
-
-var color = load("std/color")
-assert(color)
-
-var http = load("std/http")
-assert(http)
-
-//var raised = exception.protected(exception.raise)
-
-//assert(isError(raised) and raised.message)
+// Check for protected on exception
+e = load("std/exception")
+var raised = e.protected(e.raise, "hello raised exception")
+assert(isError(raised) and load("std/text").contains(raised.message, "hello raised exception"))
 
