@@ -165,6 +165,7 @@ func printMachineCode(args []string) {
 			src, err := vida.LoadScriptFromFile(p)
 			handleError(err)
 			ctx := vida.NewContext(src, p, extensions.GetLoader())
+			handleError(ctx.Compile())
 			handleError(ctx.PrintMachineCode())
 		}
 	} else {
@@ -317,6 +318,8 @@ func clear() {
 }
 
 func printDuration(duration time.Duration) {
+	fmt.Printf("\n\n\n\n")
 	fmt.Printf("\tDuration in Seconds : %vs\n", duration.Seconds())
-	fmt.Printf("\tDuration            : %v\n\n\n\n", duration)
+	fmt.Printf("\tDuration            : %v", duration)
+	fmt.Printf("\n\n\n\n")
 }

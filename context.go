@@ -43,7 +43,7 @@ func (ctx *Context) Compile() (err error) {
 
 func (ctx *Context) Run() error {
 	if ctx.script == nil {
-		return errors.New("first must compile the source")
+		return errors.New("error when running ctx.Run: source must be compiled first")
 	}
 	if ctx.vm != nil {
 		return ctx.vm.run()
@@ -72,7 +72,7 @@ func (ctx *Context) PrintTokens() error {
 	fmt.Printf("%5v   %-15v   %-2v\n\n", "Line", "Token", "Value")
 	for {
 		line, tok, lit := l.Next()
-		if l.LexicalError.Message != EmptyString {
+		if l.LexicalError != nil && l.LexicalError.Message != EmptyString {
 			hadError = true
 			break
 		}
@@ -90,7 +90,7 @@ func (ctx *Context) PrintTokens() error {
 
 func (ctx *Context) PrintMachineCode() error {
 	if ctx.script == nil {
-		return errors.New("first must compile the source")
+		return errors.New("error when running ctx.PrintMachineCode: source must be compiled first")
 	}
 	fmt.Println(PrintBytecode(ctx.script, ctx.contextID))
 	return nil
@@ -131,16 +131,16 @@ func (ctx *Context) RunDebugSession() (err error) {
 }
 
 func (ctx *Context) PrintCallStack() error {
-	if ctx.vm == nil {
-		return errors.New("first must compile the source")
+	if ctx.script == nil && ctx.vm == nil {
+		return errors.New("error when running ctx.PrintCallStack: source must be compiled first")
 	}
 	ctx.vm.printCallStack()
 	return nil
 }
 
 func (ctx *Context) MeasureRunTime() (end time.Duration, err error) {
-	if ctx.script == nil {
-		return end, errors.New("first must compile the source")
+	if ctx.script == nil && ctx.vm == nil {
+		return end, errors.New("error when running ctx.MeasureRunTime: source must be compiled first")
 	}
 	if ctx.vm != nil {
 		return end, ctx.vm.run()
