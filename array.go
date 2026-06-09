@@ -19,6 +19,7 @@ func loadFoundationArray() Value {
 	m.Value["reversed"] = NativeFunction(arrayReversed)
 	m.Value["pop"] = NativeFunction(arrayPop)
 	m.Value["sort"] = NativeFunction(arraySort)
+	m.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
 	m.Value["repeat"] = NativeFunction(arrayRepeat)
 	m.Value["toObject"] = NativeFunction(arrayToObject)
 	m.Value["new"] = NativeFunction(coreNewArray)
@@ -427,6 +428,39 @@ func arrayRepeat(ctx *Context, args ...Value) (Value, error) {
 		if xs, ok := args[0].(*Array); ok {
 			if t, ok := args[1].(Integer); ok && t >= 0 && t < verror.MaxMemSize {
 				return &Array{Value: slices.Repeat(xs.Value, int(t))}, nil
+			}
+		}
+	}
+	return Nil, nil
+}
+
+func arraySortWithCompareVidaFunction(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if xs, ok := args[0].(*Array); ok {
+			if compareFn, ok := args[1].(*Function); ok {
+				th := ctx.getInternalThread(compareFn)
+				vm := &VM{th, ctx}
+				slices.SortFunc(xs.Value, func(a, b Value) int {
+					if err := vm.runThread(0, 0, true, a, b); err == nil {
+						v := vm.Channel
+						vm.Reset(compareFn)
+						switch t := v.(type) {
+						case Integer:
+							return int(t)
+						case Bool:
+							var r int
+							if t {
+								r = -1
+							} else {
+								r = 1
+							}
+							return r
+						}
+					}
+					return 0
+				})
+				ctx.releaseInternalThread()
+				return xs, nil
 			}
 		}
 	}
