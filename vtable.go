@@ -5,21 +5,21 @@ import "fmt"
 type Method func(self Value, args ...Value) (Value, error)
 
 type VTable struct {
-	Name    string
+	VType   string
 	methods map[string]Method
 	parent  *VTable
 }
 
-func NewVTable(name string) *VTable {
+func NewVTable(vtype string) *VTable {
 	return &VTable{
-		Name:    name,
+		VType:   vtype,
 		methods: make(map[string]Method),
 	}
 }
 
 func (vtable *VTable) Extend(name string) *VTable {
 	return &VTable{
-		Name:    name,
+		VType:   name,
 		methods: make(map[string]Method),
 		parent:  vtable,
 	}
@@ -83,7 +83,7 @@ func Dispatch(receiver Value, name string, args ...Value) (Value, error) {
 
 	method, ok := vt.Lookup(name)
 	if !ok {
-		return nil, fmt.Errorf("%s has no method :%s", vt.Name, name)
+		return nil, fmt.Errorf("%s has no method :%s", vt.VType, name)
 	}
 
 	return method(receiver, args...)
@@ -100,13 +100,12 @@ func vtableOf(v Value) *VTable {
 
 func typeName(v Value) string {
 	if vt := vtableOf(v); vt != nil {
-		return vt.Name
+		return vt.VType
 	}
 	return fmt.Sprintf("%T", v)
 }
 
 // Experimental VTable String Object
-
 type Text struct {
 	Runes  []rune
 	Value  string

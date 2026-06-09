@@ -126,6 +126,36 @@ func (th *Thread) Clone() Value {
 	return th
 }
 
+func (th *Thread) Reset(fn *Function) *Thread {
+	th.State = Ready
+	th.Script.MainFunction = fn
+	th.Channel = Nil
+	return th
+}
+
+type internalThreadPool struct {
+	pool map[int]*Thread
+	key  int
+}
+
+func newInternalThreadPool() *internalThreadPool {
+	return &internalThreadPool{pool: make(map[int]*Thread, 10)}
+}
+
+func (p *internalThreadPool) get(fn *Function, script *Script) *Thread {
+	if th, isFree := p.pool[p.key]; isFree {
+		return th.Reset(fn)
+	}
+	th := newInternalThread(fn, script)
+	p.pool[p.key] = th
+	p.key++
+	return th
+}
+
+func (p *internalThreadPool) release() {
+	p.key--
+}
+
 func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 	ip := givenIP
 	var i, op, A, B, P uint64
@@ -518,7 +548,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 				return vm.createError(ip, verror.ErrValueNotCallable)
 			}
 			if fn, ok := val.(*Function); ok {
-				if vm.fp >= frameSize {
+				if vm.fp >= len(vm.Frames) {
 					return vm.createError(ip, verror.ErrStackOverflow)
 				}
 				if P != 0 {
@@ -1024,7 +1054,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 				return vm.createError(ip, verror.ErrValueNotCallable)
 			}
 			if fn, ok := val.(*Function); ok {
-				if vm.fp >= frameSize {
+				if vm.fp >= len(vm.Frames) {
 					return vm.createError(ip, verror.ErrStackOverflow)
 				}
 				if P != 0 {

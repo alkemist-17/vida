@@ -26,15 +26,13 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		switch fn := args[0].(type) {
 		case *Function:
-			th := newInternalThread(fn, ctx.script)
-			th.State = Ready
-			th.Script.MainFunction = fn
-			v, err := coRunThread(ctx, th)
+			v, err := coRunThread(ctx, ctx.getInternalThread(fn))
 			vm := ctx.vm
 			if err != nil {
 				switch err {
 				case verror.ErrResumeThreadSignal:
 					threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[1:]...)
+					ctx.releaseInternalThread()
 					if threadError != nil {
 						v = vm.Channel
 						invoker := vm.Thread.Invoker
@@ -60,6 +58,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 					}
 				case verror.ErrStartThreadSignal:
 					threadError := vm.runThread(vm.fp, 0, true, args[1:]...)
+					ctx.releaseInternalThread()
 					if threadError != nil {
 						v = vm.Channel
 						invoker := vm.Thread.Invoker

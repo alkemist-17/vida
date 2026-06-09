@@ -17,8 +17,9 @@ type Context struct {
 	currentThread    *Thread
 	script           *Script
 	extensionsLoader ExtensionsLoader
-	vm               *VM
 	extensionCache   map[string]*Object
+	threadPool       *internalThreadPool
+	vm               *VM
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
@@ -144,7 +145,10 @@ func (ctx *Context) MeasureRunTime() (end time.Duration, err error) {
 		return end, errors.New("error when running ctx.MeasureRunTime: source must be compiled first")
 	}
 	if ctx.vm != nil {
-		return end, ctx.vm.run()
+		init := time.Now()
+		err = ctx.vm.run()
+		end = time.Since(init)
+		return end, err
 	}
 	ctx.vm = &VM{ctx.setMainThread(newThread(ctx.script)), ctx}
 	init := time.Now()
@@ -173,4 +177,17 @@ func (ctx *Context) setMainThread(thread *Thread) *Thread {
 	ctx.mainThread = thread
 	ctx.currentThread = thread
 	return thread
+}
+
+func (ctx *Context) getInternalThread(fn *Function) *Thread {
+	if ctx.threadPool == nil {
+		ctx.threadPool = newInternalThreadPool()
+	}
+	return ctx.threadPool.get(fn, ctx.script)
+}
+
+func (ctx *Context) releaseInternalThread() {
+	if ctx.threadPool != nil {
+		ctx.threadPool.release()
+	}
 }
