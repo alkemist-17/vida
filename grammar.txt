@@ -79,7 +79,7 @@ Enumeration :=	'enum' '{' ident+ '}'
 select		:=	'[' expr | '..' | '..' expr | expr '..' | expr '..' expr ']' select*
 			|	'.' ident select*
 			|	'(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' | select*
-			|	':' ident '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' select*
+			|	'::' ident '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')' select*
 break		:=	'break'
 continue	:=	'continue'
 ret			:=	'ret' expr
