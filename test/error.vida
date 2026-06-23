@@ -73,7 +73,7 @@ assert((r and val) == r)
 val = nil
 assert((r and val) == r)
 
-val = fun => nil
+val = fun -> nil
 assert((r and val) == r)
 
 val = print
@@ -103,6 +103,6 @@ assert((r or val) == val)
 val = nil
 assert((r or val) == val)
 
-val = fun => nil
+val = fun -> nil
 assert((r or val) == val)
 

@@ -27,9 +27,9 @@ var DONE = co.DONE
 
 var nativeFunctionType = type(load)
 var stringType = type("")
-var threadType = type(new(fun=>nil))
+var threadType = type(new(fun->nil))
 var errorType = type(error())
-var functionType = type(fun=>nil)
+var functionType = type(fun->nil)
 var arrayType = type([])
 var Signal = enum { done }
 
@@ -64,7 +64,7 @@ var wrap = fun f {
 	}
 }
 
-var send = fun val => suspend(val)
+var send = fun val -> suspend(val)
 
 var iter = fun iterable {
     for i, v in iterable {
@@ -314,7 +314,7 @@ assert(t() == 100)
 assert(t() == 200)
 
 
-r = fun x => 2 * suspend(x*2)
+r = fun x -> 2 * suspend(x*2)
 
 g = fun a, b {
 	a = r(suspend(a))
@@ -334,7 +334,7 @@ assert(isError(N) and N.message == 820)
 
 
 
-r = fun x => suspend(x*2) * 2
+r = fun x -> suspend(x*2) * 2
 g = fun a, b {
 	a = r(suspend(a))
 	ret error(a+b)
@@ -431,7 +431,7 @@ assert(isError(ex.protected(new, r)))
 
 {
     var A = running()
-    var B = new(fun => run(A))
+    var B = new(fun -> run(A))
     assert(isError(ex.protected(run, B)))
 }
 
@@ -472,7 +472,7 @@ t = new(fun { suspend(1) })
 
 assert(run(t) == 1)
 
-assert(isError(ex.protected(recycle, t, fun=>nil)))
+assert(isError(ex.protected(recycle, t, fun->nil)))
 
 
 t = new(fun { suspend(1) suspend(2) })
@@ -521,8 +521,8 @@ t = wrap(fun a, b { suspend(a + b) })
 assert(t(10, 20) == 30)
 
 
-f = fun th => suspend(co.run(th))
-g = fun th => run(running(), suspend(running()))
+f = fun th -> suspend(co.run(th))
+g = fun th -> run(running(), suspend(running()))
 
 t = new(f)
 var x = new(g)

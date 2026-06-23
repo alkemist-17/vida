@@ -1,9 +1,9 @@
 
 var depC = import("dep-C")
 
-depC.fourTimesPi = fun self => self.Pi * 4
+depC.fourTimesPi = fun self -> self.Pi * 4
 
-depC.fourTimesTau = fun self => self.Tau * 4
+depC.fourTimesTau = fun self -> self.Tau * 4
 
 assert(
     depC.Pi == 3.141592653589793 or 

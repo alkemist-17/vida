@@ -4,7 +4,7 @@ var miniList = [1, 2, 3]
 
 var data = { hello world }
 
-var f = fun => [data, miniList, nil]
+var f = fun -> [data, miniList, nil]
 
 var e = error("hello world")
 

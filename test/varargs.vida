@@ -14,7 +14,7 @@ print(xs)
 var r = f(N, ...xs)
 print(r)
 
-var curry = fun f => fun x... => fun y... => f(f(...x), ...y)
+var curry = fun f -> fun x... -> fun y... -> f(f(...x), ...y)
 
 var g = fun xs... {
     var s = 0

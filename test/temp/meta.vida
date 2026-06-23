@@ -301,7 +301,7 @@ assert(obj.isEmpty(o))
 
 assert(o.hello == 42 and o.world == 91)
 
-o.getHello = fun self => self.hello
+o.getHello = fun self -> self.hello
 
 assert(o:getHello() == 42)
 
@@ -319,9 +319,9 @@ assert(obj.hasmeta(o) == true)
 
 assert(obj.isEmpty(o))
 
-p.getHello = fun self => self.hello
+p.getHello = fun self -> self.hello
 
-p.getWorld = fun self => self.world
+p.getWorld = fun self -> self.world
 
 assert(o:getHello() == 42)
 
@@ -397,7 +397,7 @@ assert(obj.hasmeta(o) == false)
 
 obj.clear(o)
 
-sp.hello = fun => 42
+sp.hello = fun -> 42
 
 obj.setmeta(p, sp)
 
@@ -646,7 +646,7 @@ assert(format("%v", o) == hello)
 
 o[hello] = 42
 
-o.__call = fun self => self.hello
+o.__call = fun self -> self.hello
 
 assert(o() == o.hello)
 
@@ -667,7 +667,7 @@ sp.__str = hello
 
 sp.__type = world
 
-sp.__call = fun => 42*2
+sp.__call = fun -> 42*2
 
 sp.hello = 42
 

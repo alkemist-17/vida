@@ -26,9 +26,9 @@ var generateData = fun N {
 var check = fun A, field, desc {
     var f = nil
     if desc {
-        f = fun a, b => a < b
+        f = fun a, b -> a < b
     } else {
-        f = fun a, b => a > b
+        f = fun a, b -> a > b
     }
     for i in 1, len(A) {
         if not f(A[i-1][field], A[i][field]) {
@@ -38,14 +38,14 @@ var check = fun A, field, desc {
     ret true
 }
 
-var byString = fun l, r => l.stringData > r.stringData
-var byStringDesc = fun l, r => l.stringData < r.stringData
+var byString = fun l, r -> l.stringData > r.stringData
+var byStringDesc = fun l, r -> l.stringData < r.stringData
 
-var byInt = fun l, r => l.intData > r.intData
-var byIntDesc = fun l, r => l.intData < r.intData
+var byInt = fun l, r -> l.intData > r.intData
+var byIntDesc = fun l, r -> l.intData < r.intData
 
-var byFloat = fun l, r => l.floatData > r.floatData
-var byFloatDesc = fun l, r => l.floatData < r.floatData
+var byFloat = fun l, r -> l.floatData > r.floatData
+var byFloatDesc = fun l, r -> l.floatData < r.floatData
 
 var F = [
     [byString, "stringData", false],

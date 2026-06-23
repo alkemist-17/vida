@@ -49,15 +49,15 @@ assert(not not true)
 assert(not not not false)
 
 
-var cond = fun a, b => not a or b
+var cond = fun a, b -> not a or b
 
 assert(not cond(true, false))
 assert(cond(true, true))
 assert(cond(false, true))
 assert(cond(false, false))
 
-var bicon = fun a, b => (a and b) or (not a and not b)
-var xor = fun a, b => not bicon(a, b)
+var bicon = fun a, b -> (a and b) or (not a and not b)
+var xor = fun a, b -> not bicon(a, b)
 
 assert(bicon(true, true))
 assert(bicon(false, false))

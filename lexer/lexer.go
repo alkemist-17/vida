@@ -299,9 +299,6 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			case '=':
 				l.next()
 				tok = token.EQ
-			case '>':
-				l.next()
-				tok = token.ARROW
 			case '<':
 				l.next()
 				tok = token.META
@@ -315,7 +312,13 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case '+':
 			tok = token.ADD
 		case '-':
-			tok = token.SUB
+			switch l.c {
+			case '>':
+				l.next()
+				tok = token.ARROW
+			default:
+				tok = token.SUB
+			}
 		case '*':
 			if l.c == '*' {
 				l.next()

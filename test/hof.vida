@@ -34,20 +34,20 @@ let r = reduce(
         filter(
         map(
             xs,
-            fun x => x * x * x),
-            fun x => x < threshold),
+            fun x -> x * x * x),
+            fun x -> x < threshold),
             1,
-            fun x, y => x * y)
+            fun x, y -> x * y)
 
 print(r)
 assert(r == one)
 
-var K = fun x => fun y => x
-var I = fun x => x
-var CONS = fun x => fun y => fun f => f(x)(y)
-var HEAD = fun xs => xs(K)
-var TAIL = fun xs => xs(K(I))
-let FOREACH = fun f => fun xs {
+var K = fun x -> fun y -> x
+var I = fun x -> x
+var CONS = fun x -> fun y -> fun f -> f(x)(y)
+var HEAD = fun xs -> xs(K)
+var TAIL = fun xs -> xs(K(I))
+let FOREACH = fun f -> fun xs {
     if xs {
         f(HEAD(xs))
         FOREACH(f)(TAIL(xs))

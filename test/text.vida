@@ -504,7 +504,7 @@ var filter = fun A, p {
 
 
 // Filter non-ASCII codepoints
-var isAscii = fun cp => cp <= 127
+var isAscii = fun cp -> cp <= 127
 var asciiOnly = filter(text.codePoints("Hiα"), isAscii)
 assert(len(asciiOnly) == 5 and asciiOnly[0] == 72 and asciiOnly[1] == 105)
 

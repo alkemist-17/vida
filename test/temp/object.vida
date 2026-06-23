@@ -299,11 +299,11 @@ object.clear(void, empty, meta)
 
 
 
-void.hello = fun => 42
+void.hello = fun -> 42
 
-void.world = fun => 91
+void.world = fun -> 91
 
-void.alpha = fun => 1200
+void.alpha = fun -> 1200
 
 meta.hello = void.hello
 
@@ -321,11 +321,11 @@ object.clear(void, empty, meta)
 
 assert(object.conforms(empty, void) and object.implements(void, empty))
 
-void.hello = fun => 42
+void.hello = fun -> 42
 
-void.world = fun => 91
+void.world = fun -> 91
 
-void.alpha = fun => 1200
+void.alpha = fun -> 1200
 
 assert(not object.conforms(empty, void) and object.implements(void, empty))
 
@@ -509,19 +509,19 @@ assert(empty.hello == 42)
 
 void.hello = 42 void. world = 91
 
-empty.hi = fun self => self.hello
+empty.hi = fun self -> self.hello
 
 empty = object.extends(empty, void)
 
 assert(empty:hi() == 42)
 
-empty.hi = fun self => self.world
+empty.hi = fun self -> self.world
 
 assert(empty:hi() == 91)
 
 void.hello = 42 void.world = 91
 
-empty.hi = fun self => self.hello
+empty.hi = fun self -> self.hello
 
 void = object.extends(void, empty)
 

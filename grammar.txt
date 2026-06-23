@@ -73,7 +73,7 @@ Object		:=	'{' (iden | pair) ((',')? ident | pair)* (',')? | λ '}'
 pair		:=	ident '=' expr
 Error		:=	'error' '(' expr? ')'
 Import		:=	'import' '(' String ')'
-Function	:=	'fun' (iden... | iden (',' iden)* (',' iden...)? )? fBody | '=>' expr
+Function	:=	'fun' (iden... | iden (',' iden)* (',' iden...)? )? fBody | '->' expr
 fBody		:=	'{' statement* ret?* '}'
 Enumeration :=	'enum' '{' ident+ '}'
 select		:=	'[' expr | '..' | '..' expr | expr '..' | expr '..' expr ']' select*

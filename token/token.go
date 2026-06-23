@@ -103,7 +103,7 @@ var Tokens = [...]string{
 	RCURLY:      "}",
 	LBRACKET:    "[",
 	RBRACKET:    "]",
-	ARROW:       "=>",
+	ARROW:       "->",
 	DOUBLE_DOT:  "..",
 	ELLIPSIS:    "...",
 	TILDE:       "~",

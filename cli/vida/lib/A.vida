@@ -256,12 +256,12 @@ lib.compact = fun A {
 
 
 // IsArray
-lib.isArray = fun A => type(A) == "array"
+lib.isArray = fun A -> type(A) == "array"
 
 
 
 // IsEmpty
-lib.isEmpty = fun A => len(A) == 0
+lib.isEmpty = fun A -> len(A) == 0
 
 
 

@@ -13,12 +13,12 @@ func (vm *VM) Inspect(ip int) {
 	fmt.Println("ScriptID", vm.Frame.lambda.CoreFn.ScriptID)
 	fmt.Printf("Store: ")
 	for i := len(coreLibNames); i < len((*vm.Script.GlobalStore)); i++ {
-		fmt.Printf("[%v => %v], ", i, (*vm.Script.GlobalStore)[i])
+		fmt.Printf("[%v -> %v], ", i, (*vm.Script.GlobalStore)[i])
 	}
 	fmt.Println()
 	fmt.Print("Konsts: ")
 	for i, v := range *vm.Script.Konstants {
-		fmt.Printf("[%v => %v], ", i, v)
+		fmt.Printf("[%v -> %v], ", i, v)
 	}
 	fmt.Println()
 	fmt.Printf("Frame: %v\n", vm.fp)
@@ -35,7 +35,7 @@ func (vm *VM) Inspect(ip int) {
 			}
 		}
 	}
-	fmt.Printf("\nPress 'Enter' to continue => ")
+	fmt.Printf("\nPress 'Enter' to continue -> ")
 	fmt.Scanf(" ")
 }
 

@@ -31,31 +31,31 @@ assert(len(h) == len(X), "Assertion failure when N is the length of the array in
 h = A.firstN(X, len(X)+len(X))
 assert(len(h) == len(X), "Assertion failure when N is the gt the length of the array in firstN")
 
-r = A.map(X, fun x => x * x * x)
+r = A.map(X, fun x -> x * x * x)
 print(r)
 
-r = A.filter(X, fun x => x % 2 == 0)
+r = A.filter(X, fun x -> x % 2 == 0)
 print(r)
 
-r = A.exclude(X, fun x => x % 2 == 0)
+r = A.exclude(X, fun x -> x % 2 == 0)
 print(r)
 
-r = A.all(X, fun x => type(x) == "int")
+r = A.all(X, fun x -> type(x) == "int")
 print(r)
 
-r = A.any(X, fun x => x == 3)
+r = A.any(X, fun x -> x == 3)
 print(r)
 
-r = A.reduce(X, fun x, y => (x + y) * (x - y), 0)
+r = A.reduce(X, fun x, y -> (x + y) * (x - y), 0)
 print(r)
 
-r = A.takeWhile(X, fun x => x <= 3)
+r = A.takeWhile(X, fun x -> x <= 3)
 print(r)
 
-r = A.zip(X, A.map(X, fun x => x * x * x))
+r = A.zip(X, A.map(X, fun x -> x * x * x))
 print(r)
 
-r = A.unzip(A.zip(X, A.map(X, fun x => x * x * x)))
+r = A.unzip(A.zip(X, A.map(X, fun x -> x * x * x)))
 print(r)
 
 r = A.drop(X, 2)

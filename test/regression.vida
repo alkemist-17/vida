@@ -1,7 +1,7 @@
 
 var a = "hello"
 var b = nil
-var f = fun => a + format("%v", b)
+var f = fun -> a + format("%v", b)
 var result = f()
 assert(result == "hellonil")
 
@@ -9,9 +9,9 @@ var data = {
     id = 42
     name = "data"
     email = "data@data.data"
-    getId = fun self => self.id
-    getName = fun self => self.name
-    getEmail = fun self => self.email
+    getId = fun self -> self.id
+    getName = fun self -> self.name
+    getEmail = fun self -> self.email
 }
 
 for in 1000 {
@@ -262,7 +262,7 @@ assert(len(data) == 3 and -data.hello == -i and not data.beautiful and -data.wor
 
 
 i = [10, 20, 30]
-f = fun x, y, z => [x, y, z]
+f = fun x, y, z -> [x, y, z]
 
 assert(f(i[0], i[1], i[2])[0] == i[0])
 assert(f(i[0], i[1], i[2])[1] == i[1])

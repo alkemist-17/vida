@@ -5,7 +5,7 @@ var rec androidPhone = {
     series
     size
     price
-    new = fun => clone(androidPhone)
+    new = fun -> clone(androidPhone)
 }
 
 
