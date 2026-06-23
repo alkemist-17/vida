@@ -1,11 +1,9 @@
 # Vida Language
 The official repo of the Vida programming language.
 
-Vida 🌿🌻
-Version 0.4.0
-
 
 Welcome to Vida 🌿🌻!
+Version 0.4.1
 
 
 Vida is a simple, general-purpose and extensible language designed for scripting. 
