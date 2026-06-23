@@ -1,0 +1,901 @@
+var co = load("std/co")
+var ex = load("std/exception")
+var array = load("std/array")
+
+// Stackful, cooperative, single-threaded coroutines.
+// Default internal values for default are stack: 64, frames: 8
+
+
+var new = co.new
+var run = co.run
+var isActive = co.isActive
+var state = co.state
+var suspend = co.suspend
+var complete = co.complete
+var isDone = co.isDone
+var recycle = co.recycle
+var running = co.running
+var isMain = co.isMain
+var getStackSize = co.getStackSize
+var getFrameSize = co.getFrameSize
+var value = co.value
+var READY = co.READY
+var RUNNING = co.RUNNING
+var SUSPENDED = co.SUSPENDED
+var WAITING = co.WAITING
+var DONE = co.DONE
+
+var nativeFunctionType = type(load)
+var stringType = type("")
+var threadType = type(new(fun=>nil))
+var errorType = type(error())
+var functionType = type(fun=>nil)
+var arrayType = type([])
+var Signal = enum { done }
+
+assert(
+    co and
+    new and type(new) == nativeFunctionType and
+    run and type(run) == nativeFunctionType and
+    isActive and type(isActive) == nativeFunctionType and
+    state and type(state) == nativeFunctionType and
+    suspend and type(suspend) == nativeFunctionType and
+    complete and type(complete) == nativeFunctionType and
+    isDone and type(isDone) == nativeFunctionType and
+    recycle and type(recycle) == nativeFunctionType and
+    isMain and type(isMain) == nativeFunctionType and
+    getStackSize and type(getStackSize) == nativeFunctionType and
+    getFrameSize and type(getFrameSize) == nativeFunctionType and
+    value and type(value) == nativeFunctionType and
+    READY == "ready" and type(READY) == stringType and
+    RUNNING == "running" and type(RUNNING) == stringType and
+    SUSPENDED == "suspended" and type(SUSPENDED) == stringType and
+    WAITING == "waiting" and type(WAITING) == stringType and
+    DONE == "done" and type(DONE) == stringType
+)
+
+var wrap = fun f { 
+	var th = co.new(f)
+	ret fun a... {
+		if co.isActive(th) {
+			ret co.run(th, ...a)
+		}
+        ret error(Signal.done)
+	}
+}
+
+var send = fun val => suspend(val)
+
+var iter = fun iterable {
+    for i, v in iterable {
+        assert(type(running()) == threadType and state(running()) == RUNNING and not isMain(running()))
+        suspend([i, v])
+    }
+    ret error(Signal.done)
+}
+
+var gen = fun N {
+    ret wrap(fun {
+        for i in N {
+            suspend(i)
+        }
+        ret error(Signal.done)
+    })
+}
+
+
+var main = running()
+
+assert(type(main) == threadType and isMain(main))
+
+assert(isError(ex.protected(run, main)))
+
+assert(isError(ex.protected(run, 42)))
+
+assert((isError(ex.protected(new, main))))
+
+assert(isError((ex.protected(new, 42))))
+
+assert(isError((ex.protected(new, print))))
+
+assert(isError(ex.protected(state, 42)))
+
+var t = new(iter)
+
+assert(type(t) == threadType and state(t) == READY)
+
+assert(type(running()) == threadType and isMain(running()) and state(running()) == RUNNING)
+
+var r = run(t, 3)
+
+assert(type(t) == threadType and state(t) == SUSPENDED)
+
+assert(r[0] == 0 and r[1] == 0)
+
+r = run(t)
+
+assert(type(t) == threadType and state(t) == SUSPENDED)
+
+assert(r[0] == 1 and r[1] == 1)
+
+r = run(t)
+
+assert(type(t) == threadType and state(t) == SUSPENDED)
+
+assert(r[0] == 2 and r[1] == 2)
+
+r = run(t)
+
+assert(type(t) == threadType and state(t) == DONE)
+
+assert(isError(r))
+
+var N = 20
+
+t = gen(N)
+
+assert(type(t) == functionType)
+
+for i in N*N {
+    var r = t()
+    if isError(r) {
+        assert(r.message == Signal.done)
+        break
+    }
+    assert(i == r) 
+}
+
+assert(isError(t()) and (t()).message == Signal.done)
+
+
+let f = nil
+
+let fn = fun args... {
+    var r = running()
+    assert(type(r) == threadType and r == f and not isMain(r))
+    var e = ex.protected(run, f)
+    assert(isError(e))
+    assert(state(f) == RUNNING)
+    for i, v in args {
+        suspend(v)
+    }
+    ret args
+}
+
+
+f = new(fn)
+assert(type(f) == threadType and state(f) == READY)
+
+r = run(f, [1,2,3,4,5], error(42), 42, ["hello", "world"])
+assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(isDone(f) == false and isActive(f) == true)
+assert(type(r) == arrayType)
+assert(r[0] == 1 and r[1] == 2 and r[2] == 3 and r[3] == 4 and r[4] == 5)
+
+r = run(f)
+assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(isDone(f) == false and isActive(f) == true)
+assert(isError(r) and r.message == 42)
+
+r = run(f)
+assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(isDone(f) == false and isActive(f) == true)
+assert(r == 42)
+
+r = run(f)
+assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(isDone(f) == false and isActive(f) == true)
+assert(type(r) == arrayType)
+assert(r[0] == "hello" and r[1] == "world")
+
+r = run(f)
+assert(type(f) == threadType and state(f) == DONE)
+assert(type(r) == arrayType and len(r) == 4)
+assert(isDone(f) == true and isActive(f) == false)
+
+
+r = ex.protected(run, f)
+assert(isError(r) and state(f) == DONE and isDone(f) == true and isActive(f) == false)
+
+
+N = 5
+let P = nil
+
+
+t = wrap(fun {
+	for i in N {
+		assert(i == P and send(i) == P)
+	}
+	ret N
+})
+
+
+for i in N {
+	P = i
+	assert(i == P and t(i) == i)
+}
+
+P = send
+assert(t(send) == N)
+
+
+let recursive = fun n, i {
+    suspend(n)
+    recursive(n*i, i+1)
+}
+
+N = 10
+
+t = wrap(recursive)
+
+r = 1
+
+for i in 1, N {
+    assert(t(1, 1) == r)
+    r = r * i
+}
+
+
+gen = fun N {
+	ret wrap(fun {
+		for i in 2, N { suspend(i) }
+	})
+}
+
+
+var sieve = fun p, g {
+	ret wrap(fun {
+		while true {
+			var n = g()
+			if n == nil { ret nil }
+			if n % p != 0 { suspend(n) }
+		}
+	})
+}
+
+
+var g = gen(100)
+var primes = []
+
+while true {
+	var n = g()
+	if not n { break }
+	append(primes, n)
+	g = sieve(n, g)
+}
+
+assert(
+    len(primes) == 25 and 
+    primes[0] == 2 and 
+    primes[-1] == 97 and 
+    primes[5] == 13 and 
+    primes[7] == 19
+)
+
+
+g = gen(100)
+r = gen(100)
+primes = { g = [], r = [] }
+
+while true {
+	var n = g()
+    var m = r()
+	if not n and not m { break }
+	append(primes.g, n)
+    append(primes.r, m)
+	g = sieve(n, g)
+    r = sieve(m, r)
+}
+
+assert(
+    len(primes.g) == 25 and 
+    primes.g[0] == 2 and 
+    primes.g[-1] == 97 and 
+    primes.g[5] == 13 and 
+    primes.g[7] == 19
+)
+
+assert(
+    len(primes.r) == 25 and 
+    primes.r[0] == 2 and 
+    primes.r[-1] == 97 and 
+    primes.r[5] == 13 and 
+    primes.r[7] == 19
+)
+
+t = wrap(fun {
+	assert(ex.protected(array.sortBy, [1,2,3], suspend) == nil)
+	suspend(100)
+	ret 200
+})
+
+
+assert(t() == 100)
+assert(t() == 200)
+
+
+r = fun x => 2 * suspend(x*2)
+
+g = fun a, b {
+	a = r(suspend(a))
+	ret error(a+b)
+}
+
+
+t = wrap(fun {
+	suspend(g(10, 20))
+})
+
+
+assert(t() == 10)
+assert(t(100) == 200)
+N = t(400)
+assert(isError(N) and N.message == 820)
+
+
+
+r = fun x => suspend(x*2) * 2
+g = fun a, b {
+	a = r(suspend(a))
+	ret error(a+b)
+}
+
+t = wrap(fun {
+	suspend(g(10, 20))
+})
+
+assert(t() == 10)
+assert(t(100) == 200)
+N = t(400)
+assert(isError(N) and N.message == 820)
+
+
+var rec oki = fun o, n, k {
+	if k == 0 { suspend(o) }
+	else {
+		for i in n {
+			o[k] = i
+			oki(o, n, k-1)
+		}
+	}
+}
+
+N = 0
+
+t = wrap(fun { oki({}, 5, 4) })
+
+while t() {
+	N = N + 1
+}
+
+assert(N and N == 5**4)
+
+
+f = fun th {
+    assert(running() == th)
+    assert(isError(ex.protected(run, th)))
+    suspend(42)
+    assert(running() == th)
+    assert(isError(ex.protected(run, th)))
+    suspend(43)
+    ret 44
+}
+
+
+g = new(f)
+
+assert(getFrameSize(g) == 8 and getStackSize(g) == 64)
+assert(run(g, g) == 42)
+assert(value(g) == 42)
+assert(run(g, g) == 43)
+assert(value(g) == 43)
+assert(run(g, g) == 44)
+assert(value(g) == 44)
+assert(isActive(g) == false and isDone(g) and state(g) == DONE)
+assert(isError(ex.protected(run, g)))
+assert(isError(ex.protected(run, g)))
+assert(isError(ex.protected(run, g)))
+
+assert(value(g) == 44)
+recycle(g, f)
+assert(state(g) == READY and value(g) == nil)
+
+assert(getFrameSize(g) == 8 and getStackSize(g) == 64)
+assert(run(g, g) == 42)
+assert(value(g) == 42)
+assert(run(g, g) == 43)
+assert(value(g) == 43)
+assert(run(g, g) == 44)
+assert(value(g) == 44)
+assert(isActive(g) == false and isDone(g) and state(g) == DONE)
+assert(isError(ex.protected(run, g)))
+assert(isError(ex.protected(run, g)))
+assert(isError(ex.protected(run, g)))
+
+assert(value(g) == 44)
+recycle(g, f)
+assert(state(g) == READY and value(g) == nil)
+
+complete(g)
+assert(state(g) == DONE and value(g) == nil and isActive(g) == false and isDone(g) == true)
+
+r = running()
+
+assert(value(r) == nil and isMain(r))
+assert(isError(ex.protected(run, r)))
+assert(isError(ex.protected(complete, r)))
+assert(isError(ex.protected(suspend, r)))
+assert(isError(ex.protected(recycle, r, f)))
+assert(isError(ex.protected(new, r)))
+
+
+{
+    var A = running()
+    var B = new(fun => run(A))
+    assert(isError(ex.protected(run, B)))
+}
+
+
+P = nil
+N = 119
+
+t = co.new(fun {
+	var x = N
+	P = fun {
+		x = x + 1
+		ret x
+	}
+})
+
+
+co.run(t)
+assert(isActive(t) == false and isDone(t) == true)
+
+
+assert(P() == N + 1)
+assert(P() == N + 2)
+assert(P() == N + 3)
+
+
+
+t = wrap(fun x {
+	var r = send(x)
+	assert(type(r) == arrayType and len(r) == 0 and array.isArray(r))
+})
+
+
+assert(t(N) == N)
+assert(t() == nil)
+
+
+t = new(fun { suspend(1) })
+
+assert(run(t) == 1)
+
+assert(isError(ex.protected(recycle, t, fun=>nil)))
+
+
+t = new(fun { suspend(1) suspend(2) })
+
+run(t)
+
+assert(state(t) == SUSPENDED)
+
+complete(t)
+
+assert(state(t) == DONE)
+
+assert(isError(ex.protected(run, t)))
+
+t = new(fun { ret 42 })
+assert(run(t) == 42)
+assert(isDone(t))
+assert(isError(ex.protected(run, t)))
+
+
+
+// Infinite tail recursion
+/*
+assert(fun {
+    var rec inf = fun n { inf(n+1) }
+    t = new(inf)
+    run(t, 0)
+}())
+*/
+
+
+t = new(fun { ret 99 })
+assert(value(t) == nil)
+run(t)
+assert(value(t) == 99)
+
+t = wrap(fun {
+    var r = send(1)
+    assert(isError(r) and r.message == 42)
+})
+assert(t() == 1)
+assert(t(error(42)) == nil)
+
+
+t = wrap(fun a, b { suspend(a + b) })
+assert(t(10, 20) == 30)
+
+
+f = fun th => suspend(co.run(th))
+g = fun th => run(running(), suspend(running()))
+
+t = new(f)
+var x = new(g)
+
+assert(state(t), run(t, x), state(t))
+assert(state(t), run(t, x), state(t))
+
+assert(isError(ex.protected(run, x, x)))
+
+f = fun sender, val {
+    var x = sender(val)
+    assert(x == val)
+    var y = nil
+    for i in x {
+        y = sender(i)
+        assert(y == i)        
+    }
+    ret val
+}
+
+g = fun th, f, sender, val {
+    var r = f(sender, val)
+    assert(r == val)
+    val = co.run(th, sender, val)
+    var y = nil
+    for i in val {
+        y = co.run(th, i)
+        assert(y == i)
+    }
+    assert(co.run(th) == val)
+    ret val
+}
+
+N = 10
+
+t = new(g)
+var h = fun sender, val {
+	var x = sender(val)
+	for i in val {
+		assert(x == i)
+		x = sender(i)
+	}
+	ret val
+}
+
+r = co.run(t, co.new(h), f, send, N)
+assert(r == N)
+
+r = co.run(t, N)
+assert(r == 0)
+
+
+for i in 1, N {
+	r = co.run(t, r)
+	assert(r == i)
+}
+
+
+r = co.run(t, r)
+assert(r == N)
+
+
+
+r = ""
+t = new(fun { var r = 1 + r })
+assert(isError(ex.protected(run, t)))
+assert(state(t) == DONE and isDone(t))
+
+
+
+
+// Tracking (N, T) <= 0
+f = fun x, y, z, a... {
+    assert(x == nil and y == nil and z == nil and type(a) == arrayType and len(a) == 0)
+	var r = suspend(x)
+	assert(r == nil)
+	r = suspend(y)
+	assert(r == nil)
+	r = suspend(z)
+	assert(r == nil)
+	r = suspend(a)
+	assert(r == nil)
+	ret 42
+}
+
+t = new(f)
+
+// L(0)
+r = run(t)
+assert(r == nil)
+
+
+// L(0)
+r = run(t)
+assert(r == nil)
+
+
+// L(0)
+r = run(t)
+assert(r == nil)
+
+
+// L(0)
+r = run(t)
+assert(r and type(r) == arrayType and len(r) == 0)
+
+
+// L(0)
+r = run(t)
+assert(r == 42)
+
+
+assert(state(t) == DONE)
+
+
+
+// Tracking (N, T) <= N
+f = fun x, y, z, a... {
+    assert(x == 10 and y == 20 and z == nil and type(a) == arrayType and len(a) == 0)
+	var r = suspend(x)
+	assert(r == 100)
+	r = suspend(y)
+	assert(r == 200)
+	r = suspend(z)
+	assert(r == 300)
+	r = suspend(a)
+	assert(r == 400)
+	ret 42
+}
+
+t = recycle(t, f)
+
+// L(N)
+r = run(t, 10, 20)
+assert(r == 10)
+
+
+// L(N)
+r = run(t, 100)
+assert(r == 20)
+
+
+// L(N)
+r = run(t, 200)
+assert(r == nil)
+
+
+// L(N)
+r = run(t, 300, true, false, nil)
+assert(r and type(r) == arrayType and len(r) == 0)
+
+
+// L(N)
+r = run(t, 400, true, false, nil)
+assert(r == 42)
+
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+
+// Tracking (N, T) <= N
+f = fun x, y, z, a... {
+    assert(x == 10 and y == 20 and z == 30 and type(a) == arrayType and len(a) == 3)
+    assert(a[0] == 40 and a[1] == 50 and a[2] == 60)
+	var r = suspend(x)
+	assert(r == 100)
+	r = suspend(y)
+	assert(r == 200)
+	r = suspend(z)
+	assert(r == 300)
+	r = suspend(a)
+	assert(r == 400)
+	ret 42
+}
+
+t = recycle(t, f)
+assert(state(t) == READY)
+
+// L(N)
+r = run(t, 10, 20, 30, 40, 50, 60)
+assert(r == 10)
+
+
+// L(N)
+r = run(t, 100, true, false, nil)
+assert(r == 20)
+
+
+// L(N)
+r = run(t, 200, true, false, nil)
+assert(r == 30)
+
+
+// L(N)
+r = run(t, 300, true, false, nil)
+assert(r and type(r) == arrayType and len(r) == 3)
+assert(r[0] == 40 and r[1] == 50 and r[2] == 60)
+
+
+// L(N)
+r = run(t, 400, true, false, nil)
+assert(r == 42)
+
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+
+// Tracking (0, T) <= 0
+f = fun a... {
+    assert(type(a) == arrayType and len(a) == 0)
+	ret a
+}
+
+
+t = recycle(t, f)
+
+
+// L(0)
+r = run(t)
+assert(type(r) == arrayType and len(r) == 0)
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+N = 1000
+
+
+// Tracking (0, T) <= N
+f = fun a... {
+    assert(type(a) == arrayType and len(a) == 3)
+    assert(a[0] == 100 and a[1] == 200 and a[2] == 300)
+    var r = suspend(a[0] + N)
+    assert(r == nil)
+    r = suspend(a[1] + N)
+    assert(r == nil)
+    r = suspend(a[2] + N)
+    assert(r == nil)
+	ret 42
+}
+
+
+t = recycle(t, f)
+
+
+// L(0)
+r = run(t, 100, 200, 300)
+assert(r == 100 + N)
+
+r = run(t)
+assert(r == 200 + N)
+
+r = run(t)
+assert(r == 300 + N)
+
+r = run(t)
+assert(r == 42)
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+
+
+// Tracking (N, F) <= N
+f = fun x, y {
+	if not x or not y { ret nil }
+	var r = co.suspend(x + y, 100, 200)
+	assert(r == "hello")
+	ret 42
+}
+
+
+t = recycle(t, f)
+
+
+// L(N)
+r = co.run(t, 19, 29)
+assert(r == 19 + 29)
+
+r = co.run(t, "hello")
+assert(r == 42)
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+
+
+// Tracking (N, F) <= 0
+f = fun x, y {
+	if not x or not y { ret nil }
+	var r = co.suspend(x + y, 100, 200)
+	assert(r == "hello")
+	ret 42
+}
+
+
+t = recycle(t, f)
+
+
+// L(0)
+r = co.run(t)
+assert(r == nil)
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+
+t = recycle(t, f)
+
+
+// L(N)
+r = co.run(t, 10)
+assert(r == nil)
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+
+
+// Tracking (0, F)
+f = fun {
+    var r = suspend()
+    if r == 100 {
+        ret 2*100
+    }
+	ret 42
+}
+
+
+t = recycle(t, f)
+
+
+r = run(t)
+assert(r == nil)
+
+r = run(t, 100)
+assert(r == 2 * 100)
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+// Tracking (0, F)
+f = fun {
+    var r = suspend()
+    if r == 100 {
+        ret 2*100
+    }
+	ret 42
+}
+
+
+t = recycle(t, f)
+
+
+r = run(t, 10, 20, 30)
+assert(r == nil)
+
+
+r = run(t, 200)
+assert(r == 42)
+
+
+// Thread exhaustion
+assert(state(t) == DONE)
+
+
+

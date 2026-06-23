@@ -10,6 +10,7 @@ const (
 	UNEXPECTED Token = iota
 	EOF
 	COMMENT
+	NOOP
 
 	literal_init
 	IDENTIFIER
@@ -83,9 +84,10 @@ const (
 )
 
 var Tokens = [...]string{
-	UNEXPECTED:  "Unrecognizable character",
+	UNEXPECTED:  "some unexpected character",
 	EOF:         "EOF",
 	COMMENT:     "Comment",
+	NOOP:        ";",
 	IDENTIFIER:  "Identifier",
 	INTEGER:     "Integer",
 	FLOAT:       "Float",

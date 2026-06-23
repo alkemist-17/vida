@@ -3,7 +3,6 @@ package vida
 import (
 	"cmp"
 	"fmt"
-	"os"
 	"slices"
 	"unsafe"
 
@@ -20,7 +19,7 @@ func loadFoundationArray() Value {
 	m.Value["reversed"] = NativeFunction(arrayReversed)
 	m.Value["pop"] = NativeFunction(arrayPop)
 	m.Value["sort"] = NativeFunction(arraySort)
-	m.Value["sortBy"] = NativeFunction(arraySortObjects)
+	m.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
 	m.Value["repeat"] = NativeFunction(arrayRepeat)
 	m.Value["toObject"] = NativeFunction(arrayToObject)
 	m.Value["new"] = NativeFunction(coreNewArray)
@@ -39,7 +38,7 @@ func loadFoundationArray() Value {
 	return m
 }
 
-func arrayConcat(args ...Value) (Value, error) {
+func arrayConcat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		var size int
 		for _, v := range args {
@@ -61,7 +60,7 @@ func arrayConcat(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayClear(args ...Value) (Value, error) {
+func arrayClear(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			xs.Value = xs.Value[:0]
@@ -71,7 +70,7 @@ func arrayClear(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayCap(args ...Value) (Value, error) {
+func arrayCap(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			return Integer(cap(xs.Value)), nil
@@ -80,7 +79,7 @@ func arrayCap(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayOverlaps(args ...Value) (Value, error) {
+func arrayOverlaps(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		a, okA := args[0].(*Array)
 		b, okB := args[1].(*Array)
@@ -91,7 +90,7 @@ func arrayOverlaps(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayView(args ...Value) (Value, error) {
+func arrayView(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		xs, ok := args[0].(*Array)
 		init, okI := args[1].(Integer)
@@ -105,7 +104,7 @@ func arrayView(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayGrow(args ...Value) (Value, error) {
+func arrayGrow(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		xs, ok := args[0].(*Array)
 		size, oksize := args[1].(Integer)
@@ -117,7 +116,7 @@ func arrayGrow(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayIndex(args ...Value) (Value, error) {
+func arrayIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
 			for i, v := range xs.Value {
@@ -130,7 +129,7 @@ func arrayIndex(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayInsert(args ...Value) (Value, error) {
+func arrayInsert(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if xs, ok := args[0].(*Array); ok {
 			if idx, ok := args[1].(Integer); ok {
@@ -144,7 +143,7 @@ func arrayInsert(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayReverse(args ...Value) (Value, error) {
+func arrayReverse(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			slices.Reverse(xs.Value)
@@ -154,7 +153,7 @@ func arrayReverse(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayReversed(args ...Value) (Value, error) {
+func arrayReversed(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			vals := make([]Value, len(xs.Value))
@@ -166,7 +165,7 @@ func arrayReversed(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayPop(args ...Value) (Value, error) {
+func arrayPop(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 1 {
 		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			lastIndex := len(xs.Value) - 1
@@ -201,7 +200,7 @@ func arrayPop(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayToObject(args ...Value) (Value, error) {
+func arrayToObject(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			o := &Object{Value: make(map[string]Value, len(xs.Value))}
@@ -214,89 +213,7 @@ func arrayToObject(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arraySortObjects(args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if xs, ok := args[0].(*Array); ok {
-			if fn, ok := args[1].(*Function); ok {
-				if ((*clbu)[globalStateIndex].(*GlobalState)).Pool == nil {
-					((*clbu)[globalStateIndex].(*GlobalState)).Pool = newThreadPool()
-				}
-				slices.SortFunc(xs.Value, func(l, r Value) int {
-					th := ((*clbu)[globalStateIndex].(*GlobalState)).Pool.getThread()
-					th.State = Ready
-					th.Script.MainFunction = fn
-					_, err := coRunThread(th)
-					vm := (*clbu)[globalStateIndex].(*GlobalState).VM
-					if err != nil {
-						switch err {
-						case verror.ErrResumeThreadSignal:
-							_, threadError := vm.runThread(vm.fp, vm.Frame.ip, false, l, r)
-							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
-							if threadError != nil {
-								invoker := vm.Thread.Invoker
-								invoker.State = Running
-								vm.Thread.Invoker = nil
-								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-								vm.Thread = invoker
-								fmt.Println("\n\nFATAL ERROR", threadError.Error())
-								os.Exit(0)
-							}
-							switch vm.State {
-							case Completed, Suspended:
-								v := vm.Channel
-								invoker := vm.Thread.Invoker
-								invoker.State = Running
-								vm.Thread.Invoker = nil
-								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-								vm.Thread = invoker
-								if bval, ok := v.(Bool); ok {
-									if bval {
-										return -1
-									}
-									return 1
-								}
-							}
-						case verror.ErrStartThreadSignal:
-							_, threadError := vm.runThread(vm.fp, 0, true, l, r)
-							((*clbu)[globalStateIndex].(*GlobalState)).Pool.releaseThread()
-							if threadError != nil {
-								invoker := vm.Thread.Invoker
-								invoker.State = Running
-								vm.Thread.Invoker = nil
-								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-								vm.Thread = invoker
-								fmt.Println("\n\nFATAL ERROR", threadError.Error())
-								os.Exit(0)
-							}
-							switch vm.State {
-							case Completed, Suspended:
-								v := vm.Channel
-								invoker := vm.Thread.Invoker
-								invoker.State = Running
-								vm.Thread.Invoker = nil
-								(*clbu)[globalStateIndex].(*GlobalState).Current = invoker
-								vm.Thread = invoker
-								if bval, ok := v.(Bool); ok {
-									if bval {
-										return -1
-									}
-									return 1
-								}
-							}
-						default:
-							return 0
-						}
-					}
-					return 0
-				})
-				return xs, nil
-			}
-		}
-	}
-	return Nil, nil
-}
-
-func arrayIsArray(args ...Value) (Value, error) {
+func arrayIsArray(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		_, ok := args[0].(*Array)
 		return Bool(ok), nil
@@ -304,7 +221,7 @@ func arrayIsArray(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayIsEmpty(args ...Value) (Value, error) {
+func arrayIsEmpty(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			return Bool(len(xs.Value) == 0), nil
@@ -313,7 +230,7 @@ func arrayIsEmpty(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayPairs(args ...Value) (Value, error) {
+func arrayPairs(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			entries := make([]Value, len(xs.Value))
@@ -328,7 +245,7 @@ func arrayPairs(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayCompact(args ...Value) (Value, error) {
+func arrayCompact(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			xs.Value = slices.Compact(xs.Value)
@@ -338,7 +255,7 @@ func arrayCompact(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayCompacted(args ...Value) (Value, error) {
+func arrayCompacted(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			cloned := xs.Clone().(*Array)
@@ -349,7 +266,7 @@ func arrayCompacted(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayChunk(args ...Value) (Value, error) {
+func arrayChunk(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
 			if len(xs.Value) == 0 {
@@ -368,7 +285,7 @@ func arrayChunk(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayClip(args ...Value) (Value, error) {
+func arrayClip(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if xs, ok := args[0].(*Array); ok {
 			xs.Value = slices.Clip(xs.Value)
@@ -378,7 +295,7 @@ func arrayClip(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayReplace(args ...Value) (Value, error) {
+func arrayReplace(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if xs, ok := args[0].(*Array); ok {
 			i, iok := args[1].(Integer)
@@ -470,7 +387,7 @@ func extractString(v Value) (string, error) {
 	return s.Value, nil
 }
 
-func arraySort(args ...Value) (Value, error) {
+func arraySort(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("sort: expected array argument")
 	}
@@ -484,16 +401,8 @@ func arraySort(args ...Value) (Value, error) {
 		return xs, nil
 	}
 
-	// Auto-detect type from first non-nil element
-	var sample Value
-	for _, v := range xs.Value {
-		if v.Type() != Nil.Type() {
-			sample = v
-			break
-		}
-	}
+	var sample Value = xs.Value[0]
 
-	// Dispatch to generic SortBy
 	switch sample.(type) {
 	case Integer:
 		if err := genericSortBy(&xs.Value, extractInteger); err != nil {
@@ -508,17 +417,50 @@ func arraySort(args ...Value) (Value, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("sort: unsupported type for auto-sort: %T", sample)
+		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type())
 	}
 
 	return xs, nil
 }
 
-func arrayRepeat(args ...Value) (Value, error) {
+func arrayRepeat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
 			if t, ok := args[1].(Integer); ok && t >= 0 && t < verror.MaxMemSize {
 				return &Array{Value: slices.Repeat(xs.Value, int(t))}, nil
+			}
+		}
+	}
+	return Nil, nil
+}
+
+func arraySortWithCompareVidaFunction(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if xs, ok := args[0].(*Array); ok {
+			if compareFn, ok := args[1].(*Function); ok {
+				th := ctx.getInternalThread(compareFn)
+				vm := &VM{th, ctx}
+				slices.SortFunc(xs.Value, func(a, b Value) int {
+					if err := vm.runThread(0, 0, true, a, b); err == nil {
+						v := vm.Channel
+						vm.Reset(compareFn)
+						switch t := v.(type) {
+						case Integer:
+							return int(t)
+						case Bool:
+							var r int
+							if t {
+								r = -1
+							} else {
+								r = 1
+							}
+							return r
+						}
+					}
+					return 0
+				})
+				ctx.releaseInternalThread()
+				return xs, nil
 			}
 		}
 	}

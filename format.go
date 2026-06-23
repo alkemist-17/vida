@@ -1,6 +1,7 @@
 package vida
 
 import (
+	"io"
 	"strconv"
 	"sync"
 	"unicode/utf8"
@@ -629,6 +630,10 @@ func (b *fmtbuf) Write(p []byte) {
 	*b = append(*b, p...)
 }
 
+func (b *fmtbuf) writeByte(c byte) {
+	*b = append(*b, c)
+}
+
 func (b *fmtbuf) WriteString(s string) {
 	if len(*b)+len(s) > verror.MaxMemSize {
 		panic(verror.ErrStringLimit)
@@ -1236,8 +1241,56 @@ formatLoop:
 	return nil
 }
 
-// Format is like fmt.Sprintf but using Values.
-func FormatValue(format string, a ...Value) (string, error) {
+// doPrintln is like doPrint but always adds a space between arguments
+// and a newline after the last argument.
+func (p *pp) doPrintln(a []Value) {
+	for argNum, arg := range a {
+		if argNum > 0 {
+			p.buf.writeByte(' ')
+		}
+		p.printArg(arg, 'v')
+	}
+	p.buf.writeByte('\n')
+}
+
+// doPrint but always adds a space between arguments.
+func (p *pp) doPrint(a []Value) {
+	for argNum, arg := range a {
+		if argNum > 0 {
+			p.buf.writeByte(' ')
+		}
+		p.printArg(arg, 'v')
+	}
+}
+
+// Custom Basic print functions
+func VFprintln(w io.Writer, a ...Value) (n int, err error) {
+	p := newPrinter()
+	p.doPrintln(a)
+	n, err = w.Write(p.buf)
+	p.free()
+	return
+}
+
+func VFprint(w io.Writer, a ...Value) (n int, err error) {
+	p := newPrinter()
+	p.doPrint(a)
+	n, err = w.Write(p.buf)
+	p.free()
+	return
+}
+
+// VFprintf is like fmt.Fprintf but using Values.
+func VFprintf(w io.Writer, format string, a ...Value) (n int, err error) {
+	p := newPrinter()
+	err = p.doFormat(format, a)
+	n, err = w.Write(p.buf)
+	p.free()
+	return n, err
+}
+
+// VSprintf is like fmt.Sprintf but using Values.
+func VSprintf(format string, a ...Value) (string, error) {
 	p := newPrinter()
 	err := p.doFormat(format, a)
 	s := string(p.buf)

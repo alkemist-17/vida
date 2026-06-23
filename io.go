@@ -1,7 +1,6 @@
 package vida
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -37,37 +36,29 @@ func loadFoundationIO() Value {
 }
 
 // fmt API
-func ioFWrite(args ...Value) (Value, error) {
+func ioFWrite(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch handler := args[0].(type) {
 		case *Object:
 			if fileHandler, ok := handler.Value[fileHandlerName].(*FileHandler); ok && !fileHandler.IsClosed {
-				var s []any
-				for _, v := range args[1:] {
-					s = append(s, v)
-				}
-				n, err := fmt.Fprint(fileHandler.Handler, s...)
+				n, err := VFprint(fileHandler.Handler, args[1:]...)
 				if err != nil {
 					fileHandler.IsClosed = true
 					fileHandler.Handler.Close()
-					return VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return Integer(n), nil
 			}
-			return VidaError{Message: &String{Value: noOrClosedFH}}, nil
+			return &VidaError{Message: &String{Value: noOrClosedFH}}, nil
 		case *FileHandler:
 			if handler.IsClosed {
-				return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+				return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 			}
-			var s []any
-			for _, v := range args[1:] {
-				s = append(s, v)
-			}
-			n, err := fmt.Fprint(handler.Handler, s...)
+			n, err := VFprint(handler.Handler, args[1:]...)
 			if err != nil {
 				handler.IsClosed = true
 				handler.Handler.Close()
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
@@ -75,91 +66,71 @@ func ioFWrite(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func ioFPrintF(args ...Value) (Value, error) {
+func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		switch handler := args[0].(type) {
 		case *Object:
 			if fileHandler, ok := handler.Value[fileHandlerName].(*FileHandler); ok && !fileHandler.IsClosed {
 				if formatstr, ok := args[1].(*String); ok {
-					var s []any
-					for _, v := range args[2:] {
-						s = append(s, v)
-					}
-					n, err := fmt.Fprintf(fileHandler.Handler, formatstr.Value, s...)
+					n, err := VFprintf(fileHandler.Handler, formatstr.Value, args[2:]...)
 					if err != nil {
 						fileHandler.IsClosed = true
 						fileHandler.Handler.Close()
-						return VidaError{Message: &String{Value: err.Error()}}, nil
+						return &VidaError{Message: &String{Value: err.Error()}}, nil
 					}
 					return Integer(n), nil
 				}
-				return VidaError{Message: &String{Value: noStringFormat}}, nil
+				return &VidaError{Message: &String{Value: noStringFormat}}, nil
 			}
-			return VidaError{Message: &String{Value: noOrClosedFH}}, nil
+			return &VidaError{Message: &String{Value: noOrClosedFH}}, nil
 		case *FileHandler:
 			if formatstr, ok := args[1].(*String); ok {
 				if handler.IsClosed {
-					return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+					return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 				}
-				var s []any
-				for _, v := range args[2:] {
-					s = append(s, v)
-				}
-				n, err := fmt.Fprintf(handler.Handler, formatstr.Value, s...)
+				n, err := VFprintf(handler.Handler, formatstr.Value, args[2:]...)
 				if err != nil {
 					handler.IsClosed = true
 					handler.Handler.Close()
-					return VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return Integer(n), nil
 			}
-			return VidaError{Message: &String{Value: noStringFormat}}, nil
+			return &VidaError{Message: &String{Value: noStringFormat}}, nil
 		}
 	}
 	return Nil, nil
 }
 
-func ioWrite(args ...Value) (Value, error) {
-	var s []any
-	for _, v := range args {
-		s = append(s, v)
-	}
-	fmt.Fprint(os.Stdout, s...)
+func ioWrite(ctx *Context, args ...Value) (Value, error) {
+	VFprint(os.Stdout, args...)
 	return Nil, nil
 }
 
-func ioPrintF(args ...Value) (Value, error) {
+func ioPrintF(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if formatstr, ok := args[0].(*String); ok {
-			var s []any
-			for _, v := range args[1:] {
-				s = append(s, v)
-			}
-			n, err := fmt.Fprintf(os.Stdout, formatstr.Value, s...)
+			n, err := VFprintf(os.Stdout, formatstr.Value, args[1:]...)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
-		return VidaError{Message: &String{Value: noStringFormat}}, nil
+		return &VidaError{Message: &String{Value: noStringFormat}}, nil
 	}
 	return Nil, nil
 }
 
-func ioErrorf(args ...Value) (Value, error) {
+func ioErrorf(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if formatstr, ok := args[0].(*String); ok {
-			var s []any
-			for _, v := range args[1:] {
-				s = append(s, v)
-			}
-			n, err := fmt.Fprintf(os.Stderr, formatstr.Value, s...)
+			n, err := VFprintf(os.Stderr, formatstr.Value, args[1:]...)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
-		return VidaError{Message: &String{Value: noStringFormat}}, nil
+		return &VidaError{Message: &String{Value: noStringFormat}}, nil
 	}
 	return Nil, nil
 }

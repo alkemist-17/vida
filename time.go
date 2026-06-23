@@ -58,7 +58,7 @@ func (t Time) IsCallable() Bool {
 	return false
 }
 
-func (t Time) Call(args ...Value) (Value, error) {
+func (t Time) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
@@ -149,7 +149,7 @@ func loadFoundationTime() Value {
 	return m
 }
 
-func timeSleep(args ...Value) (Value, error) {
+func timeSleep(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		val, ok := args[0].(Integer)
 		if ok {
@@ -159,23 +159,23 @@ func timeSleep(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timestampNano(args ...Value) (Value, error) {
+func timestampNano(ctx *Context, args ...Value) (Value, error) {
 	return Integer(time.Now().UnixNano()), nil
 }
 
-func timestampMilli(args ...Value) (Value, error) {
+func timestampMilli(ctx *Context, args ...Value) (Value, error) {
 	return Integer(time.Now().UnixMilli()), nil
 }
 
-func timestampMicro(args ...Value) (Value, error) {
+func timestampMicro(ctx *Context, args ...Value) (Value, error) {
 	return Integer(time.Now().UnixMicro()), nil
 }
 
-func timestamp(args ...Value) (Value, error) {
+func timestamp(ctx *Context, args ...Value) (Value, error) {
 	return Integer(time.Now().Unix()), nil
 }
 
-func timeNow(args ...Value) (Value, error) {
+func timeNow(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 0:
 		return Time(time.Now()), nil
@@ -205,7 +205,7 @@ func timeNow(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeDate(args ...Value) (Value, error) {
+func timeDate(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 0:
 		return Time(time.Now()), nil
@@ -229,7 +229,7 @@ func timeDate(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeFormat(args ...Value) (Value, error) {
+func timeFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if f, ok := args[1].(*String); ok {
@@ -240,7 +240,7 @@ func timeFormat(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeGetYear(args ...Value) (Value, error) {
+func timeGetYear(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Year()), nil
@@ -250,7 +250,7 @@ func timeGetYear(args ...Value) (Value, error) {
 
 }
 
-func timeGetMonth(args ...Value) (Value, error) {
+func timeGetMonth(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Month()), nil
@@ -260,7 +260,7 @@ func timeGetMonth(args ...Value) (Value, error) {
 
 }
 
-func timeGetDay(args ...Value) (Value, error) {
+func timeGetDay(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Day()), nil
@@ -270,7 +270,7 @@ func timeGetDay(args ...Value) (Value, error) {
 
 }
 
-func timeGetHours(args ...Value) (Value, error) {
+func timeGetHours(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Hour()), nil
@@ -280,7 +280,7 @@ func timeGetHours(args ...Value) (Value, error) {
 
 }
 
-func timeGetMinutes(args ...Value) (Value, error) {
+func timeGetMinutes(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Minute()), nil
@@ -290,7 +290,7 @@ func timeGetMinutes(args ...Value) (Value, error) {
 
 }
 
-func timeGetSeconds(args ...Value) (Value, error) {
+func timeGetSeconds(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Second()), nil
@@ -300,7 +300,7 @@ func timeGetSeconds(args ...Value) (Value, error) {
 
 }
 
-func timeGetNanoseconds(args ...Value) (Value, error) {
+func timeGetNanoseconds(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).Nanosecond()), nil
@@ -310,7 +310,7 @@ func timeGetNanoseconds(args ...Value) (Value, error) {
 
 }
 
-func timeGetLocation(args ...Value) (Value, error) {
+func timeGetLocation(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return &String{Value: time.Time(t).Location().String()}, nil
@@ -319,7 +319,7 @@ func timeGetLocation(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeIn(args ...Value) (Value, error) {
+func timeIn(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if zone, ok := args[0].(*String); ok {
 			location, e := time.LoadLocation(zone.Value)
@@ -332,7 +332,7 @@ func timeIn(args ...Value) (Value, error) {
 	return Time(time.Now().UTC()), nil
 }
 
-func timeDateIn(args ...Value) (Value, error) {
+func timeDateIn(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if zone, ok := args[1].(*String); ok {
@@ -347,7 +347,7 @@ func timeDateIn(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeToUnixNano(args ...Value) (Value, error) {
+func timeToUnixNano(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return Integer(time.Time(t).UnixNano()), nil
@@ -356,13 +356,13 @@ func timeToUnixNano(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeParse(args ...Value) (Value, error) {
+func timeParse(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if f, ok := args[0].(*String); ok {
 			if dt, ok := args[1].(*String); ok {
 				t, err := time.Parse(f.Value, dt.Value)
 				if err != nil {
-					return VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return Time(t), nil
 			}
@@ -371,7 +371,7 @@ func timeParse(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeSince(args ...Value) (Value, error) {
+func timeSince(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
 			return timeCreateDuration(time.Since(time.Time(t))), nil
@@ -381,7 +381,7 @@ func timeSince(args ...Value) (Value, error) {
 
 }
 
-func timeAddDuration(args ...Value) (Value, error) {
+func timeAddDuration(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if duration, ok := args[1].(Integer); ok {
@@ -392,7 +392,7 @@ func timeAddDuration(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeSub(args ...Value) (Value, error) {
+func timeSub(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if u, ok := args[1].(Time); ok {
@@ -403,7 +403,7 @@ func timeSub(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeAfter(args ...Value) (Value, error) {
+func timeAfter(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if u, ok := args[1].(Time); ok {
@@ -414,7 +414,7 @@ func timeAfter(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeBefore(args ...Value) (Value, error) {
+func timeBefore(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if u, ok := args[1].(Time); ok {

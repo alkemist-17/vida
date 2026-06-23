@@ -20,7 +20,7 @@ func loadFoundationColor() Value {
 }
 
 // Vida Interface
-func colorQuickSprint(args ...Value) (Value, error) {
+func colorQuickSprint(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
 			fgval, okfg := obj.Value[fg]
@@ -38,7 +38,7 @@ func colorQuickSprint(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorFormatQuickSprint(args ...Value) (Value, error) {
+func colorFormatQuickSprint(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if obj, ok := args[0].(*Object); ok {
 			fgval, okfg := obj.Value[fg]
@@ -48,7 +48,7 @@ func colorFormatQuickSprint(args ...Value) (Value, error) {
 				fgColor, fgok := colorValue(fgval)
 				bgColor, bgok := colorValue(bgval)
 				if fgok && bgok {
-					msg, e := FormatValue(format.Value, args[2:]...)
+					msg, e := VSprintf(format.Value, args[2:]...)
 					return &String{Value: Sprint256(fgColor, bgColor, msg)}, e
 				}
 			}
@@ -57,7 +57,7 @@ func colorFormatQuickSprint(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorNew(args ...Value) (Value, error) {
+func colorNew(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if obj, ok := args[0].(*Object); ok {
 			fgval, okfg := obj.Value[fg]
@@ -74,12 +74,12 @@ func colorNew(args ...Value) (Value, error) {
 	return generateColorInterface(NewColor()), nil
 }
 
-func colorReset(args ...Value) (Value, error) {
+func colorReset(ctx *Context, args ...Value) (Value, error) {
 	fmt.Print(Sprint256(-1, -1, EmptyString))
 	return Nil, nil
 }
 
-func colorPaletteChart(args ...Value) (Value, error) {
+func colorPaletteChart(ctx *Context, args ...Value) (Value, error) {
 	fmt.Println("\n\n\n256 Color Palette Chart")
 	// Standard Colors (0-15)
 	printSection("Standard Colors (0-15)", 0, 15, 8)
@@ -275,7 +275,7 @@ func generateColorInterface(color *Color) Value {
 	return o
 }
 
-func colorString(args ...Value) (Value, error) {
+func colorString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
@@ -286,12 +286,12 @@ func colorString(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorFormat(args ...Value) (Value, error) {
+func colorFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
 				if format, ok := args[1].(*String); ok {
-					message, e := FormatValue(format.Value, args[2:]...)
+					message, e := VSprintf(format.Value, args[2:]...)
 					return &String{Value: c.Sprint(message)}, e
 				}
 			}
@@ -300,7 +300,7 @@ func colorFormat(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorSetBG(args ...Value) (Value, error) {
+func colorSetBG(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
@@ -314,7 +314,7 @@ func colorSetBG(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorSetFG(args ...Value) (Value, error) {
+func colorSetFG(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
@@ -328,7 +328,7 @@ func colorSetFG(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorSetReset(args ...Value) (Value, error) {
+func colorSetReset(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
@@ -342,7 +342,7 @@ func colorSetReset(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func colorGetReset(args ...Value) (Value, error) {
+func colorGetReset(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {

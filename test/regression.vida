@@ -200,7 +200,7 @@ assert(len(data) == 3 and not data.hello and not data.beautiful and not data.wor
 data = { hello, beautiful, world }
 assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
 
-var i = 90
+i = 90
 
 data = {
     hello = i

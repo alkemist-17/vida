@@ -72,7 +72,7 @@ assert(text.hasSuffix(words[4], "ception"))
 assert(text.hasSuffix(words[5], "ality"))
 
 // fields
-var data = text.fields("philanthropy serendipity nebula origin perception cardinality")
+data = text.fields("philanthropy serendipity nebula origin perception cardinality")
 checkListEquality(words, data)
 
 // split

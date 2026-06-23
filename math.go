@@ -38,7 +38,7 @@ func loadFoundationMath() Value {
 }
 
 func mathInf(fn func(int) float64) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Integer); ok {
 				return Float(fn(int(v))), nil
@@ -49,7 +49,7 @@ func mathInf(fn func(int) float64) NativeFunction {
 }
 
 func mathIsNan(fn func(float64) bool) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Float); ok {
 				return Bool(fn(float64(v))), nil
@@ -63,7 +63,7 @@ func mathIsNan(fn func(float64) bool) NativeFunction {
 }
 
 func mathIsInf(fn func(float64, int) bool) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if v, ok := args[0].(Float); ok {
 				if i, oki := args[1].(Integer); oki {
@@ -81,13 +81,13 @@ func mathIsInf(fn func(float64, int) bool) NativeFunction {
 }
 
 func mathNan(fn func() float64) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		return Float(fn()), nil
 	}
 }
 
 func mathFromFloatToFloat(fn func(float64) float64) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Float); ok {
 				return Float(fn(float64(v))), nil
@@ -101,7 +101,7 @@ func mathFromFloatToFloat(fn func(float64) float64) NativeFunction {
 }
 
 func mathPow(fn func(float64, float64) float64) NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 1 {
 			switch l := args[0].(type) {
 			case Integer:

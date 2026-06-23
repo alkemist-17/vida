@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func PrintAST(node Node) string {
+func StringifyAST(node Node) string {
 	count := countNodes(node)
 	var sb strings.Builder
 	printNode(node, &sb, "", "", false)
@@ -105,11 +105,11 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeChild(sb, cont, n.Expr, color)
 
 	case *Let:
-		writeLine(sb, own, "Let "+n.Indentifier, col, color)
+		writeLine(sb, own, "Let "+n.Identifier, col, color)
 		writeChild(sb, cont, n.Expr, color)
 
 	case *Mut:
-		writeLine(sb, own, "Mut "+n.Indentifier, col, color)
+		writeLine(sb, own, "Mut "+n.Identifier, col, color)
 		writeChild(sb, cont, n.Expr, color)
 
 	case *Reference:

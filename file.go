@@ -33,14 +33,14 @@ func generateFileHandlerObject(file *os.File) Value {
 }
 
 // File API
-func fileOpen(args ...Value) (Value, error) {
+func fileOpen(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l == 1 {
 		if fname, ok := args[0].(*String); ok {
 			file, err := os.OpenFile(fname.Value, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 			if err != nil {
 				file.Close()
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return generateFileHandlerObject(file), nil
 		}
@@ -52,7 +52,7 @@ func fileOpen(args ...Value) (Value, error) {
 				file, err := os.OpenFile(path.Value, int(mode), 0666)
 				if err != nil {
 					file.Close()
-					return VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return generateFileHandlerObject(file), nil
 			}
@@ -62,13 +62,13 @@ func fileOpen(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileCreate(args ...Value) (Value, error) {
+func fileCreate(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if fname, ok := args[0].(*String); ok {
 			file, err := os.Create(fname.Value)
 			if err != nil {
 				file.Close()
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return generateFileHandlerObject(file), nil
 		}
@@ -77,7 +77,7 @@ func fileCreate(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileExists(args ...Value) (Value, error) {
+func fileExists(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			_, err := os.Stat(path.Value)
@@ -91,12 +91,12 @@ func fileExists(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileRemove(args ...Value) (Value, error) {
+func fileRemove(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			err := os.Remove(path.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return True, nil
 		}
@@ -105,12 +105,12 @@ func fileRemove(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileSize(args ...Value) (Value, error) {
+func fileSize(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			fileInfo, err := os.Stat(path.Value)
 			if errors.Is(err, os.ErrNotExist) {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(fileInfo.Size()), nil
 		}
@@ -119,7 +119,7 @@ func fileSize(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileIsFile(args ...Value) (Value, error) {
+func fileIsFile(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if _, ok := args[0].(*FileHandler); ok {
 			return Bool(ok), nil
@@ -129,14 +129,14 @@ func fileIsFile(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func fileCreateTemp(args ...Value) (Value, error) {
+func fileCreateTemp(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if dir, ok := args[0].(*String); ok {
 			if pattern, ok := args[1].(*String); ok {
 				f, err := os.CreateTemp(dir.Value, pattern.Value)
 				if err != nil {
 					f.Close()
-					return VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error()}}, nil
 				}
 				return generateFileHandlerObject(f), nil
 			}
@@ -201,26 +201,26 @@ func (file *FileHandler) Clone() Value {
 
 // FileHandler Methods
 func fileClose() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.Handler.Fd() == os.Stdout.Fd() ||
 						file.Handler.Fd() == os.Stdin.Fd() ||
 						file.Handler.Fd() == os.Stderr.Fd() {
-						return VidaError{Message: &String{Value: "cannot close file open system files"}}, nil
+						return &VidaError{Message: &String{Value: "cannot close file open system files"}}, nil
 					}
 					if file.IsClosed {
-						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					err := file.Handler.Close()
 					file.IsClosed = true
 					if err != nil {
-						return VidaError{Message: &String{Value: err.Error()}}, nil
+						return &VidaError{Message: &String{Value: err.Error()}}, nil
 					}
 					return True, nil
 				}
-				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return Nil, nil
@@ -228,13 +228,13 @@ func fileClose() NativeFunction {
 }
 
 func fileIsClosed() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					return Bool(file.IsClosed), nil
 				}
-				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return Nil, nil
@@ -242,13 +242,13 @@ func fileIsClosed() NativeFunction {
 }
 
 func fileName() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					return &String{Value: file.Handler.Name()}, nil
 				}
-				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return Nil, nil
@@ -256,12 +256,12 @@ func fileName() NativeFunction {
 }
 
 func fileReadLines() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					scanner := bufio.NewScanner(file.Handler)
 					var data []string
@@ -271,7 +271,7 @@ func fileReadLines() NativeFunction {
 					if err := scanner.Err(); err != nil {
 						file.IsClosed = true
 						file.Handler.Close()
-						return VidaError{Message: &String{Value: err.Error()}}, nil
+						return &VidaError{Message: &String{Value: err.Error()}}, nil
 					}
 					xs := &Array{}
 					for _, v := range data {
@@ -279,7 +279,7 @@ func fileReadLines() NativeFunction {
 					}
 					return xs, nil
 				}
-				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return Nil, nil
@@ -287,25 +287,25 @@ func fileReadLines() NativeFunction {
 }
 
 func fileRead() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					if b, ok := args[1].(*Bytes); ok {
 						n, err := file.Handler.Read(b.Value)
 						if err != nil && !errors.Is(err, io.EOF) {
 							file.Handler.Close()
 							file.IsClosed = true
-							return VidaError{Message: &String{Value: err.Error()}}, nil
+							return &VidaError{Message: &String{Value: err.Error()}}, nil
 						}
 						return Integer(n), nil
 					}
-					return VidaError{Message: &String{Value: expectedBytes}}, nil
+					return &VidaError{Message: &String{Value: expectedBytes}}, nil
 				}
-				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return Nil, nil
@@ -313,19 +313,19 @@ func fileRead() NativeFunction {
 }
 
 func fileWrite() NativeFunction {
-	return func(args ...Value) (Value, error) {
+	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 1 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 					}
 					if data, ok := args[1].(*String); ok {
 						i, err := file.Handler.WriteString(data.Value)
 						if err != nil {
 							file.IsClosed = true
 							file.Handler.Close()
-							return VidaError{Message: &String{Value: err.Error()}}, nil
+							return &VidaError{Message: &String{Value: err.Error()}}, nil
 						}
 						return Integer(i), nil
 					} else if data, ok := args[1].(*Bytes); ok {
@@ -333,14 +333,14 @@ func fileWrite() NativeFunction {
 						if err != nil {
 							file.IsClosed = true
 							file.Handler.Close()
-							return VidaError{Message: &String{Value: err.Error()}}, nil
+							return &VidaError{Message: &String{Value: err.Error()}}, nil
 						}
 						return Integer(i), nil
 					} else {
-						return VidaError{Message: &String{Value: "expected data of type string"}}, nil
+						return &VidaError{Message: &String{Value: "expected data of type string"}}, nil
 					}
 				}
-				return VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
 			}
 		}
 		return Nil, nil

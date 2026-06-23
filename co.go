@@ -1,52 +1,65 @@
 package vida
 
 import (
+	"errors"
+
 	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationCoroutine() Value {
-	m := &Object{Value: make(map[string]Value, 10)}
+	m := &Object{Value: make(map[string]Value, 18)}
 	m.Value["new"] = NativeFunction(coNewThread)
 	m.Value["run"] = NativeFunction(coRunThread)
 	m.Value["suspend"] = NativeFunction(coSuspendThread)
 	m.Value["complete"] = NativeFunction(coCompleteThread)
 	m.Value["isActive"] = NativeFunction(coIsActive)
-	m.Value["isCompleted"] = NativeFunction(coIsCompleted)
+	m.Value["isDone"] = NativeFunction(coIsDone)
 	m.Value["recycle"] = NativeFunction(coRecycleThread)
 	m.Value["state"] = NativeFunction(coGetThreadState)
 	m.Value["running"] = NativeFunction(coGetCurrentRunningThread)
 	m.Value["isMain"] = NativeFunction(coIsMain)
+	m.Value["getStackSize"] = NativeFunction(coGetStackSize)
+	m.Value["getFrameSize"] = NativeFunction(coGetFrameSize)
+	m.Value["value"] = NativeFunction(coValue)
+	m.Value["READY"] = &String{Value: Ready.String()}
+	m.Value["RUNNING"] = &String{Value: Running.String()}
+	m.Value["WAITING"] = &String{Value: Waiting.String()}
+	m.Value["SUSPENDED"] = &String{Value: Suspended.String()}
+	m.Value["DONE"] = &String{Value: Done.String()}
 	return m
 }
 
-func coNewThread(args ...Value) (Value, error) {
+func coNewThread(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	switch l {
 	case 1:
 		if fn, ok := args[0].(*Function); ok {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, minFrameSize, minStackSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, minFrameSize, minStackSize), nil
 		}
 	case 2:
 		fn, okFn := args[0].(*Function)
 		frameSize, ok := args[1].(Integer)
 		if okFn && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, frameSize, minStackSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, frameSize, minStackSize), nil
+		}
+		config, okConfig := args[1].(*Object)
+		fSize, okFSize := config.Value["frame"].(Integer)
+		sSize, okSSize := config.Value["stack"].(Integer)
+		if okFn && okConfig && okFSize && okSSize && minFrameSize <= fSize && fSize <= maxFrameSize && minStackSize <= sSize && sSize <= maxStackSize {
+			return coNewThreadWithSizeControl(fn, ctx.script, fSize, sSize), nil
 		}
 	case 3:
 		fn, okFn := args[0].(*Function)
 		frameSize, okFS := args[1].(Integer)
 		stackSize, ok := args[2].(Integer)
 		if okFn && okFS && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize && minStackSize <= stackSize && stackSize <= maxStackSize {
-			script := ((*clbu)[globalStateIndex].(*GlobalState)).Script
-			return coNewThreadWithSizeControl(fn, script, frameSize, stackSize), nil
+			return coNewThreadWithSizeControl(fn, ctx.script, frameSize, stackSize), nil
 		}
 	}
-	return Nil, nil
+	return Nil, errors.New("expected a function as first argument")
 }
 
-func coGetThreadState(args ...Value) (Value, error) {
+func coGetThreadState(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			return &String{Value: th.State.String()}, nil
@@ -56,7 +69,7 @@ func coGetThreadState(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coRunThread(args ...Value) (Value, error) {
+func coRunThread(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok && (th.State == Suspended || th.State == Ready) {
 			var signal error
@@ -65,27 +78,26 @@ func coRunThread(args ...Value) (Value, error) {
 			} else {
 				signal = verror.ErrResumeThreadSignal
 			}
-			vm := (*clbu)[globalStateIndex].(*GlobalState).VM
-			th.Invoker = (*clbu)[globalStateIndex].(*GlobalState).Current
-			(*clbu)[globalStateIndex].(*GlobalState).Current = th
+			th.Invoker = ctx.currentThread
+			ctx.currentThread = th
 			th.State = Running
 			th.Invoker.State = Waiting
-			vm.Thread = th
+			ctx.vm.Thread = th
 			return Nil, signal
 		} else if !ok {
 			return Nil, verror.ErrNotThread
-		} else if th.State == Running || th.State == Completed || th.State == Waiting {
+		} else if th.State == Running || th.State == Done || th.State == Waiting {
 			return Nil, verror.ErrResumingNotSuspendedThread
 		}
 	}
 	return Nil, nil
 }
 
-func coSuspendThread(args ...Value) (Value, error) {
-	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
+func coSuspendThread(ctx *Context, args ...Value) (Value, error) {
+	if ctx.IsMainThreadRunning() {
 		return Nil, verror.ErrSuspendingMainThread
 	}
-	th := (*clbu)[globalStateIndex].(*GlobalState).Current
+	th := ctx.currentThread
 	th.State = Suspended
 	if len(args) > 0 {
 		th.Channel = args[0]
@@ -95,32 +107,34 @@ func coSuspendThread(args ...Value) (Value, error) {
 	return Nil, verror.ErrSuspendThreadSignal
 }
 
-func coGetCurrentRunningThread(args ...Value) (Value, error) {
-	return ((*clbu)[globalStateIndex].(*GlobalState)).Current, nil
+func coGetCurrentRunningThread(ctx *Context, args ...Value) (Value, error) {
+	return ctx.currentThread, nil
 }
 
-func coRecycleThread(args ...Value) (Value, error) {
+func coRecycleThread(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if th, ok := args[0].(*Thread); ok && th.State == Completed {
+		if th, ok := args[0].(*Thread); ok && th.State == Done {
 			if fn, okfn := args[1].(*Function); okfn {
+				th.Channel = Nil
 				th.Script.MainFunction = fn
 				th.State = Ready
 				return th, nil
 			}
 		} else if !ok {
 			return Nil, verror.ErrNotThread
-		} else if th.State != Completed {
+		} else if th.State != Done {
 			return Nil, verror.ErrRecyclingThread
 		}
 	}
 	return Nil, nil
 }
 
-func coCompleteThread(args ...Value) (Value, error) {
+func coCompleteThread(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
 			if th.State == Ready || th.State == Suspended {
-				th.State = Completed
+				th.State = Done
+				th.Channel = Nil
 				return th, nil
 			} else {
 				return Nil, verror.ErrClosingAThread
@@ -131,42 +145,70 @@ func coCompleteThread(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func coIsActive(args ...Value) (Value, error) {
+func coIsActive(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
-			return Bool(th.State != Completed), nil
+			return Bool(th.State != Done), nil
 		}
 		return Nil, verror.ErrNotThread
 	}
 	return Nil, nil
 }
 
-func coIsCompleted(args ...Value) (Value, error) {
+func coIsDone(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
-			return Bool(th.State == Completed), nil
+			return Bool(th.State == Done), nil
 		}
 		return Nil, verror.ErrNotThread
 	}
 	return Nil, nil
 }
 
-func coIsMain(args ...Value) (Value, error) {
-	if ((*clbu)[globalStateIndex].(*GlobalState)).Main == ((*clbu)[globalStateIndex].(*GlobalState)).Current {
-		return True, nil
+func coIsMain(ctx *Context, args ...Value) (Value, error) {
+	return Bool(ctx.IsMainThreadRunning()), nil
+}
+
+func coGetStackSize(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if th, ok := args[0].(*Thread); ok {
+			return Integer(len(th.Stack)), nil
+		}
+		return Nil, verror.ErrNotThread
 	}
-	return False, nil
+	return Nil, nil
+}
+
+func coGetFrameSize(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if th, ok := args[0].(*Thread); ok {
+			return Integer(len(th.Frames)), nil
+		}
+		return Nil, verror.ErrNotThread
+	}
+	return Nil, nil
+}
+
+func coValue(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if th, ok := args[0].(*Thread); ok {
+			return th.Channel, nil
+		}
+		return Nil, verror.ErrNotThread
+	}
+	return Nil, nil
 }
 
 func coNewThreadWithSizeControl(fn *Function, script *Script, frameSize, stackSize Integer) *Thread {
 	return &Thread{
 		Script: &Script{
 			Konstants:    script.Konstants,
-			Store:        script.Store,
+			GlobalStore:  script.GlobalStore,
 			ErrorInfo:    script.ErrorInfo,
 			MainFunction: fn,
 		},
-		Frames: make([]frame, frameSize),
-		Stack:  make([]Value, stackSize),
+		Frames:  make([]frame, frameSize),
+		Stack:   make([]Value, stackSize),
+		Channel: Nil,
 	}
 }

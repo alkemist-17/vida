@@ -79,7 +79,7 @@ assert((r and val) == r)
 val = print
 assert((r and val) == r)
 
-var val = 0b11111111
+val = 0b11111111
 assert((r or val) == val)
 
 val = 45.67

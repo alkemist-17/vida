@@ -14,7 +14,9 @@ assert(
 	array
 )
 
-var res = http.request("https://restcountries.com/v3.1/name/china")
+var client = http.newClient()
+
+var res = client.get("https://restcountries.com/v3.1/name/china")
 
 if res {
     assert(res.statusCode == 200)
@@ -36,16 +38,16 @@ if res {
 
 
 var R = task.parallel([
-	[http.request, "https://restcountries.com/v3.1/name/france"],
-	[http.request, "https://restcountries.com/v3.1/name/russia"],
-	[http.request, "https://restcountries.com/v3.1/name/brasil"],
-	[http.request, "https://restcountries.com/v3.1/name/chile"],
-	[http.request, "https://restcountries.com/v3.1/name/mexico"],
-	[http.request, "https://restcountries.com/v3.1/name/spain"],
-	[http.request, "https://restcountries.com/v3.1/name/ecuador"],
-	[http.request, "https://restcountries.com/v3.1/name/canada"],
-	[http.request, "https://restcountries.com/v3.1/name/japan"],
-	[http.request, "https://restcountries.com/v3.1/name/germany"]
+	[client.get, "https://restcountries.com/v3.1/name/france"],
+	[client.get, "https://restcountries.com/v3.1/name/russia"],
+	[client.get, "https://restcountries.com/v3.1/name/brasil"],
+	[client.get, "https://restcountries.com/v3.1/name/chile"],
+	[client.get, "https://restcountries.com/v3.1/name/mexico"],
+	[client.get, "https://restcountries.com/v3.1/name/spain"],
+	[client.get, "https://restcountries.com/v3.1/name/ecuador"],
+	[client.get, "https://restcountries.com/v3.1/name/canada"],
+	[client.get, "https://restcountries.com/v3.1/name/japan"],
+	[client.get, "https://restcountries.com/v3.1/name/germany"]
 ])
 
 
@@ -124,11 +126,11 @@ var checkMethod = fun res, method {
 
 R = task.parallel(
 	[
-		[http.get, "https://httpbin.org/anything"],
-		[http.post, "https://httpbin.org/anything"],
-		[http.put, "https://httpbin.org/anything"],
-		[http.patch, "https://httpbin.org/anything"],
-		[http.delete, "https://httpbin.org/anything"]
+		[client.get, "https://httpbin.org/anything"],
+		[client.post, "https://httpbin.org/anything"],
+		[client.put, "https://httpbin.org/anything"],
+		[client.patch, "https://httpbin.org/anything"],
+		[client.delete, "https://httpbin.org/anything"]
 	]
 )
 
@@ -144,11 +146,11 @@ task.parallel(
 
 R = task.parallel(
 	[
-		[http.get, {url = "https://httpbin.org/anything"}],
-		[http.post, {url = "https://httpbin.org/anything"}],
-		[http.put, {url = "https://httpbin.org/anything"}],
-		[http.patch, {url = "https://httpbin.org/anything"}],
-		[http.delete, {url = "https://httpbin.org/anything"}]
+		[client.get, {url = "https://httpbin.org/anything"}],
+		[client.post, {url = "https://httpbin.org/anything"}],
+		[client.put, {url = "https://httpbin.org/anything"}],
+		[client.patch, {url = "https://httpbin.org/anything"}],
+		[client.delete, {url = "https://httpbin.org/anything"}]
 	]
 )
 
@@ -164,11 +166,11 @@ task.parallel(
 
 R = task.parallel(
 	[
-		[http.get, {base = "https://httpbin.org", url = "/anything"}],
-		[http.post, {base = "https://httpbin.org", url = "/anything"}],
-		[http.put, {base = "https://httpbin.org", url = "/anything"}],
-		[http.patch, {base = "https://httpbin.org", url = "/anything"}],
-		[http.delete, {base = "https://httpbin.org", url = "/anything"}]
+		[client.get, {base = "https://httpbin.org", url = "/anything"}],
+		[client.post, {base = "https://httpbin.org", url = "/anything"}],
+		[client.put, {base = "https://httpbin.org", url = "/anything"}],
+		[client.patch, {base = "https://httpbin.org", url = "/anything"}],
+		[client.delete, {base = "https://httpbin.org", url = "/anything"}]
 	]
 )
 
@@ -204,16 +206,16 @@ A =
 
 
 R = task.parallel([
-	[http.get, format("/name/%v", A[0]), config],
-	[http.get, format("/name/%v", A[1]), config],
-	[http.get, format("/name/%v", A[2]), config],
-	[http.get, format("/name/%v", A[3]), config],
-	[http.get, format("/name/%v", A[4]), config],
-	[http.get, format("/name/%v", A[5]), config],
-	[http.get, format("/name/%v", A[6]), config],
-	[http.get, format("/name/%v", A[7]), config],
-	[http.get, format("/name/%v", A[8]), config],
-	[http.get, format("/name/%v", A[9]), config]]
+	[client.get, format("/name/%v", A[0]), config],
+	[client.get, format("/name/%v", A[1]), config],
+	[client.get, format("/name/%v", A[2]), config],
+	[client.get, format("/name/%v", A[3]), config],
+	[client.get, format("/name/%v", A[4]), config],
+	[client.get, format("/name/%v", A[5]), config],
+	[client.get, format("/name/%v", A[6]), config],
+	[client.get, format("/name/%v", A[7]), config],
+	[client.get, format("/name/%v", A[8]), config],
+	[client.get, format("/name/%v", A[9]), config]]
 )
 
 
@@ -233,12 +235,12 @@ task.parallel(
 )
 
 config.url = "/name/ecuador"
-res = http.get(config)
+res = client.get(config)
 
 check(res)
 
 config.timeout = 0
-res = http.get(config)
+res = client.get(config)
 assert(not res and isError(res))
 
 

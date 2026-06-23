@@ -17,14 +17,14 @@ func loadFoundationRegexp() Value {
 	return m
 }
 
-func regexpMatch(args ...Value) (Value, error) {
+func regexpMatch(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(re.MatchString(input.Value)), nil
 		}
@@ -32,7 +32,7 @@ func regexpMatch(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpReplaceAll(args ...Value) (Value, error) {
+func regexpReplaceAll(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		pattern, okPatt := args[0].(*String)
 		source, okIn := args[1].(*String)
@@ -40,7 +40,7 @@ func regexpReplaceAll(args ...Value) (Value, error) {
 		if okPatt && okIn && okRepl {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &String{Value: re.ReplaceAllString(source.Value, replacement.Value)}, nil
 		}
@@ -48,7 +48,7 @@ func regexpReplaceAll(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpReplaceAllLit(args ...Value) (Value, error) {
+func regexpReplaceAllLit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		pattern, okPatt := args[0].(*String)
 		source, okIn := args[1].(*String)
@@ -56,7 +56,7 @@ func regexpReplaceAllLit(args ...Value) (Value, error) {
 		if okPatt && okIn && okRepl {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &String{Value: re.ReplaceAllLiteralString(source.Value, replacement.Value)}, nil
 		}
@@ -64,7 +64,7 @@ func regexpReplaceAllLit(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpSplit(args ...Value) (Value, error) {
+func regexpSplit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
@@ -72,7 +72,7 @@ func regexpSplit(args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.Split(input.Value, int(n))
 			if result == nil {
@@ -88,14 +88,14 @@ func regexpSplit(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpFindFirstIndex(args ...Value) (Value, error) {
+func regexpFindFirstIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			res := re.FindStringIndex(input.Value)
 			if res == nil {
@@ -110,7 +110,7 @@ func regexpFindFirstIndex(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpFindAllIndex(args ...Value) (Value, error) {
+func regexpFindAllIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
@@ -118,7 +118,7 @@ func regexpFindAllIndex(args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindAllStringIndex(input.Value, int(n))
 			if result == nil {
@@ -138,7 +138,7 @@ func regexpFindAllIndex(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpEscape(args ...Value) (Value, error) {
+func regexpEscape(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if input, ok := args[0].(*String); ok {
 			return &String{Value: regexp.QuoteMeta(input.Value)}, nil
@@ -147,14 +147,14 @@ func regexpEscape(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpFindString(args ...Value) (Value, error) {
+func regexpFindString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &String{Value: re.FindString(input.Value)}, nil
 		}
@@ -162,7 +162,7 @@ func regexpFindString(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpFindAllString(args ...Value) (Value, error) {
+func regexpFindAllString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
@@ -170,7 +170,7 @@ func regexpFindAllString(args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindAllString(input.Value, int(n))
 			if result == nil {
@@ -186,14 +186,14 @@ func regexpFindAllString(args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func regexpFindSubmatch(args ...Value) (Value, error) {
+func regexpFindSubmatch(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		pattern, okPatt := args[0].(*String)
 		input, okIn := args[1].(*String)
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindStringSubmatch(input.Value)
 			if result == nil {

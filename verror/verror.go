@@ -17,47 +17,46 @@ const (
 )
 
 type VidaError struct {
-	ScriptName string
-	Message    string
-	ErrType    string
-	Line       uint
+	ScriptID string
+	Message  string
+	ErrType  string
+	Line     uint
 }
 
-func (e VidaError) Error() string {
+func (e *VidaError) Error() string {
 	switch e.ErrType {
-	case ExceptionErrType, AssertionErrType:
-		return fmt.Sprintf("\n\n\t[%v]\n\tScript    : %v\n\tNear line : %v\n\tMessage   : %v\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+	case ExceptionErrType:
+		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+	case AssertionErrType:
+		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	default:
-		if e.Line == 0 {
-			return fmt.Sprintf("\n\n\t[%v Error]\n\tScript  : %v\n\tMessage : %v\n\n", e.ErrType, e.ScriptName, e.Message)
-		}
-		return fmt.Sprintf("\n\n\t[%v Error]\n\tScript    : %v\n\tNear line : %v\n\tMessage   : %v\n\n", e.ErrType, e.ScriptName, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v Error]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	}
 }
 
-func New(scriptName string, message string, errorType string, line uint) VidaError {
-	return VidaError{
-		ScriptName: scriptName,
-		Line:       line,
-		Message:    message,
-		ErrType:    errorType,
+func New(scriptID string, message string, errorType string, line uint) *VidaError {
+	return &VidaError{
+		ScriptID: scriptID,
+		Line:     line,
+		Message:  message,
+		ErrType:  errorType,
 	}
 }
 
 type StackFrameInfo struct {
-	ScriptName string
-	Line       uint
+	ScriptID string
+	Line     uint
 }
 
-func NewStackFrameInfo(scriptName string, line uint) StackFrameInfo {
+func NewStackFrameInfo(scriptID string, line uint) StackFrameInfo {
 	return StackFrameInfo{
-		ScriptName: scriptName,
-		Line:       line,
+		ScriptID: scriptID,
+		Line:     line,
 	}
 }
 
 func (sfi StackFrameInfo) Error() string {
-	return fmt.Sprintf("\tScript    : %v\n\tNear line : %v\n", sfi.ScriptName, sfi.Line)
+	return fmt.Sprintf("\tScript    : %v\n\tNear line : %v\n", sfi.ScriptID, sfi.Line)
 }
 
 var (
@@ -74,7 +73,7 @@ var (
 	ErrStackOverflow                    = errors.New("stack overflow")
 	ErrArity                            = errors.New("given arguments count is different from arity definition")
 	ErrNotEnoughArgs                    = errors.New("not given enough arguments to the function")
-	ErrVariadicArgs                     = errors.New("expected an array for variradic arguments")
+	ErrVariadicArgs                     = errors.New("expected an array for variradic arguments or array length overflows the current stack")
 	ErrSlice                            = errors.New("could not process the slice")
 	ErrValueIsConstant                  = errors.New("value is constant")
 	ErrMaxMemSize                       = errors.New("max memory size reached")
@@ -83,6 +82,7 @@ var (
 	ErrResumingNotSuspendedThread       = errors.New("cannot run a completed, running or waiting thread")
 	ErrNotAFunction                     = errors.New("threads must be build from function values")
 	ErrSuspendingMainThread             = errors.New("cannot suspend the main thread")
+	ErrSuspendingRunningThread          = errors.New("cannot suspend a running thread")
 	ErrClosingAThread                   = errors.New("cannot complete a running, waiting or completed thread")
 	ErrStartThreadSignal                = errors.New("start thread signal")
 	ErrResumeThreadSignal               = errors.New("resume thread signal")

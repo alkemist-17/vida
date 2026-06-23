@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/alkemist-17/vida"
 	"github.com/alkemist-17/vida/extensions"
@@ -37,7 +38,7 @@ func main() {
 		case DEGUG:
 			runDebug(args)
 		case TIME:
-			time(args)
+			measureRunTime(args)
 		case TOKENS:
 			printTokens(args)
 		case AST:
@@ -69,11 +70,11 @@ func runDebug(args []string) {
 		printVersion()
 		p, err := filepath.Abs(args[2])
 		handleError(err)
-		i, err := vida.NewDebugger(p, extensions.GetLoader())
+		src, err := vida.LoadScriptFromFile(p)
 		handleError(err)
-		r, err := i.Debug()
+		ctx := vida.NewContext(src, p, extensions.GetLoader())
+		err = ctx.RunDebugSession()
 		handleError(err)
-		fmt.Println(r)
 	} else {
 		handleError(errorNoArgsGivenTo(DEGUG))
 	}
@@ -83,34 +84,37 @@ func run(args []string) {
 	if len(args) > 2 {
 		p, err := filepath.Abs(args[2])
 		handleError(err)
-		i, err := vida.NewInterpreter(p, extensions.GetLoader())
+		src, err := vida.LoadScriptFromFile(p)
 		handleError(err)
-		_, err = i.Run()
+		ctx := vida.NewContext(src, p, extensions.GetLoader())
+		err = ctx.CompileAndRun()
 		if err != nil {
 			printError(err)
-			i.PrintCallStack()
+			ctx.PrintCallStack()
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(RUN))
 	}
 }
 
-func time(args []string) {
+func measureRunTime(args []string) {
 	clear()
 	printVersion()
 	if len(args) > 2 {
 		p, err := filepath.Abs(args[2])
 		handleError(err)
-		i, err := vida.NewInterpreter(p, extensions.GetLoader())
+		src, err := vida.LoadScriptFromFile(p)
 		handleError(err)
-		r, err := i.MeasureRunTime()
+		ctx := vida.NewContext(src, p, extensions.GetLoader())
+		ctx.Compile()
+		duration, err := ctx.MeasureRunTime()
 		if err != nil {
 			printError(err)
-			i.PrintCallStack()
-			fmt.Printf("\tResult : %v ❌\n\n\n\n", r)
+			ctx.PrintCallStack()
+			fmt.Printf("\tFailure ❌\n\n\n\n")
 			return
 		}
-		fmt.Printf("\tResult : %v ✅\n\n\n\n", r)
+		printDuration(duration)
 	} else {
 		handleError(errorNoArgsGivenTo(TIME))
 	}
@@ -124,14 +128,17 @@ func printTokens(args []string) {
 		for i := 2; i < largs; i++ {
 			p, err := filepath.Abs(args[i])
 			handleError(err)
-			handleError(vida.PrintTokens(p))
+			src, err := vida.LoadScriptFromFile(p)
+			handleError(err)
+			ctx := vida.NewContext(src, p, extensions.GetLoader())
+			handleError(ctx.PrintTokens())
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(TOKENS))
 	}
 }
 
-func printAST(args []string, colorized bool) {
+func printAST(args []string, withColors bool) {
 	clear()
 	printVersion()
 	largs := len(args)
@@ -139,7 +146,10 @@ func printAST(args []string, colorized bool) {
 		for i := 2; i < largs; i++ {
 			p, err := filepath.Abs(args[i])
 			handleError(err)
-			handleError(vida.PrintAST(p, colorized))
+			src, err := vida.LoadScriptFromFile(p)
+			handleError(err)
+			ctx := vida.NewContext(src, p, extensions.GetLoader())
+			handleError(ctx.PrintAST(withColors))
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(AST))
@@ -153,7 +163,11 @@ func printMachineCode(args []string) {
 		for i := 2; i < largs; i++ {
 			p, err := filepath.Abs(args[i])
 			handleError(err)
-			handleError(vida.PrintMachineCode(p))
+			src, err := vida.LoadScriptFromFile(p)
+			handleError(err)
+			ctx := vida.NewContext(src, p, extensions.GetLoader())
+			handleError(ctx.Compile())
+			handleError(ctx.PrintMachineCode())
 		}
 	} else {
 		handleError(errorNoArgsGivenTo(CODE))
@@ -210,16 +224,20 @@ func runScripts(dir string, scripts []os.DirEntry, textCount *int) {
 }
 
 func executeScript(path string) {
-	i, err := vida.NewInterpreter(path, extensions.GetLoader())
+	src, err := vida.LoadScriptFromFile(path)
+	handleError(err)
+	ctx := vida.NewContext(src, path, extensions.GetLoader())
+	handleError(ctx.Compile())
+	dur, err := ctx.MeasureRunTime()
+	printDuration(dur)
 	handleTestError(err)
-	r, err := i.MeasureRunTime()
-	handleTestFailure(r, err)
-	fmt.Printf("\tResult : %v ✅\n\n\n\n", r)
+	handleTestFailure(err)
+	fmt.Printf("\tSuccess ✅\n\n\n\n")
 }
 
-func handleTestFailure(r vida.Result, err error) {
+func handleTestFailure(err error) {
 	if err != nil {
-		fmt.Printf("\tResult : %v ❌\n\n", r)
+		fmt.Printf("\tFailure ❌\n\n")
 		fmt.Println(err)
 		fmt.Printf("\n\n")
 		os.Exit(1)
@@ -298,4 +316,11 @@ func clear() {
 	fmt.Printf("\u001B[H")
 	fmt.Printf("\u001B[2J")
 	fmt.Printf("\u001B[3J")
+}
+
+func printDuration(duration time.Duration) {
+	fmt.Printf("\n\n\n\n")
+	fmt.Printf("\tDuration in Seconds : %vs\n", duration.Seconds())
+	fmt.Printf("\tDuration            : %v", duration)
+	fmt.Printf("\n\n\n\n")
 }

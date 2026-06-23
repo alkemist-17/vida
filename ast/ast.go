@@ -14,17 +14,19 @@ type Var struct {
 	Identifier  string
 	Expr        Node
 	IsRecursive bool
-}
-
-type Mut struct {
-	Indentifier string
-	Expr        Node
 	Line        uint
 }
 
+type Mut struct {
+	Identifier string
+	Expr       Node
+	Line       uint
+}
+
 type Let struct {
-	Indentifier string
-	Expr        Node
+	Identifier string
+	Expr       Node
+	Line       uint
 }
 
 type Reference struct {
@@ -112,13 +114,11 @@ type Slice struct {
 	First Node
 	Last  Node
 	Mode  int
-	Line  uint
 }
 
 type Select struct {
 	Selectable Node
 	Selector   Node
-	Line       uint
 }
 
 type SelectStmt struct {
@@ -157,6 +157,7 @@ type Branch struct {
 	Elifs []Node
 	If    Node
 	Else  Node
+	Line  uint
 }
 
 type If struct {
@@ -171,6 +172,7 @@ type Else struct {
 type While struct {
 	Condition Node
 	Block     Node
+	Line      uint
 }
 
 type Break struct{}
@@ -189,6 +191,7 @@ type Ret struct {
 
 type Export struct {
 	Expr Node
+	Line uint
 }
 
 type Import struct {
@@ -200,7 +203,6 @@ type CallExpr struct {
 	Args     []Node
 	Fun      Node
 	Ellipsis int
-	Line     uint
 }
 
 type CallStmt struct {
@@ -221,7 +223,6 @@ type MethodCallExpr struct {
 	Prop     Node
 	Obj      Node
 	Ellipsis int
-	Line     uint
 }
 
 type Enum struct {
