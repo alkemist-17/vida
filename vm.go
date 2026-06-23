@@ -2,8 +2,6 @@ package vida
 
 import (
 	"fmt"
-	"maps"
-	"slices"
 
 	"github.com/alkemist-17/vida/verror"
 )
@@ -616,6 +614,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 
 func (vm *VM) printCallStack() {
 	fmt.Printf("\t[Call Stack]\n")
+	fmt.Printf("\t(Most recent call first)\n")
 	for i := vm.fp; i >= 0; i-- {
 		modName := vm.Frames[i].lambda.CoreFn.ScriptID
 		ip := vm.Frames[i].ip
@@ -645,7 +644,7 @@ func (vm *VM) createError(ip int, err error) error {
 
 func getNonZeroLine(modName string, ip int, vm *VM) uint {
 	var nearLine uint
-	for i := ip; i < len(slices.Collect(maps.Keys(vm.Script.ErrorInfo[modName]))); i++ {
+	for i := ip; i >= 0; i-- {
 		nearLine = vm.Script.ErrorInfo[modName][i]
 		if nearLine != 0 {
 			break

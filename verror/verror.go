@@ -26,11 +26,11 @@ type VidaError struct {
 func (e *VidaError) Error() string {
 	switch e.ErrType {
 	case ExceptionErrType:
-		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tAround line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	case AssertionErrType:
-		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v]\n\t%v\n\tAround line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	default:
-		return fmt.Sprintf("\n\n\t[%v Error]\n\t%v\n\tStart search around line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\t[%v Error]\n\t%v\n\tAround line %v\n\tBecause %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	}
 }
 

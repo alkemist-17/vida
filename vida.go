@@ -12,7 +12,7 @@ const (
 const (
 	major     = 0
 	minor     = 4
-	patch     = 2
+	patch     = 3
 	inception = 25
 )
 
@@ -36,10 +36,11 @@ func About() string {
 	Welcome to Vida 🌿🌻!
 
 
-	Vida is a simple, general-purpose and extensible language designed for scripting. 
-	Its minimal syntax and small set of orthogonal constructs make it easy to learn and reason about. 
-	Vida is extensible by implementing the Value Go interface, allowing you to seamlessly 
-	blend scripting with compiled performance.
+	Vida is a simple, general-purpose and extensible language designed for fast scripting. 
+	Its minimal syntax and small set of constructs make it easy to learn and reason about. 
+	Vida is extensible by implementing the Value interface,
+	allowing you to seamlessly blend scripting with compiled performance.
+	
 	
 	Happy Vida coding!
 

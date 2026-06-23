@@ -45,17 +45,17 @@ func (p *parser) parse() (*ast.Ast, error) {
 	for p.ok {
 		switch p.current.Token {
 		case token.IDENTIFIER:
-			p.ast.Statement = append(p.ast.Statement, p.mutOrCall(&p.ast.Statement))
+			p.ast.Statement = append(p.ast.Statement, p.mutationOrCall(&p.ast.Statement))
 		case token.LET:
-			p.ast.Statement = append(p.ast.Statement, p.global())
+			p.ast.Statement = append(p.ast.Statement, p.moduleVariableDecl())
 		case token.VAR:
-			p.ast.Statement = append(p.ast.Statement, p.localStmt())
+			p.ast.Statement = append(p.ast.Statement, p.localVariableDecl())
 		case token.IF:
-			p.ast.Statement = append(p.ast.Statement, p.ifStmt(false))
+			p.ast.Statement = append(p.ast.Statement, p.branchStmt(false))
 		case token.FOR:
 			p.ast.Statement = append(p.ast.Statement, p.forLoop())
 		case token.WHILE:
-			p.ast.Statement = append(p.ast.Statement, p.loop())
+			p.ast.Statement = append(p.ast.Statement, p.whileLoop())
 		case token.LCURLY:
 			p.ast.Statement = append(p.ast.Statement, p.block(false))
 			p.advance()
@@ -84,12 +84,12 @@ func (p *parser) parse() (*ast.Ast, error) {
 	return nil, p.err
 }
 
-func (p *parser) mutOrCall(statements *[]ast.Node) ast.Node {
+func (p *parser) mutationOrCall(statements *[]ast.Node) ast.Node {
 	if p.next.Token == token.DOT ||
 		p.next.Token == token.LBRACKET ||
 		p.next.Token == token.LPAREN ||
 		p.next.Token == token.METHOD_CALL {
-		return p.mutDSOrCall(statements)
+		return p.mutateDataStructureOrCall(statements)
 	}
 	line := p.current.Line
 	i := p.current.Lit
@@ -101,7 +101,7 @@ func (p *parser) mutOrCall(statements *[]ast.Node) ast.Node {
 	return &ast.Mut{Identifier: i, Expr: e, Line: line}
 }
 
-func (p *parser) localStmt() ast.Node {
+func (p *parser) localVariableDecl() ast.Node {
 	l := p.current.Line
 	isRecursive := false
 	p.advance()
@@ -134,7 +134,7 @@ func (p *parser) localStmt() ast.Node {
 	return &ast.Var{Identifier: i, Expr: e, IsRecursive: isRecursive, Line: l}
 }
 
-func (p *parser) global() ast.Node {
+func (p *parser) moduleVariableDecl() ast.Node {
 	l := p.current.Line
 	p.advance()
 	p.expect(token.IDENTIFIER)
@@ -168,17 +168,17 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 	for p.current.Token != token.RCURLY {
 		switch p.current.Token {
 		case token.IDENTIFIER:
-			block.Statement = append(block.Statement, p.mutOrCall(&block.Statement))
+			block.Statement = append(block.Statement, p.mutationOrCall(&block.Statement))
 		case token.LET:
-			block.Statement = append(block.Statement, p.global())
+			block.Statement = append(block.Statement, p.moduleVariableDecl())
 		case token.VAR:
-			block.Statement = append(block.Statement, p.localStmt())
+			block.Statement = append(block.Statement, p.localVariableDecl())
 		case token.IF:
-			block.Statement = append(block.Statement, p.ifStmt(isInsideLoop))
+			block.Statement = append(block.Statement, p.branchStmt(isInsideLoop))
 		case token.FOR:
 			block.Statement = append(block.Statement, p.forLoop())
 		case token.WHILE:
-			block.Statement = append(block.Statement, p.loop())
+			block.Statement = append(block.Statement, p.whileLoop())
 		case token.RET:
 			block.Statement = append(block.Statement, p.ret())
 		case token.BREAK:
@@ -219,7 +219,7 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 	return block
 }
 
-func (p *parser) mutDSOrCall(statements *[]ast.Node) ast.Node {
+func (p *parser) mutateDataStructureOrCall(statements *[]ast.Node) ast.Node {
 	*statements = append(*statements, &ast.ReferenceStmt{Value: p.current.Lit, Line: p.current.Line})
 	var i ast.Node
 Loop:
@@ -408,7 +408,7 @@ func (p *parser) iterforLoop(key string) ast.Node {
 	return &ast.IFor{Key: key, Value: v, Expr: e, Block: b, Line: line}
 }
 
-func (p *parser) ifStmt(isInsideLoop bool) ast.Node {
+func (p *parser) branchStmt(isInsideLoop bool) ast.Node {
 	l := p.current.Line
 	p.advance()
 	c := p.expression(token.LowestPrec)
@@ -437,7 +437,7 @@ func (p *parser) ifStmt(isInsideLoop bool) ast.Node {
 	return branch
 }
 
-func (p *parser) loop() ast.Node {
+func (p *parser) whileLoop() ast.Node {
 	l := p.current.Line
 	p.advance()
 	c := p.expression(token.LowestPrec)

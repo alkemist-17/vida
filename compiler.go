@@ -108,6 +108,7 @@ func (c *compiler) compileSubScript() (*Script, error) {
 func (c *compiler) compileStmt(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.Mut:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		to, sIdent := c.refScope(n.Identifier)
 		switch sIdent {
 		case rFree:
@@ -158,8 +159,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 		case rNotDefined:
 			c.generateReferenceError(n.Identifier, n.Line)
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Let:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		to, isPresent := c.sb.addGlobal(n.Identifier)
 		if isPresent {
 			c.generateGlobalAlreadyDefinedError(n.Identifier, n.Line)
@@ -183,8 +184,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 		case rLoc:
 			c.emitStore(from, to, storeFromLocal, storeFromGlobal)
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.MultipleLet:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		for _, id := range n.Identifiers {
 			to, isPresent := c.sb.addGlobal(id)
 			if isPresent {
@@ -210,8 +211,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 				c.emitStore(from, to, storeFromLocal, storeFromGlobal)
 			}
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Var:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if _, isGlobal := c.sb.isGlobal(n.Identifier); isGlobal {
 			c.generateGlobalShadowedByLocalError(n.Identifier, n.Line)
 			return
@@ -243,8 +244,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 			}
 		}
 		c.rAlloc++
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.MultipleVar:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		for _, id := range n.Identifiers {
 			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
 				c.generateGlobalShadowedByLocalError(id, n.Line)
@@ -278,14 +279,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 			}
 			c.rAlloc++
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Branch:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		elifCount := len(n.Elifs)
 		hasElif := elifCount != 0
 		e, hasElse := n.Else.(*ast.Else)
 		shouldJumpOutside := hasElif || hasElse
 		c.compileConditional(n.If.(*ast.If), shouldJumpOutside)
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if hasElif {
 			for i := 0; i < elifCount-1; i++ {
 				c.compileConditional(n.Elifs[i].(*ast.If), hasElif)
@@ -303,6 +303,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.jumps = c.jumps[:0]
 		}
 	case *ast.For:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.startLoopScope()
 		c.scope++
 		ireg := c.rAlloc
@@ -324,7 +325,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 
 		c.rAlloc++
 		c.emitForSet(ireg, 0)
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		loop := len(c.currentFn.Code)
 
 		c.compileStmt(n.Block)
@@ -338,6 +338,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc -= 3
 		c.scope--
 	case *ast.IFor:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.startLoopScope()
 		c.scope++
 		ireg := c.rAlloc
@@ -356,7 +357,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.exprToReg(i, s)
 
 		c.emitIForSet(0, c.rAlloc, ireg)
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		loop := len(c.currentFn.Code)
 
 		c.compileStmt(n.Block)
@@ -370,6 +370,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc--
 		c.scope--
 	case *ast.While:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.startLoopScope()
 		init := len(c.currentFn.Code)
 		idx, scope := c.compileExpr(n.Condition, true)
@@ -407,6 +408,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.continueCount[len(c.continueCount)-1]++
 		c.emitJump(0)
 	case *ast.ReferenceStmt:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.fromRefStmt = true
 		i, s := c.refScope(n.Value)
 		switch s {
@@ -420,8 +422,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.generateReferenceError(n.Value, n.Line)
 		}
 		c.rAlloc++
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.IGetStmt:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		i := c.rAlloc
 		if c.fromRefStmt {
 			i -= 1
@@ -439,11 +441,11 @@ func (c *compiler) compileStmt(node ast.Node) {
 		case rFree:
 			c.emitIGet(i, j, i, storeFromFree, storeFromLocal)
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if !c.fromRefStmt {
 			c.rAlloc--
 		}
 	case *ast.SelectStmt:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		i := c.rAlloc
 		if c.fromRefStmt {
 			i -= 1
@@ -461,11 +463,11 @@ func (c *compiler) compileStmt(node ast.Node) {
 		case rFree:
 			c.emitIGet(i, j, i, storeFromFree, storeFromLocal)
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if !c.fromRefStmt {
 			c.rAlloc--
 		}
 	case *ast.ISet:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		i := c.rAlloc
 		if c.fromRefStmt {
 			i -= 1
@@ -533,7 +535,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 		c.rAlloc--
 		c.fromRefStmt = false
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Block:
 		c.scope++
 		for i := range len(n.Statement) {
@@ -557,6 +558,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			}
 		}
 	case *ast.CallStmt:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		callable := c.rAlloc
 		if c.fromRefStmt {
 			callable -= 1
@@ -571,8 +573,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc = callable
 		c.fromRefStmt = false
 		c.emitCall(callable, len(n.Args), n.Ellipsis, 1)
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.MethodCallStmt:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		o := c.rAlloc
 		if c.fromRefStmt {
 			o -= 1
@@ -591,8 +593,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc = o
 		c.fromRefStmt = false
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Export:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if c.isSubcompiler {
 			i, s := c.compileExpr(n.Expr, true)
 			switch s {
@@ -606,7 +608,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 				c.emitRet(storeFromFree, i)
 			}
 		}
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	}
 }
 
