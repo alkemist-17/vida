@@ -1,12 +1,21 @@
-# Vida
+# Vida Language
 The official repo of the Vida programming language.
 
-Vida is a simple and elegant computer language.
+Vida 🌿🌻
+Version 0.4.0
 
-It features a minimal set of constructs that makes it easy to learn and suitable for most common programming tasks.
 
-Vida can be seamlessly extended and embedded in host environments or used as standalone language.
+Welcome to Vida 🌿🌻!
+
+
+Vida is a simple, general-purpose and extensible language designed for scripting. 
+Its minimal syntax and small set of orthogonal constructs make it easy to learn and reason about. 
+Vida is extensible by implementing the Value Go interface, allowing you to seamlessly blend 
+scripting with compiled performance.
+
 
 Vida is is still a WIP.
 
+
 The next milestone is stabilize it and take it to the version 1.0.0
+

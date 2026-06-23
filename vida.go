@@ -36,8 +36,10 @@ func About() string {
 	Welcome to Vida 🌿🌻!
 
 
-	Vida is a simple, general purpose and bytecode interpreted programming language.
-	It is extensible, clean and predictable.
+	Vida is a simple, general-purpose and extensible language designed for scripting. 
+	Its minimal syntax and small set of orthogonal constructs make it easy to learn and reason about. 
+	Vida is extensible by implementing the Value Go interface, allowing you to seamlessly 
+	blend scripting with compiled performance.
 	
 	Happy Vida coding!
 
