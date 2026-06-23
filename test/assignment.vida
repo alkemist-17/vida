@@ -60,5 +60,24 @@ assert(v2 == blockLocalMessage, localShadowMessage)
 
 assert(unknown == 1200, message)
 
+// Multiple declarations with one expression
+
+let theMessage = "This is a test of multiple single asignments"
+
+let jan, feb, mar, abr = theMessage
+
+assert(jan == theMessage and feb == theMessage and mar == theMessage and abr == theMessage)
+
+jan = 42; feb = 42; mar = 42; abr = 42
+
+var may, jun, jul, aug, sep = theMessage
+
+assert(jan == 42 and feb == 42 and mar == 42 and abr == 42)
+
+assert(may == theMessage and jun == theMessage and jul == theMessage and aug == theMessage and sep == theMessage)
+
+may = 1200; jun = 1200; jul = 1200; aug = 1200; sep = 1200;
+
+assert(may == 1200 and jun == 1200 and jul == 1200 and aug == 1200 and sep == 1200)
 
 

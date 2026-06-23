@@ -10,8 +10,8 @@ statement	:= 	global
 			|	if
 			|	while
 			|	export
-global		:=	'let' ident '=' expr
-local		:=	'var' 'rec'? ident '=' expr
+global		:=	'let' ident (',' ident)* '=' expr
+local		:=	'var' 'rec'? ident (',' ident)* '=' expr
 mut			:=	iden '=' expr
 dsmut		:=	ident select select* '=' expr
 call		:=	iden select* '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')'

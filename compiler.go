@@ -184,6 +184,33 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.emitStore(from, to, storeFromLocal, storeFromGlobal)
 		}
 		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+	case *ast.MultipleLet:
+		for _, id := range n.Identifiers {
+			to, isPresent := c.sb.addGlobal(id)
+			if isPresent {
+				c.generateGlobalAlreadyDefinedError(id, n.Line)
+				return
+			}
+			if _, isLocal, _ := c.sb.isLocal(id); isLocal {
+				c.generateGlobalShadowedByLocalError(id, n.Line)
+				return
+			}
+			*c.script.GlobalStore = append(*c.script.GlobalStore, Nil)
+			from, scope := c.compileExpr(n.Expr, true)
+			switch scope {
+			case rKonst:
+				c.emitStore(from, to, storeFromKonst, storeFromGlobal)
+			case rGlob:
+				if from != to {
+					c.emitStore(from, to, storeFromGlobal, storeFromGlobal)
+				}
+			case rFree:
+				c.emitStore(from, to, storeFromFree, storeFromGlobal)
+			case rLoc:
+				c.emitStore(from, to, storeFromLocal, storeFromGlobal)
+			}
+		}
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Var:
 		if _, isGlobal := c.sb.isGlobal(n.Identifier); isGlobal {
 			c.generateGlobalShadowedByLocalError(n.Identifier, n.Line)
@@ -216,6 +243,41 @@ func (c *compiler) compileStmt(node ast.Node) {
 			}
 		}
 		c.rAlloc++
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+	case *ast.MultipleVar:
+		for _, id := range n.Identifiers {
+			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
+				c.generateGlobalShadowedByLocalError(id, n.Line)
+				return
+			}
+			if _, isLocal, k := c.sb.isLocal(id); isLocal && c.scope == k.scope {
+				c.generateLocalAlreadyDefinedError(id, n.Line)
+				return
+			}
+			to := c.rAlloc
+			var from, scope int
+			if n.IsRecursive {
+				c.sb.addLocal(id, c.level, c.scope, to)
+				c.emitLoad(c.kb.NilIndex(), to, loadFromKonst)
+				from, scope = c.compileExpr(n.Expr, true)
+			} else {
+				from, scope = c.compileExpr(n.Expr, true)
+				c.sb.addLocal(id, c.level, c.scope, to)
+			}
+			switch scope {
+			case rKonst:
+				c.emitLoad(from, to, loadFromKonst)
+			case rGlob:
+				c.emitLoad(from, to, loadFromGlobal)
+			case rFree:
+				c.emitLoad(from, to, loadFromFree)
+			case rLoc:
+				if from != to {
+					c.emitLoad(from, to, loadFromLocal)
+				}
+			}
+			c.rAlloc++
+		}
 		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 	case *ast.Branch:
 		elifCount := len(n.Elifs)

@@ -2,8 +2,7 @@
 * Mutual Recursive Functions Calls
 */
 
-let cons = nil
-let prod = nil
+let cons, prod = nil
 let totalCalls = 0
 let N = 23
 

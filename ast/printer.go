@@ -46,7 +46,7 @@ const (
 
 func nodeColor(node Node) string {
 	switch node.(type) {
-	case *Var, *Let, *Mut:
+	case *Var, *Let, *Mut, *MultipleLet:
 		return colorDecl
 	case *Reference, *ReferenceStmt, *Identifier:
 		return colorRef
@@ -106,6 +106,14 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 
 	case *Let:
 		writeLine(sb, own, "Let "+n.Identifier, col, color)
+		writeChild(sb, cont, n.Expr, color)
+
+	case *MultipleLet:
+		writeLine(sb, own, "Let "+multipleIdentifiers(n.Identifiers), col, color)
+		writeChild(sb, cont, n.Expr, color)
+
+	case *MultipleVar:
+		writeLine(sb, own, "Var "+multipleIdentifiers(n.Identifiers), col, color)
 		writeChild(sb, cont, n.Expr, color)
 
 	case *Mut:
@@ -410,4 +418,8 @@ func nodeSlice[T Node](in []T) []Node {
 		out[i] = v
 	}
 	return out
+}
+
+func multipleIdentifiers(identifiers []string) string {
+	return strings.Join(identifiers, ",")
 }

@@ -112,6 +112,21 @@ func (p *parser) localStmt() ast.Node {
 	p.expect(token.IDENTIFIER)
 	i := p.current.Lit
 	p.advance()
+	if p.current.Token == token.COMMA {
+		identifiers := make([]string, 0, 5)
+		identifiers = append(identifiers, i)
+		for p.current.Token == token.COMMA {
+			p.advance()
+			p.expect(token.IDENTIFIER)
+			identifiers = append(identifiers, p.current.Lit)
+			p.advance()
+		}
+		p.expect(token.ASSIGN)
+		p.advance()
+		e := p.expression(token.LowestPrec)
+		p.advance()
+		return &ast.MultipleVar{Identifiers: identifiers, Expr: e, IsRecursive: isRecursive, Line: l}
+	}
 	p.expect(token.ASSIGN)
 	p.advance()
 	e := p.expression(token.LowestPrec)
@@ -125,6 +140,21 @@ func (p *parser) global() ast.Node {
 	p.expect(token.IDENTIFIER)
 	i := p.current.Lit
 	p.advance()
+	if p.current.Token == token.COMMA {
+		identifiers := make([]string, 0, 5)
+		identifiers = append(identifiers, i)
+		for p.current.Token == token.COMMA {
+			p.advance()
+			p.expect(token.IDENTIFIER)
+			identifiers = append(identifiers, p.current.Lit)
+			p.advance()
+		}
+		p.expect(token.ASSIGN)
+		p.advance()
+		e := p.expression(token.LowestPrec)
+		p.advance()
+		return &ast.MultipleLet{Identifiers: identifiers, Expr: e, Line: l}
+	}
 	p.expect(token.ASSIGN)
 	p.advance()
 	e := p.expression(token.LowestPrec)

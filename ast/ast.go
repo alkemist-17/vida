@@ -13,8 +13,15 @@ type Ast struct {
 type Var struct {
 	Identifier  string
 	Expr        Node
-	IsRecursive bool
 	Line        uint
+	IsRecursive bool
+}
+
+type MultipleVar struct {
+	Identifiers []string
+	Expr        Node
+	Line        uint
+	IsRecursive bool
 }
 
 type Mut struct {
@@ -27,6 +34,12 @@ type Let struct {
 	Identifier string
 	Expr       Node
 	Line       uint
+}
+
+type MultipleLet struct {
+	Identifiers []string
+	Expr        Node
+	Line        uint
 }
 
 type Reference struct {
@@ -233,6 +246,8 @@ func (ast *Ast) _node()           {}
 func (loc *Var) _node()           {}
 func (mut *Mut) _node()           {}
 func (mut *Let) _node()           {}
+func (mut *MultipleLet) _node()   {}
+func (mut *MultipleVar) _node()   {}
 func (ref *Reference) _node()     {}
 func (ref *ReferenceStmt) _node() {}
 func (id *Identifier) _node()     {}
