@@ -44,11 +44,11 @@ func (it *ArrayIterator) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ArrayIterator) IGet(Value) (Value, error) {
+func (it *ArrayIterator) Get(Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ArrayIterator) ISet(Value, Value) error {
+func (it *ArrayIterator) Set(Value, Value) error {
 	return verror.ErrOpNotDefinedForIterators
 }
 
@@ -127,11 +127,11 @@ func (it *ObjectIterator) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ObjectIterator) IGet(Value) (Value, error) {
+func (it *ObjectIterator) Get(Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ObjectIterator) ISet(Value, Value) error {
+func (it *ObjectIterator) Set(Value, Value) error {
 	return verror.ErrOpNotDefinedForIterators
 }
 
@@ -195,11 +195,11 @@ func (it *StringIterator) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *StringIterator) IGet(Value) (Value, error) {
+func (it *StringIterator) Get(Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *StringIterator) ISet(Value, Value) error {
+func (it *StringIterator) Set(Value, Value) error {
 	return verror.ErrOpNotDefinedForIterators
 }
 
@@ -262,11 +262,11 @@ func (it *IntegerIterator) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *IntegerIterator) IGet(Value) (Value, error) {
+func (it *IntegerIterator) Get(Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *IntegerIterator) ISet(Value, Value) error {
+func (it *IntegerIterator) Set(Value, Value) error {
 	return verror.ErrOpNotDefinedForIterators
 }
 
@@ -330,11 +330,11 @@ func (bi *BytesIterator) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (bi *BytesIterator) IGet(Value) (Value, error) {
+func (bi *BytesIterator) Get(Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (bi *BytesIterator) ISet(Value, Value) error {
+func (bi *BytesIterator) Set(Value, Value) error {
 	return verror.ErrOpNotDefinedForIterators
 }
 

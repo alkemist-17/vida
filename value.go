@@ -17,8 +17,8 @@ type Value interface {
 	Boolean() Bool
 	Prefix(uint64) (Value, error)
 	Binop(uint64, Value) (Value, error)
-	IGet(Value) (Value, error)
-	ISet(Value, Value) error
+	Get(Value) (Value, error)
+	Set(Value, Value) error
 	Equals(Value) Bool
 	IsIterable() Bool
 	Iterator() Value
@@ -111,11 +111,11 @@ func (b Bool) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (b Bool) IGet(index Value) (Value, error) {
+func (b Bool) Get(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (b Bool) ISet(index, val Value) error {
+func (b Bool) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
@@ -205,7 +205,7 @@ func (s *String) Binop(op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (s *String) IGet(index Value) (Value, error) {
+func (s *String) Get(index Value) (Value, error) {
 	switch r := index.(type) {
 	case Integer:
 		if s.Runes == nil {
@@ -223,7 +223,7 @@ func (s *String) IGet(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (s *String) ISet(index, val Value) error {
+func (s *String) Set(index, val Value) error {
 	return verror.ErrValueIsConstant
 }
 
@@ -375,11 +375,11 @@ func (l Integer) Binop(op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (i Integer) IGet(index Value) (Value, error) {
+func (i Integer) Get(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (i Integer) ISet(index, val Value) error {
+func (i Integer) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
@@ -506,11 +506,11 @@ func (f Float) Binop(op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (f Float) IGet(index Value) (Value, error) {
+func (f Float) Get(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (f Float) ISet(index, val Value) error {
+func (f Float) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
@@ -604,7 +604,7 @@ func (xs *Array) Binop(op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (xs *Array) IGet(index Value) (Value, error) {
+func (xs *Array) Get(index Value) (Value, error) {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(xs.Value))
@@ -618,7 +618,7 @@ func (xs *Array) IGet(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (xs *Array) ISet(index, val Value) error {
+func (xs *Array) Set(index, val Value) error {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(xs.Value))
@@ -754,14 +754,14 @@ func (o *Object) Binop(op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (o *Object) IGet(index Value) (Value, error) {
+func (o *Object) Get(index Value) (Value, error) {
 	if val, ok := o.Value[index.ObjectKey()]; ok {
 		return val, nil
 	}
 	return Nil, nil
 }
 
-func (o *Object) ISet(index, val Value) error {
+func (o *Object) Set(index, val Value) error {
 	o.Value[index.ObjectKey()] = val
 	return nil
 }
@@ -975,11 +975,11 @@ func (nativeFn NativeFunction) Binop(op uint64, r Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (nativeFn NativeFunction) IGet(index Value) (Value, error) {
+func (nativeFn NativeFunction) Get(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (nativeFn NativeFunction) ISet(index, val Value) error {
+func (nativeFn NativeFunction) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
@@ -1054,14 +1054,14 @@ func (e *VidaError) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e *VidaError) IGet(index Value) (Value, error) {
+func (e *VidaError) Get(index Value) (Value, error) {
 	if val, ok := index.(*String); ok && val.Value == errorMessageFieldName {
 		return e.Message, nil
 	}
 	return Nil, nil
 }
 
-func (e *VidaError) ISet(index, val Value) error {
+func (e *VidaError) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
@@ -1128,14 +1128,14 @@ func (e *Enum) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e *Enum) IGet(index Value) (Value, error) {
+func (e *Enum) Get(index Value) (Value, error) {
 	if val, ok := e.Pairs[index.String()]; ok {
 		return val, nil
 	}
 	return Nil, nil
 }
 
-func (e *Enum) ISet(Value, Value) error {
+func (e *Enum) Set(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 
@@ -1235,7 +1235,7 @@ func (b *Bytes) Binop(op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (b *Bytes) IGet(index Value) (Value, error) {
+func (b *Bytes) Get(index Value) (Value, error) {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(b.Value))
@@ -1249,7 +1249,7 @@ func (b *Bytes) IGet(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (b *Bytes) ISet(index, val Value) error {
+func (b *Bytes) Set(index, val Value) error {
 	return verror.ErrValueIsConstant
 }
 
@@ -1305,11 +1305,11 @@ func (i ValueSemanticsImpl) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (i ValueSemanticsImpl) IGet(Value) (Value, error) {
+func (i ValueSemanticsImpl) Get(Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (i ValueSemanticsImpl) ISet(Value, Value) error {
+func (i ValueSemanticsImpl) Set(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 
@@ -1367,11 +1367,11 @@ func (i *ReferenceSemanticsImpl) Binop(uint64, Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (i *ReferenceSemanticsImpl) IGet(Value) (Value, error) {
+func (i *ReferenceSemanticsImpl) Get(Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (i *ReferenceSemanticsImpl) ISet(Value, Value) error {
+func (i *ReferenceSemanticsImpl) Set(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 

@@ -35,11 +35,11 @@ func (t Time) Binop(op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (t Time) IGet(index Value) (Value, error) {
+func (t Time) Get(index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 
-func (t Time) ISet(index, val Value) error {
+func (t Time) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 

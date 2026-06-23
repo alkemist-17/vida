@@ -17,8 +17,8 @@ const (
 	opEq       = uint64(eq) << shift56
 	opArray    = uint64(array) << shift56
 	opObject   = uint64(object) << shift56
-	opIGet     = uint64(iGet) << shift56
-	opISet     = uint64(iSet) << shift56
+	opIGet     = uint64(get) << shift56
+	opISet     = uint64(set) << shift56
 	opSlice    = uint64(slice) << shift56
 	opForSet   = uint64(forSet) << shift56
 	opForLoop  = uint64(forLoop) << shift56

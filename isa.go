@@ -12,8 +12,8 @@ const (
 	binopQ
 	array
 	object
-	iGet
-	iSet
+	get
+	set
 	slice
 	forSet
 	forLoop
@@ -38,8 +38,8 @@ var opcodes = [...]string{
 	binopQ:   "BinopQ",
 	array:    "Array",
 	object:   "Object",
-	iGet:     "IGet",
-	iSet:     "ISet",
+	get:      "Get",
+	set:      "Set",
 	slice:    "Slice",
 	forSet:   "For",
 	forLoop:  "Loop",
