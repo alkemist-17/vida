@@ -6,10 +6,7 @@ Welcome to Vida 🌿🌻!
 Version 0.4.3
 
 
-Vida is a simple, general-purpose and extensible language designed for fast scripting. 
-Its minimal syntax and small set of constructs make it easy to learn and reason about. 
-Vida is extensible by implementing the Value interface, allowing you to seamlessly 
-blend scripting with compiled performance.
+Vida is a simple, general-purpose and extensible scripting language.
 
 
 Vida is is still a WIP.
