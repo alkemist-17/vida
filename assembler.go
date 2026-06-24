@@ -17,8 +17,8 @@ const (
 	opEq       = uint64(eq) << shift56
 	opArray    = uint64(array) << shift56
 	opObject   = uint64(object) << shift56
-	opIGet     = uint64(get) << shift56
-	opISet     = uint64(set) << shift56
+	opGet      = uint64(get) << shift56
+	opSet      = uint64(set) << shift56
 	opSlice    = uint64(slice) << shift56
 	opForSet   = uint64(forSet) << shift56
 	opForLoop  = uint64(forLoop) << shift56
@@ -29,6 +29,7 @@ const (
 	opFun      = uint64(fun) << shift56
 	opCall     = uint64(call) << shift56
 	opRet      = uint64(ret) << shift56
+	opSend     = uint64(send) << shift56
 	opHeader   = uint64(header)
 	opEnd      = uint64(end)
 )
@@ -170,24 +171,34 @@ func (c *compiler) emitObject(to int) {
 	c.currentFn.Code = append(c.currentFn.Code, uint64(to)|opObject)
 }
 
-func (c *compiler) emitIGet(indexable, index, to, scopeIndex, scopeIndexable int) {
+func (c *compiler) emitGet(indexable, index, to, scopeIndex, scopeIndexable int) {
 	var flags byte = byte(scopeIndexable) | (byte(scopeIndex) << shift4)
 	c.currentFn.Code = append(c.currentFn.Code,
 		uint64(to)|
 			(uint64(index)<<shift16)|
 			(uint64(indexable)<<shift32)|
 			(uint64(flags)<<shift48)|
-			opIGet)
+			opGet)
 }
 
-func (c *compiler) emitISet(indexable, index, expr, scopeIdx, scopeExpr int) {
+func (c *compiler) emitSet(indexable, index, expr, scopeIdx, scopeExpr int) {
 	var flags byte = byte(scopeExpr) | (byte(scopeIdx) << shift4)
 	c.currentFn.Code = append(c.currentFn.Code,
 		uint64(expr)|
 			(uint64(index)<<shift16)|
 			(uint64(indexable)<<shift32)|
 			(uint64(flags)<<shift48)|
-			opISet)
+			opSet)
+}
+
+func (c *compiler) emitSend(indexable, index, to, scopeIndex, scopeIndexable int) {
+	var flags byte = byte(scopeIndexable) | (byte(scopeIndex) << shift4)
+	c.currentFn.Code = append(c.currentFn.Code,
+		uint64(to)|
+			(uint64(index)<<shift16)|
+			(uint64(indexable)<<shift32)|
+			(uint64(flags)<<shift48)|
+			opSend)
 }
 
 func (c *compiler) emitSlice(mode, sliceable, to int) {

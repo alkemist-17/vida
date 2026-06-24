@@ -28,6 +28,7 @@ type Value interface {
 	Type() string
 	Clone() Value
 	ObjectKey() string
+	GetVTable() Value
 }
 
 type NilValue struct {
@@ -154,6 +155,10 @@ func (b Bool) ObjectKey() string {
 	return "false"
 }
 
+func (b Bool) GetVTable() Value {
+	return Nil
+}
+
 func (b Bool) Type() string {
 	return "bool"
 }
@@ -164,8 +169,9 @@ func (b Bool) Clone() Value {
 
 type String struct {
 	ReferenceSemanticsImpl
-	Runes []rune
-	Value string
+	Runes  []rune
+	VTable Value
+	Value  string
 }
 
 func (s *String) Boolean() Bool {
@@ -265,6 +271,10 @@ func (s String) String() string {
 
 func (s *String) ObjectKey() string {
 	return s.Value
+}
+
+func (s *String) GetVTable() Value {
+	return s.VTable
 }
 
 func (s *String) Type() string {
@@ -420,6 +430,10 @@ func (i Integer) ObjectKey() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
+func (i Integer) GetVTable() Value {
+	return Nil
+}
+
 func (i Integer) Type() string {
 	return "int"
 }
@@ -546,6 +560,10 @@ func (f Float) String() string {
 
 func (f Float) ObjectKey() string {
 	return fmt.Sprintf("%vf", strconv.FormatFloat(float64(f), 'g', -1, 64))
+}
+
+func (f Float) GetVTable() Value {
+	return Nil
 }
 
 func (f Float) Type() string {
@@ -1011,6 +1029,10 @@ func (nativeFn NativeFunction) ObjectKey() string {
 	return "NativeFunction"
 }
 
+func (nativeFn NativeFunction) GetVTable() Value {
+	return Nil
+}
+
 func (nativeFn NativeFunction) Clone() Value {
 	return nativeFn
 }
@@ -1173,6 +1195,10 @@ func (e Enum) String() string {
 
 func (e *Enum) ObjectKey() string {
 	return fmt.Sprintf("Enum(%p)", e)
+}
+
+func (e *Enum) GetVTable() Value {
+	return Nil
 }
 
 func (e *Enum) Type() string {
@@ -1349,6 +1375,10 @@ func (i ValueSemanticsImpl) ObjectKey() string {
 	return EmptyString
 }
 
+func (i ValueSemanticsImpl) GetVTable() Value {
+	return Nil
+}
+
 func (i ValueSemanticsImpl) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nil)
 }
@@ -1409,6 +1439,10 @@ func (i *ReferenceSemanticsImpl) Clone() Value {
 
 func (i *ReferenceSemanticsImpl) ObjectKey() string {
 	return EmptyString
+}
+
+func (i *ReferenceSemanticsImpl) GetVTable() Value {
+	return Nil
 }
 
 func (i *ReferenceSemanticsImpl) MarshalJSON() ([]byte, error) {

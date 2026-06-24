@@ -24,6 +24,7 @@ const (
 	fun
 	ret
 	call
+	send
 )
 
 var opcodes = [...]string{
@@ -50,4 +51,5 @@ var opcodes = [...]string{
 	fun:      "Fun",
 	ret:      "Ret",
 	call:     "Call",
+	send:     "send",
 }

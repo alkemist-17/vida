@@ -18,15 +18,19 @@ type Context struct {
 	script           *Script
 	extensionsLoader ExtensionsLoader
 	extensionCache   map[string]*Object
+	initialVTables   map[string]Value
 	threadPool       *internalThreadPool
 	vm               *VM
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
+	initialVTables := make(map[string]Value)
+	initialVTables[stringVTableIdentifier] = loadStringVTable()
 	return &Context{
 		src:              src,
 		extensionsLoader: extensionsLoader,
 		contextID:        contextID,
+		initialVTables:   initialVTables,
 	}
 }
 
@@ -35,7 +39,7 @@ func (ctx *Context) Compile() (err error) {
 	if err != nil {
 		return
 	}
-	script, err := newCompiler(ast, ctx.contextID, ctx.extensionsLoader).compileScript()
+	script, err := newCompiler(ast, ctx.contextID, ctx, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}
@@ -59,7 +63,7 @@ func (ctx *Context) CompileAndRun() (err error) {
 	if err != nil {
 		return
 	}
-	script, err := newCompiler(ast, ctx.contextID, ctx.extensionsLoader).compileScript()
+	script, err := newCompiler(ast, ctx.contextID, ctx, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}
@@ -121,7 +125,7 @@ func (ctx *Context) RunDebugSession() (err error) {
 	}
 	fmt.Println(ast.StringifyAST(scriptAST))
 	pressEnterToContinue()
-	script, err := newCompiler(scriptAST, ctx.contextID, ctx.extensionsLoader).compileScript()
+	script, err := newCompiler(scriptAST, ctx.contextID, ctx, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}

@@ -280,7 +280,7 @@ func textJoin(ctx *Context, args ...Value) (Value, error) {
 func textToLowerCase(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
-			return &String{Value: strings.ToLower(v.Value)}, nil
+			return &String{Value: strings.ToLower(v.Value), VTable: ctx.initialVTables[stringVTableIdentifier]}, nil
 		}
 	}
 	return Nil, nil
@@ -289,7 +289,7 @@ func textToLowerCase(ctx *Context, args ...Value) (Value, error) {
 func textToUpperCase(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
-			return &String{Value: strings.ToUpper(v.Value)}, nil
+			return &String{Value: strings.ToUpper(v.Value), VTable: ctx.initialVTables[stringVTableIdentifier]}, nil
 		}
 	}
 	return Nil, nil

@@ -346,7 +346,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 					tok = token.DOUBLE_DOT
 				}
 			} else {
-				tok = token.DOT
+				tok = token.OBJECT_MESSAGE
 			}
 		case '!':
 			if l.c == '=' {
@@ -391,7 +391,13 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case ']':
 			tok = token.RBRACKET
 		case ':':
-			tok = token.METHOD_CALL
+			if l.c == ':' {
+				l.next()
+				tok = token.DOUBLE_COLON
+			} else {
+				tok = token.UNEXPECTED
+				l.LexicalError = verror.New(l.ScriptID, "found a colon ':' out of place", verror.LexicalErrType, l.line)
+			}
 		case '~':
 			tok = token.TILDE
 		case '|':

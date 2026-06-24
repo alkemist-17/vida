@@ -461,6 +461,18 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			if err != nil {
 				return vm.createError(ip, err)
 			}
+		case send:
+			var val Value
+			var err error
+			vtable := vm.Frame.stack[P&clean16].GetVTable()
+			switch v := vtable.(type) {
+			case *Object:
+				val, err = v.Get((*vm.Script.Konstants)[A])
+			}
+			if err != nil {
+				return vm.createError(ip, err)
+			}
+			vm.Frame.stack[B] = val
 		case slice:
 			val, err := vm.processSlice(P, A)
 			if err != nil {
@@ -967,6 +979,18 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			if err != nil {
 				return vm.createError(ip, err)
 			}
+		case send:
+			var val Value
+			var err error
+			vtable := vm.Frame.stack[P&clean16].GetVTable()
+			switch v := vtable.(type) {
+			case *Object:
+				val, err = v.Get((*vm.Script.Konstants)[A])
+			}
+			if err != nil {
+				return vm.createError(ip, err)
+			}
+			vm.Frame.stack[B] = val
 		case slice:
 			val, err := vm.processSlice(P, A)
 			if err != nil {
