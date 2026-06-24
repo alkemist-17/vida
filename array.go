@@ -2,12 +2,155 @@ package vida
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
+	"strings"
 	"unsafe"
 
+	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
 )
+
+type Array struct {
+	ReferenceSemanticsImpl
+	Value []Value
+}
+
+func (xs *Array) Boolean() Bool {
+	return True
+}
+
+func (xs *Array) Prefix(op uint64) (Value, error) {
+	if op == uint64(token.NOT) {
+		return False, nil
+	}
+	return Nil, verror.ErrPrefixOpNotDefined
+}
+
+func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
+	switch r := rhs.(type) {
+	case *Array:
+		switch op {
+		case uint64(token.ADD):
+			rLen := len(r.Value)
+			if rLen == 0 {
+				return xs, nil
+			}
+			lLen := len(xs.Value)
+			if rLen+lLen >= verror.MaxMemSize {
+				return Nil, verror.ErrMaxMemSize
+			}
+			values := make([]Value, lLen+rLen)
+			copy(values[:lLen], xs.Value)
+			copy(values[lLen:], r.Value)
+			return &Array{Value: values}, nil
+		case uint64(token.IN):
+			return IsMemberOf(ctx, xs, rhs)
+		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return xs, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(ctx, xs, rhs)
+	}
+	return Nil, verror.ErrBinaryOpNotDefined
+}
+
+func (xs *Array) Get(ctx *Context, index Value) (Value, error) {
+	switch r := index.(type) {
+	case Integer:
+		l := Integer(len(xs.Value))
+		if r < 0 {
+			r += l
+		}
+		if 0 <= r && r < l {
+			return xs.Value[r], nil
+		}
+	}
+	return Nil, verror.ErrValueNotIndexable
+}
+
+func (xs *Array) Set(index, val Value) error {
+	switch r := index.(type) {
+	case Integer:
+		l := Integer(len(xs.Value))
+		if r < 0 {
+			r += l
+		}
+		if 0 <= r && r < l {
+			xs.Value[r] = val
+			return nil
+		}
+	}
+	return verror.ErrValueNotIndexable
+}
+
+func (xs *Array) Equals(other Value) Bool {
+	val, isArray := other.(*Array)
+	return Bool(isArray && xs == val)
+}
+
+func (xs *Array) IsIterable() Bool {
+	return true
+}
+
+func (xs *Array) IsCallable() Bool {
+	return false
+}
+
+func (xs *Array) Iterator() Value {
+	return &ArrayIterator{Array: xs.Value, Init: -1, End: len(xs.Value)}
+}
+
+func (xs *Array) String() string {
+	return xs.stringify(make(map[uintptr]bool))
+}
+
+func (xs *Array) stringify(visited map[uintptr]bool) string {
+	if len(xs.Value) == 0 {
+		return "[]"
+	}
+
+	ptr := reflect.ValueOf(xs).Pointer()
+
+	if visited[ptr] {
+		return "[...]"
+	}
+
+	visited[ptr] = true
+	defer delete(visited, ptr)
+
+	var r []string
+	for _, v := range xs.Value {
+		r = append(r, stringWithVisited(v, visited))
+	}
+	return fmt.Sprintf("[%v]", strings.Join(r, ", "))
+}
+
+func (xs *Array) ObjectKey() string {
+	return fmt.Sprintf("Array(%p)", xs)
+}
+
+func (xs *Array) Type() string {
+	return "array"
+}
+
+func (xs *Array) Clone() Value {
+	c := make([]Value, len(xs.Value))
+	for i, v := range xs.Value {
+		c[i] = v.Clone()
+	}
+	return &Array{Value: c}
+}
+
+func (xs *Array) MarshalJSON() ([]byte, error) {
+	return json.Marshal(xs.Value)
+}
 
 func loadFoundationArray() Value {
 	m := &Object{Value: make(map[string]Value, 24)}

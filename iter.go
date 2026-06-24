@@ -8,8 +8,8 @@ import (
 
 type Iterator interface {
 	Next() bool
-	Key() Value
-	Value() Value
+	Key(*Context) Value
+	Value(*Context) Value
 }
 
 type ArrayIterator struct {
@@ -24,11 +24,11 @@ func (it *ArrayIterator) Next() bool {
 	return it.Init < it.End
 }
 
-func (it *ArrayIterator) Key() Value {
+func (it *ArrayIterator) Key(ctx *Context) Value {
 	return Integer(it.Init)
 }
 
-func (it *ArrayIterator) Value() Value {
+func (it *ArrayIterator) Value(ctx *Context) Value {
 	return it.Array[it.Init]
 }
 
@@ -40,11 +40,7 @@ func (it *ArrayIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ArrayIterator) Binop(uint64, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *ArrayIterator) Get(Value) (Value, error) {
+func (it *ArrayIterator) Get(*Context, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
@@ -69,7 +65,7 @@ func (it *ArrayIterator) Iterator() Value {
 }
 
 func (it ArrayIterator) String() string {
-	return fmt.Sprintf("ArrayIter [i = %v, e = %v]", it.Init, it.End)
+	return fmt.Sprintf("ArrayIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
 func (it *ArrayIterator) Clone() Value {
@@ -77,7 +73,7 @@ func (it *ArrayIterator) Clone() Value {
 }
 
 func (it *ArrayIterator) Type() string {
-	return "ArrayIter"
+	return "ArrayIterator"
 }
 
 type ObjectIterator struct {
@@ -107,11 +103,11 @@ func (it *ObjectIterator) Next() bool {
 	return it.Init < it.End
 }
 
-func (it *ObjectIterator) Key() Value {
-	return &String{Value: it.Keys[it.Init]}
+func (it *ObjectIterator) Key(ctx *Context) Value {
+	return &String{Value: it.Keys[it.Init], VTable: ctx.initialVTables[stringVT]}
 }
 
-func (it *ObjectIterator) Value() Value {
+func (it *ObjectIterator) Value(ctx *Context) Value {
 	return it.Obj[it.Keys[it.Init]]
 }
 
@@ -123,11 +119,7 @@ func (it *ObjectIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ObjectIterator) Binop(uint64, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *ObjectIterator) Get(Value) (Value, error) {
+func (it *ObjectIterator) Get(*Context, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
@@ -152,7 +144,7 @@ func (it *ObjectIterator) Iterator() Value {
 }
 
 func (it ObjectIterator) String() string {
-	return fmt.Sprintf("DocIter [i = %v, e = %v]", it.Init, it.End)
+	return fmt.Sprintf("ObjectIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
 func (it *ObjectIterator) Clone() Value {
@@ -160,7 +152,7 @@ func (it *ObjectIterator) Clone() Value {
 }
 
 func (it *ObjectIterator) Type() string {
-	return "ObjIter"
+	return "ObjectIterator"
 }
 
 type StringIterator struct {
@@ -175,12 +167,12 @@ func (it *StringIterator) Next() bool {
 	return it.Init < it.End
 }
 
-func (it *StringIterator) Key() Value {
+func (it *StringIterator) Key(ctx *Context) Value {
 	return Integer(it.Init)
 }
 
-func (it *StringIterator) Value() Value {
-	return &String{Value: string(it.Runes[it.Init]), Runes: it.Runes[it.Init : it.Init+1]}
+func (it *StringIterator) Value(ctx *Context) Value {
+	return &String{Value: string(it.Runes[it.Init]), Runes: it.Runes[it.Init : it.Init+1], VTable: ctx.initialVTables[stringVT]}
 }
 
 func (it *StringIterator) Boolean() Bool {
@@ -191,11 +183,7 @@ func (it *StringIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *StringIterator) Binop(uint64, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *StringIterator) Get(Value) (Value, error) {
+func (it *StringIterator) Get(*Context, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
@@ -220,7 +208,7 @@ func (it *StringIterator) Iterator() Value {
 }
 
 func (it StringIterator) String() string {
-	return fmt.Sprintf("StrIter [i = %v, e = %v]", it.Init, it.End)
+	return fmt.Sprintf("StringIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
 func (it *StringIterator) Clone() Value {
@@ -228,7 +216,7 @@ func (it *StringIterator) Clone() Value {
 }
 
 func (it *StringIterator) Type() string {
-	return "StrIter"
+	return "StringIterator"
 }
 
 type IntegerIterator struct {
@@ -242,11 +230,11 @@ func (it *IntegerIterator) Next() bool {
 	return it.Init < it.End
 }
 
-func (it *IntegerIterator) Key() Value {
+func (it *IntegerIterator) Key(ctx *Context) Value {
 	return it.Init
 }
 
-func (it *IntegerIterator) Value() Value {
+func (it *IntegerIterator) Value(ctx *Context) Value {
 	return it.Init
 }
 
@@ -258,11 +246,7 @@ func (it *IntegerIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *IntegerIterator) Binop(uint64, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *IntegerIterator) Get(Value) (Value, error) {
+func (it *IntegerIterator) Get(*Context, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
@@ -287,7 +271,7 @@ func (it *IntegerIterator) Iterator() Value {
 }
 
 func (it IntegerIterator) String() string {
-	return fmt.Sprintf("IntIter [i = %v, e = %v]", it.Init, it.End)
+	return fmt.Sprintf("IntIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
 func (it *IntegerIterator) Clone() Value {
@@ -295,7 +279,7 @@ func (it *IntegerIterator) Clone() Value {
 }
 
 func (it *IntegerIterator) Type() string {
-	return "IntIter"
+	return "IntIterator"
 }
 
 type BytesIterator struct {
@@ -310,11 +294,11 @@ func (bi *BytesIterator) Next() bool {
 	return bi.Init < bi.End
 }
 
-func (bi *BytesIterator) Key() Value {
+func (bi *BytesIterator) Key(ctx *Context) Value {
 	return Integer(bi.Init)
 }
 
-func (bi *BytesIterator) Value() Value {
+func (bi *BytesIterator) Value(ctx *Context) Value {
 	return Integer(bi.Bytes[bi.Init])
 }
 
@@ -326,11 +310,7 @@ func (bi *BytesIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (bi *BytesIterator) Binop(uint64, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (bi *BytesIterator) Get(Value) (Value, error) {
+func (bi *BytesIterator) Get(*Context, Value) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
@@ -355,7 +335,7 @@ func (bi *BytesIterator) Iterator() Value {
 }
 
 func (bi BytesIterator) String() string {
-	return fmt.Sprintf("BytesIter [i = %v, e = %v]", bi.Init, bi.End)
+	return fmt.Sprintf("BytesIterator[i = %v, e = %v]", bi.Init, bi.End)
 }
 
 func (bi *BytesIterator) Clone() Value {
@@ -363,5 +343,5 @@ func (bi *BytesIterator) Clone() Value {
 }
 
 func (bi *BytesIterator) Type() string {
-	return "BytesIter"
+	return "BytesIterator"
 }

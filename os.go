@@ -14,7 +14,7 @@ func loadFoundationOS() Value {
 	m.Value["getFromEnv"] = NativeFunction(osGetEnv)
 	m.Value["pwd"] = NativeFunction(osGetWD)
 	m.Value["hostname"] = NativeFunction(osHostname)
-	m.Value["pathSeparator"] = &String{Value: string(os.PathSeparator)}
+	m.Value["pathSeparator"] = NativeFunction(osGetPathSeparator)
 	m.Value["mkdir"] = NativeFunction(osMkdir)
 	m.Value["mkdirAll"] = NativeFunction(osMkdirAll)
 	m.Value["rm"] = NativeFunction(osRemove)
@@ -31,7 +31,7 @@ func loadFoundationOS() Value {
 func osArgs(ctx *Context, args ...Value) (Value, error) {
 	xs := &Array{}
 	for _, v := range os.Args {
-		xs.Value = append(xs.Value, &String{Value: v})
+		xs.Value = append(xs.Value, &String{Value: v, VTable: ctx.initialVTables[stringVT]})
 	}
 	return xs, nil
 }
@@ -39,7 +39,7 @@ func osArgs(ctx *Context, args ...Value) (Value, error) {
 func osEnviron(ctx *Context, args ...Value) (Value, error) {
 	xs := &Array{}
 	for _, v := range os.Environ() {
-		xs.Value = append(xs.Value, &String{Value: v})
+		xs.Value = append(xs.Value, &String{Value: v, VTable: ctx.initialVTables[stringVT]})
 	}
 	return xs, nil
 }
@@ -54,10 +54,10 @@ func osGetEnv(ctx *Context, args ...Value) (Value, error) {
 		if val, ok := args[0].(*String); ok {
 			xs := make([]Value, 0, 2)
 			if r, ok := os.LookupEnv(val.Value); ok {
-				xs = append(xs, &String{Value: r})
+				xs = append(xs, &String{Value: r, VTable: ctx.initialVTables[stringVT]})
 				xs = append(xs, Bool(ok))
 			} else {
-				xs = append(xs, &String{Value: EmptyString})
+				xs = append(xs, &String{Value: EmptyString, VTable: ctx.initialVTables[stringVT]})
 				xs = append(xs, Bool(ok))
 			}
 			return &Array{Value: xs}, nil
@@ -68,18 +68,22 @@ func osGetEnv(ctx *Context, args ...Value) (Value, error) {
 
 func osGetWD(ctx *Context, args ...Value) (Value, error) {
 	if d, e := os.Getwd(); e == nil {
-		return &String{Value: d}, nil
+		return &String{Value: d, VTable: ctx.initialVTables[stringVT]}, nil
 	} else {
-		return &VidaError{Message: &String{Value: e.Error()}}, nil
+		return &VidaError{Message: &String{Value: e.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 	}
 }
 
 func osHostname(ctx *Context, args ...Value) (Value, error) {
 	if h, e := os.Hostname(); e == nil {
-		return &String{Value: h}, nil
+		return &String{Value: h, VTable: ctx.initialVTables[stringVT]}, nil
 	} else {
-		return &VidaError{Message: &String{Value: e.Error()}}, nil
+		return &VidaError{Message: &String{Value: e.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 	}
+}
+
+func osGetPathSeparator(ctx *Context, args ...Value) (Value, error) {
+	return &String{Value: string(os.PathSeparator), VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 func osMkdir(ctx *Context, args ...Value) (Value, error) {
@@ -87,7 +91,7 @@ func osMkdir(ctx *Context, args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.Mkdir(d.Value, 0660)
 			if err != nil && !os.IsExist(err) {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return True, nil
 		}
@@ -100,7 +104,7 @@ func osMkdirAll(ctx *Context, args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.MkdirAll(d.Value, 0660)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return True, nil
 		}
@@ -113,7 +117,7 @@ func osRemove(ctx *Context, args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.Remove(d.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return True, nil
 		}
@@ -126,7 +130,7 @@ func osRemoveAll(ctx *Context, args ...Value) (Value, error) {
 		if d, ok := args[0].(*String); ok {
 			err := os.RemoveAll(d.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return True, nil
 		}
@@ -139,7 +143,7 @@ func osName(ctx *Context, args ...Value) (Value, error) {
 }
 
 func osArch(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: runtime.GOARCH}, nil
+	return &String{Value: runtime.GOARCH, VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 func osRunCMD(ctx *Context, args ...Value) (Value, error) {
@@ -158,7 +162,7 @@ func osRunCMD(ctx *Context, args ...Value) (Value, error) {
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return True, nil
 		}

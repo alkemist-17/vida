@@ -1,5 +1,152 @@
 package vida
 
+import (
+	"encoding/json"
+	"fmt"
+	"maps"
+	"reflect"
+	"strings"
+
+	"github.com/alkemist-17/vida/token"
+	"github.com/alkemist-17/vida/verror"
+)
+
+type Object struct {
+	ReferenceSemanticsImpl
+	Value map[string]Value
+}
+
+func (o *Object) Boolean() Bool {
+	return true
+}
+
+func (o *Object) Prefix(op uint64) (Value, error) {
+	if op == uint64(token.NOT) {
+		return False, nil
+	}
+	return Nil, verror.ErrPrefixOpNotDefined
+}
+
+func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
+	switch r := rhs.(type) {
+	case *Object:
+		switch op {
+		case uint64(token.ADD):
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
+		case uint64(token.SUB):
+			pairs := make(map[string]Value)
+			for k, v := range o.Value {
+				if _, contains := r.Value[k]; !contains {
+					pairs[k] = v
+				}
+			}
+			return &Object{Value: pairs}, nil
+		case uint64(token.BAND):
+			pairs := make(map[string]Value)
+			for k := range o.Value {
+				if x, contains := r.Value[k]; contains {
+					pairs[k] = x
+				}
+			}
+			return &Object{Value: pairs}, nil
+		case uint64(token.BOR):
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
+		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return o, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(ctx, o, rhs)
+	}
+	return Nil, verror.ErrBinaryOpNotDefined
+}
+
+func (o *Object) Get(ctx *Context, index Value) (Value, error) {
+	if val, ok := o.Value[index.ObjectKey()]; ok {
+		return val, nil
+	}
+	return Nil, nil
+}
+
+func (o *Object) Set(index, val Value) error {
+	o.Value[index.ObjectKey()] = val
+	return nil
+}
+
+func (o *Object) Equals(other Value) Bool {
+	val, isObject := other.(*Object)
+	return Bool(isObject && o == val)
+}
+
+func (o *Object) IsIterable() Bool {
+	return true
+}
+
+func (o *Object) IsCallable() Bool {
+	return false
+}
+
+func (o *Object) Call(ctx *Context, args ...Value) (Value, error) {
+	return Nil, verror.ErrNotImplemented
+}
+
+func (o *Object) Iterator() Value {
+	return newObjectIterator(o)
+}
+
+func (o *Object) String() string {
+	return o.stringify(make(map[uintptr]bool))
+}
+
+func (o *Object) stringify(visited map[uintptr]bool) string {
+	if len(o.Value) == 0 {
+		return "{}"
+	}
+
+	ptr := reflect.ValueOf(o).Pointer()
+	if visited[ptr] {
+		return "{...}"
+	}
+
+	visited[ptr] = true
+	defer delete(visited, ptr)
+
+	var r []string
+	for k, v := range o.Value {
+		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
+	}
+	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
+}
+
+func (o *Object) ObjectKey() string {
+	return fmt.Sprintf("Object(%p)", o)
+}
+
+func (o *Object) Type() string {
+	return "object"
+}
+
+func (o *Object) Clone() Value {
+	m := make(map[string]Value, len(o.Value))
+	for k, v := range o.Value {
+		m[k] = v.Clone()
+	}
+	return &Object{Value: m}
+}
+
+func (o *Object) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.Value)
+}
+
 func loadObjectLib() Value {
 	m := &Object{Value: make(map[string]Value, 16)}
 	m.Value["inject"] = NativeFunction(objectInjectProperties)
@@ -167,7 +314,7 @@ func objectGetKeys(ctx *Context, args ...Value) (Value, error) {
 			keys := make([]Value, int(lobj))
 			var idx int
 			for k := range self.Value {
-				keys[idx] = &String{Value: k}
+				keys[idx] = &String{Value: k, VTable: ctx.initialVTables[stringVT]}
 				idx++
 			}
 			return &Array{Value: keys}, nil

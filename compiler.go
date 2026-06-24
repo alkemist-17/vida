@@ -1258,7 +1258,7 @@ func (c *compiler) compileBinaryExpr(n *ast.BinaryExpr, isRoot bool) (int, int) 
 		ridx, rscope := c.compileExpr(n.Rhs, false)
 		switch rscope {
 		case rKonst:
-			if val, err := (*c.kb.Konstants)[lidx].Binop(uint64(n.Op), (*c.kb.Konstants)[ridx]); err == nil {
+			if val, err := (*c.kb.Konstants)[lidx].Binop(c.kb.ctx, uint64(n.Op), (*c.kb.Konstants)[ridx]); err == nil {
 				return c.integrateKonst(val)
 			} else {
 				c.hadError = true

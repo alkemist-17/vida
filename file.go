@@ -40,7 +40,7 @@ func fileOpen(ctx *Context, args ...Value) (Value, error) {
 			file, err := os.OpenFile(fname.Value, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 			if err != nil {
 				file.Close()
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return generateFileHandlerObject(file), nil
 		}
@@ -52,7 +52,7 @@ func fileOpen(ctx *Context, args ...Value) (Value, error) {
 				file, err := os.OpenFile(path.Value, int(mode), 0666)
 				if err != nil {
 					file.Close()
-					return &VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 				}
 				return generateFileHandlerObject(file), nil
 			}
@@ -68,7 +68,7 @@ func fileCreate(ctx *Context, args ...Value) (Value, error) {
 			file, err := os.Create(fname.Value)
 			if err != nil {
 				file.Close()
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return generateFileHandlerObject(file), nil
 		}
@@ -96,7 +96,7 @@ func fileRemove(ctx *Context, args ...Value) (Value, error) {
 		if path, ok := args[0].(*String); ok {
 			err := os.Remove(path.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return True, nil
 		}
@@ -110,7 +110,7 @@ func fileSize(ctx *Context, args ...Value) (Value, error) {
 		if path, ok := args[0].(*String); ok {
 			fileInfo, err := os.Stat(path.Value)
 			if errors.Is(err, os.ErrNotExist) {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return Integer(fileInfo.Size()), nil
 		}
@@ -136,13 +136,17 @@ func fileCreateTemp(ctx *Context, args ...Value) (Value, error) {
 				f, err := os.CreateTemp(dir.Value, pattern.Value)
 				if err != nil {
 					f.Close()
-					return &VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 				}
 				return generateFileHandlerObject(f), nil
 			}
 		}
 	}
 	return Nil, nil
+}
+
+func fileGetTempDir(ctx *Context, args ...Value) (Value, error) {
+	return &String{Value: os.TempDir(), VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 // FileHandler API
@@ -167,14 +171,14 @@ func (file *FileHandler) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (file *FileHandler) Binop(op uint64, rhs Value) (Value, error) {
+func (file *FileHandler) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return Nil, nil
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(file, rhs)
+		return IsMemberOf(ctx, file, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -208,19 +212,19 @@ func fileClose() NativeFunction {
 					if file.Handler.Fd() == os.Stdout.Fd() ||
 						file.Handler.Fd() == os.Stdin.Fd() ||
 						file.Handler.Fd() == os.Stderr.Fd() {
-						return &VidaError{Message: &String{Value: "cannot close file open system files"}}, nil
+						return &VidaError{Message: &String{Value: "cannot close file open system files", VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					if file.IsClosed {
-						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed, VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					err := file.Handler.Close()
 					file.IsClosed = true
 					if err != nil {
-						return &VidaError{Message: &String{Value: err.Error()}}, nil
+						return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					return True, nil
 				}
-				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		return Nil, nil
@@ -234,7 +238,7 @@ func fileIsClosed() NativeFunction {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					return Bool(file.IsClosed), nil
 				}
-				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		return Nil, nil
@@ -246,9 +250,9 @@ func fileName() NativeFunction {
 		if len(args) > 0 {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
-					return &String{Value: file.Handler.Name()}, nil
+					return &String{Value: file.Handler.Name(), VTable: ctx.initialVTables[stringVT]}, nil
 				}
-				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		return Nil, nil
@@ -261,7 +265,7 @@ func fileReadLines() NativeFunction {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed, VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					scanner := bufio.NewScanner(file.Handler)
 					var data []string
@@ -271,15 +275,15 @@ func fileReadLines() NativeFunction {
 					if err := scanner.Err(); err != nil {
 						file.IsClosed = true
 						file.Handler.Close()
-						return &VidaError{Message: &String{Value: err.Error()}}, nil
+						return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					xs := &Array{}
 					for _, v := range data {
-						xs.Value = append(xs.Value, &String{Value: v})
+						xs.Value = append(xs.Value, &String{Value: v, VTable: ctx.initialVTables[stringVT]})
 					}
 					return xs, nil
 				}
-				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		return Nil, nil
@@ -292,20 +296,20 @@ func fileRead() NativeFunction {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed, VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					if b, ok := args[1].(*Bytes); ok {
 						n, err := file.Handler.Read(b.Value)
 						if err != nil && !errors.Is(err, io.EOF) {
 							file.Handler.Close()
 							file.IsClosed = true
-							return &VidaError{Message: &String{Value: err.Error()}}, nil
+							return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 						}
 						return Integer(n), nil
 					}
-					return &VidaError{Message: &String{Value: expectedBytes}}, nil
+					return &VidaError{Message: &String{Value: expectedBytes, VTable: ctx.initialVTables[stringVT]}}, nil
 				}
-				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		return Nil, nil
@@ -318,14 +322,14 @@ func fileWrite() NativeFunction {
 			if obj, ok := args[0].(*Object); ok {
 				if file, ok := obj.Value[fileHandlerName].(*FileHandler); ok {
 					if file.IsClosed {
-						return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+						return &VidaError{Message: &String{Value: fileAlreadyClosed, VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					if data, ok := args[1].(*String); ok {
 						i, err := file.Handler.WriteString(data.Value)
 						if err != nil {
 							file.IsClosed = true
 							file.Handler.Close()
-							return &VidaError{Message: &String{Value: err.Error()}}, nil
+							return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 						}
 						return Integer(i), nil
 					} else if data, ok := args[1].(*Bytes); ok {
@@ -333,14 +337,14 @@ func fileWrite() NativeFunction {
 						if err != nil {
 							file.IsClosed = true
 							file.Handler.Close()
-							return &VidaError{Message: &String{Value: err.Error()}}, nil
+							return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 						}
 						return Integer(i), nil
 					} else {
-						return &VidaError{Message: &String{Value: "expected data of type string"}}, nil
+						return &VidaError{Message: &String{Value: "expected data of type string", VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 				}
-				return &VidaError{Message: &String{Value: argIsNotFileHandler}}, nil
+				return &VidaError{Message: &String{Value: argIsNotFileHandler, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		return Nil, nil

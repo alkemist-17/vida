@@ -25,7 +25,7 @@ type Context struct {
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
 	initialVTables := make(map[string]Value)
-	initialVTables[stringVTableIdentifier] = loadStringVTable()
+	initialVTables[stringVT] = loadStringVTable()
 	return &Context{
 		src:              src,
 		extensionsLoader: extensionsLoader,

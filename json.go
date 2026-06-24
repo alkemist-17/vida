@@ -18,13 +18,13 @@ func loadFoundationJSON() Value {
 func jsonValueToJsonString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.Marshal(args[0]); err == nil {
-			return &String{Value: string(b)}, nil
+			return &String{Value: string(b), VTable: ctx.initialVTables[stringVT]}, nil
 		} else {
-			return &VidaError{Message: &String{Value: err.Error()}}, nil
+			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 		}
 	}
 	b, _ := json.Marshal(Nil)
-	return &String{Value: string(b)}, nil
+	return &String{Value: string(b), VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 func jsonParse(ctx *Context, args ...Value) (Value, error) {
@@ -32,10 +32,10 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 		valid, _ := jsonIsValid(ctx, args[0])
 		switch t := valid.(type) {
 		case NilValue:
-			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 		case Bool:
 			if !t {
-				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 		switch t := args[0].(type) {
@@ -48,16 +48,16 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 				case bool:
 					return Bool(v), nil
 				case string:
-					return &String{Value: v}, nil
+					return &String{Value: v, VTable: ctx.initialVTables[stringVT]}, nil
 				case float64:
 					return Float(v), nil
 				case map[string]any:
-					return parseObject(v), nil
+					return parseObject(ctx, v), nil
 				case []any:
-					return parseArray(v), nil
+					return parseArray(ctx, v), nil
 				}
 			} else {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		case *Bytes:
 			var value any
@@ -68,16 +68,16 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 				case bool:
 					return Bool(v), nil
 				case string:
-					return &String{Value: v}, nil
+					return &String{Value: v, VTable: ctx.initialVTables[stringVT]}, nil
 				case float64:
 					return Float(v), nil
 				case map[string]any:
-					return parseObject(v), nil
+					return parseObject(ctx, v), nil
 				case []any:
-					return parseArray(v), nil
+					return parseArray(ctx, v), nil
 				}
 			} else {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
 	}
@@ -101,15 +101,15 @@ func jsonIsValid(ctx *Context, args ...Value) (Value, error) {
 func jsonPretty(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.MarshalIndent(args[0], EmptyString, "  "); err == nil {
-			return &String{Value: string(b)}, nil
+			return &String{Value: string(b), VTable: ctx.initialVTables[stringVT]}, nil
 		} else {
-			return &VidaError{Message: &String{Value: err.Error()}}, nil
+			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 		}
 	}
 	return Nil, nil
 }
 
-func parseObject(input map[string]any) *Object {
+func parseObject(ctx *Context, input map[string]any) *Object {
 	o := &Object{Value: make(map[string]Value, len(input))}
 	for kk, vv := range input {
 		switch tt := vv.(type) {
@@ -118,19 +118,19 @@ func parseObject(input map[string]any) *Object {
 		case bool:
 			o.Value[kk] = Bool(tt)
 		case string:
-			o.Value[kk] = &String{Value: tt}
+			o.Value[kk] = &String{Value: tt, VTable: ctx.initialVTables[stringVT]}
 		case float64:
 			o.Value[kk] = Float(tt)
 		case map[string]any:
-			o.Value[kk] = parseObject(tt)
+			o.Value[kk] = parseObject(ctx, tt)
 		case []any:
-			o.Value[kk] = parseArray(tt)
+			o.Value[kk] = parseArray(ctx, tt)
 		}
 	}
 	return o
 }
 
-func parseArray(input []any) *Array {
+func parseArray(ctx *Context, input []any) *Array {
 	A := &Array{Value: make([]Value, len(input))}
 	for ii, vv := range input {
 		switch tt := vv.(type) {
@@ -139,13 +139,13 @@ func parseArray(input []any) *Array {
 		case bool:
 			A.Value[ii] = Bool(tt)
 		case string:
-			A.Value[ii] = &String{Value: tt}
+			A.Value[ii] = &String{Value: tt, VTable: ctx.initialVTables[stringVT]}
 		case float64:
 			A.Value[ii] = Float(tt)
 		case map[string]any:
-			A.Value[ii] = parseObject(tt)
+			A.Value[ii] = parseObject(ctx, tt)
 		case []any:
-			A.Value[ii] = parseArray(tt)
+			A.Value[ii] = parseArray(ctx, tt)
 		}
 	}
 	return A

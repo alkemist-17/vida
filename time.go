@@ -22,20 +22,20 @@ func (t Time) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (t Time) Binop(op uint64, rhs Value) (Value, error) {
+func (t Time) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.OR):
 		return t, nil
 	case uint64(token.IN):
-		return IsMemberOf(t, rhs)
+		return IsMemberOf(ctx, t, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
-func (t Time) Get(index Value) (Value, error) {
+func (t Time) Get(ctx *Context, index Value) (Value, error) {
 	return Nil, verror.ErrValueNotIndexable
 }
 

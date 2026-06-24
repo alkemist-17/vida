@@ -20,7 +20,7 @@ func loadFoundationIO() Value {
 	m.Value["size"] = NativeFunction(fileSize)
 	m.Value["isFile"] = NativeFunction(fileIsFile)
 	m.Value["createTemp"] = NativeFunction(fileCreateTemp)
-	m.Value["tempDir"] = &String{Value: os.TempDir()}
+	m.Value["tempDir"] = NativeFunction(fileGetTempDir)
 	m.Value["ok"] = True
 	m.Value["R"] = Integer(os.O_RDONLY)
 	m.Value["W"] = Integer(os.O_WRONLY)
@@ -45,20 +45,20 @@ func ioFWrite(ctx *Context, args ...Value) (Value, error) {
 				if err != nil {
 					fileHandler.IsClosed = true
 					fileHandler.Handler.Close()
-					return &VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 				}
 				return Integer(n), nil
 			}
-			return &VidaError{Message: &String{Value: noOrClosedFH}}, nil
+			return &VidaError{Message: &String{Value: noOrClosedFH, VTable: ctx.initialVTables[stringVT]}}, nil
 		case *FileHandler:
 			if handler.IsClosed {
-				return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+				return &VidaError{Message: &String{Value: fileAlreadyClosed, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			n, err := VFprint(handler.Handler, args[1:]...)
 			if err != nil {
 				handler.IsClosed = true
 				handler.Handler.Close()
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return Integer(n), nil
 		}
@@ -76,27 +76,27 @@ func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 					if err != nil {
 						fileHandler.IsClosed = true
 						fileHandler.Handler.Close()
-						return &VidaError{Message: &String{Value: err.Error()}}, nil
+						return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					return Integer(n), nil
 				}
-				return &VidaError{Message: &String{Value: noStringFormat}}, nil
+				return &VidaError{Message: &String{Value: noStringFormat, VTable: ctx.initialVTables[stringVT]}}, nil
 			}
-			return &VidaError{Message: &String{Value: noOrClosedFH}}, nil
+			return &VidaError{Message: &String{Value: noOrClosedFH, VTable: ctx.initialVTables[stringVT]}}, nil
 		case *FileHandler:
 			if formatstr, ok := args[1].(*String); ok {
 				if handler.IsClosed {
-					return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
+					return &VidaError{Message: &String{Value: fileAlreadyClosed, VTable: ctx.initialVTables[stringVT]}}, nil
 				}
 				n, err := VFprintf(handler.Handler, formatstr.Value, args[2:]...)
 				if err != nil {
 					handler.IsClosed = true
 					handler.Handler.Close()
-					return &VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 				}
 				return Integer(n), nil
 			}
-			return &VidaError{Message: &String{Value: noStringFormat}}, nil
+			return &VidaError{Message: &String{Value: noStringFormat, VTable: ctx.initialVTables[stringVT]}}, nil
 		}
 	}
 	return Nil, nil
@@ -112,11 +112,11 @@ func ioPrintF(ctx *Context, args ...Value) (Value, error) {
 		if formatstr, ok := args[0].(*String); ok {
 			n, err := VFprintf(os.Stdout, formatstr.Value, args[1:]...)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return Integer(n), nil
 		}
-		return &VidaError{Message: &String{Value: noStringFormat}}, nil
+		return &VidaError{Message: &String{Value: noStringFormat, VTable: ctx.initialVTables[stringVT]}}, nil
 	}
 	return Nil, nil
 }
@@ -126,11 +126,11 @@ func ioErrorf(ctx *Context, args ...Value) (Value, error) {
 		if formatstr, ok := args[0].(*String); ok {
 			n, err := VFprintf(os.Stderr, formatstr.Value, args[1:]...)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
+				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 			return Integer(n), nil
 		}
-		return &VidaError{Message: &String{Value: noStringFormat}}, nil
+		return &VidaError{Message: &String{Value: noStringFormat, VTable: ctx.initialVTables[stringVT]}}, nil
 	}
 	return Nil, nil
 }

@@ -3,7 +3,7 @@ package extensions
 import "github.com/alkemist-17/vida"
 
 func loadExampleExtension() vida.Value {
-	m := &vida.Object{Value: make(map[string]vida.Value)}
+	m := &vida.Object{Value: make(map[string]vida.Value, 1)}
 	m.Value["sayHello"] = vida.NativeFunction(greet)
 	return m
 }

@@ -127,7 +127,7 @@ func coreLen(ctx *Context, args ...Value) (Value, error) {
 
 func coreType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return &String{Value: args[0].Type()}, nil
+		return &String{Value: args[0].Type(), VTable: ctx.initialVTables[stringVT]}, nil
 	}
 	return Nil, nil
 }
@@ -137,7 +137,7 @@ func coreFormat(ctx *Context, args ...Value) (Value, error) {
 		switch v := args[0].(type) {
 		case *String:
 			s, e := VSprintf(v.Value, args[1:]...)
-			return &String{Value: s}, e
+			return &String{Value: s, VTable: ctx.initialVTables[stringVT]}, e
 		}
 	}
 	return Nil, nil
@@ -501,7 +501,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
 			for it.Next() {
-				A = append(A, it.Key())
+				A = append(A, it.Key(ctx))
 			}
 			return &Array{Value: A}, nil
 		}
@@ -510,7 +510,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
 			for it.Next() {
-				A = append(A, it.Value())
+				A = append(A, it.Value(ctx))
 			}
 			return &Array{Value: A}, nil
 		}
@@ -519,7 +519,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
 			for it.Next() {
-				pair := &Array{Value: []Value{it.Key(), it.Value()}}
+				pair := &Array{Value: []Value{it.Key(ctx), it.Value(ctx)}}
 				A = append(A, pair)
 			}
 			return &Array{Value: A}, nil
@@ -541,7 +541,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 		it := v.Iterator().(Iterator)
 		A := make([]Value, utf8.RuneCountInString(v.Value))
 		for it.Next() {
-			A[i] = it.Value()
+			A[i] = it.Value(ctx)
 			i++
 		}
 		return &Array{Value: A}, nil
@@ -567,7 +567,7 @@ common:
 		it := obj.Iterator().(Iterator)
 		A := make([]Value, len(obj.Value))
 		for it.Next() {
-			B := []Value{it.Key(), it.Value()}
+			B := []Value{it.Key(ctx), it.Value(ctx)}
 			A[i] = &Array{Value: B}
 			i++
 		}
@@ -615,7 +615,7 @@ func coreReadLine(ctx *Context, args ...Value) (Value, error) {
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		return &String{Value: scanner.Text()}, nil
+		return &String{Value: scanner.Text(), VTable: ctx.initialVTables[stringVT]}, nil
 	}
 	if err := scanner.Err(); err != nil {
 		return Nil, err
@@ -679,7 +679,7 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationColor()
 					default:
 						module = Nil
-						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil
+						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value), VTable: ctx.initialVTables[stringVT]}}, nil
 					}
 					ctx.extensionCache[extensionName.Value] = module.(*Object)
 					return module, nil
@@ -696,10 +696,10 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						return module, nil
 					}
 				}
-				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil
+				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value), VTable: ctx.initialVTables[stringVT]}}, nil
 			}
 		}
-		return &VidaError{Message: &String{Value: "load function should have one argument of type string"}}, nil
+		return &VidaError{Message: &String{Value: "load function should have one argument of type string", VTable: ctx.initialVTables[stringVT]}}, nil
 	}
 }
 
@@ -732,7 +732,7 @@ func StringLength(input *String) Integer {
 	return Integer(len(input.Runes))
 }
 
-func IsMemberOf(args ...Value) (Bool, error) {
+func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {
 		case *Array:
@@ -746,7 +746,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *Object:
 			item := args[0]
 			for k := range collection.Value {
-				if item.Equals(&String{Value: k}) {
+				if item.Equals(&String{Value: k, VTable: ctx.initialVTables[stringVT]}) {
 					return True, nil
 				}
 			}
@@ -754,7 +754,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *String:
 			item := args[0]
 			for _, char := range collection.Runes {
-				if item.Equals(&String{Value: string(char)}) {
+				if item.Equals(&String{Value: string(char), VTable: ctx.initialVTables[stringVT]}) {
 					return True, nil
 				}
 			}

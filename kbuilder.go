@@ -29,7 +29,7 @@ func (kb *konstBuilder) StringIndex(value string) int {
 		return idx
 	}
 	i := kb.index
-	*kb.Konstants = append(*kb.Konstants, &String{Value: value, VTable: kb.ctx.initialVTables[stringVTableIdentifier]})
+	*kb.Konstants = append(*kb.Konstants, &String{Value: value, VTable: kb.ctx.initialVTables[stringVT]})
 	kb.stringMap[value] = i
 	kb.index++
 	return i

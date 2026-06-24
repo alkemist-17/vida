@@ -1,7 +1,9 @@
 package vida
 
 const (
-	stringVTableIdentifier = "strVT"
+	stringVT = "stringVT"
+	arrayVT  = "arrayVT"
+	objectVT = "objectVT"
 )
 
 func loadStringVTable() Value {
