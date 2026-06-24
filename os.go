@@ -139,7 +139,7 @@ func osRemoveAll(ctx *Context, args ...Value) (Value, error) {
 }
 
 func osName(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: runtime.GOOS}, nil
+	return &String{Value: runtime.GOOS, VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 func osArch(ctx *Context, args ...Value) (Value, error) {

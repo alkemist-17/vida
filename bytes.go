@@ -503,7 +503,7 @@ func bytesUUID(ctx *Context, args ...Value) (Value, error) {
 		if b, ok := args[0].(*Bytes); ok && len(b.Value) == bytesUUIDLen {
 			return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b.Value[0:4], b.Value[4:6], b.Value[6:8], b.Value[8:10], b.Value[10:]), VTable: ctx.initialVTables[stringVT]}, nil
 		}
-		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"}, nil
+		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", VTable: ctx.initialVTables[stringVT]}, nil
 	}
 	b := make([]byte, bytesUUIDLen)
 	cryptoRand.Read(b)

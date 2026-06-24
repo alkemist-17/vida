@@ -191,7 +191,7 @@ func timeNow(ctx *Context, args ...Value) (Value, error) {
 		} else {
 			r := time.Now().Format(f.Value)
 			if len(r) > 0 {
-				return &String{Value: r}, nil
+				return &String{Value: r, VTable: ctx.initialVTables[stringVT]}, nil
 			}
 		}
 	case 2:
@@ -199,9 +199,9 @@ func timeNow(ctx *Context, args ...Value) (Value, error) {
 			if l, ok := args[1].(*String); ok {
 				switch l.Value {
 				case time.Local.String():
-					return &String{Value: time.Now().Local().Format(f.Value)}, nil
+					return &String{Value: time.Now().Local().Format(f.Value), VTable: ctx.initialVTables[stringVT]}, nil
 				case time.UTC.String():
-					return &String{Value: time.Now().UTC().Format(f.Value)}, nil
+					return &String{Value: time.Now().UTC().Format(f.Value), VTable: ctx.initialVTables[stringVT]}, nil
 				}
 			}
 		}
@@ -237,7 +237,7 @@ func timeFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if f, ok := args[1].(*String); ok {
-				return &String{Value: time.Time(t).Format(f.Value)}, nil
+				return &String{Value: time.Time(t).Format(f.Value), VTable: ctx.initialVTables[stringVT]}, nil
 			}
 		}
 	}
@@ -317,7 +317,7 @@ func timeGetNanoseconds(ctx *Context, args ...Value) (Value, error) {
 func timeGetLocation(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
-			return &String{Value: time.Time(t).Location().String()}, nil
+			return &String{Value: time.Time(t).Location().String(), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -366,7 +366,7 @@ func timeParse(ctx *Context, args ...Value) (Value, error) {
 			if dt, ok := args[1].(*String); ok {
 				t, err := time.Parse(f.Value, dt.Value)
 				if err != nil {
-					return &VidaError{Message: &String{Value: err.Error()}}, nil
+					return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
 				}
 				return Time(t), nil
 			}
@@ -378,7 +378,7 @@ func timeParse(ctx *Context, args ...Value) (Value, error) {
 func timeSince(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
-			return timeCreateDuration(time.Since(time.Time(t))), nil
+			return timeCreateDuration(ctx, time.Since(time.Time(t))), nil
 		}
 	}
 	return Nil, nil
@@ -400,7 +400,7 @@ func timeSub(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if u, ok := args[1].(Time); ok {
-				return timeCreateDuration(time.Time(t).Sub(time.Time(u))), nil
+				return timeCreateDuration(ctx, time.Time(t).Sub(time.Time(u))), nil
 			}
 		}
 	}
@@ -429,7 +429,7 @@ func timeBefore(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeCreateDuration(v time.Duration) *Object {
+func timeCreateDuration(ctx *Context, v time.Duration) *Object {
 	o := &Object{Value: make(map[string]Value, 7)}
 	o.Value["hours"] = Float(v.Hours())
 	o.Value["minutes"] = Float(v.Minutes())
@@ -437,6 +437,6 @@ func timeCreateDuration(v time.Duration) *Object {
 	o.Value["microseconds"] = Integer(v.Microseconds())
 	o.Value["milliseconds"] = Integer(v.Milliseconds())
 	o.Value["nanoseconds"] = Integer(v.Nanoseconds())
-	o.Value["description"] = &String{Value: v.String()}
+	o.Value["description"] = &String{Value: v.String(), VTable: ctx.initialVTables[stringVT]}
 	return o
 }

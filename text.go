@@ -86,7 +86,7 @@ func textFromCodepoints(ctx *Context, args ...Value) (Value, error) {
 			runes = append(runes, int32(v))
 		}
 	}
-	return &String{Value: string(runes), Runes: runes}, nil
+	return &String{Value: string(runes), Runes: runes, VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 func textTrim(ctx *Context, args ...Value) (Value, error) {
@@ -95,10 +95,10 @@ func textTrim(ctx *Context, args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if l > 1 {
 				if p, ok := args[1].(*String); ok {
-					return &String{Value: strings.Trim(v.Value, p.Value)}, nil
+					return &String{Value: strings.Trim(v.Value, p.Value), VTable: ctx.initialVTables[stringVT]}, nil
 				}
 			}
-			return &String{Value: strings.Trim(v.Value, " ")}, nil
+			return &String{Value: strings.Trim(v.Value, " "), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -110,10 +110,10 @@ func textTrimLeft(ctx *Context, args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if l > 1 {
 				if p, ok := args[1].(*String); ok {
-					return &String{Value: strings.TrimLeft(v.Value, p.Value)}, nil
+					return &String{Value: strings.TrimLeft(v.Value, p.Value), VTable: ctx.initialVTables[stringVT]}, nil
 				}
 			}
-			return &String{Value: strings.TrimLeft(v.Value, " ")}, nil
+			return &String{Value: strings.TrimLeft(v.Value, " "), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -125,10 +125,10 @@ func textTrimRight(ctx *Context, args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if l > 1 {
 				if p, ok := args[1].(*String); ok {
-					return &String{Value: strings.TrimRight(v.Value, p.Value)}, nil
+					return &String{Value: strings.TrimRight(v.Value, p.Value), VTable: ctx.initialVTables[stringVT]}, nil
 				}
 			}
-			return &String{Value: strings.TrimRight(v.Value, " ")}, nil
+			return &String{Value: strings.TrimRight(v.Value, " "), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -140,10 +140,10 @@ func textSplit(ctx *Context, args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if l > 1 {
 				if sep, ok := args[1].(*String); ok {
-					return textStringToArray(strings.Split(v.Value, sep.Value)), nil
+					return textStringToArray(ctx, strings.Split(v.Value, sep.Value)), nil
 				}
 			}
-			return textStringToArray(strings.Split(v.Value, " ")), nil
+			return textStringToArray(ctx, strings.Split(v.Value, " ")), nil
 		}
 	}
 	return Nil, nil
@@ -152,7 +152,7 @@ func textSplit(ctx *Context, args ...Value) (Value, error) {
 func textFields(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
-			return textStringToArray(strings.Fields(v.Value)), nil
+			return textStringToArray(ctx, strings.Fields(v.Value)), nil
 		}
 	}
 	return Nil, nil
@@ -165,7 +165,7 @@ func textRepeat(ctx *Context, args ...Value) (Value, error) {
 				if StringLength(v)*times > verror.MaxMemSize {
 					return Nil, nil
 				}
-				return &String{Value: strings.Repeat(v.Value, int(times))}, nil
+				return &String{Value: strings.Repeat(v.Value, int(times)), VTable: ctx.initialVTables[stringVT]}, nil
 			}
 		}
 	}
@@ -178,7 +178,7 @@ func textReplaceN(ctx *Context, args ...Value) (Value, error) {
 			if old, ok := args[1].(*String); ok {
 				if nnew, ok := args[2].(*String); ok {
 					if k, ok := args[3].(Integer); ok {
-						return &String{Value: strings.Replace(s.Value, old.Value, nnew.Value, int(k))}, nil
+						return &String{Value: strings.Replace(s.Value, old.Value, nnew.Value, int(k)), VTable: ctx.initialVTables[stringVT]}, nil
 					}
 				}
 			}
@@ -192,7 +192,7 @@ func textReplaceAll(ctx *Context, args ...Value) (Value, error) {
 		if s, ok := args[0].(*String); ok {
 			if old, ok := args[1].(*String); ok {
 				if nnew, ok := args[2].(*String); ok {
-					return &String{Value: strings.ReplaceAll(s.Value, old.Value, nnew.Value)}, nil
+					return &String{Value: strings.ReplaceAll(s.Value, old.Value, nnew.Value), VTable: ctx.initialVTables[stringVT]}, nil
 				}
 			}
 		}
@@ -200,7 +200,7 @@ func textReplaceAll(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textCenterString(s *String, width int, sep string) *String {
+func textCenterString(ctx *Context, s *String, width int, sep string) *String {
 	strLen := int(StringLength(s))
 	if width <= strLen {
 		return s
@@ -208,7 +208,7 @@ func textCenterString(s *String, width int, sep string) *String {
 	padding := width - strLen
 	leftPad := padding / 2
 	rightPad := padding - leftPad
-	return &String{Value: strings.Repeat(sep, leftPad) + s.Value + strings.Repeat(sep, rightPad)}
+	return &String{Value: strings.Repeat(sep, leftPad) + s.Value + strings.Repeat(sep, rightPad), VTable: ctx.initialVTables[stringVT]}
 }
 
 func textCenter(ctx *Context, args ...Value) (Value, error) {
@@ -222,7 +222,7 @@ func textCenter(ctx *Context, args ...Value) (Value, error) {
 						sep = s.Value
 					}
 				}
-				return textCenterString(str, int(width), sep), nil
+				return textCenterString(ctx, str, int(width), sep), nil
 			}
 		}
 	}
@@ -271,7 +271,7 @@ func textJoin(ctx *Context, args ...Value) (Value, error) {
 			for _, v := range xs.Value {
 				r = append(r, v.String())
 			}
-			return &String{Value: strings.Join(r, sep.Value)}, nil
+			return &String{Value: strings.Join(r, sep.Value), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -478,11 +478,11 @@ func textBytesLen(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textStringToArray(slice []string) Value {
+func textStringToArray(ctx *Context, slice []string) Value {
 	l := len(slice)
 	xs := make([]Value, l)
 	for i := range l {
-		xs[i] = &String{Value: slice[i]}
+		xs[i] = &String{Value: slice[i], VTable: ctx.initialVTables[stringVT]}
 	}
 	return &Array{Value: xs}
 }
@@ -508,7 +508,7 @@ func textCapitalize(ctx *Context, args ...Value) (Value, error) {
 			if size == 0 {
 				return s, nil
 			}
-			return &String{Value: string(unicode.ToUpper(first)) + strings.ToLower(s.Value[size:])}, nil
+			return &String{Value: string(unicode.ToUpper(first)) + strings.ToLower(s.Value[size:]), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -533,7 +533,7 @@ func textPadLeft(ctx *Context, args ...Value) (Value, error) {
 			if int(w) <= strLen {
 				return s, nil
 			}
-			return &String{Value: strings.Repeat(pad, int(w)-strLen) + s.Value}, nil
+			return &String{Value: strings.Repeat(pad, int(w)-strLen) + s.Value, VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -558,7 +558,7 @@ func textPadRight(ctx *Context, args ...Value) (Value, error) {
 			if int(w) <= strLen {
 				return s, nil
 			}
-			return &String{Value: s.Value + strings.Repeat(pad, int(w)-strLen)}, nil
+			return &String{Value: s.Value + strings.Repeat(pad, int(w)-strLen), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -579,7 +579,7 @@ func textLines(ctx *Context, args ...Value) (Value, error) {
 			if len(parts) > 0 && parts[0] == EmptyString {
 				parts = parts[1:]
 			}
-			return textStringToArray(parts), nil
+			return textStringToArray(ctx, parts), nil
 		}
 	}
 	return Nil, nil
@@ -604,7 +604,7 @@ func textTruncate(ctx *Context, args ...Value) (Value, error) {
 				return s, nil
 			}
 			avail := max(int(maxx)-len([]rune(suffix)), 0)
-			return &String{Value: string(s.Runes[:avail]) + suffix}, nil
+			return &String{Value: string(s.Runes[:avail]) + suffix, VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -639,7 +639,7 @@ func textWrap(ctx *Context, args ...Value) (Value, error) {
 				b.WriteRune(r)
 				lineLen++
 			}
-			return &String{Value: b.String()}, nil
+			return &String{Value: b.String(), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -683,7 +683,7 @@ func textSlugify(ctx *Context, args ...Value) (Value, error) {
 				}
 			}
 			res := strings.Trim(b.String(), sep)
-			return &String{Value: res}, nil
+			return &String{Value: res, VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -770,7 +770,7 @@ func textUrlEncode(ctx *Context, args ...Value) (Value, error) {
 					b.WriteByte(upperHex[c&0x0F])
 				}
 			}
-			return &String{Value: b.String()}, nil
+			return &String{Value: b.String(), VTable: ctx.initialVTables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -851,7 +851,7 @@ func textUrlDecode(ctx *Context, args ...Value) (Value, error) {
 		return nil, errors.New("text.urlDecode, decoded result contains invalid UTF-8 sequence")
 	}
 
-	return &String{Value: result}, nil
+	return &String{Value: result, VTable: ctx.initialVTables[stringVT]}, nil
 }
 
 func hexDigitToByte(c byte) (byte, bool) {
