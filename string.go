@@ -27,7 +27,7 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			if len(s.Value)+len(r.Value) >= verror.MaxMemSize {
 				return Nil, verror.ErrMaxMemSize
 			}
-			str := &String{Value: s.Value + r.Value, VTable: ctx.initialVTables[stringVT]}
+			str := &String{Value: s.Value + r.Value, VTable: ctx.vtables[stringVT]}
 			return str, nil
 		case uint64(token.LT):
 			return Bool(s.Value < r.Value), nil
@@ -64,7 +64,15 @@ func (s *String) Get(ctx *Context, index Value) (Value, error) {
 		}
 		if 0 <= r && r < l {
 			sr := s.Runes[r : r+Integer(1)]
-			return &String{Value: string(sr), Runes: sr, VTable: ctx.initialVTables[stringVT]}, nil
+			return &String{Value: string(sr), Runes: sr, VTable: ctx.vtables[stringVT]}, nil
+		}
+	case *String:
+		iFace, ok := r.VTable.(*Object)
+		if ok {
+			if method, isPresent := iFace.Value[r.Value]; isPresent {
+				return method, nil
+			}
+			return Nil, nil
 		}
 	}
 	return Nil, verror.ErrValueNotIndexable

@@ -584,7 +584,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.emitLoad(o, c.rAlloc, loadFromLocal)
 		c.rAlloc++
 		j, _ := c.compileExpr(n.Prop, true)
-		// c.emitGet(o, j, o, storeFromKonst, storeFromLocal)
 		c.emitSend(o, j, o, storeFromKonst, storeFromLocal)
 		for _, v := range n.Args {
 			i, s := c.compileExpr(v, true)
@@ -594,6 +593,36 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc = o
 		c.fromRefStmt = false
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
+	case *ast.StaticCallStmt:
+		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		callable := c.rAlloc
+		if c.fromRefStmt {
+			callable -= 1
+		} else {
+			c.rAlloc++
+		}
+		j, t := c.compileExpr(n.Prop, true)
+		switch t {
+		case rKonst:
+			c.emitGet(callable, j, callable, storeFromKonst, storeFromLocal)
+		case rLoc:
+			c.emitGet(callable, j, callable, storeFromLocal, storeFromLocal)
+		case rGlob:
+			c.emitGet(callable, j, callable, storeFromGlobal, storeFromLocal)
+		case rFree:
+			c.emitGet(callable, j, callable, storeFromFree, storeFromLocal)
+		}
+		if !c.fromRefStmt {
+			c.rAlloc--
+		}
+		for _, v := range n.Args {
+			i, s := c.compileExpr(v, true)
+			c.exprToReg(i, s)
+			c.rAlloc++
+		}
+		c.rAlloc = callable
+		c.fromRefStmt = false
+		c.emitCall(callable, len(n.Args), n.Ellipsis, 1)
 	case *ast.Export:
 		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if c.isSubcompiler {
@@ -1064,7 +1093,6 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		i = c.rAlloc
 		c.rAlloc++
 		j, _ := c.compileExpr(n.Prop, false)
-		// c.emitGet(i, j, o, storeFromKonst, storeFromLocal)
 		c.emitSend(i, j, o, storeFromKonst, storeFromLocal)
 		for _, v := range n.Args {
 			i, s := c.compileExpr(v, false)
@@ -1074,6 +1102,27 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		c.rAlloc = o
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
 		return o, rLoc
+	case *ast.StaticCallExpr:
+		callable := c.rAlloc
+		j, t := c.compileExpr(n.Prop, true)
+		switch t {
+		case rKonst:
+			c.emitGet(callable, j, callable, storeFromKonst, storeFromLocal)
+		case rLoc:
+			c.emitGet(callable, j, callable, storeFromLocal, storeFromLocal)
+		case rGlob:
+			c.emitGet(callable, j, callable, storeFromGlobal, storeFromLocal)
+		case rFree:
+			c.emitGet(callable, j, callable, storeFromFree, storeFromLocal)
+		}
+		for _, v := range n.Args {
+			c.rAlloc++
+			i, s := c.compileExpr(v, false)
+			c.exprToReg(i, s)
+		}
+		c.rAlloc = callable
+		c.emitCall(callable, len(n.Args), n.Ellipsis, 1)
+		return callable, rLoc
 	case *ast.Import:
 		var importFilePath string
 		if filepath.IsAbs(n.Path) {

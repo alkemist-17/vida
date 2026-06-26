@@ -1,12 +1,12 @@
 package vida
 
 const (
-	stringVT = "stringVT"
-	arrayVT  = "arrayVT"
-	objectVT = "objectVT"
+	stringVT = "StringVT"
+	arrayVT  = "ArrayVT"
+	objectVT = "ObjectVT"
 )
 
-func loadStringVTable() Value {
+func loadStringVT() Value {
 	m := &Object{Value: make(map[string]Value, 13)}
 	m.Value["hasPrefix"] = NativeFunction(textHasPrefix)
 	m.Value["hasSuffix"] = NativeFunction(textHasSuffix)

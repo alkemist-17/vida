@@ -600,9 +600,9 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		}
 		s, e, empty := resolve(length)
 		if empty {
-			return &String{VTable: vm.ctx.initialVTables[stringVT]}, nil
+			return &String{VTable: vm.ctx.vtables[stringVT]}, nil
 		}
-		return &String{Value: string(v.Runes[s:e]), VTable: vm.ctx.initialVTables[stringVT]}, nil
+		return &String{Value: string(v.Runes[s:e]), VTable: vm.ctx.vtables[stringVT]}, nil
 
 	case *Bytes:
 		length := Integer(len(v.Value))

@@ -17,20 +17,20 @@ type Context struct {
 	currentThread    *Thread
 	script           *Script
 	extensionsLoader ExtensionsLoader
-	extensionCache   map[string]*Object
-	initialVTables   map[string]Value
+	extensionsCache  map[string]*Object
+	vtables          map[string]Value
 	threadPool       *internalThreadPool
 	vm               *VM
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
-	initialVTables := make(map[string]Value)
-	initialVTables[stringVT] = loadStringVTable()
+	vtables := make(map[string]Value)
+	vtables[stringVT] = loadStringVT()
 	return &Context{
 		src:              src,
 		extensionsLoader: extensionsLoader,
 		contextID:        contextID,
-		initialVTables:   initialVTables,
+		vtables:          vtables,
 	}
 }
 

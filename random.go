@@ -236,19 +236,19 @@ func randNanoIDCustomAlphabeth(ctx *Context, args ...Value) (Value, error) {
 }
 
 func randGetAlphaNumeric(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", VTable: ctx.initialVTables[stringVT]}, nil
+	return &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", VTable: ctx.vtables[stringVT]}, nil
 }
 
 func randGetNumeric(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: "0123456789", VTable: ctx.initialVTables[stringVT]}, nil
+	return &String{Value: "0123456789", VTable: ctx.vtables[stringVT]}, nil
 }
 
 func randGetAlpha(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", VTable: ctx.initialVTables[stringVT]}, nil
+	return &String{Value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", VTable: ctx.vtables[stringVT]}, nil
 }
 
 func randGetPasswordSymbols(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: " !#$%&'()*+,-./:;<=>?@[\\]^_`{|}~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", VTable: ctx.initialVTables[stringVT]}, nil
+	return &String{Value: " !#$%&'()*+,-./:;<=>?@[\\]^_`{|}~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", VTable: ctx.vtables[stringVT]}, nil
 }
 
 func generateMask(length int) Integer {

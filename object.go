@@ -314,7 +314,7 @@ func objectGetKeys(ctx *Context, args ...Value) (Value, error) {
 			keys := make([]Value, int(lobj))
 			var idx int
 			for k := range self.Value {
-				keys[idx] = &String{Value: k, VTable: ctx.initialVTables[stringVT]}
+				keys[idx] = &String{Value: k, VTable: ctx.vtables[stringVT]}
 				idx++
 			}
 			return &Array{Value: keys}, nil

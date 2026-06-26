@@ -23,8 +23,7 @@ const (
 	ASSIGN
 	QUOTE
 	COMMA
-	DOUBLE_COLON
-	OBJECT_MESSAGE
+	DOT
 	LPAREN
 	RPAREN
 	LCURLY
@@ -35,6 +34,7 @@ const (
 	DOUBLE_DOT
 	ELLIPSIS
 	TILDE
+	STATIC_CALL
 	operator_end
 
 	binary_op_init
@@ -55,7 +55,7 @@ const (
 	BXOR
 	BSHL
 	BSHR
-	META
+	METAOBJECT
 	binary_op_end
 
 	keyword_init
@@ -84,68 +84,68 @@ const (
 )
 
 var Tokens = [...]string{
-	UNEXPECTED:     "Unexpected symbol",
-	EOF:            "EOF",
-	COMMENT:        "Comment",
-	NOOP:           ";",
-	IDENTIFIER:     "Identifier",
-	INTEGER:        "Integer",
-	FLOAT:          "Float",
-	STRING:         "String",
-	ASSIGN:         "=",
-	QUOTE:          "\"",
-	COMMA:          ",",
-	DOUBLE_COLON:   "::",
-	OBJECT_MESSAGE: ".",
-	LPAREN:         "(",
-	RPAREN:         ")",
-	LCURLY:         "{",
-	RCURLY:         "}",
-	LBRACKET:       "[",
-	RBRACKET:       "]",
-	ARROW:          "->",
-	DOUBLE_DOT:     "..",
-	ELLIPSIS:       "...",
-	TILDE:          "~",
-	ADD:            "+",
-	SUB:            "-",
-	MUL:            "*",
-	DIV:            "/",
-	REM:            "%",
-	POW:            "**",
-	LT:             "<",
-	LE:             "<=",
-	GT:             ">",
-	GE:             ">=",
-	EQ:             "==",
-	NEQ:            "!=",
-	BOR:            "|",
-	BAND:           "&",
-	BXOR:           "^",
-	BSHL:           "<<",
-	BSHR:           ">>",
-	META:           "=<",
-	AND:            "and",
-	OR:             "or",
-	FOR:            "for",
-	NOT:            "not",
-	TRUE:           "true",
-	FALSE:          "false",
-	NIL:            "nil",
-	LET:            "let",
-	VAR:            "var",
-	IF:             "if",
-	ELSE:           "else",
-	WHILE:          "while",
-	BREAK:          "break",
-	CONTINUE:       "continue",
-	IN:             "in",
-	FUN:            "fun",
-	RET:            "ret",
-	IMPORT:         "import",
-	EXPORT:         "export",
-	ENUM:           "enum",
-	REC:            "recursive",
+	UNEXPECTED:  "Unexpected symbol",
+	EOF:         "EOF",
+	COMMENT:     "Comment",
+	NOOP:        ";",
+	IDENTIFIER:  "Identifier",
+	INTEGER:     "Integer",
+	FLOAT:       "Float",
+	STRING:      "String",
+	ASSIGN:      "=",
+	QUOTE:       "\"",
+	COMMA:       ",",
+	DOT:         ".",
+	LPAREN:      "(",
+	RPAREN:      ")",
+	LCURLY:      "{",
+	RCURLY:      "}",
+	LBRACKET:    "[",
+	RBRACKET:    "]",
+	ARROW:       "->",
+	DOUBLE_DOT:  "..",
+	ELLIPSIS:    "...",
+	TILDE:       "~",
+	STATIC_CALL: "::",
+	ADD:         "+",
+	SUB:         "-",
+	MUL:         "*",
+	DIV:         "/",
+	REM:         "%",
+	POW:         "**",
+	LT:          "<",
+	LE:          "<=",
+	GT:          ">",
+	GE:          ">=",
+	EQ:          "==",
+	NEQ:         "!=",
+	BOR:         "|",
+	BAND:        "&",
+	BXOR:        "^",
+	BSHL:        "<<",
+	BSHR:        ">>",
+	METAOBJECT:  "=<",
+	AND:         "and",
+	OR:          "or",
+	FOR:         "for",
+	NOT:         "not",
+	TRUE:        "true",
+	FALSE:       "false",
+	NIL:         "nil",
+	LET:         "let",
+	VAR:         "var",
+	IF:          "if",
+	ELSE:        "else",
+	WHILE:       "while",
+	BREAK:       "break",
+	CONTINUE:    "continue",
+	IN:          "in",
+	FUN:         "fun",
+	RET:         "ret",
+	IMPORT:      "import",
+	EXPORT:      "export",
+	ENUM:        "enum",
+	REC:         "rec",
 }
 
 type TokenInfo struct {
@@ -180,7 +180,7 @@ func (token Token) IsBinaryOperator() bool {
 }
 
 func (token Token) IsRightAssociative() bool {
-	return token == META || token == POW
+	return token == METAOBJECT || token == POW
 }
 
 func IsKeyword(name string) bool {
@@ -219,7 +219,7 @@ func (op Token) Precedence() int {
 		return 1
 	case AND:
 		return 2
-	case EQ, NEQ, LT, LE, GT, GE, IN, META:
+	case EQ, NEQ, LT, LE, GT, GE, IN, METAOBJECT:
 		return 3
 	case ADD, SUB, BOR, BXOR:
 		return 4

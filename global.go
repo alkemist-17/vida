@@ -127,7 +127,7 @@ func coreLen(ctx *Context, args ...Value) (Value, error) {
 
 func coreType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return &String{Value: args[0].Type(), VTable: ctx.initialVTables[stringVT]}, nil
+		return &String{Value: args[0].Type(), VTable: ctx.vtables[stringVT]}, nil
 	}
 	return Nil, nil
 }
@@ -137,7 +137,7 @@ func coreFormat(ctx *Context, args ...Value) (Value, error) {
 		switch v := args[0].(type) {
 		case *String:
 			s, e := VSprintf(v.Value, args[1:]...)
-			return &String{Value: s, VTable: ctx.initialVTables[stringVT]}, e
+			return &String{Value: s, VTable: ctx.vtables[stringVT]}, e
 		}
 	}
 	return Nil, nil
@@ -615,7 +615,7 @@ func coreReadLine(ctx *Context, args ...Value) (Value, error) {
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		return &String{Value: scanner.Text(), VTable: ctx.initialVTables[stringVT]}, nil
+		return &String{Value: scanner.Text(), VTable: ctx.vtables[stringVT]}, nil
 	}
 	if err := scanner.Err(); err != nil {
 		return Nil, err
@@ -635,10 +635,10 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 		if len(args) > 0 {
 			if extensionName, ok := args[0].(*String); ok {
 				if strings.HasPrefix(extensionName.Value, foundationInterfaceName) {
-					if ctx.extensionCache == nil {
-						ctx.extensionCache = make(map[string]*Object, 10)
+					if ctx.extensionsCache == nil {
+						ctx.extensionsCache = make(map[string]*Object, 10)
 					}
-					if m, isPresent := ctx.extensionCache[extensionName.Value]; isPresent {
+					if m, isPresent := ctx.extensionsCache[extensionName.Value]; isPresent {
 						return m, nil
 					}
 					var module Value
@@ -679,27 +679,27 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationColor()
 					default:
 						module = Nil
-						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value), VTable: ctx.initialVTables[stringVT]}}, nil
+						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value), VTable: ctx.vtables[stringVT]}}, nil
 					}
-					ctx.extensionCache[extensionName.Value] = module.(*Object)
+					ctx.extensionsCache[extensionName.Value] = module.(*Object)
 					return module, nil
 				} else if extensionsLoader != nil {
-					if ctx.extensionCache == nil {
-						ctx.extensionCache = make(map[string]*Object, 10)
+					if ctx.extensionsCache == nil {
+						ctx.extensionsCache = make(map[string]*Object, 10)
 					}
-					if m, isPresent := ctx.extensionCache[extensionName.Value]; isPresent {
+					if m, isPresent := ctx.extensionsCache[extensionName.Value]; isPresent {
 						return m, nil
 					}
 					if l, isPresent := extensionsLoader[extensionName.Value]; isPresent {
 						module := l()
-						ctx.extensionCache[extensionName.Value] = module.(*Object)
+						ctx.extensionsCache[extensionName.Value] = module.(*Object)
 						return module, nil
 					}
 				}
-				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value), VTable: ctx.initialVTables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value), VTable: ctx.vtables[stringVT]}}, nil
 			}
 		}
-		return &VidaError{Message: &String{Value: "load function should have one argument of type string", VTable: ctx.initialVTables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "load function should have one argument of type string", VTable: ctx.vtables[stringVT]}}, nil
 	}
 }
 
@@ -746,7 +746,7 @@ func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
 		case *Object:
 			item := args[0]
 			for k := range collection.Value {
-				if item.Equals(&String{Value: k, VTable: ctx.initialVTables[stringVT]}) {
+				if item.Equals(&String{Value: k, VTable: ctx.vtables[stringVT]}) {
 					return True, nil
 				}
 			}
@@ -754,7 +754,7 @@ func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
 		case *String:
 			item := args[0]
 			for _, char := range collection.Runes {
-				if item.Equals(&String{Value: string(char), VTable: ctx.initialVTables[stringVT]}) {
+				if item.Equals(&String{Value: string(char), VTable: ctx.vtables[stringVT]}) {
 					return True, nil
 				}
 			}

@@ -101,7 +101,7 @@ func makeRequestFn(ctx *Context, client *vidaHttpClient, fixedMethod string) fun
 
 		config, err := resolveConfig(fixedMethod, args...)
 		if err != nil {
-			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
 		}
 
 		context, cancel := context.WithTimeout(context.Background(), config.Timeout)
@@ -109,7 +109,7 @@ func makeRequestFn(ctx *Context, client *vidaHttpClient, fixedMethod string) fun
 
 		resp, body, err := client.executeRequest(context, config)
 		if err != nil {
-			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
 		}
 		return httpResponseToObject(ctx, resp, body), nil
 	}
@@ -185,7 +185,7 @@ func httpResponseToObject(ctx *Context, resp *http.Response, body []byte) *Objec
 	headersObj := &Object{Value: make(map[string]Value, len(resp.Header))}
 	for k, v := range resp.Header {
 		if len(v) > 0 {
-			headersObj.Value[k] = &String{Value: v[0], VTable: ctx.initialVTables[stringVT]}
+			headersObj.Value[k] = &String{Value: v[0], VTable: ctx.vtables[stringVT]}
 		}
 	}
 	return &Object{
@@ -436,7 +436,7 @@ func parseRetryAfter(res *http.Response) time.Duration {
 func httpStatusCodeText(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if code, ok := args[0].(Integer); ok {
-			return &String{Value: http.StatusText(int(code)), VTable: ctx.initialVTables[stringVT]}, nil
+			return &String{Value: http.StatusText(int(code)), VTable: ctx.vtables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -449,7 +449,7 @@ func httpURLEncode(ctx *Context, args ...Value) (Value, error) {
 			for k, v := range data.Value {
 				values.Add(k, v.ObjectKey())
 			}
-			return &String{Value: values.Encode(), VTable: ctx.initialVTables[stringVT]}, nil
+			return &String{Value: values.Encode(), VTable: ctx.vtables[stringVT]}, nil
 		}
 	}
 	return Nil, nil
@@ -458,7 +458,7 @@ func httpURLEncode(ctx *Context, args ...Value) (Value, error) {
 func httpDetectContentType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if data, ok := args[0].(*Bytes); ok && len(data.Value) > 0 {
-			return &String{Value: http.DetectContentType(data.Value), VTable: ctx.initialVTables[stringVT]}, nil
+			return &String{Value: http.DetectContentType(data.Value), VTable: ctx.vtables[stringVT]}, nil
 		}
 	}
 	return Nil, nil

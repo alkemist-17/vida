@@ -301,7 +301,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.EQ
 			case '<':
 				l.next()
-				tok = token.META
+				tok = token.METAOBJECT
 			default:
 				tok = token.ASSIGN
 			}
@@ -346,7 +346,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 					tok = token.DOUBLE_DOT
 				}
 			} else {
-				tok = token.OBJECT_MESSAGE
+				tok = token.DOT
 			}
 		case '!':
 			if l.c == '=' {
@@ -393,7 +393,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case ':':
 			if l.c == ':' {
 				l.next()
-				tok = token.DOUBLE_COLON
+				tok = token.STATIC_CALL
 			} else {
 				tok = token.UNEXPECTED
 				l.LexicalError = verror.New(l.ScriptID, "found a colon ':' out of place", verror.LexicalErrType, l.line)
@@ -412,7 +412,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			tok = token.UNEXPECTED
 			lit = string(ch)
 			if l.LexicalError == nil {
-				l.LexicalError = verror.New(l.ScriptID, fmt.Sprintf("found some unexpected character '%v'", lit), verror.LexicalErrType, l.line)
+				l.LexicalError = verror.New(l.ScriptID, fmt.Sprintf("found some unexpected symbol '%v'", lit), verror.LexicalErrType, l.line)
 			}
 		}
 	}

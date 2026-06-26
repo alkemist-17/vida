@@ -49,7 +49,7 @@ func taksConcepts(ctx *Context, args ...Value) (Value, error) {
 
 
 	`
-	return &String{Value: c, VTable: ctx.initialVTables[stringVT]}, nil
+	return &String{Value: c, VTable: ctx.vtables[stringVT]}, nil
 }
 
 func taskRunInParallel(ctx *Context, args ...Value) (Value, error) {
@@ -68,7 +68,7 @@ func taskRunInParallel(ctx *Context, args ...Value) (Value, error) {
 							if err == nil {
 								result.Value[i] = vm.Channel
 							} else {
-								result.Value[i] = &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}
+								result.Value[i] = &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}
 							}
 						})
 					case NativeFunction:
@@ -77,7 +77,7 @@ func taskRunInParallel(ctx *Context, args ...Value) (Value, error) {
 							if err == nil {
 								result.Value[i] = val
 							} else {
-								result.Value[i] = &VidaError{Message: &String{Value: err.Error(), VTable: ctx.initialVTables[stringVT]}}
+								result.Value[i] = &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}
 							}
 						})
 					default:
