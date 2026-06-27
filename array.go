@@ -148,6 +148,15 @@ func (xs *Array) Clone() Value {
 	return &Array{Value: c}
 }
 
+func (xs *Array) GetVTable(ctx *Context) Value {
+	if vtable, ok := ctx.vtables[arrayVT]; ok {
+		return vtable
+	}
+	vtable := loadArrayVT()
+	ctx.vtables[arrayVT] = vtable
+	return vtable
+}
+
 func (xs *Array) MarshalJSON() ([]byte, error) {
 	return json.Marshal(xs.Value)
 }
@@ -296,27 +305,8 @@ func arrayReverse(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayReversed(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			vals := make([]Value, len(xs.Value))
-			copy(vals, xs.Value)
-			slices.Reverse(vals)
-			return &Array{Value: vals}, nil
-		}
-	}
-	return Nil, nil
-}
-
-func arrayPop(ctx *Context, args ...Value) (Value, error) {
-	if len(args) == 1 {
-		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
-			lastIndex := len(xs.Value) - 1
-			val := xs.Value[lastIndex]
-			xs.Value = xs.Value[:lastIndex]
-			return val, nil
-		}
-	} else if len(args) == 2 {
+func arrayDelete(ctx *Context, args ...Value) (Value, error) {
+	if len(args) == 2 {
 		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			if i, ok := args[1].(Integer); ok {
 				if 0 <= i && i < Integer(len(xs.Value)) {
@@ -341,6 +331,42 @@ func arrayPop(ctx *Context, args ...Value) (Value, error) {
 		}
 	}
 	return Nil, nil
+}
+
+func arrayReversed(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if xs, ok := args[0].(*Array); ok {
+			vals := make([]Value, len(xs.Value))
+			copy(vals, xs.Value)
+			slices.Reverse(vals)
+			return &Array{Value: vals}, nil
+		}
+	}
+	return Nil, nil
+}
+
+func arrayPop(ctx *Context, args ...Value) (Value, error) {
+	if len(args) == 1 {
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			lastIndex := len(xs.Value) - 1
+			val := xs.Value[lastIndex]
+			xs.Value = xs.Value[:lastIndex]
+			return val, nil
+		}
+	}
+	return Nil, nil
+}
+
+func arrayContains(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			val := args[1]
+			return Bool(slices.ContainsFunc(xs.Value, func(v Value) bool {
+				return bool(v.Equals(val))
+			})), nil
+		}
+	}
+	return False, nil
 }
 
 func arrayToObject(ctx *Context, args ...Value) (Value, error) {

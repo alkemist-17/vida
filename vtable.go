@@ -25,3 +25,24 @@ func loadStringVT() Value {
 	m.Value["isEmpty"] = NativeFunction(textIsEmpty)
 	return m
 }
+
+func loadArrayVT() Value {
+	m := &Object{Value: make(map[string]Value, 16)}
+	m.Value["len"] = NativeFunction(coreLen)
+	m.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
+	m.Value["view"] = NativeFunction(arrayView)
+	m.Value["clear"] = NativeFunction(arrayClear)
+	m.Value["index"] = NativeFunction(arrayIndex)
+	m.Value["insert"] = NativeFunction(arrayInsert)
+	m.Value["pop"] = NativeFunction(arrayPop)
+	m.Value["append"] = NativeFunction(coreAppend)
+	m.Value["replace"] = NativeFunction(arrayReplace)
+	m.Value["clone"] = NativeFunction(coreClone)
+	m.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
+	m.Value["sort"] = NativeFunction(arraySort)
+	m.Value["reverse"] = NativeFunction(arrayReverse)
+	m.Value["delete"] = NativeFunction(arrayDelete)
+	m.Value["contains"] = NativeFunction(arrayContains)
+	m.Value["concat"] = NativeFunction(arrayConcat)
+	return m
+}
