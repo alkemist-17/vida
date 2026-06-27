@@ -10,7 +10,7 @@ type Value interface {
 	Boolean() Bool
 	Prefix(uint64) (Value, error)
 	Binop(ctx *Context, op uint64, other Value) (Value, error)
-	Get(ctx *Context, index Value) (Value, error)
+	Get(ctx *Context, index Value) Value
 	Set(Value, Value) error
 	Equals(Value) Bool
 	IsIterable() Bool
@@ -39,8 +39,8 @@ func (i ValueSemanticsImpl) Binop(*Context, uint64, Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (i ValueSemanticsImpl) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (i ValueSemanticsImpl) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (i ValueSemanticsImpl) Set(Value, Value) error {
@@ -106,8 +106,8 @@ func (i *ReferenceSemanticsImpl) Binop(*Context, uint64, Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (i *ReferenceSemanticsImpl) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (i *ReferenceSemanticsImpl) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (i *ReferenceSemanticsImpl) Set(Value, Value) error {

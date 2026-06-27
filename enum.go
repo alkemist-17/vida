@@ -39,11 +39,11 @@ func (e *Enum) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e *Enum) Get(ctx *Context, index Value) (Value, error) {
+func (e *Enum) Get(ctx *Context, index Value) Value {
 	if val, ok := e.Pairs[index.String()]; ok {
-		return val, nil
+		return val
 	}
-	return Nil, nil
+	return Nil
 }
 
 func (e *Enum) Set(Value, Value) error {

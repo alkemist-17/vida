@@ -105,8 +105,8 @@ func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (i Integer) Get(ctx *Context, index Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (i Integer) Get(ctx *Context, index Value) Value {
+	return Nil
 }
 
 func (i Integer) Set(index, val Value) error {
@@ -240,8 +240,8 @@ func (f Float) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (f Float) Get(ctx *Context, index Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (f Float) Get(ctx *Context, index Value) Value {
+	return Nil
 }
 
 func (f Float) Set(index, val Value) error {

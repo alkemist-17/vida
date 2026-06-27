@@ -152,8 +152,8 @@ func (nativeFn NativeFunction) Binop(ctx *Context, op uint64, r Value) (Value, e
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (nativeFn NativeFunction) Get(ctx *Context, index Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (nativeFn NativeFunction) Get(ctx *Context, index Value) Value {
+	return Nil
 }
 
 func (nativeFn NativeFunction) Set(index, val Value) error {

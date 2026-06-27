@@ -61,7 +61,7 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (xs *Array) Get(ctx *Context, index Value) (Value, error) {
+func (xs *Array) Get(ctx *Context, index Value) Value {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(xs.Value))
@@ -69,10 +69,10 @@ func (xs *Array) Get(ctx *Context, index Value) (Value, error) {
 			r += l
 		}
 		if 0 <= r && r < l {
-			return xs.Value[r], nil
+			return xs.Value[r]
 		}
 	}
-	return Nil, verror.ErrValueNotIndexable
+	return Nil
 }
 
 func (xs *Array) Set(index, val Value) error {
@@ -153,9 +153,7 @@ func (xs *Array) LookUp(ctx *Context, message Value) Value {
 		ctx.vtables[arrayVT] = loadArrayVT()
 	}
 	if vtable, ok := ctx.vtables[arrayVT]; ok {
-		if val, err := vtable.Get(ctx, message); err == nil {
-			return val
-		}
+		return vtable.Get(ctx, message)
 	}
 	return Nil
 }

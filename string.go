@@ -51,7 +51,7 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (s *String) Get(ctx *Context, index Value) (Value, error) {
+func (s *String) Get(ctx *Context, index Value) Value {
 	switch r := index.(type) {
 	case Integer:
 		if s.Runes == nil {
@@ -63,10 +63,10 @@ func (s *String) Get(ctx *Context, index Value) (Value, error) {
 		}
 		if 0 <= r && r < l {
 			sr := s.Runes[r : r+Integer(1)]
-			return &String{Value: string(sr), Runes: sr}, nil
+			return &String{Value: string(sr), Runes: sr}
 		}
 	}
-	return Nil, verror.ErrValueNotIndexable
+	return Nil
 }
 
 func (s *String) Set(index, val Value) error {
@@ -118,9 +118,7 @@ func (s *String) LookUp(ctx *Context, message Value) Value {
 		ctx.vtables[stringVT] = loadStringVT()
 	}
 	if vtable, ok := ctx.vtables[stringVT]; ok {
-		if val, err := vtable.Get(ctx, message); err == nil {
-			return val
-		}
+		return vtable.Get(ctx, message)
 	}
 	return Nil
 }

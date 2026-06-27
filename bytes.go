@@ -111,7 +111,7 @@ func (b *Bytes) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (b *Bytes) Get(ctx *Context, index Value) (Value, error) {
+func (b *Bytes) Get(ctx *Context, index Value) Value {
 	switch r := index.(type) {
 	case Integer:
 		l := Integer(len(b.Value))
@@ -119,10 +119,10 @@ func (b *Bytes) Get(ctx *Context, index Value) (Value, error) {
 			r += l
 		}
 		if 0 <= r && r < l {
-			return Integer(b.Value[r]), nil
+			return Integer(b.Value[r])
 		}
 	}
-	return Nil, verror.ErrValueNotIndexable
+	return Nil
 }
 
 func (b *Bytes) Set(index, val Value) error {

@@ -71,11 +71,11 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (o *Object) Get(ctx *Context, index Value) (Value, error) {
+func (o *Object) Get(ctx *Context, index Value) Value {
 	if val, ok := o.Value[index.ObjectKey()]; ok {
-		return val, nil
+		return val
 	}
-	return Nil, nil
+	return Nil
 }
 
 func (o *Object) Set(index, val Value) error {
@@ -133,13 +133,13 @@ func (o *Object) ObjectKey() string {
 }
 
 func (o *Object) LookUp(ctx *Context, message Value) Value {
-	if vtable, ok := ctx.vtables[objectVT]; ok {
-		return vtable
+	if ctx.vtables[objectVT] == nil {
+		ctx.vtables[objectVT] = loadObjectVT()
 	}
-	if o.VTable == nil {
-		return Nil
+	if o.VTable != nil {
+		return o.VTable.Get(ctx, message)
 	}
-	return o.VTable
+	return ctx.vtables[objectVT].Get(ctx, message)
 }
 
 func (o *Object) Type() string {

@@ -35,8 +35,8 @@ func (t Time) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (t Time) Get(ctx *Context, index Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (t Time) Get(ctx *Context, index Value) Value {
+	return Nil
 }
 
 func (t Time) Set(index, val Value) error {

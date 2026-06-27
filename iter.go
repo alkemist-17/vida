@@ -40,8 +40,8 @@ func (it *ArrayIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ArrayIterator) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
+func (it *ArrayIterator) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (it *ArrayIterator) Set(Value, Value) error {
@@ -119,8 +119,8 @@ func (it *ObjectIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *ObjectIterator) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
+func (it *ObjectIterator) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (it *ObjectIterator) Set(Value, Value) error {
@@ -183,8 +183,8 @@ func (it *StringIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *StringIterator) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
+func (it *StringIterator) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (it *StringIterator) Set(Value, Value) error {
@@ -246,8 +246,8 @@ func (it *IntegerIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (it *IntegerIterator) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
+func (it *IntegerIterator) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (it *IntegerIterator) Set(Value, Value) error {
@@ -310,8 +310,8 @@ func (bi *BytesIterator) Prefix(uint64) (Value, error) {
 	return Nil, verror.ErrOpNotDefinedForIterators
 }
 
-func (bi *BytesIterator) Get(*Context, Value) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
+func (bi *BytesIterator) Get(*Context, Value) Value {
+	return Nil
 }
 
 func (bi *BytesIterator) Set(Value, Value) error {

@@ -38,11 +38,11 @@ func (e *VidaError) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (e *VidaError) Get(ctx *Context, index Value) (Value, error) {
+func (e *VidaError) Get(ctx *Context, index Value) Value {
 	if val, ok := index.(*String); ok && val.Value == errorMessageFieldName {
-		return e.Message, nil
+		return e.Message
 	}
-	return Nil, nil
+	return Nil
 }
 
 func (e *VidaError) Set(index, val Value) error {

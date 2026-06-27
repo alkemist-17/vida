@@ -37,8 +37,8 @@ func (b Bool) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	}
 }
 
-func (b Bool) Get(ctx *Context, index Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (b Bool) Get(ctx *Context, index Value) Value {
+	return Nil
 }
 
 func (b Bool) Set(index, val Value) error {
