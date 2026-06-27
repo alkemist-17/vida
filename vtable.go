@@ -46,3 +46,22 @@ func loadArrayVT() Value {
 	m.Value["concat"] = NativeFunction(arrayConcat)
 	return m
 }
+
+func loadObjectVT() Value {
+	m := &Object{Value: make(map[string]Value, 14)}
+	m.Value["len"] = NativeFunction(coreLen)
+	m.Value["inject"] = NativeFunction(objectInjectProperties)
+	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
+	m.Value["extract"] = NativeFunction(objectExtractProperties)
+	m.Value["implements"] = NativeFunction(objectCheckProperties)
+	m.Value["set"] = NativeFunction(objectSetValue)
+	m.Value["get"] = NativeFunction(objectGetValue)
+	m.Value["has"] = NativeFunction(objectHasValue)
+	m.Value["del"] = NativeFunction(objectDeleteProperty)
+	m.Value["keys"] = NativeFunction(objectGetKeys)
+	m.Value["values"] = NativeFunction(objectGetValues)
+	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
+	m.Value["clear"] = NativeFunction(objectClear)
+	m.Value["getset"] = NativeFunction(objectGetOrSet)
+	return m
+}

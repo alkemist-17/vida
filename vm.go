@@ -269,6 +269,21 @@ func (vm *VM) run() error {
 			switch v := vm.Frame.stack[P&clean16].GetVTable(vm.ctx).(type) {
 			case *Object:
 				val, err = v.Get(vm.ctx, (*vm.Script.Konstants)[A])
+			case *Array:
+				var hasMethod bool
+				var m Value
+				method := (*vm.Script.Konstants)[A]
+				for _, k := range v.Value {
+					if iface, ok := k.(*Object); ok {
+						if m, hasMethod = iface.Value[method.ObjectKey()]; hasMethod {
+							val = m
+							break
+						}
+					}
+				}
+				if !hasMethod {
+					val = Nil
+				}
 			default:
 				val = Nil
 			}

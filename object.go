@@ -13,7 +13,8 @@ import (
 
 type Object struct {
 	ReferenceSemanticsImpl
-	Value map[string]Value
+	Value  map[string]Value
+	VTable *Array
 }
 
 func (o *Object) Boolean() Bool {
@@ -131,6 +132,14 @@ func (o *Object) ObjectKey() string {
 	return fmt.Sprintf("Object(%p)", o)
 }
 
+func (o *Object) GetVTable(ctx *Context) Value {
+	if o.VTable == nil {
+		o.VTable = &Array{Value: make([]Value, 0, 5)}
+		o.VTable.Value = append(o.VTable.Value, loadObjectVT())
+	}
+	return o.VTable
+}
+
 func (o *Object) Type() string {
 	return "object"
 }
@@ -148,11 +157,10 @@ func (o *Object) MarshalJSON() ([]byte, error) {
 }
 
 func loadObjectLib() Value {
-	m := &Object{Value: make(map[string]Value, 16)}
+	m := &Object{Value: make(map[string]Value, 15)}
 	m.Value["inject"] = NativeFunction(objectInjectProperties)
 	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
 	m.Value["extract"] = NativeFunction(objectExtractProperties)
-	m.Value["conforms"] = NativeFunction(objectCheckProperties)
 	m.Value["implements"] = NativeFunction(objectCheckProperties)
 	m.Value["set"] = NativeFunction(objectSetValue)
 	m.Value["get"] = NativeFunction(objectGetValue)
