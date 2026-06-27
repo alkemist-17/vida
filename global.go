@@ -28,7 +28,7 @@ const (
 	VidaFileExtension       = ".vida"
 	errorMessageFieldName   = "message"
 	DefaultInputPrompt      = "Input > "
-	foundationInterfaceName = "std/"
+	foundationInterfaceName = "std."
 	EmptyString             = ""
 	DefaultValField         = "value"
 )
