@@ -58,6 +58,15 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
 			return &Object{Value: pairs}, nil
+		case uint64(token.VTABLE):
+			o.VTable = r
+			return o, nil
+		}
+	case NilValue:
+		switch op {
+		case uint64(token.VTABLE):
+			o.VTable = nil
+			return o, nil
 		}
 	}
 	switch op {
@@ -74,6 +83,9 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 func (o *Object) Get(ctx *Context, index Value) Value {
 	if val, ok := o.Value[index.ObjectKey()]; ok {
 		return val
+	}
+	if o.VTable != nil {
+		return o.VTable.Get(ctx, index)
 	}
 	return Nil
 }
@@ -137,7 +149,9 @@ func (o *Object) LookUp(ctx *Context, message Value) Value {
 		ctx.vtables[objectVT] = loadObjectVT()
 	}
 	if o.VTable != nil {
-		return o.VTable.Get(ctx, message)
+		if val := o.VTable.Get(ctx, message); !val.Equals(Nil) {
+			return val
+		}
 	}
 	return ctx.vtables[objectVT].Get(ctx, message)
 }
@@ -151,7 +165,7 @@ func (o *Object) Clone() Value {
 	for k, v := range o.Value {
 		m[k] = v.Clone()
 	}
-	return &Object{Value: m}
+	return &Object{Value: m, VTable: o.VTable}
 }
 
 func (o *Object) MarshalJSON() ([]byte, error) {

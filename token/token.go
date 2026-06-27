@@ -55,7 +55,7 @@ const (
 	BXOR
 	BSHL
 	BSHR
-	METAOBJECT
+	VTABLE
 	binary_op_end
 
 	keyword_init
@@ -124,7 +124,7 @@ var Tokens = [...]string{
 	BXOR:        "^",
 	BSHL:        "<<",
 	BSHR:        ">>",
-	METAOBJECT:  "=<",
+	VTABLE:      "=<",
 	AND:         "and",
 	OR:          "or",
 	FOR:         "for",
@@ -180,7 +180,7 @@ func (token Token) IsBinaryOperator() bool {
 }
 
 func (token Token) IsRightAssociative() bool {
-	return token == METAOBJECT || token == POW
+	return token == VTABLE || token == POW
 }
 
 func IsKeyword(name string) bool {
@@ -219,7 +219,7 @@ func (op Token) Precedence() int {
 		return 1
 	case AND:
 		return 2
-	case EQ, NEQ, LT, LE, GT, GE, IN, METAOBJECT:
+	case EQ, NEQ, LT, LE, GT, GE, IN, VTABLE:
 		return 3
 	case ADD, SUB, BOR, BXOR:
 		return 4

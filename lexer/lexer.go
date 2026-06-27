@@ -301,7 +301,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.EQ
 			case '<':
 				l.next()
-				tok = token.METAOBJECT
+				tok = token.VTABLE
 			default:
 				tok = token.ASSIGN
 			}
