@@ -148,13 +148,16 @@ func (xs *Array) Clone() Value {
 	return &Array{Value: c}
 }
 
-func (xs *Array) GetVTable(ctx *Context) Value {
-	if vtable, ok := ctx.vtables[arrayVT]; ok {
-		return vtable
+func (xs *Array) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[arrayVT] == nil {
+		ctx.vtables[arrayVT] = loadArrayVT()
 	}
-	vtable := loadArrayVT()
-	ctx.vtables[arrayVT] = vtable
-	return vtable
+	if vtable, ok := ctx.vtables[arrayVT]; ok {
+		if val, err := vtable.Get(ctx, message); err == nil {
+			return val
+		}
+	}
+	return Nil
 }
 
 func (xs *Array) MarshalJSON() ([]byte, error) {

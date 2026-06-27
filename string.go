@@ -113,13 +113,16 @@ func (s *String) ObjectKey() string {
 	return s.Value
 }
 
-func (s *String) GetVTable(ctx *Context) Value {
-	if vtable, ok := ctx.vtables[stringVT]; ok {
-		return vtable
+func (s *String) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[stringVT] == nil {
+		ctx.vtables[stringVT] = loadStringVT()
 	}
-	vtable := loadStringVT()
-	ctx.vtables[stringVT] = vtable
-	return vtable
+	if vtable, ok := ctx.vtables[stringVT]; ok {
+		if val, err := vtable.Get(ctx, message); err == nil {
+			return val
+		}
+	}
+	return Nil
 }
 
 func (s *String) Type() string {

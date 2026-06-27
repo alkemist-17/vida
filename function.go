@@ -188,7 +188,7 @@ func (nativeFn NativeFunction) ObjectKey() string {
 	return "NativeFunction"
 }
 
-func (nativeFn NativeFunction) GetVTable(ctx *Context) Value {
+func (nativeFn NativeFunction) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 

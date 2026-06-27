@@ -264,33 +264,7 @@ func (vm *VM) run() error {
 				return vm.createError(ip, err)
 			}
 		case send:
-			var val Value
-			var err error
-			switch v := vm.Frame.stack[P&clean16].GetVTable(vm.ctx).(type) {
-			case *Object:
-				val, err = v.Get(vm.ctx, (*vm.Script.Konstants)[A])
-			case *Array:
-				var hasMethod bool
-				var m Value
-				method := (*vm.Script.Konstants)[A]
-				for _, k := range v.Value {
-					if iface, ok := k.(*Object); ok {
-						if m, hasMethod = iface.Value[method.ObjectKey()]; hasMethod {
-							val = m
-							break
-						}
-					}
-				}
-				if !hasMethod {
-					val = Nil
-				}
-			default:
-				val = Nil
-			}
-			if err != nil {
-				return vm.createError(ip, err)
-			}
-			vm.Frame.stack[B] = val
+			vm.Frame.stack[B] = vm.Frame.stack[P&clean16].LookUp(vm.ctx, (*vm.Script.Konstants)[A])
 		case slice:
 			val, err := vm.processSlice(P, A)
 			if err != nil {

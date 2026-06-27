@@ -21,7 +21,7 @@ type Value interface {
 	Type() string
 	Clone() Value
 	ObjectKey() string
-	GetVTable(ctx *Context) Value
+	LookUp(ctx *Context, message Value) Value
 }
 
 // Value semantics default impl
@@ -83,7 +83,7 @@ func (i ValueSemanticsImpl) ObjectKey() string {
 	return EmptyString
 }
 
-func (i ValueSemanticsImpl) GetVTable(*Context) Value {
+func (i ValueSemanticsImpl) LookUp(*Context, Value) Value {
 	return Nil
 }
 
@@ -150,7 +150,7 @@ func (i *ReferenceSemanticsImpl) ObjectKey() string {
 	return EmptyString
 }
 
-func (i *ReferenceSemanticsImpl) GetVTable(*Context) Value {
+func (i *ReferenceSemanticsImpl) LookUp(*Context, Value) Value {
 	return Nil
 }
 

@@ -80,7 +80,7 @@ func (b Bool) ObjectKey() string {
 	return "false"
 }
 
-func (b Bool) GetVTable(*Context) Value {
+func (b Bool) LookUp(*Context, Value) Value {
 	return Nil
 }
 

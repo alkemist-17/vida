@@ -14,7 +14,7 @@ import (
 type Object struct {
 	ReferenceSemanticsImpl
 	Value  map[string]Value
-	VTable *Array
+	VTable *Object
 }
 
 func (o *Object) Boolean() Bool {
@@ -132,10 +132,12 @@ func (o *Object) ObjectKey() string {
 	return fmt.Sprintf("Object(%p)", o)
 }
 
-func (o *Object) GetVTable(ctx *Context) Value {
+func (o *Object) LookUp(ctx *Context, message Value) Value {
+	if vtable, ok := ctx.vtables[objectVT]; ok {
+		return vtable
+	}
 	if o.VTable == nil {
-		o.VTable = &Array{Value: make([]Value, 0, 5)}
-		o.VTable.Value = append(o.VTable.Value, loadObjectVT())
+		return Nil
 	}
 	return o.VTable
 }

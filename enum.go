@@ -86,7 +86,7 @@ func (e *Enum) ObjectKey() string {
 	return fmt.Sprintf("Enum(%p)", e)
 }
 
-func (e *Enum) GetVTable(ctx *Context) Value {
+func (e *Enum) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 

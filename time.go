@@ -74,7 +74,7 @@ func (t Time) ObjectKey() string {
 	return time.Time(t).String()
 }
 
-func (t Time) GetVTable(ctx *Context) Value {
+func (t Time) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 

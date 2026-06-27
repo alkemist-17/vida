@@ -150,7 +150,7 @@ func (i Integer) ObjectKey() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
-func (i Integer) GetVTable(ctx *Context) Value {
+func (i Integer) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
@@ -282,7 +282,7 @@ func (f Float) ObjectKey() string {
 	return fmt.Sprintf("%vf", strconv.FormatFloat(float64(f), 'g', -1, 64))
 }
 
-func (f Float) GetVTable(ctx *Context) Value {
+func (f Float) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
