@@ -104,7 +104,7 @@ func (it *ObjectIterator) Next() bool {
 }
 
 func (it *ObjectIterator) Key(ctx *Context) Value {
-	return &String{Value: it.Keys[it.Init], VTable: ctx.vtables[stringVT]}
+	return &String{Value: it.Keys[it.Init]}
 }
 
 func (it *ObjectIterator) Value(ctx *Context) Value {
@@ -172,7 +172,7 @@ func (it *StringIterator) Key(ctx *Context) Value {
 }
 
 func (it *StringIterator) Value(ctx *Context) Value {
-	return &String{Value: string(it.Runes[it.Init]), Runes: it.Runes[it.Init : it.Init+1], VTable: ctx.vtables[stringVT]}
+	return &String{Value: string(it.Runes[it.Init]), Runes: it.Runes[it.Init : it.Init+1]}
 }
 
 func (it *StringIterator) Boolean() Bool {

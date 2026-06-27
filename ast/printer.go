@@ -56,7 +56,7 @@ func nodeColor(node Node) string {
 		return colorColl
 	case *BinaryExpr, *PrefixExpr, *IGet, *IGetStmt, *ISet, *Slice, *Select, *SelectStmt:
 		return colorExpr
-	case *CallExpr, *CallStmt, *MethodCallExpr, *MethodCallStmt, *StaticCallExpr, *StaticCallStmt:
+	case *CallExpr, *CallStmt, *MethodCallExpr, *MethodCallStmt:
 		return colorCall
 	case syntheticArgs:
 		return colorArgs
@@ -213,14 +213,6 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 
 	case *MethodCallStmt:
 		writeLine(sb, own, "MethodCallStmt", col, color)
-		writeChildren(sb, cont, []Node{n.Prop, syntheticArgs(n.Args)}, color)
-
-	case *StaticCallExpr:
-		writeLine(sb, own, "StaticCallExpr", col, color)
-		writeChildren(sb, cont, []Node{n.Obj, n.Prop, syntheticArgs(n.Args)}, color)
-
-	case *StaticCallStmt:
-		writeLine(sb, own, "StaticCallStmt", col, color)
 		writeChildren(sb, cont, []Node{n.Prop, syntheticArgs(n.Args)}, color)
 
 	case *Block:
@@ -382,16 +374,6 @@ func countNodes(node Node) int {
 			count += countNodes(a)
 		}
 	case *MethodCallStmt:
-		count += countNodes(n.Prop)
-		for _, a := range n.Args {
-			count += countNodes(a)
-		}
-	case *StaticCallExpr:
-		count += countNodes(n.Obj) + countNodes(n.Prop)
-		for _, a := range n.Args {
-			count += countNodes(a)
-		}
-	case *StaticCallStmt:
 		count += countNodes(n.Prop)
 		for _, a := range n.Args {
 			count += countNodes(a)

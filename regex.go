@@ -24,7 +24,7 @@ func regexpMatch(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Bool(re.MatchString(input.Value)), nil
 		}
@@ -40,9 +40,9 @@ func regexpReplaceAll(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn && okRepl {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return &String{Value: re.ReplaceAllString(source.Value, replacement.Value), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: re.ReplaceAllString(source.Value, replacement.Value)}, nil
 		}
 	}
 	return Nil, nil
@@ -56,9 +56,9 @@ func regexpReplaceAllLit(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn && okRepl {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return &String{Value: re.ReplaceAllLiteralString(source.Value, replacement.Value), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: re.ReplaceAllLiteralString(source.Value, replacement.Value)}, nil
 		}
 	}
 	return Nil, nil
@@ -72,7 +72,7 @@ func regexpSplit(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.Split(input.Value, int(n))
 			if result == nil {
@@ -80,7 +80,7 @@ func regexpSplit(ctx *Context, args ...Value) (Value, error) {
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
-				arr.Value[i] = &String{Value: v, VTable: ctx.vtables[stringVT]}
+				arr.Value[i] = &String{Value: v}
 			}
 			return arr, nil
 		}
@@ -95,7 +95,7 @@ func regexpFindFirstIndex(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			res := re.FindStringIndex(input.Value)
 			if res == nil {
@@ -118,7 +118,7 @@ func regexpFindAllIndex(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindAllStringIndex(input.Value, int(n))
 			if result == nil {
@@ -141,7 +141,7 @@ func regexpFindAllIndex(ctx *Context, args ...Value) (Value, error) {
 func regexpEscape(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if input, ok := args[0].(*String); ok {
-			return &String{Value: regexp.QuoteMeta(input.Value), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: regexp.QuoteMeta(input.Value)}, nil
 		}
 	}
 	return Nil, nil
@@ -154,9 +154,9 @@ func regexpFindString(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			return &String{Value: re.FindString(input.Value), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: re.FindString(input.Value)}, nil
 		}
 	}
 	return Nil, nil
@@ -170,7 +170,7 @@ func regexpFindAllString(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn && okn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindAllString(input.Value, int(n))
 			if result == nil {
@@ -178,7 +178,7 @@ func regexpFindAllString(ctx *Context, args ...Value) (Value, error) {
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
-				arr.Value[i] = &String{Value: v, VTable: ctx.vtables[stringVT]}
+				arr.Value[i] = &String{Value: v}
 			}
 			return arr, nil
 		}
@@ -193,7 +193,7 @@ func regexpFindSubmatch(ctx *Context, args ...Value) (Value, error) {
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			result := re.FindStringSubmatch(input.Value)
 			if result == nil {
@@ -201,7 +201,7 @@ func regexpFindSubmatch(ctx *Context, args ...Value) (Value, error) {
 			}
 			arr := &Array{Value: make([]Value, len(result))}
 			for i, v := range result {
-				arr.Value[i] = &String{Value: v, VTable: ctx.vtables[stringVT]}
+				arr.Value[i] = &String{Value: v}
 			}
 			return arr, nil
 		}

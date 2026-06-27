@@ -31,7 +31,7 @@ func (b Bool) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 		}
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, b, rhs)
+		return IsMemberOf(b, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -80,7 +80,7 @@ func (b Bool) ObjectKey() string {
 	return "false"
 }
 
-func (b Bool) GetVTable() Value {
+func (b Bool) GetVTable(*Context) Value {
 	return Nil
 }
 

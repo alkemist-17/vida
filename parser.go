@@ -327,48 +327,17 @@ Loop:
 			}
 			*statements = append(*statements, &ast.CallStmt{Args: args, Ellipsis: ellipsis, Line: l})
 		case token.STATIC_CALL:
-			var args []ast.Node
-			var ellipsis int
 			p.advance()
 			p.expect(token.IDENTIFIER)
-			prop := &ast.Property{Value: p.current.Lit}
-			p.advance()
-			p.expect(token.LPAREN)
-			p.advance()
-			if p.current.Token != token.RPAREN && p.current.Token != token.EOF {
-				if p.current.Token == token.ELLIPSIS {
-					p.advance()
-					ellipsis = spreadFirst
-					args = append(args, p.expression(token.LowestPrec))
-					p.advance()
-					goto endOfArgs
+			idx = &ast.Property{Value: p.current.Lit}
+			if p.next.Token != token.LPAREN {
+				if p.ok {
+					p.err = verror.New(p.lexer.ScriptID, "it was expected a function call after selector '::'", verror.SyntaxErrType, p.current.Line)
+					p.ok = false
 				}
-				args = append(args, p.expression(token.LowestPrec))
-				p.advance()
-				for p.current.Token != token.RPAREN && p.current.Token != token.EOF {
-					p.expect(token.COMMA)
-					p.advance()
-					if p.current.Token == token.ELLIPSIS {
-						p.advance()
-						ellipsis = spreadLast
-						args = append(args, p.expression(token.LowestPrec))
-						p.advance()
-						goto endOfArgs
-					}
-					args = append(args, p.expression(token.LowestPrec))
-					p.advance()
-				}
+				return &ast.Nil{}
 			}
-		endOfArgs:
-			p.expect(token.RPAREN)
-			if p.next.Token != token.LBRACKET &&
-				p.next.Token != token.DOT &&
-				p.next.Token != token.LPAREN &&
-				p.next.Token != token.STATIC_CALL {
-				p.advance()
-				return &ast.StaticCallStmt{Args: args, Prop: prop, Ellipsis: ellipsis, Line: l}
-			}
-			*statements = append(*statements, &ast.StaticCallStmt{Args: args, Prop: prop, Ellipsis: ellipsis, Line: l})
+			*statements = append(*statements, &ast.SelectStmt{Selector: idx})
 		default:
 			break Loop
 		}
@@ -549,7 +518,17 @@ Loop:
 		case token.LPAREN:
 			e = p.callExpr(e)
 		case token.STATIC_CALL:
-			e = p.staticCallExpr(e)
+			p.advance()
+			p.expect(token.IDENTIFIER)
+			prop := &ast.Property{Value: p.current.Lit}
+			if p.next.Token != token.LPAREN {
+				if p.ok {
+					p.err = verror.New(p.lexer.ScriptID, "it was expected a function call after selector '::'", verror.SyntaxErrType, p.current.Line)
+					p.ok = false
+				}
+				return &ast.Nil{}
+			}
+			e = &ast.Select{Selectable: e, Selector: prop}
 		default:
 			break Loop
 		}
@@ -800,44 +779,6 @@ func (p *parser) callExpr(e ast.Node) ast.Node {
 afterParen:
 	p.expect(token.RPAREN)
 	return &ast.CallExpr{Fun: e, Args: args, Ellipsis: ellipsis}
-}
-
-func (p *parser) staticCallExpr(e ast.Node) ast.Node {
-	p.advance()
-	var args []ast.Node
-	var ellipsis int
-	p.expect(token.IDENTIFIER)
-	prop := &ast.Property{Value: p.current.Lit}
-	p.advance()
-	p.expect(token.LPAREN)
-	p.advance()
-	if p.current.Token != token.RPAREN && p.current.Token != token.EOF {
-		if p.current.Token == token.ELLIPSIS {
-			p.advance()
-			ellipsis = spreadFirst
-			args = append(args, p.expression(token.LowestPrec))
-			p.advance()
-			goto afterParen
-		}
-		args = append(args, p.expression(token.LowestPrec))
-		p.advance()
-		for p.current.Token != token.RPAREN && p.current.Token != token.EOF {
-			p.expect(token.COMMA)
-			p.advance()
-			if p.current.Token == token.ELLIPSIS {
-				p.advance()
-				ellipsis = spreadLast
-				args = append(args, p.expression(token.LowestPrec))
-				p.advance()
-				goto afterParen
-			}
-			args = append(args, p.expression(token.LowestPrec))
-			p.advance()
-		}
-	}
-afterParen:
-	p.expect(token.RPAREN)
-	return &ast.StaticCallExpr{Args: args, Obj: e, Prop: prop, Ellipsis: ellipsis}
 }
 
 func (p *parser) indexOrSlice(e ast.Node) ast.Node {

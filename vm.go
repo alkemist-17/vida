@@ -266,10 +266,11 @@ func (vm *VM) run() error {
 		case send:
 			var val Value
 			var err error
-			vtable := vm.Frame.stack[P&clean16].GetVTable()
-			switch v := vtable.(type) {
+			switch v := vm.Frame.stack[P&clean16].GetVTable(vm.ctx).(type) {
 			case *Object:
 				val, err = v.Get(vm.ctx, (*vm.Script.Konstants)[A])
+			default:
+				val = Nil
 			}
 			if err != nil {
 				return vm.createError(ip, err)
@@ -600,9 +601,9 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 		}
 		s, e, empty := resolve(length)
 		if empty {
-			return &String{VTable: vm.ctx.vtables[stringVT]}, nil
+			return &String{}, nil
 		}
-		return &String{Value: string(v.Runes[s:e]), VTable: vm.ctx.vtables[stringVT]}, nil
+		return &String{Value: string(v.Runes[s:e])}, nil
 
 	case *Bytes:
 		length := Integer(len(v.Value))

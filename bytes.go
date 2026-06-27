@@ -57,10 +57,8 @@ const (
 )
 
 const (
-	littleEndian        = "little"
-	bigEndian           = "big"
-	numericLittleEndian = 0
-	numericBigEndian    = 1
+	littleEndian = "little"
+	bigEndian    = "big"
 )
 
 const bytesUUIDLen = 16
@@ -108,7 +106,7 @@ func (b *Bytes) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, b, rhs)
+		return IsMemberOf(b, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -282,18 +280,18 @@ func bytesGenerateCryptoRand(ctx *Context, args ...Value) (Value, error) {
 				cryptoRand.Read(b)
 				switch e {
 				case Integer(bytesEncodingBase64):
-					return &String{Value: base64.StdEncoding.EncodeToString(b), VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: base64.StdEncoding.EncodeToString(b)}, nil
 				case Integer(bytesEncodingHex):
-					return &String{Value: hex.EncodeToString(b), VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: hex.EncodeToString(b)}, nil
 				case Integer(bytesEncodingHEX):
-					return &String{Value: strings.ToUpper(hex.EncodeToString(b)), VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: strings.ToUpper(hex.EncodeToString(b))}, nil
 				case Integer(bytesEncodingBinary):
 					var sb strings.Builder
 					sb.Grow(len(b) * 8)
 					for _, v := range b {
 						fmt.Fprintf(&sb, "%08b", v)
 					}
-					return &String{Value: sb.String(), VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: sb.String()}, nil
 				default:
 					return &Bytes{Value: b}, nil
 				}
@@ -322,20 +320,20 @@ func bytesEncode(ctx *Context, args ...Value) (Value, error) {
 		if okI && okE {
 			switch e {
 			case Integer(bytesEncodingBase64):
-				return &String{Value: base64.StdEncoding.EncodeToString(b.Value), VTable: ctx.vtables[stringVT]}, nil
+				return &String{Value: base64.StdEncoding.EncodeToString(b.Value)}, nil
 			case Integer(bytesEncodingHex):
-				return &String{Value: hex.EncodeToString(b.Value), VTable: ctx.vtables[stringVT]}, nil
+				return &String{Value: hex.EncodeToString(b.Value)}, nil
 			case Integer(bytesEncodingHEX):
-				return &String{Value: strings.ToUpper(hex.EncodeToString(b.Value)), VTable: ctx.vtables[stringVT]}, nil
+				return &String{Value: strings.ToUpper(hex.EncodeToString(b.Value))}, nil
 			case Integer(bytesEncodingBase64URL):
-				return &String{Value: base64.URLEncoding.EncodeToString(b.Value), VTable: ctx.vtables[stringVT]}, nil
+				return &String{Value: base64.URLEncoding.EncodeToString(b.Value)}, nil
 			case Integer(bytesEncodingBinary):
 				var sb strings.Builder
 				sb.Grow(len(b.Value) * 8)
 				for _, v := range b.Value {
 					fmt.Fprintf(&sb, "%08b", v)
 				}
-				return &String{Value: sb.String(), VTable: ctx.vtables[stringVT]}, nil
+				return &String{Value: sb.String()}, nil
 			default:
 				return b, nil
 			}
@@ -387,7 +385,7 @@ func bytesDecode(ctx *Context, args ...Value) (Value, error) {
 			}
 		resolve:
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &Bytes{Value: r}, nil
 		}
@@ -408,8 +406,8 @@ func bytesEncodings() *Object {
 
 func bytesEndian() *Object {
 	e := make(map[string]Value, 2)
-	e["big"] = Integer(numericBigEndian)
-	e["little"] = Integer(numericLittleEndian)
+	e["bigEndian"] = &String{Value: littleEndian}
+	e["littleEndian"] = &String{Value: bigEndian}
 	return &Object{Value: e}
 }
 
@@ -442,12 +440,12 @@ func bytesToFile(ctx *Context, args ...Value) (Value, error) {
 		if okB && okP {
 			f, err := os.Create(p.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			defer f.Close()
 			n, err := f.Write(b.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
@@ -455,12 +453,12 @@ func bytesToFile(ctx *Context, args ...Value) (Value, error) {
 		if okS && okP {
 			f, err := os.Create(p.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			defer f.Close()
 			n, err := f.Write([]byte(s.Value))
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return Integer(n), nil
 		}
@@ -473,7 +471,7 @@ func bytesFromFile(ctx *Context, args ...Value) (Value, error) {
 		if path, ok := args[0].(*String); ok {
 			data, err := os.ReadFile(path.Value)
 			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 			return &Bytes{Value: data}, nil
 		}
@@ -498,16 +496,16 @@ func bytesXOR(ctx *Context, args ...Value) (Value, error) {
 func bytesUUID(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 1 {
 		if _, ok := args[0].(NilValue); ok {
-			return &String{Value: "00000000-0000-0000-0000-000000000000", VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: "00000000-0000-0000-0000-000000000000"}, nil
 		}
 		if b, ok := args[0].(*Bytes); ok && len(b.Value) == bytesUUIDLen {
-			return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b.Value[0:4], b.Value[4:6], b.Value[6:8], b.Value[8:10], b.Value[10:]), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b.Value[0:4], b.Value[4:6], b.Value[6:8], b.Value[8:10], b.Value[10:])}, nil
 		}
-		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", VTable: ctx.vtables[stringVT]}, nil
+		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"}, nil
 	}
 	b := make([]byte, bytesUUIDLen)
 	cryptoRand.Read(b)
-	return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), VTable: ctx.vtables[stringVT]}, nil
+	return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])}, nil
 }
 
 func bytesParseUUID(ctx *Context, args ...Value) (Value, error) {
@@ -525,7 +523,7 @@ func bytesParseUUID(ctx *Context, args ...Value) (Value, error) {
 func bytesToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {
-			return &String{Value: string(b.Value), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: string(b.Value)}, nil
 		}
 	}
 	return Nil, nil
@@ -563,7 +561,7 @@ func bytesDump(ctx *Context, args ...Value) (Value, error) {
 				}
 				sb.WriteByte('\n')
 			}
-			return &String{Value: sb.String(), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: sb.String()}, nil
 		}
 	}
 	return Nil, nil
@@ -572,9 +570,9 @@ func bytesDump(ctx *Context, args ...Value) (Value, error) {
 func bytesEndianess(ctx *Context, args ...Value) (Value, error) {
 	b := uint16(0xFF)
 	if *(*byte)(unsafe.Pointer(&b)) == 0 {
-		return &String{Value: bigEndian, VTable: ctx.vtables[stringVT]}, nil
+		return &String{Value: bigEndian}, nil
 	}
-	return &String{Value: littleEndian, VTable: ctx.vtables[stringVT]}, nil
+	return &String{Value: littleEndian}, nil
 }
 
 func bytesView(ctx *Context, args ...Value) (Value, error) {
@@ -610,7 +608,7 @@ func bytesCopyTo(ctx *Context, args ...Value) (Value, error) {
 			}
 
 			if offset < 0 || offset+length > srcLen {
-				return &VidaError{Message: &String{Value: "source range out of bounds", VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: "source range out of bounds"}}, nil
 			}
 
 			copy(dst.Value, src.Value[offset:offset+length])
@@ -679,7 +677,7 @@ func bytesConcat(ctx *Context, args ...Value) (Value, error) {
 			inputs[i] = b
 			totalLen += len(b)
 		default:
-			return &VidaError{Message: &String{Value: "bytes concat only accepts Bytes or String arguments", VTable: ctx.vtables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: "bytes concat only accepts Bytes or String arguments"}}, nil
 		}
 	}
 
@@ -695,13 +693,13 @@ func bytesConcat(ctx *Context, args ...Value) (Value, error) {
 
 func bytesChecksum(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 2 {
-		return &VidaError{Message: &String{Value: "bytes checksum requires: data, algorithm", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes checksum requires: data, algorithm"}}, nil
 	}
 
 	data, okData := args[0].(*Bytes)
 	algo, okAlgo := args[1].(Integer)
 	if !okData || !okAlgo {
-		return &VidaError{Message: &String{Value: "invalid arguments: expected Bytes and checksum algorithm in bytes lib", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "invalid arguments: expected Bytes and checksum algorithm in bytes lib"}}, nil
 	}
 
 	var hashBytes []byte
@@ -751,7 +749,7 @@ func bytesChecksum(ctx *Context, args ...Value) (Value, error) {
 		hashBytes = h.Sum(nil)
 
 	default:
-		return &VidaError{Message: &String{Value: "unsupported checksum algorithm", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "unsupported checksum algorithm"}}, nil
 	}
 
 	return &Bytes{Value: hashBytes}, nil
@@ -759,7 +757,7 @@ func bytesChecksum(ctx *Context, args ...Value) (Value, error) {
 
 func bytesHMAC(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 3 {
-		return &VidaError{Message: &String{Value: "bytes hmac requires: data, key, algorithm", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes hmac requires: data, key, algorithm"}}, nil
 	}
 
 	data, okD := args[0].(*Bytes)
@@ -767,7 +765,7 @@ func bytesHMAC(ctx *Context, args ...Value) (Value, error) {
 	algo, okA := args[2].(Integer)
 
 	if !okD || !okK || !okA {
-		return &VidaError{Message: &String{Value: "invalid arguments: expected Bytes, Bytes, algorithm in bytes hmac", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "invalid arguments: expected Bytes, Bytes, algorithm in bytes hmac"}}, nil
 	}
 
 	var h func() hash.Hash
@@ -781,14 +779,14 @@ func bytesHMAC(ctx *Context, args ...Value) (Value, error) {
 	case Integer(hmacSHA512):
 		h = sha512.New
 	default:
-		return &VidaError{Message: &String{Value: "unsupported HMAC algorithm", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "unsupported HMAC algorithm"}}, nil
 	}
 
 	mac := hmac.New(h, key.Value)
 
 	_, err := mac.Write(data.Value)
 	if err != nil {
-		return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
 	}
 
 	return &Bytes{Value: mac.Sum(nil)}, nil
@@ -839,20 +837,17 @@ func bitByteIdx(i int) (byteIndex int, mask byte) {
 // Signature: getBit(buf Bytes, bitIdx Int) → Int | &VidaError
 func bytesGetBit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 2 {
-		return &VidaError{Message: &String{Value: "bytes.getBit requires: bytes, bitIndex", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.getBit requires: bytes, bitIndex"}}, nil
 	}
 	b, ok := args[0].(*Bytes)
 	bitIdx, okIdx := args[1].(Integer)
 	if !ok || !okIdx || bitIdx < 0 {
-		return &VidaError{Message: &String{Value: "bytes.getBit: invalid arguments (expected Bytes, non-negative Int)", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.getBit: invalid arguments (expected Bytes, non-negative Int)"}}, nil
 	}
 
 	totalBits := len(b.Value) * 8
 	if int(bitIdx) >= totalBits {
-		return &VidaError{Message: &String{
-			Value:  fmt.Sprintf("bytes.getBit: bit index %d out of range (buffer has %d bits)", bitIdx, totalBits),
-			VTable: ctx.vtables[stringVT],
-		}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.getBit: bit index %d out of range (buffer has %d bits)", bitIdx, totalBits)}}, nil
 	}
 
 	byteIndex, mask := bitByteIdx(int(bitIdx))
@@ -868,19 +863,19 @@ func bytesGetBit(ctx *Context, args ...Value) (Value, error) {
 // Signature: setBit(buf Bytes, bitIdx Int, val Int) → Bytes | &VidaError
 func bytesSetBit(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 3 {
-		return &VidaError{Message: &String{Value: "bytes.setBit requires: bytes, bitIndex, value (0 or 1)", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.setBit requires: bytes, bitIndex, value (0 or 1)"}}, nil
 	}
 	b, ok := args[0].(*Bytes)
 	bitIdx, okIdx := args[1].(Integer)
 	val, okVal := args[2].(Integer)
 
 	if !ok || !okIdx || !okVal || bitIdx < 0 || (val != 0 && val != 1) {
-		return &VidaError{Message: &String{Value: "bytes.setBit: invalid arguments (expected Bytes, non-negative Int bitIndex, 0 or 1 value)", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.setBit: invalid arguments (expected Bytes, non-negative Int bitIndex, 0 or 1 value)"}}, nil
 	}
 
 	totalBits := len(b.Value) * 8
 	if int(bitIdx) >= totalBits {
-		return &VidaError{Message: &String{Value: "bytes.setBit: bit index out of range", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.setBit: bit index out of range"}}, nil
 	}
 
 	clone := make([]byte, len(b.Value))
@@ -909,20 +904,20 @@ func bytesSetBit(ctx *Context, args ...Value) (Value, error) {
 // Signature: bitView(buf Bytes, start Int, length Int) → Bytes | &VidaError
 func bytesBitView(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 3 {
-		return &VidaError{Message: &String{Value: "bytes.bitView requires: bytes, startBit, bitLength", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.bitView requires: bytes, startBit, bitLength"}}, nil
 	}
 	b, ok := args[0].(*Bytes)
 	start, okS := args[1].(Integer)
 	length, okL := args[2].(Integer)
 
 	if !ok || !okS || !okL || start < 0 || length < 0 {
-		return &VidaError{Message: &String{Value: "bytes.bitView: invalid arguments (expected Bytes, non-negative Int start and length)", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.bitView: invalid arguments (expected Bytes, non-negative Int start and length)"}}, nil
 	}
 	if length == 0 {
 		return &Bytes{}, nil
 	}
 	if int(start)+int(length) > len(b.Value)*8 {
-		return &VidaError{Message: &String{Value: "bytes.bitView: bit range exceeds buffer size", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.bitView: bit range exceeds buffer size"}}, nil
 	}
 
 	dstLen := (int(length) + 7) / 8
@@ -958,18 +953,18 @@ func bytesBitView(ctx *Context, args ...Value) (Value, error) {
 // Signature: readUInt(buf Bytes, startBit Int, bitLength Int, endian String) → Int | &VidaError
 func bytesReadUInt(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 4 {
-		return &VidaError{Message: &String{Value: "bytes.readUInt requires: bytes, startBit, bitLength, endian", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.readUInt requires: bytes, startBit, bitLength, endian"}}, nil
 	}
 	b, ok := args[0].(*Bytes)
 	start, okS := args[1].(Integer)
 	bitLen, okL := args[2].(Integer)
-	endian, okE := args[3].(Integer)
+	endian, okE := args[3].(*String)
 
 	if !ok || !okS || !okL || !okE || start < 0 || bitLen < 1 || bitLen > 64 {
-		return &VidaError{Message: &String{Value: "bytes.readUInt: invalid arguments (bitLength must be 1-64)", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.readUInt: invalid arguments (bitLength must be 1-64)"}}, nil
 	}
 	if int(start)+int(bitLen) > len(b.Value)*8 {
-		return &VidaError{Message: &String{Value: "bytes.readUInt: bit range exceeds buffer", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.readUInt: bit range exceeds buffer"}}, nil
 	}
 
 	extracted, err := bytesBitView(ctx, b, start, bitLen)
@@ -981,17 +976,17 @@ func bytesReadUInt(ctx *Context, args ...Value) (Value, error) {
 	var val uint64
 	n := len(extBytes)
 
-	switch endian {
-	case Integer(numericBigEndian):
+	switch endian.Value {
+	case bigEndian:
 		for i := range n {
 			val = (val << 8) | uint64(extBytes[i])
 		}
-	case Integer(numericLittleEndian):
+	case littleEndian:
 		for i := n - 1; i >= 0; i-- {
 			val = (val << 8) | uint64(extBytes[i])
 		}
 	default:
-		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.readUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian), VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.readUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian)}}, nil
 	}
 
 	unusedBits := (n * 8) - int(bitLen)
@@ -1015,14 +1010,14 @@ func bytesReadUInt(ctx *Context, args ...Value) (Value, error) {
 // Signature: fromUInt(value Int, bitLength Int, endian String) → Bytes | &VidaError
 func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 	if len(args) != 3 {
-		return &VidaError{Message: &String{Value: "bytes.fromUInt requires: value, bitLength, endian", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.fromUInt requires: value, bitLength, endian"}}, nil
 	}
 	val, okV := args[0].(Integer)
 	bitLen, okL := args[1].(Integer)
-	endian, okE := args[2].(Integer)
+	endian, okE := args[2].(*String)
 
 	if !okV || !okL || !okE || bitLen < 1 || bitLen > 64 || val < 0 {
-		return &VidaError{Message: &String{Value: "bytes.fromUInt: invalid arguments (value must be ≥ 0, bitLength must be 1-64)", VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: "bytes.fromUInt: invalid arguments (value must be ≥ 0, bitLength must be 1-64)"}}, nil
 	}
 
 	u := uint64(val)
@@ -1033,10 +1028,7 @@ func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 		maxVal = (uint64(1) << uint(bitLen)) - 1
 	}
 	if u > maxVal {
-		return &VidaError{Message: &String{
-			Value:  fmt.Sprintf("bytes.fromUInt: value %d exceeds %d-bit capacity (%d max)", val, bitLen, maxVal),
-			VTable: ctx.vtables[stringVT],
-		}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.fromUInt: value %d exceeds %d-bit capacity (%d max)", val, bitLen, maxVal)}}, nil
 	}
 
 	dstLen := (int(bitLen) + 7) / 8
@@ -1053,14 +1045,14 @@ func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 		}
 	}
 
-	switch endian {
-	case Integer(numericBigEndian):
-	case Integer(numericLittleEndian):
+	switch endian.Value {
+	case bigEndian:
+	case littleEndian:
 		for i, j := 0, len(dst)-1; i < j; i, j = i+1, j-1 {
 			dst[i], dst[j] = dst[j], dst[i]
 		}
 	default:
-		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.fromUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian), VTable: ctx.vtables[stringVT]}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.fromUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian)}}, nil
 	}
 
 	return &Bytes{Value: dst}, nil

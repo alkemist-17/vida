@@ -17,9 +17,9 @@ func loadFoundationCasting() Value {
 
 func castToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return &String{Value: args[0].String(), VTable: ctx.vtables[stringVT]}, nil
+		return &String{Value: args[0].String()}, nil
 	}
-	return &String{Value: EmptyString, VTable: ctx.vtables[stringVT]}, nil
+	return &String{Value: EmptyString}, nil
 }
 
 func castToInt(ctx *Context, args ...Value) (Value, error) {
@@ -115,7 +115,7 @@ func castToArray(ctx *Context, args ...Value) (Value, error) {
 			pairs := make([]Value, len(v.Value))
 			i := 0
 			for k, val := range v.Value {
-				pairs[i] = &Array{Value: []Value{&String{Value: k, VTable: ctx.vtables[stringVT]}, val}}
+				pairs[i] = &Array{Value: []Value{&String{Value: k}, val}}
 				i++
 			}
 			return &Array{Value: pairs}, nil
@@ -123,7 +123,7 @@ func castToArray(ctx *Context, args ...Value) (Value, error) {
 			pairs := make([]Value, len(v.Pairs))
 			i := 0
 			for k, val := range v.Pairs {
-				pairs[i] = &Array{Value: []Value{&String{Value: k, VTable: ctx.vtables[stringVT]}, val}}
+				pairs[i] = &Array{Value: []Value{&String{Value: k}, val}}
 				i++
 			}
 			return &Array{Value: pairs}, nil

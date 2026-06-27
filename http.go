@@ -76,22 +76,22 @@ func loadFoundationHttpClient() Value {
 }
 
 func httpNewClient(ctx *Context, args ...Value) (Value, error) {
-	return buildClientObject(ctx, newVidaHttpClient()), nil
+	return buildClientObject(newVidaHttpClient()), nil
 }
 
-func buildClientObject(ctx *Context, client *vidaHttpClient) *Object {
+func buildClientObject(client *vidaHttpClient) *Object {
 	obj := &Object{Value: make(map[string]Value, 7)}
-	obj.Value["get"] = NativeFunction(makeRequestFn(ctx, client, httpGET))
-	obj.Value["post"] = NativeFunction(makeRequestFn(ctx, client, httpPOST))
-	obj.Value["put"] = NativeFunction(makeRequestFn(ctx, client, httpPUT))
-	obj.Value["delete"] = NativeFunction(makeRequestFn(ctx, client, httpDELETE))
-	obj.Value["patch"] = NativeFunction(makeRequestFn(ctx, client, httpPATCH))
-	obj.Value["head"] = NativeFunction(makeRequestFn(ctx, client, httpHEAD))
-	obj.Value["options"] = NativeFunction(makeRequestFn(ctx, client, httpOPTIONS))
+	obj.Value["get"] = NativeFunction(makeRequestFn(client, httpGET))
+	obj.Value["post"] = NativeFunction(makeRequestFn(client, httpPOST))
+	obj.Value["put"] = NativeFunction(makeRequestFn(client, httpPUT))
+	obj.Value["delete"] = NativeFunction(makeRequestFn(client, httpDELETE))
+	obj.Value["patch"] = NativeFunction(makeRequestFn(client, httpPATCH))
+	obj.Value["head"] = NativeFunction(makeRequestFn(client, httpHEAD))
+	obj.Value["options"] = NativeFunction(makeRequestFn(client, httpOPTIONS))
 	return obj
 }
 
-func makeRequestFn(ctx *Context, client *vidaHttpClient, fixedMethod string) func(*Context, ...Value) (Value, error) {
+func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(*Context, ...Value) (Value, error) {
 	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if _, isSelf := args[0].(*Object); isSelf {
@@ -101,7 +101,7 @@ func makeRequestFn(ctx *Context, client *vidaHttpClient, fixedMethod string) fun
 
 		config, err := resolveConfig(fixedMethod, args...)
 		if err != nil {
-			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 
 		context, cancel := context.WithTimeout(context.Background(), config.Timeout)
@@ -109,9 +109,9 @@ func makeRequestFn(ctx *Context, client *vidaHttpClient, fixedMethod string) fun
 
 		resp, body, err := client.executeRequest(context, config)
 		if err != nil {
-			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
-		return httpResponseToObject(ctx, resp, body), nil
+		return httpResponseToObject(resp, body), nil
 	}
 }
 
@@ -181,11 +181,11 @@ func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, err
 	}, nil
 }
 
-func httpResponseToObject(ctx *Context, resp *http.Response, body []byte) *Object {
+func httpResponseToObject(resp *http.Response, body []byte) *Object {
 	headersObj := &Object{Value: make(map[string]Value, len(resp.Header))}
 	for k, v := range resp.Header {
 		if len(v) > 0 {
-			headersObj.Value[k] = &String{Value: v[0], VTable: ctx.vtables[stringVT]}
+			headersObj.Value[k] = &String{Value: v[0]}
 		}
 	}
 	return &Object{
@@ -436,7 +436,7 @@ func parseRetryAfter(res *http.Response) time.Duration {
 func httpStatusCodeText(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if code, ok := args[0].(Integer); ok {
-			return &String{Value: http.StatusText(int(code)), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: http.StatusText(int(code))}, nil
 		}
 	}
 	return Nil, nil
@@ -449,7 +449,7 @@ func httpURLEncode(ctx *Context, args ...Value) (Value, error) {
 			for k, v := range data.Value {
 				values.Add(k, v.ObjectKey())
 			}
-			return &String{Value: values.Encode(), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: values.Encode()}, nil
 		}
 	}
 	return Nil, nil
@@ -458,7 +458,7 @@ func httpURLEncode(ctx *Context, args ...Value) (Value, error) {
 func httpDetectContentType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if data, ok := args[0].(*Bytes); ok && len(data.Value) > 0 {
-			return &String{Value: http.DetectContentType(data.Value), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: http.DetectContentType(data.Value)}, nil
 		}
 	}
 	return Nil, nil

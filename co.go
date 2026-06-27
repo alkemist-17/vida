@@ -57,7 +57,7 @@ func coNewThread(ctx *Context, args ...Value) (Value, error) {
 func coGetThreadState(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if th, ok := args[0].(*Thread); ok {
-			return &String{Value: th.State.String(), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: th.State.String()}, nil
 		}
 		return Nil, verror.ErrNotThread
 	}

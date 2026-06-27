@@ -33,7 +33,7 @@ func (e *Enum) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, e, rhs)
+		return IsMemberOf(e, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -86,7 +86,7 @@ func (e *Enum) ObjectKey() string {
 	return fmt.Sprintf("Enum(%p)", e)
 }
 
-func (e *Enum) GetVTable() Value {
+func (e *Enum) GetVTable(ctx *Context) Value {
 	return Nil
 }
 

@@ -238,20 +238,6 @@ type MethodCallExpr struct {
 	Ellipsis int
 }
 
-type StaticCallStmt struct {
-	Args     []Node
-	Prop     Node
-	Ellipsis int
-	Line     uint
-}
-
-type StaticCallExpr struct {
-	Args     []Node
-	Prop     Node
-	Obj      Node
-	Ellipsis int
-}
-
 type Enum struct {
 	Variants []string
 }
@@ -300,6 +286,4 @@ func (n *CallExpr) _node()        {}
 func (n *CallStmt) _node()        {}
 func (n *MethodCallStmt) _node()  {}
 func (n *MethodCallExpr) _node()  {}
-func (n *StaticCallStmt) _node()  {}
-func (n *StaticCallExpr) _node()  {}
 func (n *Enum) _node()            {}

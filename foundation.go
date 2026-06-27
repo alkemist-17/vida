@@ -42,9 +42,9 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
-							return &VidaError{Message: &String{Value: e.Message, VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
-							return &VidaError{Message: &String{Value: threadError.Error(), VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
 						}
 					}
 					switch vm.State {
@@ -68,9 +68,9 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
-							return &VidaError{Message: &String{Value: e.Message, VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
-							return &VidaError{Message: &String{Value: threadError.Error(), VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
 						}
 					}
 					switch vm.State {
@@ -85,9 +85,9 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 				default:
 					switch e := err.(type) {
 					case *verror.VidaError:
-						return &VidaError{Message: &String{Value: e.Message, VTable: ctx.vtables[stringVT]}}, nil
+						return &VidaError{Message: &String{Value: e.Message}}, nil
 					default:
-						return &VidaError{Message: &String{Value: e.Error(), VTable: ctx.vtables[stringVT]}}, nil
+						return &VidaError{Message: &String{Value: e.Error()}}, nil
 					}
 				}
 			}
@@ -108,9 +108,9 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
-							return &VidaError{Message: &String{Value: e.Message, VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
-							return &VidaError{Message: &String{Value: threadError.Error(), VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
 						}
 					}
 					switch vm.State {
@@ -133,9 +133,9 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						vm.Thread = invoker
 						switch e := threadError.(type) {
 						case *verror.VidaError:
-							return &VidaError{Message: &String{Value: e.Message, VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
-							return &VidaError{Message: &String{Value: threadError.Error(), VTable: ctx.vtables[stringVT]}}, nil
+							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
 						}
 					}
 					switch vm.State {
@@ -150,9 +150,9 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 				default:
 					switch e := err.(type) {
 					case *verror.VidaError:
-						return &VidaError{Message: &String{Value: e.Message, VTable: ctx.vtables[stringVT]}}, nil
+						return &VidaError{Message: &String{Value: e.Message}}, nil
 					default:
-						return &VidaError{Message: &String{Value: e.Error(), VTable: ctx.vtables[stringVT]}}, nil
+						return &VidaError{Message: &String{Value: e.Error()}}, nil
 					}
 				}
 			}

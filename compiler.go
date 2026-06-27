@@ -22,6 +22,7 @@ type compiler struct {
 	script           *Script
 	kb               *konstBuilder
 	sb               *symbolBuilder
+	ctx              *Context
 	scriptMap        map[string]int
 	depMap           map[string]struct{}
 	extensionsLoader ExtensionsLoader
@@ -45,9 +46,10 @@ func newCompiler(ast *ast.Ast, scriptID string, ctx *Context, extensionsLoader E
 	ei := make(ErrorInfo)
 	ei[scriptID] = make(map[int]uint)
 	c := &compiler{
+		ctx:              ctx,
 		ast:              ast,
 		script:           newScript(scriptID, extensionsLoader),
-		kb:               newKonstBuilder(ctx),
+		kb:               newKonstBuilder(),
 		sb:               newSymbolBuilder(0),
 		scriptMap:        make(map[string]int),
 		depMap:           dm,
@@ -593,36 +595,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc = o
 		c.fromRefStmt = false
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
-	case *ast.StaticCallStmt:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
-		callable := c.rAlloc
-		if c.fromRefStmt {
-			callable -= 1
-		} else {
-			c.rAlloc++
-		}
-		j, t := c.compileExpr(n.Prop, true)
-		switch t {
-		case rKonst:
-			c.emitGet(callable, j, callable, storeFromKonst, storeFromLocal)
-		case rLoc:
-			c.emitGet(callable, j, callable, storeFromLocal, storeFromLocal)
-		case rGlob:
-			c.emitGet(callable, j, callable, storeFromGlobal, storeFromLocal)
-		case rFree:
-			c.emitGet(callable, j, callable, storeFromFree, storeFromLocal)
-		}
-		if !c.fromRefStmt {
-			c.rAlloc--
-		}
-		for _, v := range n.Args {
-			i, s := c.compileExpr(v, true)
-			c.exprToReg(i, s)
-			c.rAlloc++
-		}
-		c.rAlloc = callable
-		c.fromRefStmt = false
-		c.emitCall(callable, len(n.Args), n.Ellipsis, 1)
 	case *ast.Export:
 		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if c.isSubcompiler {
@@ -1102,27 +1074,6 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		c.rAlloc = o
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
 		return o, rLoc
-	case *ast.StaticCallExpr:
-		callable := c.rAlloc
-		j, t := c.compileExpr(n.Prop, true)
-		switch t {
-		case rKonst:
-			c.emitGet(callable, j, callable, storeFromKonst, storeFromLocal)
-		case rLoc:
-			c.emitGet(callable, j, callable, storeFromLocal, storeFromLocal)
-		case rGlob:
-			c.emitGet(callable, j, callable, storeFromGlobal, storeFromLocal)
-		case rFree:
-			c.emitGet(callable, j, callable, storeFromFree, storeFromLocal)
-		}
-		for _, v := range n.Args {
-			c.rAlloc++
-			i, s := c.compileExpr(v, false)
-			c.exprToReg(i, s)
-		}
-		c.rAlloc = callable
-		c.emitCall(callable, len(n.Args), n.Ellipsis, 1)
-		return callable, rLoc
 	case *ast.Import:
 		var importFilePath string
 		if filepath.IsAbs(n.Path) {
@@ -1307,7 +1258,7 @@ func (c *compiler) compileBinaryExpr(n *ast.BinaryExpr, isRoot bool) (int, int) 
 		ridx, rscope := c.compileExpr(n.Rhs, false)
 		switch rscope {
 		case rKonst:
-			if val, err := (*c.kb.Konstants)[lidx].Binop(c.kb.ctx, uint64(n.Op), (*c.kb.Konstants)[ridx]); err == nil {
+			if val, err := (*c.kb.Konstants)[lidx].Binop(c.ctx, uint64(n.Op), (*c.kb.Konstants)[ridx]); err == nil {
 				return c.integrateKonst(val)
 			} else {
 				c.hadError = true

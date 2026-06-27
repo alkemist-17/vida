@@ -10,9 +10,8 @@ import (
 
 type String struct {
 	ReferenceSemanticsImpl
-	Runes  []rune
-	VTable Value
-	Value  string
+	Runes []rune
+	Value string
 }
 
 func (s *String) Boolean() Bool {
@@ -27,7 +26,7 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			if len(s.Value)+len(r.Value) >= verror.MaxMemSize {
 				return Nil, verror.ErrMaxMemSize
 			}
-			str := &String{Value: s.Value + r.Value, VTable: ctx.vtables[stringVT]}
+			str := &String{Value: s.Value + r.Value}
 			return str, nil
 		case uint64(token.LT):
 			return Bool(s.Value < r.Value), nil
@@ -47,7 +46,7 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, s, rhs)
+		return IsMemberOf(s, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -64,15 +63,7 @@ func (s *String) Get(ctx *Context, index Value) (Value, error) {
 		}
 		if 0 <= r && r < l {
 			sr := s.Runes[r : r+Integer(1)]
-			return &String{Value: string(sr), Runes: sr, VTable: ctx.vtables[stringVT]}, nil
-		}
-	case *String:
-		iFace, ok := r.VTable.(*Object)
-		if ok {
-			if method, isPresent := iFace.Value[r.Value]; isPresent {
-				return method, nil
-			}
-			return Nil, nil
+			return &String{Value: string(sr), Runes: sr}, nil
 		}
 	}
 	return Nil, verror.ErrValueNotIndexable
@@ -122,8 +113,13 @@ func (s *String) ObjectKey() string {
 	return s.Value
 }
 
-func (s *String) GetVTable() Value {
-	return s.VTable
+func (s *String) GetVTable(ctx *Context) Value {
+	if vtable, ok := ctx.vtables[stringVT]; ok {
+		return vtable
+	}
+	vtable := loadStringVT()
+	ctx.vtables[stringVT] = vtable
+	return vtable
 }
 
 func (s *String) Type() string {

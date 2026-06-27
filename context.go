@@ -24,13 +24,11 @@ type Context struct {
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
-	vtables := make(map[string]Value)
-	vtables[stringVT] = loadStringVT()
 	return &Context{
 		src:              src,
 		extensionsLoader: extensionsLoader,
 		contextID:        contextID,
-		vtables:          vtables,
+		vtables:          make(map[string]Value),
 	}
 }
 

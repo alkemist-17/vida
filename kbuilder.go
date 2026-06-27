@@ -6,19 +6,17 @@ type konstBuilder struct {
 	integerMap map[int64]int
 	floatMap   map[float64]int
 	Konstants  *[]Value
-	ctx        *Context
 	index      int
 	nilIndex   int
 }
 
-func newKonstBuilder(ctx *Context) *konstBuilder {
+func newKonstBuilder() *konstBuilder {
 	return &konstBuilder{
 		stringMap:  make(map[string]int),
 		booleanMap: make(map[bool]int),
 		integerMap: make(map[int64]int),
 		floatMap:   make(map[float64]int),
 		Konstants:  new([]Value),
-		ctx:        ctx,
 		nilIndex:   -1,
 	}
 }
@@ -29,7 +27,7 @@ func (kb *konstBuilder) StringIndex(value string) int {
 		return idx
 	}
 	i := kb.index
-	*kb.Konstants = append(*kb.Konstants, &String{Value: value, VTable: kb.ctx.vtables[stringVT]})
+	*kb.Konstants = append(*kb.Konstants, &String{Value: value})
 	kb.stringMap[value] = i
 	kb.index++
 	return i

@@ -100,7 +100,7 @@ func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return l, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, l, rhs)
+		return IsMemberOf(l, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -150,7 +150,7 @@ func (i Integer) ObjectKey() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
-func (i Integer) GetVTable() Value {
+func (i Integer) GetVTable(ctx *Context) Value {
 	return Nil
 }
 
@@ -235,7 +235,7 @@ func (f Float) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return f, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, f, rhs)
+		return IsMemberOf(f, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -282,7 +282,7 @@ func (f Float) ObjectKey() string {
 	return fmt.Sprintf("%vf", strconv.FormatFloat(float64(f), 'g', -1, 64))
 }
 
-func (f Float) GetVTable() Value {
+func (f Float) GetVTable(ctx *Context) Value {
 	return Nil
 }
 

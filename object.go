@@ -65,7 +65,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, o, rhs)
+		return IsMemberOf(o, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -314,7 +314,7 @@ func objectGetKeys(ctx *Context, args ...Value) (Value, error) {
 			keys := make([]Value, int(lobj))
 			var idx int
 			for k := range self.Value {
-				keys[idx] = &String{Value: k, VTable: ctx.vtables[stringVT]}
+				keys[idx] = &String{Value: k}
 				idx++
 			}
 			return &Array{Value: keys}, nil

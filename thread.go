@@ -464,10 +464,11 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 		case send:
 			var val Value
 			var err error
-			vtable := vm.Frame.stack[P&clean16].GetVTable()
-			switch v := vtable.(type) {
+			switch v := vm.Frame.stack[P&clean16].GetVTable(vm.ctx).(type) {
 			case *Object:
 				val, err = v.Get(vm.ctx, (*vm.Script.Konstants)[A])
+			default:
+				val = Nil
 			}
 			if err != nil {
 				return vm.createError(ip, err)
@@ -982,10 +983,11 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 		case send:
 			var val Value
 			var err error
-			vtable := vm.Frame.stack[P&clean16].GetVTable()
-			switch v := vtable.(type) {
+			switch v := vm.Frame.stack[P&clean16].GetVTable(vm.ctx).(type) {
 			case *Object:
 				val, err = v.Get(vm.ctx, (*vm.Script.Konstants)[A])
+			default:
+				val = Nil
 			}
 			if err != nil {
 				return vm.createError(ip, err)

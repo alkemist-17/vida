@@ -18,13 +18,13 @@ func loadFoundationJSON() Value {
 func jsonValueToJsonString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.Marshal(args[0]); err == nil {
-			return &String{Value: string(b), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: string(b)}, nil
 		} else {
-			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
 	b, _ := json.Marshal(Nil)
-	return &String{Value: string(b), VTable: ctx.vtables[stringVT]}, nil
+	return &String{Value: string(b)}, nil
 }
 
 func jsonParse(ctx *Context, args ...Value) (Value, error) {
@@ -32,10 +32,10 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 		valid, _ := jsonIsValid(ctx, args[0])
 		switch t := valid.(type) {
 		case NilValue:
-			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error(), VTable: ctx.vtables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 		case Bool:
 			if !t {
-				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
 			}
 		}
 		switch t := args[0].(type) {
@@ -48,7 +48,7 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 				case bool:
 					return Bool(v), nil
 				case string:
-					return &String{Value: v, VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: v}, nil
 				case float64:
 					return Float(v), nil
 				case map[string]any:
@@ -57,7 +57,7 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 					return parseArray(ctx, v), nil
 				}
 			} else {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 		case *Bytes:
 			var value any
@@ -68,7 +68,7 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 				case bool:
 					return Bool(v), nil
 				case string:
-					return &String{Value: v, VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: v}, nil
 				case float64:
 					return Float(v), nil
 				case map[string]any:
@@ -77,7 +77,7 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 					return parseArray(ctx, v), nil
 				}
 			} else {
-				return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
 		}
 	}
@@ -101,9 +101,9 @@ func jsonIsValid(ctx *Context, args ...Value) (Value, error) {
 func jsonPretty(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, err := json.MarshalIndent(args[0], EmptyString, "  "); err == nil {
-			return &String{Value: string(b), VTable: ctx.vtables[stringVT]}, nil
+			return &String{Value: string(b)}, nil
 		} else {
-			return &VidaError{Message: &String{Value: err.Error(), VTable: ctx.vtables[stringVT]}}, nil
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	}
 	return Nil, nil
@@ -118,7 +118,7 @@ func parseObject(ctx *Context, input map[string]any) *Object {
 		case bool:
 			o.Value[kk] = Bool(tt)
 		case string:
-			o.Value[kk] = &String{Value: tt, VTable: ctx.vtables[stringVT]}
+			o.Value[kk] = &String{Value: tt}
 		case float64:
 			o.Value[kk] = Float(tt)
 		case map[string]any:
@@ -139,7 +139,7 @@ func parseArray(ctx *Context, input []any) *Array {
 		case bool:
 			A.Value[ii] = Bool(tt)
 		case string:
-			A.Value[ii] = &String{Value: tt, VTable: ctx.vtables[stringVT]}
+			A.Value[ii] = &String{Value: tt}
 		case float64:
 			A.Value[ii] = Float(tt)
 		case map[string]any:

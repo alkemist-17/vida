@@ -95,7 +95,7 @@ func (f *Function) Binop(ctx *Context, op uint64, r Value) (Value, error) {
 	case uint64(token.AND):
 		return r, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, f, r)
+		return IsMemberOf(f, r)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -147,7 +147,7 @@ func (nativeFn NativeFunction) Binop(ctx *Context, op uint64, r Value) (Value, e
 	case uint64(token.AND):
 		return r, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, nativeFn, r)
+		return IsMemberOf(nativeFn, r)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -188,7 +188,7 @@ func (nativeFn NativeFunction) ObjectKey() string {
 	return "NativeFunction"
 }
 
-func (nativeFn NativeFunction) GetVTable() Value {
+func (nativeFn NativeFunction) GetVTable(ctx *Context) Value {
 	return Nil
 }
 

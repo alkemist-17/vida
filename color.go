@@ -30,7 +30,7 @@ func colorQuickSprint(ctx *Context, args ...Value) (Value, error) {
 				fgColor, fgok := colorValue(fgval)
 				bgColor, bgok := colorValue(bgval)
 				if fgok && bgok {
-					return &String{Value: Sprint256(fgColor, bgColor, message), VTable: ctx.vtables[stringVT]}, nil
+					return &String{Value: Sprint256(fgColor, bgColor, message)}, nil
 				}
 			}
 		}
@@ -49,7 +49,7 @@ func colorFormatQuickSprint(ctx *Context, args ...Value) (Value, error) {
 				bgColor, bgok := colorValue(bgval)
 				if fgok && bgok {
 					msg, e := VSprintf(format.Value, args[2:]...)
-					return &String{Value: Sprint256(fgColor, bgColor, msg), VTable: ctx.vtables[stringVT]}, e
+					return &String{Value: Sprint256(fgColor, bgColor, msg)}, e
 				}
 			}
 		}
@@ -121,7 +121,7 @@ func (c *Color) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, c, rhs)
+		return IsMemberOf(c, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -279,7 +279,7 @@ func colorString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if obj, ok := args[0].(*Object); ok {
 			if c, ok := obj.Value[colorName].(*Color); ok {
-				return &String{Value: c.Sprint(args[1]), VTable: ctx.vtables[stringVT]}, nil
+				return &String{Value: c.Sprint(args[1])}, nil
 			}
 		}
 	}
@@ -292,7 +292,7 @@ func colorFormat(ctx *Context, args ...Value) (Value, error) {
 			if c, ok := obj.Value[colorName].(*Color); ok {
 				if format, ok := args[1].(*String); ok {
 					message, e := VSprintf(format.Value, args[2:]...)
-					return &String{Value: c.Sprint(message), VTable: ctx.vtables[stringVT]}, e
+					return &String{Value: c.Sprint(message)}, e
 				}
 			}
 		}
