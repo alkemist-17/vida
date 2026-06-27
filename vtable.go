@@ -4,6 +4,7 @@ const (
 	stringVT = "StringVT"
 	arrayVT  = "ArrayVT"
 	objectVT = "ObjectVT"
+	bytesVT  = "BytesVT"
 )
 
 func loadStringVT() Value {
@@ -63,5 +64,20 @@ func loadObjectVT() Value {
 	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
 	m.Value["clear"] = NativeFunction(objectClear)
 	m.Value["getset"] = NativeFunction(objectGetOrSet)
+	return m
+}
+
+func loadBytesVT() Value {
+	m := &Object{Value: make(map[string]Value, 10)}
+	m.Value["len"] = NativeFunction(coreLen)
+	m.Value["toFile"] = NativeFunction(bytesToFile)
+	m.Value["xor"] = NativeFunction(bytesXOR)
+	m.Value["toString"] = NativeFunction(bytesToString)
+	m.Value["view"] = NativeFunction(bytesView)
+	m.Value["reverse"] = NativeFunction(bytesReverse)
+	m.Value["timingSafeEqual"] = NativeFunction(bytesTimingSafeEqual)
+	m.Value["bitLen"] = NativeFunction(bytesBitLen)
+	m.Value["fill"] = NativeFunction(bytesFill)
+	m.Value["concat"] = NativeFunction(bytesConcat)
 	return m
 }
