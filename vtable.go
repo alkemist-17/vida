@@ -8,7 +8,7 @@ const (
 )
 
 func loadStringVT() Value {
-	m := &Object{Value: make(map[string]Value, 15)}
+	m := &Object{Value: make(map[string]Value, 16)}
 	m.Value["len"] = NativeFunction(coreLen)
 	m.Value["toLower"] = NativeFunction(textToLowerCase)
 	m.Value["toUpper"] = NativeFunction(textToUpperCase)
@@ -24,6 +24,7 @@ func loadStringVT() Value {
 	m.Value["findFirstIndex"] = NativeFunction(textFindFirstIndex)
 	m.Value["trim"] = NativeFunction(textTrim)
 	m.Value["isEmpty"] = NativeFunction(textIsEmpty)
+	m.Value["format"] = NativeFunction(coreFormat)
 	return m
 }
 

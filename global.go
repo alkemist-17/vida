@@ -71,8 +71,6 @@ func stringWithVisited(ctx *Context, v Value, visited map[uintptr]bool) string {
 
 var coreLibNames = []string{
 	"print",
-	"len",
-	"append",
 	"newArray",
 	"load",
 	"type",
@@ -87,8 +85,6 @@ var coreLibNames = []string{
 func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 	*store = append(*store,
 		NativeFunction(corePrint),
-		NativeFunction(coreLen),
-		NativeFunction(coreAppend),
 		NativeFunction(coreNewArray),
 		generateLoadFunction(extensionsLoader),
 		NativeFunction(coreType),
