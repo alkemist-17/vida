@@ -276,7 +276,7 @@ func (vm *VM) debug() error {
 			if err != nil {
 				return vm.createError(ip, err)
 			}
-		case send:
+		case lookup:
 			vm.Frame.stack[B] = vm.Frame.stack[P&clean16].LookUp(vm.ctx, (*vm.Script.Konstants)[A])
 		case slice:
 			val, err := vm.processSlice(P, A)

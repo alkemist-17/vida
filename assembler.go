@@ -29,7 +29,7 @@ const (
 	opFun      = uint64(fun) << shift56
 	opCall     = uint64(call) << shift56
 	opRet      = uint64(ret) << shift56
-	opSend     = uint64(send) << shift56
+	opSend     = uint64(lookup) << shift56
 	opHeader   = uint64(header)
 	opEnd      = uint64(end)
 )

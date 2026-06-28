@@ -85,7 +85,7 @@ func printInstr(instr, ip uint64, isRunningDebug bool) string {
 		fmt.Fprintf(&sb, " %3v %3v %3v %3v", P>>shift16, P&clean16, A, B)
 	case object, jump:
 		fmt.Fprintf(&sb, " %3v", B)
-	case set, get, send:
+	case set, get, lookup:
 		fmt.Fprintf(&sb, " %3v %3v %3v %3v %3v", (P>>shift16)>>shift4, P>>shift16&clean8, P&clean16, A, B)
 	case eq:
 		var op token.Token
