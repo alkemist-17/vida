@@ -6,6 +6,7 @@ const (
 	objectVT = "ObjVT"
 	bytesVT  = "BtsVT"
 	threadVT = "ThrVT"
+	colorVT  = "ColVT"
 )
 
 func loadStringVT() Value {
@@ -91,4 +92,15 @@ func loadThreadVT() Value {
 	m.Value["state"] = NativeFunction(coGetThreadState)
 	m.Value["value"] = NativeFunction(coValue)
 	return m
+}
+
+func loadColorVT() Value {
+	o := &Object{Value: make(map[string]Value, 6)}
+	o.Value["string"] = NativeFunction(colorString)
+	o.Value["format"] = NativeFunction(colorFormat)
+	o.Value["bg"] = NativeFunction(colorSetBG)
+	o.Value["fg"] = NativeFunction(colorSetFG)
+	o.Value["reset"] = NativeFunction(colorSetReset)
+	o.Value["resets"] = NativeFunction(colorGetReset)
+	return o
 }
