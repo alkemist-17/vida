@@ -186,10 +186,10 @@ func textSplit(ctx *Context, args ...Value) (Value, error) {
 		if v, ok := args[0].(*String); ok {
 			if l > 1 {
 				if sep, ok := args[1].(*String); ok {
-					return textStringToArray(ctx, strings.Split(v.Value, sep.Value)), nil
+					return textStringToArray(strings.Split(v.Value, sep.Value)), nil
 				}
 			}
-			return textStringToArray(ctx, strings.Split(v.Value, " ")), nil
+			return textStringToArray(strings.Split(v.Value, " ")), nil
 		}
 	}
 	return Nil, nil
@@ -198,7 +198,7 @@ func textSplit(ctx *Context, args ...Value) (Value, error) {
 func textFields(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if v, ok := args[0].(*String); ok {
-			return textStringToArray(ctx, strings.Fields(v.Value)), nil
+			return textStringToArray(strings.Fields(v.Value)), nil
 		}
 	}
 	return Nil, nil
@@ -246,7 +246,7 @@ func textReplaceAll(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textCenterString(ctx *Context, s *String, width int, sep string) *String {
+func textCenterString(s *String, width int, sep string) *String {
 	strLen := int(StringLength(s))
 	if width <= strLen {
 		return s
@@ -268,7 +268,7 @@ func textCenter(ctx *Context, args ...Value) (Value, error) {
 						sep = s.Value
 					}
 				}
-				return textCenterString(ctx, str, int(width), sep), nil
+				return textCenterString(str, int(width), sep), nil
 			}
 		}
 	}
@@ -524,7 +524,7 @@ func textBytesLen(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func textStringToArray(ctx *Context, slice []string) Value {
+func textStringToArray(slice []string) Value {
 	l := len(slice)
 	xs := make([]Value, l)
 	for i := range l {
@@ -625,7 +625,7 @@ func textLines(ctx *Context, args ...Value) (Value, error) {
 			if len(parts) > 0 && parts[0] == EmptyString {
 				parts = parts[1:]
 			}
-			return textStringToArray(ctx, parts), nil
+			return textStringToArray(parts), nil
 		}
 	}
 	return Nil, nil

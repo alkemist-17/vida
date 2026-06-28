@@ -378,7 +378,7 @@ func timeParse(ctx *Context, args ...Value) (Value, error) {
 func timeSince(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if t, ok := args[0].(Time); ok {
-			return timeCreateDuration(ctx, time.Since(time.Time(t))), nil
+			return timeCreateDuration(time.Since(time.Time(t))), nil
 		}
 	}
 	return Nil, nil
@@ -400,7 +400,7 @@ func timeSub(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if t, ok := args[0].(Time); ok {
 			if u, ok := args[1].(Time); ok {
-				return timeCreateDuration(ctx, time.Time(t).Sub(time.Time(u))), nil
+				return timeCreateDuration(time.Time(t).Sub(time.Time(u))), nil
 			}
 		}
 	}
@@ -429,7 +429,7 @@ func timeBefore(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func timeCreateDuration(ctx *Context, v time.Duration) *Object {
+func timeCreateDuration(v time.Duration) *Object {
 	o := &Object{Value: make(map[string]Value, 7)}
 	o.Value["hours"] = Float(v.Hours())
 	o.Value["minutes"] = Float(v.Minutes())

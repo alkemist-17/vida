@@ -12,120 +12,120 @@ const (
 )
 
 func loadStringVT() Value {
-	m := &Object{Value: make(map[string]Value, 16)}
-	m.Value["len"] = NativeFunction(coreLen)
-	m.Value["toLower"] = NativeFunction(textToLowerCase)
-	m.Value["toUpper"] = NativeFunction(textToUpperCase)
-	m.Value["contains"] = NativeFunction(textContains)
-	m.Value["index"] = NativeFunction(textIndex)
-	m.Value["repeat"] = NativeFunction(textRepeat)
-	m.Value["count"] = NativeFunction(textCount)
-	m.Value["hasPrefix"] = NativeFunction(textHasPrefix)
-	m.Value["hasSuffix"] = NativeFunction(textHasSuffix)
-	m.Value["join"] = NativeFunction(textJoin)
-	m.Value["replace"] = NativeFunction(textReplaceN)
-	m.Value["match"] = NativeFunction(textMatch)
-	m.Value["findFirstIndex"] = NativeFunction(textFindFirstIndex)
-	m.Value["trim"] = NativeFunction(textTrim)
-	m.Value["isEmpty"] = NativeFunction(textIsEmpty)
-	m.Value["format"] = NativeFunction(coreFormat)
-	return m
+	vt := &Object{Value: make(map[string]Value, 16)}
+	vt.Value["len"] = NativeFunction(coreLen)
+	vt.Value["toLower"] = NativeFunction(textToLowerCase)
+	vt.Value["toUpper"] = NativeFunction(textToUpperCase)
+	vt.Value["contains"] = NativeFunction(textContains)
+	vt.Value["index"] = NativeFunction(textIndex)
+	vt.Value["repeat"] = NativeFunction(textRepeat)
+	vt.Value["count"] = NativeFunction(textCount)
+	vt.Value["hasPrefix"] = NativeFunction(textHasPrefix)
+	vt.Value["hasSuffix"] = NativeFunction(textHasSuffix)
+	vt.Value["join"] = NativeFunction(textJoin)
+	vt.Value["replace"] = NativeFunction(textReplaceN)
+	vt.Value["match"] = NativeFunction(textMatch)
+	vt.Value["findFirstIndex"] = NativeFunction(textFindFirstIndex)
+	vt.Value["trim"] = NativeFunction(textTrim)
+	vt.Value["isEmpty"] = NativeFunction(textIsEmpty)
+	vt.Value["format"] = NativeFunction(coreFormat)
+	return vt
 }
 
 func loadArrayVT() Value {
-	m := &Object{Value: make(map[string]Value, 16)}
-	m.Value["len"] = NativeFunction(coreLen)
-	m.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
-	m.Value["view"] = NativeFunction(arrayView)
-	m.Value["clear"] = NativeFunction(arrayClear)
-	m.Value["index"] = NativeFunction(arrayIndex)
-	m.Value["insert"] = NativeFunction(arrayInsert)
-	m.Value["pop"] = NativeFunction(arrayPop)
-	m.Value["append"] = NativeFunction(coreAppend)
-	m.Value["replace"] = NativeFunction(arrayReplace)
-	m.Value["clone"] = NativeFunction(coreClone)
-	m.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
-	m.Value["sort"] = NativeFunction(arraySort)
-	m.Value["reverse"] = NativeFunction(arrayReverse)
-	m.Value["delete"] = NativeFunction(arrayDelete)
-	m.Value["contains"] = NativeFunction(arrayContains)
-	m.Value["concat"] = NativeFunction(arrayConcat)
-	return m
+	vt := &Object{Value: make(map[string]Value, 16)}
+	vt.Value["len"] = NativeFunction(coreLen)
+	vt.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
+	vt.Value["view"] = NativeFunction(arrayView)
+	vt.Value["clear"] = NativeFunction(arrayClear)
+	vt.Value["index"] = NativeFunction(arrayIndex)
+	vt.Value["insert"] = NativeFunction(arrayInsert)
+	vt.Value["pop"] = NativeFunction(arrayPop)
+	vt.Value["append"] = NativeFunction(coreAppend)
+	vt.Value["replace"] = NativeFunction(arrayReplace)
+	vt.Value["clone"] = NativeFunction(coreClone)
+	vt.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
+	vt.Value["sort"] = NativeFunction(arraySort)
+	vt.Value["reverse"] = NativeFunction(arrayReverse)
+	vt.Value["delete"] = NativeFunction(arrayDelete)
+	vt.Value["contains"] = NativeFunction(arrayContains)
+	vt.Value["concat"] = NativeFunction(arrayConcat)
+	return vt
 }
 
 func loadObjectVT() Value {
-	m := &Object{Value: make(map[string]Value, 12)}
-	m.Value["len"] = NativeFunction(coreLen)
-	m.Value["inject"] = NativeFunction(objectInjectProperties)
-	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
-	m.Value["extract"] = NativeFunction(objectExtractProperties)
-	m.Value["implements"] = NativeFunction(objectCheckProperties)
-	m.Value["has"] = NativeFunction(objectCircumventHasValue)
-	m.Value["del"] = NativeFunction(objectCircumventDeleteProperty)
-	m.Value["keys"] = NativeFunction(objectGetKeys)
-	m.Value["values"] = NativeFunction(objectGetValues)
-	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
-	m.Value["clear"] = NativeFunction(objectClear)
-	m.Value["getset"] = NativeFunction(objectGetOrSet)
-	return m
+	vt := &Object{Value: make(map[string]Value, 12)}
+	vt.Value["len"] = NativeFunction(coreLen)
+	vt.Value["inject"] = NativeFunction(objectInjectProperties)
+	vt.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
+	vt.Value["extract"] = NativeFunction(objectExtractProperties)
+	vt.Value["implements"] = NativeFunction(objectCheckProperties)
+	vt.Value["has"] = NativeFunction(objectCircumventHasValue)
+	vt.Value["del"] = NativeFunction(objectCircumventDeleteProperty)
+	vt.Value["keys"] = NativeFunction(objectGetKeys)
+	vt.Value["values"] = NativeFunction(objectGetValues)
+	vt.Value["isEmpty"] = NativeFunction(objectIsEmpty)
+	vt.Value["clear"] = NativeFunction(objectClear)
+	vt.Value["getset"] = NativeFunction(objectGetOrSet)
+	return vt
 }
 
 func loadBytesVT() Value {
-	m := &Object{Value: make(map[string]Value, 10)}
-	m.Value["len"] = NativeFunction(coreLen)
-	m.Value["toFile"] = NativeFunction(bytesToFile)
-	m.Value["xor"] = NativeFunction(bytesXOR)
-	m.Value["toString"] = NativeFunction(bytesToString)
-	m.Value["view"] = NativeFunction(bytesView)
-	m.Value["reverse"] = NativeFunction(bytesReverse)
-	m.Value["timingSafeEqual"] = NativeFunction(bytesTimingSafeEqual)
-	m.Value["bitLen"] = NativeFunction(bytesBitLen)
-	m.Value["fill"] = NativeFunction(bytesFill)
-	m.Value["concat"] = NativeFunction(bytesConcat)
-	return m
+	vt := &Object{Value: make(map[string]Value, 10)}
+	vt.Value["len"] = NativeFunction(coreLen)
+	vt.Value["toFile"] = NativeFunction(bytesToFile)
+	vt.Value["xor"] = NativeFunction(bytesXOR)
+	vt.Value["toString"] = NativeFunction(bytesToString)
+	vt.Value["view"] = NativeFunction(bytesView)
+	vt.Value["reverse"] = NativeFunction(bytesReverse)
+	vt.Value["timingSafeEqual"] = NativeFunction(bytesTimingSafeEqual)
+	vt.Value["bitLen"] = NativeFunction(bytesBitLen)
+	vt.Value["fill"] = NativeFunction(bytesFill)
+	vt.Value["concat"] = NativeFunction(bytesConcat)
+	return vt
 }
 
 func loadThreadVT() Value {
-	m := &Object{Value: make(map[string]Value, 6)}
-	m.Value["run"] = NativeFunction(coRunThread)
-	m.Value["complete"] = NativeFunction(coCompleteThread)
-	m.Value["isActive"] = NativeFunction(coIsActive)
-	m.Value["isDone"] = NativeFunction(coIsDone)
-	m.Value["state"] = NativeFunction(coGetThreadState)
-	m.Value["value"] = NativeFunction(coValue)
-	return m
+	vt := &Object{Value: make(map[string]Value, 6)}
+	vt.Value["run"] = NativeFunction(coRunThread)
+	vt.Value["complete"] = NativeFunction(coCompleteThread)
+	vt.Value["isActive"] = NativeFunction(coIsActive)
+	vt.Value["isDone"] = NativeFunction(coIsDone)
+	vt.Value["state"] = NativeFunction(coGetThreadState)
+	vt.Value["value"] = NativeFunction(coValue)
+	return vt
 }
 
 func loadColorVT() Value {
-	o := &Object{Value: make(map[string]Value, 6)}
-	o.Value["string"] = NativeFunction(colorString)
-	o.Value["format"] = NativeFunction(colorFormat)
-	o.Value["bg"] = NativeFunction(colorSetBG)
-	o.Value["fg"] = NativeFunction(colorSetFG)
-	o.Value["reset"] = NativeFunction(colorSetReset)
-	o.Value["resets"] = NativeFunction(colorGetReset)
-	return o
+	vt := &Object{Value: make(map[string]Value, 6)}
+	vt.Value["string"] = NativeFunction(colorString)
+	vt.Value["format"] = NativeFunction(colorFormat)
+	vt.Value["bg"] = NativeFunction(colorSetBG)
+	vt.Value["fg"] = NativeFunction(colorSetFG)
+	vt.Value["reset"] = NativeFunction(colorSetReset)
+	vt.Value["resets"] = NativeFunction(colorGetReset)
+	return vt
 }
 
 func loadFileHandlerVT() Value {
-	o := &Object{Value: make(map[string]Value, 6)}
-	o.Value["close"] = NativeFunction(fileClose)
-	o.Value["isClosed"] = NativeFunction(fileIsClosed)
-	o.Value["name"] = NativeFunction(fileName)
-	o.Value["write"] = NativeFunction(fileWrite)
-	o.Value["lines"] = NativeFunction(fileReadLines)
-	o.Value["read"] = NativeFunction(fileRead)
-	return o
+	vt := &Object{Value: make(map[string]Value, 6)}
+	vt.Value["close"] = NativeFunction(fileClose)
+	vt.Value["isClosed"] = NativeFunction(fileIsClosed)
+	vt.Value["name"] = NativeFunction(fileName)
+	vt.Value["write"] = NativeFunction(fileWrite)
+	vt.Value["lines"] = NativeFunction(fileReadLines)
+	vt.Value["read"] = NativeFunction(fileRead)
+	return vt
 }
 
 func loadHttpClientVT() Value {
-	obj := &Object{Value: make(map[string]Value, 7)}
-	obj.Value["get"] = NativeFunction(makeRequestFn(httpGET))
-	obj.Value["post"] = NativeFunction(makeRequestFn(httpPOST))
-	obj.Value["put"] = NativeFunction(makeRequestFn(httpPUT))
-	obj.Value["delete"] = NativeFunction(makeRequestFn(httpDELETE))
-	obj.Value["patch"] = NativeFunction(makeRequestFn(httpPATCH))
-	obj.Value["head"] = NativeFunction(makeRequestFn(httpHEAD))
-	obj.Value["options"] = NativeFunction(makeRequestFn(httpOPTIONS))
-	return obj
+	vt := &Object{Value: make(map[string]Value, 7)}
+	vt.Value["get"] = NativeFunction(makeRequestFn(httpGET))
+	vt.Value["post"] = NativeFunction(makeRequestFn(httpPOST))
+	vt.Value["put"] = NativeFunction(makeRequestFn(httpPUT))
+	vt.Value["delete"] = NativeFunction(makeRequestFn(httpDELETE))
+	vt.Value["patch"] = NativeFunction(makeRequestFn(httpPATCH))
+	vt.Value["head"] = NativeFunction(makeRequestFn(httpHEAD))
+	vt.Value["options"] = NativeFunction(makeRequestFn(httpOPTIONS))
+	return vt
 }
