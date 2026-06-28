@@ -8,6 +8,7 @@ const (
 	threadVT      = "ThrVT"
 	colorVT       = "ColVT"
 	fileHandlerVT = "FhdVT"
+	httpClientVT  = "htpVT"
 )
 
 func loadStringVT() Value {
@@ -115,4 +116,16 @@ func loadFileHandlerVT() Value {
 	o.Value["lines"] = NativeFunction(fileReadLines)
 	o.Value["read"] = NativeFunction(fileRead)
 	return o
+}
+
+func loadHttpClientVT() Value {
+	obj := &Object{Value: make(map[string]Value, 7)}
+	obj.Value["get"] = NativeFunction(makeRequestFn(httpGET))
+	obj.Value["post"] = NativeFunction(makeRequestFn(httpPOST))
+	obj.Value["put"] = NativeFunction(makeRequestFn(httpPUT))
+	obj.Value["delete"] = NativeFunction(makeRequestFn(httpDELETE))
+	obj.Value["patch"] = NativeFunction(makeRequestFn(httpPATCH))
+	obj.Value["head"] = NativeFunction(makeRequestFn(httpHEAD))
+	obj.Value["options"] = NativeFunction(makeRequestFn(httpOPTIONS))
+	return obj
 }
