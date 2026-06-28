@@ -66,7 +66,7 @@ func (b Bool) Iterator() Value {
 	return Nil
 }
 
-func (b Bool) String() string {
+func (b Bool) String(ctx *Context) string {
 	if b {
 		return "true"
 	}

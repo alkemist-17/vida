@@ -54,17 +54,18 @@ const (
 )
 
 const (
-	__type = "__type"
+	__type   = "__type"
+	__string = "__string"
 )
 
-func stringWithVisited(v Value, visited map[uintptr]bool) string {
+func stringWithVisited(ctx *Context, v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {
 	case *Array:
-		return c.stringify(visited)
+		return c.stringify(ctx, visited)
 	case *Object:
-		return c.stringify(visited)
+		return c.stringify(ctx, visited)
 	default:
-		return v.String()
+		return v.String(ctx)
 	}
 }
 
@@ -160,7 +161,7 @@ func coreAssert(ctx *Context, args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String(ctx)))
 		return Nil, err
 	}
 	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))

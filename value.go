@@ -17,7 +17,7 @@ type Value interface {
 	Iterator() Value
 	IsCallable() Bool
 	Call(ctx *Context, args ...Value) (Value, error)
-	String() string
+	String(ctx *Context) string
 	Type(ctx *Context) string
 	Clone() Value
 	ObjectKey() string
@@ -67,7 +67,7 @@ func (i ValueSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
-func (i ValueSemanticsImpl) String() string {
+func (i ValueSemanticsImpl) String(*Context) string {
 	return EmptyString
 }
 
@@ -134,7 +134,7 @@ func (i *ReferenceSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error
 	return Nil, verror.ErrNotImplemented
 }
 
-func (i ReferenceSemanticsImpl) String() string {
+func (i ReferenceSemanticsImpl) String(*Context) string {
 	return EmptyString
 }
 

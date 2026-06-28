@@ -66,7 +66,7 @@ func (t Time) Iterator() Value {
 	return Nil
 }
 
-func (t Time) String() string {
+func (t Time) String(ctx *Context) string {
 	return time.Time(t).String()
 }
 

@@ -40,7 +40,7 @@ func (e *Enum) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 }
 
 func (e *Enum) Get(ctx *Context, index Value) Value {
-	if val, ok := e.Pairs[index.String()]; ok {
+	if val, ok := e.Pairs[index.String(ctx)]; ok {
 		return val
 	}
 	return Nil
@@ -71,7 +71,7 @@ func (e *Enum) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
-func (e Enum) String() string {
+func (e Enum) String(ctx *Context) string {
 	if len(e.Pairs) == 0 {
 		return "enum{}"
 	}

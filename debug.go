@@ -8,7 +8,7 @@ import (
 
 func (vm *VM) Inspect(ip int) {
 	clear()
-	fmt.Println("Thread", vm.ctx.currentThread.String())
+	fmt.Println("Thread", vm.ctx.currentThread.String(vm.ctx))
 	fmt.Println("IsMain", vm.ctx.IsMainThreadRunning())
 	fmt.Println("ScriptID", vm.Frame.lambda.CoreFn.ScriptID)
 	fmt.Printf("Store: ")

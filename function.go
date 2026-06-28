@@ -61,7 +61,7 @@ func (c *CoreFunction) Type(ctx *Context) string {
 	return "coreFunction"
 }
 
-func (f CoreFunction) String() string {
+func (f CoreFunction) String(ctx *Context) string {
 	return fmt.Sprintf("CoreFunction(arity = %v, isVar = %v, freeVarsInfo = %v)", f.Arity, f.IsVarArg, f.FreeVarsCount)
 }
 
@@ -117,7 +117,7 @@ func (f *Function) Clone() Value {
 	return f
 }
 
-func (f Function) String() string {
+func (f Function) String(ctx *Context) string {
 	return fmt.Sprintf("Function(%p)", f.CoreFn)
 }
 
@@ -180,7 +180,7 @@ func (nativeFn NativeFunction) Iterator() Value {
 	return Nil
 }
 
-func (nativeFn NativeFunction) String() string {
+func (nativeFn NativeFunction) String(ctx *Context) string {
 	return "NativeFunction"
 }
 

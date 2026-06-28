@@ -803,11 +803,11 @@ func (p *pp) badVerb(verb rune) {
 	_, _ = p.WriteSingleByte('(')
 	switch {
 	case p.arg != nil:
-		_, _ = p.WriteString(p.arg.String())
+		_, _ = p.WriteString(p.arg.String(p.ctx))
 		_, _ = p.WriteSingleByte('=')
 		p.printArg(p.arg, 'v')
 	default:
-		_, _ = p.WriteString(Nil.String())
+		_, _ = p.WriteString(Nil.String(p.ctx))
 	}
 	_, _ = p.WriteSingleByte(')')
 	p.erroring = false
@@ -956,7 +956,7 @@ func (p *pp) printArg(arg Value, verb rune) {
 		p.fmt.fmtS(arg.Type(p.ctx))
 		return
 	case 'v':
-		p.fmt.fmtS(arg.String())
+		p.fmt.fmtS(arg.String(p.ctx))
 		return
 	}
 
@@ -973,7 +973,7 @@ func (p *pp) printArg(arg Value, verb rune) {
 	case *Bytes:
 		p.fmtBytes(f.Value, verb, "[]byte")
 	default:
-		p.fmtString(f.String(), verb)
+		p.fmtString(f.String(p.ctx), verb)
 	}
 }
 
@@ -1232,7 +1232,7 @@ formatLoop:
 				_, _ = p.WriteString(commaSpaceString)
 			}
 			if arg == nil {
-				_, _ = p.WriteString(Nil.String())
+				_, _ = p.WriteString(Nil.String(ctx))
 			} else {
 				_, _ = p.WriteString(arg.Type(ctx))
 				_, _ = p.WriteSingleByte('=')

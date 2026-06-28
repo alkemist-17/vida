@@ -105,7 +105,7 @@ func (s *String) Iterator() Value {
 	return &StringIterator{Runes: s.Runes, Init: -1, End: len(s.Runes)}
 }
 
-func (s String) String() string {
+func (s String) String(ctx *Context) string {
 	return s.Value
 }
 

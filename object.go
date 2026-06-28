@@ -116,11 +116,29 @@ func (o *Object) Iterator() Value {
 	return newObjectIterator(o)
 }
 
-func (o *Object) String() string {
-	return o.stringify(make(map[uintptr]bool))
+func (o *Object) String(ctx *Context) string {
+	if o.VTable != nil {
+		switch val := o.VTable.Get(ctx, &String{Value: __string}).(type) {
+		case *Function:
+			r, e := ctx.runFunctionInNewThread(val, o)
+			if e == nil {
+				return r.String(ctx)
+			}
+			return e.Error()
+		case NativeFunction:
+			r, e := val.Call(ctx, o)
+			if e == nil {
+				return r.String(ctx)
+			}
+			return e.Error()
+		default:
+			return val.String(ctx)
+		}
+	}
+	return o.stringify(ctx, make(map[uintptr]bool))
 }
 
-func (o *Object) stringify(visited map[uintptr]bool) string {
+func (o *Object) stringify(ctx *Context, visited map[uintptr]bool) string {
 	if len(o.Value) == 0 {
 		return "{}"
 	}
@@ -135,7 +153,7 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 
 	var r []string
 	for k, v := range o.Value {
-		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
+		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(ctx, v, visited)))
 	}
 	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
 }
@@ -158,7 +176,7 @@ func (o *Object) LookUp(ctx *Context, message Value) Value {
 
 func (o *Object) Type(ctx *Context) string {
 	if o.VTable != nil {
-		return o.VTable.Get(ctx, &String{Value: __type}).String()
+		return o.VTable.Get(ctx, &String{Value: __type}).String(ctx)
 	}
 	return "object"
 }

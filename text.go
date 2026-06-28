@@ -315,7 +315,7 @@ func textJoin(ctx *Context, args ...Value) (Value, error) {
 		if ok && okSep {
 			r := make([]string, 0, len(xs.Value))
 			for _, v := range xs.Value {
-				r = append(r, v.String())
+				r = append(r, v.String(ctx))
 			}
 			return &String{Value: strings.Join(r, sep.Value)}, nil
 		}

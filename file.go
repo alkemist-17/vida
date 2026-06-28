@@ -191,7 +191,7 @@ func (file *FileHandler) Equals(other Value) Bool {
 	return False
 }
 
-func (file *FileHandler) String() string {
+func (file *FileHandler) String(ctx *Context) string {
 	return fmt.Sprintf("FileHandler(%v)", file.Handler.Fd())
 }
 

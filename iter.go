@@ -64,7 +64,7 @@ func (it *ArrayIterator) Iterator() Value {
 	return Nil
 }
 
-func (it ArrayIterator) String() string {
+func (it ArrayIterator) String(ctx *Context) string {
 	return fmt.Sprintf("ArrayIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -143,7 +143,7 @@ func (it *ObjectIterator) Iterator() Value {
 	return Nil
 }
 
-func (it ObjectIterator) String() string {
+func (it ObjectIterator) String(ctx *Context) string {
 	return fmt.Sprintf("ObjectIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -207,7 +207,7 @@ func (it *StringIterator) Iterator() Value {
 	return Nil
 }
 
-func (it StringIterator) String() string {
+func (it StringIterator) String(ctx *Context) string {
 	return fmt.Sprintf("StringIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -270,7 +270,7 @@ func (it *IntegerIterator) Iterator() Value {
 	return Nil
 }
 
-func (it IntegerIterator) String() string {
+func (it IntegerIterator) String(ctx *Context) string {
 	return fmt.Sprintf("IntIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -334,7 +334,7 @@ func (bi *BytesIterator) Iterator() Value {
 	return Nil
 }
 
-func (bi BytesIterator) String() string {
+func (bi BytesIterator) String(ctx *Context) string {
 	return fmt.Sprintf("BytesIterator[i = %v, e = %v]", bi.Init, bi.End)
 }
 

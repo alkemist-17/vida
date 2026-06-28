@@ -38,7 +38,7 @@ func (n NilValue) Equals(other Value) Bool {
 	return Bool(ok)
 }
 
-func (n NilValue) String() string {
+func (n NilValue) String(ctx *Context) string {
 	return "nil"
 }
 

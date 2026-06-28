@@ -66,8 +66,8 @@ func (e *VidaError) Iterator() Value {
 	return Nil
 }
 
-func (e *VidaError) String() string {
-	return fmt.Sprintf("Error(%v)", e.Message.String())
+func (e *VidaError) String(ctx *Context) string {
+	return fmt.Sprintf("Error(%v)", e.Message.String(ctx))
 }
 
 func (e *VidaError) ObjectKey() string {

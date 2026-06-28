@@ -76,22 +76,22 @@ func loadFoundationHttpClient() Value {
 }
 
 func httpNewClient(ctx *Context, args ...Value) (Value, error) {
-	return buildClientObject(newVidaHttpClient()), nil
+	return buildClientObject(ctx, newVidaHttpClient()), nil
 }
 
-func buildClientObject(client *vidaHttpClient) *Object {
+func buildClientObject(ctx *Context, client *vidaHttpClient) *Object {
 	obj := &Object{Value: make(map[string]Value, 7)}
-	obj.Value["get"] = NativeFunction(makeRequestFn(client, httpGET))
-	obj.Value["post"] = NativeFunction(makeRequestFn(client, httpPOST))
-	obj.Value["put"] = NativeFunction(makeRequestFn(client, httpPUT))
-	obj.Value["delete"] = NativeFunction(makeRequestFn(client, httpDELETE))
-	obj.Value["patch"] = NativeFunction(makeRequestFn(client, httpPATCH))
-	obj.Value["head"] = NativeFunction(makeRequestFn(client, httpHEAD))
-	obj.Value["options"] = NativeFunction(makeRequestFn(client, httpOPTIONS))
+	obj.Value["get"] = NativeFunction(makeRequestFn(ctx, client, httpGET))
+	obj.Value["post"] = NativeFunction(makeRequestFn(ctx, client, httpPOST))
+	obj.Value["put"] = NativeFunction(makeRequestFn(ctx, client, httpPUT))
+	obj.Value["delete"] = NativeFunction(makeRequestFn(ctx, client, httpDELETE))
+	obj.Value["patch"] = NativeFunction(makeRequestFn(ctx, client, httpPATCH))
+	obj.Value["head"] = NativeFunction(makeRequestFn(ctx, client, httpHEAD))
+	obj.Value["options"] = NativeFunction(makeRequestFn(ctx, client, httpOPTIONS))
 	return obj
 }
 
-func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(*Context, ...Value) (Value, error) {
+func makeRequestFn(ctx *Context, client *vidaHttpClient, fixedMethod string) func(*Context, ...Value) (Value, error) {
 	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if _, isSelf := args[0].(*Object); isSelf {
@@ -99,7 +99,7 @@ func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(*Context, ..
 			}
 		}
 
-		config, err := resolveConfig(fixedMethod, args...)
+		config, err := resolveConfig(ctx, fixedMethod, args...)
 		if err != nil {
 			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
@@ -115,7 +115,7 @@ func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(*Context, ..
 	}
 }
 
-func resolveConfig(fixedMethod string, args ...Value) (*requestConfig, error) {
+func resolveConfig(ctx *Context, fixedMethod string, args ...Value) (*requestConfig, error) {
 	var cfg *requestConfig
 	var err error
 
@@ -126,9 +126,9 @@ func resolveConfig(fixedMethod string, args ...Value) (*requestConfig, error) {
 	case 1:
 		switch v := args[0].(type) {
 		case *String:
-			cfg, err = resolveRequestConfig(v.Value)
+			cfg, err = resolveRequestConfig(ctx, v.Value)
 		case *Object:
-			cfg, err = httpParseUserConfig(v, nil)
+			cfg, err = httpParseUserConfig(ctx, v, nil)
 		default:
 			return nil, errors.New("http client: argument must be a url string or config object")
 		}
@@ -136,9 +136,9 @@ func resolveConfig(fixedMethod string, args ...Value) (*requestConfig, error) {
 	default: // 2+ args: first is url string, second is config object
 		if urlStr, ok := args[0].(*String); ok {
 			if userCfg, ok := args[1].(*Object); ok {
-				cfg, err = httpParseUserConfig(userCfg, &urlStr.Value)
+				cfg, err = httpParseUserConfig(ctx, userCfg, &urlStr.Value)
 			} else {
-				cfg, err = resolveRequestConfig(urlStr.Value)
+				cfg, err = resolveRequestConfig(ctx, urlStr.Value)
 			}
 		} else {
 			return nil, errors.New("http client: first argument must be a url string")
@@ -156,10 +156,10 @@ func resolveConfig(fixedMethod string, args ...Value) (*requestConfig, error) {
 	return cfg, nil
 }
 
-func resolveRequestConfig(userRawURL string, args ...Value) (*requestConfig, error) {
+func resolveRequestConfig(ctx *Context, userRawURL string, args ...Value) (*requestConfig, error) {
 	if len(args) > 1 {
 		if userConfig, ok := args[1].(*Object); ok {
-			return httpParseUserConfig(userConfig, &userRawURL)
+			return httpParseUserConfig(ctx, userConfig, &userRawURL)
 		}
 	}
 
@@ -208,7 +208,7 @@ type requestConfig struct {
 	Retry       *retryConfig
 }
 
-func httpParseUserConfig(userConfig *Object, userRawURL *string) (*requestConfig, error) {
+func httpParseUserConfig(ctx *Context, userConfig *Object, userRawURL *string) (*requestConfig, error) {
 	reqConfig := &requestConfig{
 		Method:      httpGET,
 		Timeout:     httpDefaultTimeout,
@@ -233,7 +233,7 @@ func httpParseUserConfig(userConfig *Object, userRawURL *string) (*requestConfig
 		return nil, err
 	}
 
-	httpParseQueryParams(userConfig, reqConfig.Url)
+	httpParseQueryParams(ctx, userConfig, reqConfig.Url)
 
 	return reqConfig, nil
 }
@@ -312,11 +312,11 @@ func httpParseRetryFields(userRetryConfig *Object, reqConfig *requestConfig) {
 	reqConfig.Retry = retry
 }
 
-func httpParseQueryParams(userConfig *Object, reqConfigURL *url.URL) {
+func httpParseQueryParams(ctx *Context, userConfig *Object, reqConfigURL *url.URL) {
 	if queryParams, ok := userConfig.Value[httpQueryParamsField].(*Object); ok {
 		q := url.Values{}
 		for k, v := range queryParams.Value {
-			q.Add(k, v.String())
+			q.Add(k, v.String(ctx))
 		}
 		reqConfigURL.RawQuery = q.Encode()
 	}
@@ -487,7 +487,7 @@ func (client *vidaHttpClient) Equals(other Value) Bool {
 	return Bool(ok && x == client)
 }
 
-func (client *vidaHttpClient) String() string {
+func (client *vidaHttpClient) String(ctx *Context) string {
 	return fmt.Sprintf("HttpClient(%p)", client)
 }
 

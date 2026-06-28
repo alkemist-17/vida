@@ -134,7 +134,7 @@ func (c *Color) Equals(other Value) Bool {
 	return false
 }
 
-func (c *Color) String() string {
+func (c *Color) String(ctx *Context) string {
 	return fmt.Sprintf("Color(%p)", c)
 }
 

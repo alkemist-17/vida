@@ -110,7 +110,7 @@ func (th *Thread) Equals(other Value) Bool {
 	return false
 }
 
-func (th *Thread) String() string {
+func (th *Thread) String(ctx *Context) string {
 	return fmt.Sprintf("Thread(%p, %v)", th, th.State.String())
 }
 
