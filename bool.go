@@ -84,7 +84,7 @@ func (b Bool) LookUp(*Context, Value) Value {
 	return Nil
 }
 
-func (b Bool) Type() string {
+func (b Bool) Type(ctx *Context) string {
 	return "bool"
 }
 

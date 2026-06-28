@@ -193,3 +193,14 @@ func (ctx *Context) releaseInternalThread() {
 		ctx.threadPool.release()
 	}
 }
+
+func (ctx *Context) runFunctionInNewThread(fn *Function, args ...Value) (Value, error) {
+	vm := &VM{ctx.getInternalThread(fn), ctx}
+	var err error
+	if err = vm.runThread(0, 0, true, args...); err == nil {
+		result := vm.Channel
+		ctx.releaseInternalThread()
+		return result, nil
+	}
+	return Nil, err
+}

@@ -123,7 +123,7 @@ func (s *String) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (s *String) Type() string {
+func (s *String) Type(ctx *Context) string {
 	return "string"
 }
 

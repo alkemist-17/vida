@@ -53,6 +53,10 @@ const (
 	foundationColor     = "color"
 )
 
+const (
+	__type = "__type"
+)
+
 func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {
 	case *Array:
@@ -98,7 +102,7 @@ func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 }
 
 func corePrint(ctx *Context, args ...Value) (Value, error) {
-	VFprintln(os.Stdout, args...)
+	VFprintln(ctx, os.Stdout, args...)
 	return Nil, nil
 }
 
@@ -127,7 +131,7 @@ func coreLen(ctx *Context, args ...Value) (Value, error) {
 
 func coreType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return &String{Value: args[0].Type()}, nil
+		return &String{Value: args[0].Type(ctx)}, nil
 	}
 	return Nil, nil
 }
@@ -136,7 +140,7 @@ func coreFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch v := args[0].(type) {
 		case *String:
-			s, e := VSprintf(v.Value, args[1:]...)
+			s, e := VSprintf(ctx, v.Value, args[1:]...)
 			return &String{Value: s}, e
 		}
 	}

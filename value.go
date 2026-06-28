@@ -18,7 +18,7 @@ type Value interface {
 	IsCallable() Bool
 	Call(ctx *Context, args ...Value) (Value, error)
 	String() string
-	Type() string
+	Type(ctx *Context) string
 	Clone() Value
 	ObjectKey() string
 	LookUp(ctx *Context, message Value) Value
@@ -71,7 +71,7 @@ func (i ValueSemanticsImpl) String() string {
 	return EmptyString
 }
 
-func (i ValueSemanticsImpl) Type() string {
+func (i ValueSemanticsImpl) Type(*Context) string {
 	return EmptyString
 }
 
@@ -138,7 +138,7 @@ func (i ReferenceSemanticsImpl) String() string {
 	return EmptyString
 }
 
-func (i *ReferenceSemanticsImpl) Type() string {
+func (i *ReferenceSemanticsImpl) Type(*Context) string {
 	return EmptyString
 }
 

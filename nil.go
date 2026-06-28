@@ -46,7 +46,7 @@ func (n NilValue) ObjectKey() string {
 	return "nil"
 }
 
-func (n NilValue) Type() string {
+func (n NilValue) Type(ctx *Context) string {
 	return "nil"
 }
 

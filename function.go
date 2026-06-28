@@ -57,7 +57,7 @@ func (c *CoreFunction) Equals(other Value) Bool {
 	return Bool(ok && c == f)
 }
 
-func (c *CoreFunction) Type() string {
+func (c *CoreFunction) Type(ctx *Context) string {
 	return "coreFunction"
 }
 
@@ -109,7 +109,7 @@ func (f *Function) IsCallable() Bool {
 	return true
 }
 
-func (f *Function) Type() string {
+func (f *Function) Type(ctx *Context) string {
 	return "function"
 }
 
@@ -196,7 +196,7 @@ func (nativeFn NativeFunction) Clone() Value {
 	return nativeFn
 }
 
-func (nativeFn NativeFunction) Type() string {
+func (nativeFn NativeFunction) Type(ctx *Context) string {
 	return "NativeFunction"
 }
 

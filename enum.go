@@ -90,7 +90,7 @@ func (e *Enum) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (e *Enum) Type() string {
+func (e *Enum) Type(ctx *Context) string {
 	return "enum"
 }
 

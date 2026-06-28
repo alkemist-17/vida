@@ -118,7 +118,7 @@ func (th *Thread) ObjectKey() string {
 	return fmt.Sprintf("Thread(%p)", th)
 }
 
-func (th *Thread) Type() string {
+func (th *Thread) Type(ctx *Context) string {
 	return "thread"
 }
 
@@ -144,6 +144,7 @@ func newInternalThreadPool() *internalThreadPool {
 
 func (p *internalThreadPool) get(fn *Function, script *Script) *Thread {
 	if th, isFree := p.pool[p.key]; isFree {
+		p.key++
 		return th.Reset(fn)
 	}
 	th := newInternalThread(fn, script)

@@ -154,7 +154,7 @@ func (i Integer) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (i Integer) Type() string {
+func (i Integer) Type(ctx *Context) string {
 	return "int"
 }
 
@@ -286,7 +286,7 @@ func (f Float) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (f Float) Type() string {
+func (f Float) Type(ctx *Context) string {
 	return "float"
 }
 

@@ -156,7 +156,10 @@ func (o *Object) LookUp(ctx *Context, message Value) Value {
 	return ctx.vtables[objectVT].Get(ctx, message)
 }
 
-func (o *Object) Type() string {
+func (o *Object) Type(ctx *Context) string {
+	if o.VTable != nil {
+		return o.VTable.Get(ctx, &String{Value: __type}).String()
+	}
 	return "object"
 }
 

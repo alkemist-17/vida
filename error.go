@@ -74,7 +74,7 @@ func (e *VidaError) ObjectKey() string {
 	return fmt.Sprintf("Error(%v)", e.Message.ObjectKey())
 }
 
-func (e *VidaError) Type() string {
+func (e *VidaError) Type(ctx *Context) string {
 	return "error"
 }
 

@@ -192,11 +192,11 @@ func (file *FileHandler) Equals(other Value) Bool {
 }
 
 func (file *FileHandler) String() string {
-	return fmt.Sprintf("file(%v)", file.Handler.Fd())
+	return fmt.Sprintf("FileHandler(%v)", file.Handler.Fd())
 }
 
-func (file *FileHandler) Type() string {
-	return "file"
+func (file *FileHandler) Type(ctx *Context) string {
+	return "fileHandler"
 }
 
 func (file *FileHandler) Clone() Value {

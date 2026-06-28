@@ -72,7 +72,7 @@ func (it *ArrayIterator) Clone() Value {
 	return it
 }
 
-func (it *ArrayIterator) Type() string {
+func (it *ArrayIterator) Type(ctx *Context) string {
 	return "ArrayIterator"
 }
 
@@ -151,7 +151,7 @@ func (it *ObjectIterator) Clone() Value {
 	return it
 }
 
-func (it *ObjectIterator) Type() string {
+func (it *ObjectIterator) Type(ctx *Context) string {
 	return "ObjectIterator"
 }
 
@@ -215,7 +215,7 @@ func (it *StringIterator) Clone() Value {
 	return it
 }
 
-func (it *StringIterator) Type() string {
+func (it *StringIterator) Type(ctx *Context) string {
 	return "StringIterator"
 }
 
@@ -278,7 +278,7 @@ func (it *IntegerIterator) Clone() Value {
 	return it
 }
 
-func (it *IntegerIterator) Type() string {
+func (it *IntegerIterator) Type(ctx *Context) string {
 	return "IntIterator"
 }
 
@@ -342,6 +342,6 @@ func (bi *BytesIterator) Clone() Value {
 	return bi
 }
 
-func (bi *BytesIterator) Type() string {
+func (bi *BytesIterator) Type(ctx *Context) string {
 	return "BytesIterator"
 }

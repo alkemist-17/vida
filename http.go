@@ -491,7 +491,7 @@ func (client *vidaHttpClient) String() string {
 	return fmt.Sprintf("HttpClient(%p)", client)
 }
 
-func (client *vidaHttpClient) Type() string {
+func (client *vidaHttpClient) Type(ctx *Context) string {
 	return "httpClient"
 }
 

@@ -690,6 +690,9 @@ type pp struct {
 	// erroring is set when printing an error string to guard against calling
 	// handleMethods.
 	erroring bool
+
+	// Vida Context
+	ctx *Context
 }
 
 var ppFree = sync.Pool{
@@ -697,8 +700,9 @@ var ppFree = sync.Pool{
 }
 
 // newPrinter allocates a new pp struct or grabs a cached one.
-func newPrinter() *pp {
+func newPrinter(ctx *Context) *pp {
 	p := ppFree.Get().(*pp)
+	p.ctx = ctx
 	p.erroring = false
 	p.fmt.init(&p.buf)
 	return p
@@ -949,7 +953,7 @@ func (p *pp) printArg(arg Value, verb rune) {
 	// them first.
 	switch verb {
 	case 'T':
-		p.fmt.fmtS(arg.Type())
+		p.fmt.fmtS(arg.Type(p.ctx))
 		return
 	case 'v':
 		p.fmt.fmtS(arg.String())
@@ -975,10 +979,10 @@ func (p *pp) printArg(arg Value, verb rune) {
 
 // intFromArg gets the argNumth element of a. On return, isInt reports whether
 // the argument has integer type.
-func intFromArg(a []Value, argNum int) (num int, isInt bool, newArgNum int) {
+func intFromArg(ctx *Context, a []Value, argNum int) (num int, isInt bool, newArgNum int) {
 	newArgNum = argNum
 	if argNum < len(a) {
-		if a[argNum].Type() == "int" {
+		if a[argNum].Type(ctx) == "int" {
 			num = int(a[argNum].(Integer))
 		}
 		newArgNum = argNum + 1
@@ -1050,7 +1054,7 @@ func (p *pp) missingArg(verb rune) {
 	_, _ = p.WriteString(missingString)
 }
 
-func (p *pp) doFormat(format string, a []Value) (err error) {
+func (p *pp) doFormat(ctx *Context, format string, a []Value) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if e, ok := r.(error); ok && e == verror.ErrStringLimit {
@@ -1130,7 +1134,7 @@ formatLoop:
 		// Do we have width?
 		if i < end && format[i] == '*' {
 			i++
-			p.fmt.wid, p.fmt.widPresent, argNum = intFromArg(a, argNum)
+			p.fmt.wid, p.fmt.widPresent, argNum = intFromArg(ctx, a, argNum)
 
 			if !p.fmt.widPresent {
 				_, _ = p.WriteString(badWidthString)
@@ -1160,7 +1164,7 @@ formatLoop:
 			argNum, i, afterIndex = p.argNumber(argNum, format, i, len(a))
 			if i < end && format[i] == '*' {
 				i++
-				p.fmt.prec, p.fmt.precPresent, argNum = intFromArg(a, argNum)
+				p.fmt.prec, p.fmt.precPresent, argNum = intFromArg(ctx, a, argNum)
 				// Negative precision arguments don't make sense
 				if p.fmt.prec < 0 {
 					p.fmt.prec = 0
@@ -1230,7 +1234,7 @@ formatLoop:
 			if arg == nil {
 				_, _ = p.WriteString(Nil.String())
 			} else {
-				_, _ = p.WriteString(arg.Type())
+				_, _ = p.WriteString(arg.Type(ctx))
 				_, _ = p.WriteSingleByte('=')
 				p.printArg(arg, 'v')
 			}
@@ -1263,17 +1267,17 @@ func (p *pp) doPrint(a []Value) {
 	}
 }
 
-// Custom Basic print functions
-func VFprintln(w io.Writer, a ...Value) (n int, err error) {
-	p := newPrinter()
+// Custom Basic ftm family of functions
+func VFprintln(ctx *Context, w io.Writer, a ...Value) (n int, err error) {
+	p := newPrinter(ctx)
 	p.doPrintln(a)
 	n, err = w.Write(p.buf)
 	p.free()
 	return
 }
 
-func VFprint(w io.Writer, a ...Value) (n int, err error) {
-	p := newPrinter()
+func VFprint(ctx *Context, w io.Writer, a ...Value) (n int, err error) {
+	p := newPrinter(ctx)
 	p.doPrint(a)
 	n, err = w.Write(p.buf)
 	p.free()
@@ -1281,18 +1285,18 @@ func VFprint(w io.Writer, a ...Value) (n int, err error) {
 }
 
 // VFprintf is like fmt.Fprintf but using Values.
-func VFprintf(w io.Writer, format string, a ...Value) (n int, err error) {
-	p := newPrinter()
-	err = p.doFormat(format, a)
+func VFprintf(ctx *Context, w io.Writer, format string, a ...Value) (n int, err error) {
+	p := newPrinter(ctx)
+	err = p.doFormat(ctx, format, a)
 	n, err = w.Write(p.buf)
 	p.free()
 	return n, err
 }
 
 // VSprintf is like fmt.Sprintf but using Values.
-func VSprintf(format string, a ...Value) (string, error) {
-	p := newPrinter()
-	err := p.doFormat(format, a)
+func VSprintf(ctx *Context, format string, a ...Value) (string, error) {
+	p := newPrinter(ctx)
+	err := p.doFormat(ctx, format, a)
 	s := string(p.buf)
 	p.free()
 	return s, err

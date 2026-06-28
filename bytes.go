@@ -169,7 +169,7 @@ func (b *Bytes) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (b *Bytes) Type() string {
+func (b *Bytes) Type(ctx *Context) string {
 	return "bytes"
 }
 

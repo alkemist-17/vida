@@ -136,7 +136,7 @@ func (xs *Array) ObjectKey() string {
 	return fmt.Sprintf("Array(%p)", xs)
 }
 
-func (xs *Array) Type() string {
+func (xs *Array) Type(ctx *Context) string {
 	return "array"
 }
 
@@ -587,7 +587,7 @@ func arraySort(ctx *Context, args ...Value) (Value, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type())
+		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type(ctx))
 	}
 
 	return xs, nil

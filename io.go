@@ -41,7 +41,7 @@ func ioFWrite(ctx *Context, args ...Value) (Value, error) {
 		switch handler := args[0].(type) {
 		case *Object:
 			if fileHandler, ok := handler.Value[fileHandlerName].(*FileHandler); ok && !fileHandler.IsClosed {
-				n, err := VFprint(fileHandler.Handler, args[1:]...)
+				n, err := VFprint(ctx, fileHandler.Handler, args[1:]...)
 				if err != nil {
 					fileHandler.IsClosed = true
 					fileHandler.Handler.Close()
@@ -54,7 +54,7 @@ func ioFWrite(ctx *Context, args ...Value) (Value, error) {
 			if handler.IsClosed {
 				return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 			}
-			n, err := VFprint(handler.Handler, args[1:]...)
+			n, err := VFprint(ctx, handler.Handler, args[1:]...)
 			if err != nil {
 				handler.IsClosed = true
 				handler.Handler.Close()
@@ -72,7 +72,7 @@ func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 		case *Object:
 			if fileHandler, ok := handler.Value[fileHandlerName].(*FileHandler); ok && !fileHandler.IsClosed {
 				if formatstr, ok := args[1].(*String); ok {
-					n, err := VFprintf(fileHandler.Handler, formatstr.Value, args[2:]...)
+					n, err := VFprintf(ctx, fileHandler.Handler, formatstr.Value, args[2:]...)
 					if err != nil {
 						fileHandler.IsClosed = true
 						fileHandler.Handler.Close()
@@ -88,7 +88,7 @@ func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 				if handler.IsClosed {
 					return &VidaError{Message: &String{Value: fileAlreadyClosed}}, nil
 				}
-				n, err := VFprintf(handler.Handler, formatstr.Value, args[2:]...)
+				n, err := VFprintf(ctx, handler.Handler, formatstr.Value, args[2:]...)
 				if err != nil {
 					handler.IsClosed = true
 					handler.Handler.Close()
@@ -103,14 +103,14 @@ func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 }
 
 func ioWrite(ctx *Context, args ...Value) (Value, error) {
-	VFprint(os.Stdout, args...)
+	VFprint(ctx, os.Stdout, args...)
 	return Nil, nil
 }
 
 func ioPrintF(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if formatstr, ok := args[0].(*String); ok {
-			n, err := VFprintf(os.Stdout, formatstr.Value, args[1:]...)
+			n, err := VFprintf(ctx, os.Stdout, formatstr.Value, args[1:]...)
 			if err != nil {
 				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
@@ -124,7 +124,7 @@ func ioPrintF(ctx *Context, args ...Value) (Value, error) {
 func ioErrorf(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if formatstr, ok := args[0].(*String); ok {
-			n, err := VFprintf(os.Stderr, formatstr.Value, args[1:]...)
+			n, err := VFprintf(ctx, os.Stderr, formatstr.Value, args[1:]...)
 			if err != nil {
 				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}

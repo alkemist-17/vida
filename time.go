@@ -78,7 +78,7 @@ func (t Time) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (t Time) Type() string {
+func (t Time) Type(ctx *Context) string {
 	return "time"
 }
 
