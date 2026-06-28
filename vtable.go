@@ -50,14 +50,12 @@ func loadArrayVT() Value {
 }
 
 func loadObjectVT() Value {
-	m := &Object{Value: make(map[string]Value, 14)}
+	m := &Object{Value: make(map[string]Value, 12)}
 	m.Value["len"] = NativeFunction(coreLen)
 	m.Value["inject"] = NativeFunction(objectInjectProperties)
 	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
 	m.Value["extract"] = NativeFunction(objectExtractProperties)
 	m.Value["implements"] = NativeFunction(objectCheckProperties)
-	m.Value["set"] = NativeFunction(objectSetValue)
-	m.Value["get"] = NativeFunction(objectGetValue)
 	m.Value["has"] = NativeFunction(objectHasValue)
 	m.Value["del"] = NativeFunction(objectDeleteProperty)
 	m.Value["keys"] = NativeFunction(objectGetKeys)

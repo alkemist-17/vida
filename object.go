@@ -131,8 +131,6 @@ func (o *Object) String(ctx *Context) string {
 				return r.String(ctx)
 			}
 			return e.Error()
-		default:
-			return val.String(ctx)
 		}
 	}
 	return o.stringify(ctx, make(map[uintptr]bool))
@@ -199,8 +197,8 @@ func loadObjectLib() Value {
 	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
 	m.Value["extract"] = NativeFunction(objectExtractProperties)
 	m.Value["implements"] = NativeFunction(objectCheckProperties)
-	m.Value["set"] = NativeFunction(objectSetValue)
-	m.Value["get"] = NativeFunction(objectGetValue)
+	m.Value["set"] = NativeFunction(objectCircumventSetValue)
+	m.Value["get"] = NativeFunction(objectCircumventGetValue)
 	m.Value["has"] = NativeFunction(objectHasValue)
 	m.Value["del"] = NativeFunction(objectDeleteProperty)
 	m.Value["keys"] = NativeFunction(objectGetKeys)
@@ -298,7 +296,7 @@ func objectDeleteProperty(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectGetValue(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventGetValue(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if val, ok := self.Value[args[1].ObjectKey()]; ok {
@@ -309,7 +307,7 @@ func objectGetValue(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectSetValue(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventSetValue(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 2 && (l-1)%2 == 0 {
 		if self, ok := args[0].(*Object); ok {
