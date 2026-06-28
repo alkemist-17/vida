@@ -1,12 +1,13 @@
 package vida
 
 const (
-	stringVT = "StrVT"
-	arrayVT  = "ArrVT"
-	objectVT = "ObjVT"
-	bytesVT  = "BtsVT"
-	threadVT = "ThrVT"
-	colorVT  = "ColVT"
+	stringVT      = "StrVT"
+	arrayVT       = "ArrVT"
+	objectVT      = "ObjVT"
+	bytesVT       = "BtsVT"
+	threadVT      = "ThrVT"
+	colorVT       = "ColVT"
+	fileHandlerVT = "FhdVT"
 )
 
 func loadStringVT() Value {
@@ -102,5 +103,16 @@ func loadColorVT() Value {
 	o.Value["fg"] = NativeFunction(colorSetFG)
 	o.Value["reset"] = NativeFunction(colorSetReset)
 	o.Value["resets"] = NativeFunction(colorGetReset)
+	return o
+}
+
+func loadFileHandlerVT() Value {
+	o := &Object{Value: make(map[string]Value, 6)}
+	o.Value["close"] = NativeFunction(fileClose)
+	o.Value["isClosed"] = NativeFunction(fileIsClosed)
+	o.Value["name"] = NativeFunction(fileName)
+	o.Value["write"] = NativeFunction(fileWrite)
+	o.Value["lines"] = NativeFunction(fileReadLines)
+	o.Value["read"] = NativeFunction(fileRead)
 	return o
 }

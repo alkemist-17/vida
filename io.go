@@ -19,8 +19,8 @@ func loadFoundationIO() Value {
 	m.Value["remove"] = NativeFunction(fileRemove)
 	m.Value["size"] = NativeFunction(fileSize)
 	m.Value["isFile"] = NativeFunction(fileIsFile)
-	m.Value["createTemp"] = NativeFunction(fileCreateTemp)
-	m.Value["tempDir"] = NativeFunction(fileGetTempDir)
+	m.Value["createTempFile"] = NativeFunction(fileCreateTemp)
+	m.Value["tempDir"] = &String{Value: os.TempDir()}
 	m.Value["ok"] = True
 	m.Value["R"] = Integer(os.O_RDONLY)
 	m.Value["W"] = Integer(os.O_WRONLY)
