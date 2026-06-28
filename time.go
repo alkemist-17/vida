@@ -66,7 +66,7 @@ func (t Time) Iterator() Value {
 	return Nil
 }
 
-func (t Time) String(ctx *Context) string {
+func (t Time) String() string {
 	return time.Time(t).String()
 }
 
@@ -78,7 +78,7 @@ func (t Time) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (t Time) Type(ctx *Context) string {
+func (t Time) Type() string {
 	return "time"
 }
 

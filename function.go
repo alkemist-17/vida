@@ -57,11 +57,11 @@ func (c *CoreFunction) Equals(other Value) Bool {
 	return Bool(ok && c == f)
 }
 
-func (c *CoreFunction) Type(ctx *Context) string {
+func (c *CoreFunction) Type() string {
 	return "coreFunction"
 }
 
-func (f CoreFunction) String(ctx *Context) string {
+func (f CoreFunction) String() string {
 	return fmt.Sprintf("CoreFunction(arity = %v, isVar = %v, freeVarsInfo = %v)", f.Arity, f.IsVarArg, f.FreeVarsCount)
 }
 
@@ -109,7 +109,7 @@ func (f *Function) IsCallable() Bool {
 	return true
 }
 
-func (f *Function) Type(ctx *Context) string {
+func (f *Function) Type() string {
 	return "function"
 }
 
@@ -117,7 +117,7 @@ func (f *Function) Clone() Value {
 	return f
 }
 
-func (f Function) String(ctx *Context) string {
+func (f Function) String() string {
 	return fmt.Sprintf("Function(%p)", f.CoreFn)
 }
 
@@ -180,7 +180,7 @@ func (nativeFn NativeFunction) Iterator() Value {
 	return Nil
 }
 
-func (nativeFn NativeFunction) String(ctx *Context) string {
+func (nativeFn NativeFunction) String() string {
 	return "NativeFunction"
 }
 
@@ -196,7 +196,7 @@ func (nativeFn NativeFunction) Clone() Value {
 	return nativeFn
 }
 
-func (nativeFn NativeFunction) Type(ctx *Context) string {
+func (nativeFn NativeFunction) Type() string {
 	return "NativeFunction"
 }
 

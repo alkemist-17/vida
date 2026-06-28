@@ -151,7 +151,7 @@ func (b *Bytes) Iterator() Value {
 	return &BytesIterator{Bytes: b.Value, Init: -1, End: len(b.Value)}
 }
 
-func (b Bytes) String(ctx *Context) string {
+func (b Bytes) String() string {
 	return fmt.Sprintf("bytes[% x]", b.Value)
 }
 
@@ -169,7 +169,7 @@ func (b *Bytes) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (b *Bytes) Type(ctx *Context) string {
+func (b *Bytes) Type() string {
 	return "bytes"
 }
 

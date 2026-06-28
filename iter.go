@@ -64,7 +64,7 @@ func (it *ArrayIterator) Iterator() Value {
 	return Nil
 }
 
-func (it ArrayIterator) String(ctx *Context) string {
+func (it ArrayIterator) String() string {
 	return fmt.Sprintf("ArrayIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -72,7 +72,7 @@ func (it *ArrayIterator) Clone() Value {
 	return it
 }
 
-func (it *ArrayIterator) Type(ctx *Context) string {
+func (it *ArrayIterator) Type() string {
 	return "ArrayIterator"
 }
 
@@ -143,7 +143,7 @@ func (it *ObjectIterator) Iterator() Value {
 	return Nil
 }
 
-func (it ObjectIterator) String(ctx *Context) string {
+func (it ObjectIterator) String() string {
 	return fmt.Sprintf("ObjectIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -151,7 +151,7 @@ func (it *ObjectIterator) Clone() Value {
 	return it
 }
 
-func (it *ObjectIterator) Type(ctx *Context) string {
+func (it *ObjectIterator) Type() string {
 	return "ObjectIterator"
 }
 
@@ -207,7 +207,7 @@ func (it *StringIterator) Iterator() Value {
 	return Nil
 }
 
-func (it StringIterator) String(ctx *Context) string {
+func (it StringIterator) String() string {
 	return fmt.Sprintf("StringIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -215,7 +215,7 @@ func (it *StringIterator) Clone() Value {
 	return it
 }
 
-func (it *StringIterator) Type(ctx *Context) string {
+func (it *StringIterator) Type() string {
 	return "StringIterator"
 }
 
@@ -270,7 +270,7 @@ func (it *IntegerIterator) Iterator() Value {
 	return Nil
 }
 
-func (it IntegerIterator) String(ctx *Context) string {
+func (it IntegerIterator) String() string {
 	return fmt.Sprintf("IntIterator[i = %v, e = %v]", it.Init, it.End)
 }
 
@@ -278,7 +278,7 @@ func (it *IntegerIterator) Clone() Value {
 	return it
 }
 
-func (it *IntegerIterator) Type(ctx *Context) string {
+func (it *IntegerIterator) Type() string {
 	return "IntIterator"
 }
 
@@ -334,7 +334,7 @@ func (bi *BytesIterator) Iterator() Value {
 	return Nil
 }
 
-func (bi BytesIterator) String(ctx *Context) string {
+func (bi BytesIterator) String() string {
 	return fmt.Sprintf("BytesIterator[i = %v, e = %v]", bi.Init, bi.End)
 }
 
@@ -342,6 +342,6 @@ func (bi *BytesIterator) Clone() Value {
 	return bi
 }
 
-func (bi *BytesIterator) Type(ctx *Context) string {
+func (bi *BytesIterator) Type() string {
 	return "BytesIterator"
 }

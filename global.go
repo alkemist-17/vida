@@ -53,19 +53,14 @@ const (
 	foundationColor     = "color"
 )
 
-const (
-	__type   = "__type"
-	__string = "__string"
-)
-
-func stringWithVisited(ctx *Context, v Value, visited map[uintptr]bool) string {
+func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {
 	case *Array:
-		return c.stringify(ctx, visited)
+		return c.stringify(visited)
 	case *Object:
-		return c.stringify(ctx, visited)
+		return c.stringify(visited)
 	default:
-		return v.String(ctx)
+		return v.String()
 	}
 }
 
@@ -99,7 +94,7 @@ func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 }
 
 func corePrint(ctx *Context, args ...Value) (Value, error) {
-	VFprintln(ctx, os.Stdout, args...)
+	VFprintln(os.Stdout, args...)
 	return Nil, nil
 }
 
@@ -128,7 +123,7 @@ func coreLen(ctx *Context, args ...Value) (Value, error) {
 
 func coreType(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return &String{Value: args[0].Type(ctx)}, nil
+		return &String{Value: args[0].Type()}, nil
 	}
 	return Nil, nil
 }
@@ -137,7 +132,7 @@ func coreFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch v := args[0].(type) {
 		case *String:
-			s, e := VSprintf(ctx, v.Value, args[1:]...)
+			s, e := VSprintf(v.Value, args[1:]...)
 			return &String{Value: s}, e
 		}
 	}
@@ -157,7 +152,7 @@ func coreAssert(ctx *Context, args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String(ctx)))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
 		return Nil, err
 	}
 	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))

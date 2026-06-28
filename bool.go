@@ -66,7 +66,7 @@ func (b Bool) Iterator() Value {
 	return Nil
 }
 
-func (b Bool) String(ctx *Context) string {
+func (b Bool) String() string {
 	if b {
 		return "true"
 	}
@@ -84,7 +84,7 @@ func (b Bool) LookUp(*Context, Value) Value {
 	return Nil
 }
 
-func (b Bool) Type(ctx *Context) string {
+func (b Bool) Type() string {
 	return "bool"
 }
 

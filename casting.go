@@ -17,7 +17,7 @@ func loadFoundationCasting() Value {
 
 func castToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		return &String{Value: args[0].String(ctx)}, nil
+		return &String{Value: args[0].String()}, nil
 	}
 	return &String{Value: EmptyString}, nil
 }

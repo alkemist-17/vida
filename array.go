@@ -107,11 +107,11 @@ func (xs *Array) Iterator() Value {
 	return &ArrayIterator{Array: xs.Value, Init: -1, End: len(xs.Value)}
 }
 
-func (xs *Array) String(ctx *Context) string {
-	return xs.stringify(ctx, make(map[uintptr]bool))
+func (xs *Array) String() string {
+	return xs.stringify(make(map[uintptr]bool))
 }
 
-func (xs *Array) stringify(ctx *Context, visited map[uintptr]bool) string {
+func (xs *Array) stringify(visited map[uintptr]bool) string {
 	if len(xs.Value) == 0 {
 		return "[]"
 	}
@@ -127,7 +127,7 @@ func (xs *Array) stringify(ctx *Context, visited map[uintptr]bool) string {
 
 	var r []string
 	for _, v := range xs.Value {
-		r = append(r, stringWithVisited(ctx, v, visited))
+		r = append(r, stringWithVisited(v, visited))
 	}
 	return fmt.Sprintf("[%v]", strings.Join(r, ", "))
 }
@@ -136,7 +136,7 @@ func (xs *Array) ObjectKey() string {
 	return fmt.Sprintf("Array(%p)", xs)
 }
 
-func (xs *Array) Type(ctx *Context) string {
+func (xs *Array) Type() string {
 	return "array"
 }
 
@@ -587,7 +587,7 @@ func arraySort(ctx *Context, args ...Value) (Value, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type(ctx))
+		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type())
 	}
 
 	return xs, nil

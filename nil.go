@@ -38,7 +38,7 @@ func (n NilValue) Equals(other Value) Bool {
 	return Bool(ok)
 }
 
-func (n NilValue) String(ctx *Context) string {
+func (n NilValue) String() string {
 	return "nil"
 }
 
@@ -46,7 +46,7 @@ func (n NilValue) ObjectKey() string {
 	return "nil"
 }
 
-func (n NilValue) Type(ctx *Context) string {
+func (n NilValue) Type() string {
 	return "nil"
 }
 

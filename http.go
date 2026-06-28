@@ -316,7 +316,7 @@ func httpParseQueryParams(ctx *Context, userConfig *Object, reqConfigURL *url.UR
 	if queryParams, ok := userConfig.Value[httpQueryParamsField].(*Object); ok {
 		q := url.Values{}
 		for k, v := range queryParams.Value {
-			q.Add(k, v.String(ctx))
+			q.Add(k, v.String())
 		}
 		reqConfigURL.RawQuery = q.Encode()
 	}
@@ -487,11 +487,11 @@ func (client *vidaHttpClient) Equals(other Value) Bool {
 	return Bool(ok && x == client)
 }
 
-func (client *vidaHttpClient) String(ctx *Context) string {
+func (client *vidaHttpClient) String() string {
 	return fmt.Sprintf("HttpClient(%p)", client)
 }
 
-func (client *vidaHttpClient) Type(ctx *Context) string {
+func (client *vidaHttpClient) Type() string {
 	return "httpClient"
 }
 

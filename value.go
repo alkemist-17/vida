@@ -10,15 +10,15 @@ type Value interface {
 	Boolean() Bool
 	Prefix(uint64) (Value, error)
 	Binop(ctx *Context, op uint64, other Value) (Value, error)
-	Get(ctx *Context, index Value) Value
+	Get(ctx *Context, message Value) Value
 	Set(Value, Value) error
 	Equals(Value) Bool
 	IsIterable() Bool
 	Iterator() Value
 	IsCallable() Bool
 	Call(ctx *Context, args ...Value) (Value, error)
-	String(ctx *Context) string
-	Type(ctx *Context) string
+	String() string
+	Type() string
 	Clone() Value
 	ObjectKey() string
 	LookUp(ctx *Context, message Value) Value
@@ -67,11 +67,11 @@ func (i ValueSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, verror.ErrNotImplemented
 }
 
-func (i ValueSemanticsImpl) String(*Context) string {
+func (i ValueSemanticsImpl) String() string {
 	return EmptyString
 }
 
-func (i ValueSemanticsImpl) Type(*Context) string {
+func (i ValueSemanticsImpl) Type() string {
 	return EmptyString
 }
 
@@ -134,11 +134,11 @@ func (i *ReferenceSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error
 	return Nil, verror.ErrNotImplemented
 }
 
-func (i ReferenceSemanticsImpl) String(*Context) string {
+func (i ReferenceSemanticsImpl) String() string {
 	return EmptyString
 }
 
-func (i *ReferenceSemanticsImpl) Type(*Context) string {
+func (i *ReferenceSemanticsImpl) Type() string {
 	return EmptyString
 }
 

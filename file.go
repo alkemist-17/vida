@@ -191,11 +191,11 @@ func (file *FileHandler) Equals(other Value) Bool {
 	return False
 }
 
-func (file *FileHandler) String(ctx *Context) string {
+func (file *FileHandler) String() string {
 	return fmt.Sprintf("FileHandler(%v)", file.Handler.Fd())
 }
 
-func (file *FileHandler) Type(ctx *Context) string {
+func (file *FileHandler) Type() string {
 	return "fileHandler"
 }
 

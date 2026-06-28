@@ -15,7 +15,7 @@ func loadFoundationException() Value {
 
 func exceptionRaise(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		err := fmt.Errorf("\n\n\t[%v]\n\tMessage : %v\n\n", verror.ExceptionErrType, args[0].String(ctx))
+		err := fmt.Errorf("\n\n\t[%v]\n\tMessage : %v\n\n", verror.ExceptionErrType, args[0].String())
 		return Nil, err
 	}
 	err := fmt.Errorf("\n\n\t[%v]\n\n", verror.ExceptionErrType)

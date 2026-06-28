@@ -80,12 +80,12 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (o *Object) Get(ctx *Context, index Value) Value {
-	if val, ok := o.Value[index.ObjectKey()]; ok {
+func (o *Object) Get(ctx *Context, message Value) Value {
+	if val, ok := o.Value[message.ObjectKey()]; ok {
 		return val
 	}
 	if o.VTable != nil {
-		return o.VTable.Get(ctx, index)
+		return o.VTable.Get(ctx, message)
 	}
 	return Nil
 }
@@ -116,27 +116,11 @@ func (o *Object) Iterator() Value {
 	return newObjectIterator(o)
 }
 
-func (o *Object) String(ctx *Context) string {
-	if o.VTable != nil {
-		switch val := o.VTable.Get(ctx, &String{Value: __string}).(type) {
-		case *Function:
-			r, e := ctx.runFunctionInNewThread(val, o)
-			if e == nil {
-				return r.String(ctx)
-			}
-			return e.Error()
-		case NativeFunction:
-			r, e := val.Call(ctx, o)
-			if e == nil {
-				return r.String(ctx)
-			}
-			return e.Error()
-		}
-	}
-	return o.stringify(ctx, make(map[uintptr]bool))
+func (o *Object) String() string {
+	return o.stringify(make(map[uintptr]bool))
 }
 
-func (o *Object) stringify(ctx *Context, visited map[uintptr]bool) string {
+func (o *Object) stringify(visited map[uintptr]bool) string {
 	if len(o.Value) == 0 {
 		return "{}"
 	}
@@ -151,7 +135,7 @@ func (o *Object) stringify(ctx *Context, visited map[uintptr]bool) string {
 
 	var r []string
 	for k, v := range o.Value {
-		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(ctx, v, visited)))
+		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
 	}
 	return fmt.Sprintf("{%v}", strings.Join(r, ", "))
 }
@@ -172,10 +156,7 @@ func (o *Object) LookUp(ctx *Context, message Value) Value {
 	return ctx.vtables[objectVT].Get(ctx, message)
 }
 
-func (o *Object) Type(ctx *Context) string {
-	if o.VTable != nil {
-		return o.VTable.Get(ctx, &String{Value: __type}).String(ctx)
-	}
+func (o *Object) Type() string {
 	return "object"
 }
 
@@ -199,8 +180,8 @@ func loadObjectLib() Value {
 	m.Value["implements"] = NativeFunction(objectCheckProperties)
 	m.Value["set"] = NativeFunction(objectCircumventSetValue)
 	m.Value["get"] = NativeFunction(objectCircumventGetValue)
-	m.Value["has"] = NativeFunction(objectHasValue)
-	m.Value["del"] = NativeFunction(objectDeleteProperty)
+	m.Value["has"] = NativeFunction(objectCircumventHasValue)
+	m.Value["del"] = NativeFunction(objectCircumventDeleteProperty)
 	m.Value["keys"] = NativeFunction(objectGetKeys)
 	m.Value["values"] = NativeFunction(objectGetValues)
 	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
@@ -284,7 +265,7 @@ func objectExtractProperties(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectDeleteProperty(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventDeleteProperty(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			for _, prop := range args[1:] {
@@ -336,7 +317,7 @@ func objectGetOrSet(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectHasValue(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventHasValue(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			for _, val := range args[1:] {

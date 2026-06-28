@@ -142,7 +142,7 @@ func (i Integer) Iterator() Value {
 	return &IntegerIterator{Init: -1, End: i}
 }
 
-func (i Integer) String(ctx *Context) string {
+func (i Integer) String() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
@@ -154,7 +154,7 @@ func (i Integer) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (i Integer) Type(ctx *Context) string {
+func (i Integer) Type() string {
 	return "int"
 }
 
@@ -274,7 +274,7 @@ func (f Float) Iterator() Value {
 	return Nil
 }
 
-func (f Float) String(ctx *Context) string {
+func (f Float) String() string {
 	return strconv.FormatFloat(float64(f), 'g', -1, 64)
 }
 
@@ -286,7 +286,7 @@ func (f Float) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (f Float) Type(ctx *Context) string {
+func (f Float) Type() string {
 	return "float"
 }
 

@@ -105,7 +105,7 @@ func (s *String) Iterator() Value {
 	return &StringIterator{Runes: s.Runes, Init: -1, End: len(s.Runes)}
 }
 
-func (s String) String(ctx *Context) string {
+func (s String) String() string {
 	return s.Value
 }
 
@@ -123,7 +123,7 @@ func (s *String) LookUp(ctx *Context, message Value) Value {
 	return Nil
 }
 
-func (s *String) Type(ctx *Context) string {
+func (s *String) Type() string {
 	return "string"
 }
 

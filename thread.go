@@ -110,7 +110,7 @@ func (th *Thread) Equals(other Value) Bool {
 	return false
 }
 
-func (th *Thread) String(ctx *Context) string {
+func (th *Thread) String() string {
 	return fmt.Sprintf("Thread(%p, %v)", th, th.State.String())
 }
 
@@ -118,7 +118,7 @@ func (th *Thread) ObjectKey() string {
 	return fmt.Sprintf("Thread(%p)", th)
 }
 
-func (th *Thread) Type(ctx *Context) string {
+func (th *Thread) Type() string {
 	return "thread"
 }
 
