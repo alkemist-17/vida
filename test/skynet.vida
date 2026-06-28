@@ -11,26 +11,24 @@
 * until reaching the root actor. (The answer should be 499999500000).
 */
 
-var co = load("std/co")
 
-var suspend = co.suspend
-var run = co.run
-var new = co.new
+let co = load("std.co")
 
 let skynet = fun num, size {
 	if size == 1 {
-		ret suspend(num)
+		ret co::suspend(num)
 	}
 	size = size / 10
-	var acc = 0
+	var accum = 0
 	for i in 0, 10 {
-		var r = run(new(skynet), num + i * size, size)
-		acc = acc + r
+		accum = accum + co::new(skynet).run(num + i * size, size)
 	}
-	ret suspend(acc)
+	ret co::suspend(accum)
 }
 
-var result = run(new(skynet), 0, 1_000_000)
+let thread = co::new(skynet)
+
+let result = thread.run(0, 1_000_000)
 
 assert(result == 499_999_500_000)
 

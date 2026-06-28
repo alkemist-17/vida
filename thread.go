@@ -126,6 +126,16 @@ func (th *Thread) Clone() Value {
 	return th
 }
 
+func (th *Thread) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[threadVT] == nil {
+		ctx.vtables[threadVT] = loadThreadVT()
+	}
+	if vtable, ok := ctx.vtables[threadVT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
+}
+
 func (th *Thread) Reset(fn *Function) *Thread {
 	th.State = Ready
 	th.Script.MainFunction = fn

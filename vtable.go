@@ -1,10 +1,11 @@
 package vida
 
 const (
-	stringVT = "StringVT"
-	arrayVT  = "ArrayVT"
-	objectVT = "ObjectVT"
-	bytesVT  = "BytesVT"
+	stringVT = "StrVT"
+	arrayVT  = "ArrVT"
+	objectVT = "ObjVT"
+	bytesVT  = "BtsVT"
+	threadVT = "ThrVT"
 )
 
 func loadStringVT() Value {
@@ -78,5 +79,16 @@ func loadBytesVT() Value {
 	m.Value["bitLen"] = NativeFunction(bytesBitLen)
 	m.Value["fill"] = NativeFunction(bytesFill)
 	m.Value["concat"] = NativeFunction(bytesConcat)
+	return m
+}
+
+func loadThreadVT() Value {
+	m := &Object{Value: make(map[string]Value, 6)}
+	m.Value["run"] = NativeFunction(coRunThread)
+	m.Value["complete"] = NativeFunction(coCompleteThread)
+	m.Value["isActive"] = NativeFunction(coIsActive)
+	m.Value["isDone"] = NativeFunction(coIsDone)
+	m.Value["state"] = NativeFunction(coGetThreadState)
+	m.Value["value"] = NativeFunction(coValue)
 	return m
 }
