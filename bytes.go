@@ -178,7 +178,7 @@ func (b *Bytes) Clone() Value {
 }
 
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 32)}
+	m := &Object{Value: make(map[string]Value, 31)}
 	m.Value["new"] = NativeFunction(bytesCreateNewBytesValue)
 	m.Value["from"] = NativeFunction(bytesFromValue)
 	m.Value["genCryptoRand"] = NativeFunction(bytesGenerateCryptoRand)
@@ -186,7 +186,6 @@ func loadFoundationBytes() Value {
 	m.Value["encode"] = NativeFunction(bytesEncode)
 	m.Value["decode"] = NativeFunction(bytesDecode)
 	m.Value["encoding"] = bytesEncodings()
-	m.Value["endian"] = bytesEndian()
 	m.Value["fromFile"] = NativeFunction(bytesFromFile)
 	m.Value["toFile"] = NativeFunction(bytesToFile)
 	m.Value["xor"] = NativeFunction(bytesXOR)
@@ -411,13 +410,6 @@ func bytesEncodings() *Object {
 	e["HEX"] = Integer(bytesEncodingHEX)
 	e["base64url"] = Integer(bytesEncodingBase64URL)
 	e["binary"] = Integer(bytesEncodingBinary)
-	return &Object{Value: e}
-}
-
-func bytesEndian() *Object {
-	e := make(map[string]Value, 2)
-	e["bigEndian"] = &String{Value: littleEndian}
-	e["littleEndian"] = &String{Value: bigEndian}
 	return &Object{Value: e}
 }
 
