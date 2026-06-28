@@ -187,7 +187,7 @@ func (file *FileHandler) Clone() Value {
 	return file
 }
 
-func (s *String) LookUp(ctx *Context, message Value) Value {
+func (file *FileHandler) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[fileHandlerVT] == nil {
 		ctx.vtables[fileHandlerVT] = loadFileHandlerVT()
 	}
