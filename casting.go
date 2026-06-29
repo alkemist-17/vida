@@ -15,6 +15,35 @@ func loadFoundationCasting() Value {
 	return m
 }
 
+func castToNumber(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 2:
+		inputStr, okInput := args[0].(*String)
+		typeOf, okType := args[1].(*String)
+		if okInput && okType {
+			switch typeOf.Value {
+			case integerT:
+				return castToInt(ctx, inputStr)
+			case floatT:
+				return castToFloat(ctx, inputStr)
+			}
+		}
+	case 3:
+		inputStr, okInput := args[0].(*String)
+		typeOf, okType := args[1].(*String)
+		base, ok := args[2].(Integer)
+		if ok && okType && okInput && base == 0 || (2 <= base && base <= 36) {
+			switch typeOf.Value {
+			case integerT:
+				return castToInt(ctx, inputStr, base)
+			case floatT:
+				return castToFloat(ctx, inputStr)
+			}
+		}
+	}
+	return &VidaError{Message: &String{Value: "error is toNum: expected type, str or type, str, base"}}, nil
+}
+
 func castToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].String()}, nil
