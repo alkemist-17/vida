@@ -152,6 +152,9 @@ func (b *Bytes) Iterator() Value {
 }
 
 func (b Bytes) String() string {
+	if len(b.Value) == 0 {
+		return "bytes[]"
+	}
 	return fmt.Sprintf("bytes[% x]", b.Value)
 }
 

@@ -113,13 +113,13 @@ func (xs *Array) String() string {
 
 func (xs *Array) stringify(visited map[uintptr]bool) string {
 	if len(xs.Value) == 0 {
-		return "[]"
+		return "array[]"
 	}
 
 	ptr := reflect.ValueOf(xs).Pointer()
 
 	if visited[ptr] {
-		return "[...]"
+		return "array[...]"
 	}
 
 	visited[ptr] = true
@@ -129,7 +129,7 @@ func (xs *Array) stringify(visited map[uintptr]bool) string {
 	for _, v := range xs.Value {
 		r = append(r, stringWithVisited(v, visited))
 	}
-	return fmt.Sprintf("[%v]", strings.Join(r, ", "))
+	return fmt.Sprintf("array[%v]", strings.Join(r, ", "))
 }
 
 func (xs *Array) ObjectKey() string {
