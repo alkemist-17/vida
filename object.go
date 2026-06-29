@@ -216,6 +216,9 @@ func (o *Object) ObjectKey() string {
 }
 
 func (o *Object) GetVTable(ctx *Context) Value {
+	if o.VTable != nil {
+		return o.VTable
+	}
 	if ctx.vtables[objectT] == nil {
 		ctx.loadObjectVT()
 	}

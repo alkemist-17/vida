@@ -490,7 +490,7 @@ func (client *vidaHttpClient) Type() string {
 }
 
 func (client *vidaHttpClient) Clone() Value {
-	return Nil
+	return newVidaHttpClient()
 }
 
 func (client *vidaHttpClient) ObjectKey() string {

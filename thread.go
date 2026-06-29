@@ -123,7 +123,14 @@ func (th *Thread) Type() string {
 }
 
 func (th *Thread) Clone() Value {
-	return th
+	return coNewThreadWithSizeControl(th.Script.MainFunction, th.Script, Integer(len(th.Frames)), Integer(len(th.Stack)))
+}
+
+func (th *Thread) GetVTable(ctx *Context) Value {
+	if ctx.vtables[threadT] == nil {
+		ctx.loadThreadVT()
+	}
+	return ctx.vtables[threadT]
 }
 
 func (th *Thread) LookUp(ctx *Context, message Value) Value {

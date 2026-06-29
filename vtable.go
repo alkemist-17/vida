@@ -45,7 +45,7 @@ func (ctx *Context) loadStringVT() {
 }
 
 func (ctx *Context) loadArrayVT() {
-	vt := &Object{Value: make(map[string]Value, 16)}
+	vt := &Object{Value: make(map[string]Value, 15)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
 	vt.Value["view"] = NativeFunction(arrayView)
@@ -55,7 +55,6 @@ func (ctx *Context) loadArrayVT() {
 	vt.Value["pop"] = NativeFunction(arrayPop)
 	vt.Value["append"] = NativeFunction(coreAppend)
 	vt.Value["replace"] = NativeFunction(arrayReplace)
-	vt.Value["clone"] = NativeFunction(coreClone)
 	vt.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
 	vt.Value["sort"] = NativeFunction(arraySort)
 	vt.Value["reverse"] = NativeFunction(arrayReverse)

@@ -46,7 +46,7 @@ func (e *VidaError) Get(ctx *Context, index Value) Value {
 }
 
 func (e *VidaError) Set(index, val Value) error {
-	return verror.ErrValueNotIndexable
+	return verror.ErrValueIsConstant
 }
 
 func (e *VidaError) Equals(other Value) Bool {
