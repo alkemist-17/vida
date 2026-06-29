@@ -805,25 +805,25 @@ func IsMemberOf(args ...Value) (Bool, error) {
 func tokenOPToString(t token.Token) *String {
 	switch t {
 	case token.ADD:
-		return &String{Value: "+"}
+		return &String{Value: "add"}
 	case token.SUB:
-		return &String{Value: "-"}
+		return &String{Value: "sub"}
 	case token.MUL:
-		return &String{Value: "*"}
+		return &String{Value: "mul"}
 	case token.DIV:
-		return &String{Value: "/"}
+		return &String{Value: "div"}
 	case token.REM:
-		return &String{Value: "%"}
+		return &String{Value: "rem"}
 	case token.POW:
-		return &String{Value: "**"}
+		return &String{Value: "pow"}
 	case token.LT:
-		return &String{Value: "<"}
+		return &String{Value: "lt"}
 	case token.LE:
-		return &String{Value: "<="}
+		return &String{Value: "le"}
 	case token.GT:
-		return &String{Value: ">"}
+		return &String{Value: "gt"}
 	case token.GE:
-		return &String{Value: ">="}
+		return &String{Value: "ge"}
 	default:
 		return &String{Value: EmptyString}
 	}
