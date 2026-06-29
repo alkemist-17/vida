@@ -151,11 +151,12 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 }
 
 func (o *Object) Get(ctx *Context, message Value) Value {
-	if val, ok := o.Value[message.ObjectKey()]; ok {
-		return val
-	}
-	if o.VTable != nil {
-		return o.VTable.Get(ctx, message)
+	current := o
+	for current != nil {
+		if val, ok := current.Value[message.ObjectKey()]; ok {
+			return val
+		}
+		current = current.VTable
 	}
 	return Nil
 }
