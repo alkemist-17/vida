@@ -173,6 +173,20 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			o.VTable = nil
 			return o, nil
 		}
+	default:
+		switch op {
+		case uint64(token.ADD), uint64(token.SUB), uint64(token.MUL),
+			uint64(token.DIV), uint64(token.REM), uint64(token.POW),
+			uint64(token.LT), uint64(token.LE), uint64(token.GT),
+			uint64(token.GE), uint64(token.BAND), uint64(token.BOR),
+			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
+			switch method := o.LookUp(ctx, tokenOPToString(token.Token(op))).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		}
 	}
 	switch op {
 	case uint64(token.OR):
