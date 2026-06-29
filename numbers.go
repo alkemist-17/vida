@@ -150,6 +150,13 @@ func (i Integer) ObjectKey() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
+func (i Integer) GetVTable(ctx *Context) Value {
+	if ctx.vtables[integerT] == nil {
+		ctx.loadIntegerVT()
+	}
+	return ctx.vtables[integerT]
+}
+
 func (i Integer) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[integerT] == nil {
 		ctx.loadIntegerVT()
@@ -286,6 +293,13 @@ func (f Float) String() string {
 
 func (f Float) ObjectKey() string {
 	return fmt.Sprintf("%vF", strconv.FormatFloat(float64(f), 'g', -1, 64))
+}
+
+func (f Float) GetVTable(ctx *Context) Value {
+	if ctx.vtables[floatT] == nil {
+		ctx.loadFloatVT()
+	}
+	return ctx.vtables[floatT]
 }
 
 func (f Float) LookUp(ctx *Context, message Value) Value {

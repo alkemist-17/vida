@@ -74,6 +74,13 @@ func (t Time) ObjectKey() string {
 	return t.String()
 }
 
+func (t Time) GetVTable(ctx *Context) Value {
+	if ctx.vtables[timeT] == nil {
+		ctx.loadTimeVT()
+	}
+	return ctx.vtables[timeT]
+}
+
 func (t Time) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[timeT] == nil {
 		ctx.loadTimeVT()

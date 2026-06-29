@@ -77,6 +77,13 @@ func (b Bool) ObjectKey() string {
 	return b.String()
 }
 
+func (b Bool) GetVTable(ctx *Context) Value {
+	if ctx.vtables[booleanT] == nil {
+		ctx.loadArrayVT()
+	}
+	return ctx.vtables[booleanT]
+}
+
 func (b Bool) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[booleanT] == nil {
 		ctx.loadBooleanVT()

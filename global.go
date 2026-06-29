@@ -723,6 +723,27 @@ func coreToString(ctx *Context, args ...Value) (Value, error) {
 	return &String{Value: Nil.String()}, nil
 }
 
+func coreGetVTable(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		return args[0].GetVTable(ctx), nil
+	}
+	return Nil, nil
+}
+
+func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 2 {
+		message, okM := args[1].(*String)
+		if okM && bool(args[2].IsCallable()) {
+			if vt, isVTable := args[0].GetVTable(ctx).(*Object); isVTable {
+				vt.Value[message.Value] = args[2]
+				return args[0], nil
+			}
+		}
+		return &VidaError{Message: &String{Value: "extendvt expected three args: value, string and function"}}, nil
+	}
+	return Nil, nil
+}
+
 func DeepEqual(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		return Bool(reflect.DeepEqual(args[0], args[1])), nil

@@ -86,6 +86,13 @@ func (e *Enum) ObjectKey() string {
 	return fmt.Sprintf("enum[%p]", e)
 }
 
+func (e *Enum) GetVTable(ctx *Context) Value {
+	if ctx.vtables[enumT] == nil {
+		ctx.loadEnumVT()
+	}
+	return ctx.vtables[enumT]
+}
+
 func (e *Enum) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[enumT] == nil {
 		ctx.loadEnumVT()

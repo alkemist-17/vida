@@ -78,6 +78,13 @@ func (e *VidaError) Type() string {
 	return errorT
 }
 
+func (e *VidaError) GetVTable(ctx *Context) Value {
+	if ctx.vtables[errorT] == nil {
+		ctx.loadErrorVT()
+	}
+	return ctx.vtables[errorT]
+}
+
 func (e *VidaError) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[errorT] == nil {
 		ctx.loadErrorVT()

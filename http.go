@@ -497,6 +497,13 @@ func (client *vidaHttpClient) ObjectKey() string {
 	return client.String()
 }
 
+func (client *vidaHttpClient) GetVTable(ctx *Context) Value {
+	if ctx.vtables[httpClientT] == nil {
+		ctx.loadHttpClientVT()
+	}
+	return ctx.vtables[httpClientT]
+}
+
 func (client *vidaHttpClient) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[httpClientT] == nil {
 		ctx.loadHttpClientVT()

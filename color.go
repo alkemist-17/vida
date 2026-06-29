@@ -150,6 +150,13 @@ func (c *Color) ObjectKey() string {
 	return c.String()
 }
 
+func (c *Color) GetVTable(ctx *Context) Value {
+	if ctx.vtables[colorT] == nil {
+		ctx.loadColorVT()
+	}
+	return ctx.vtables[colorT]
+}
+
 func (c *Color) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[colorT] == nil {
 		ctx.loadColorVT()

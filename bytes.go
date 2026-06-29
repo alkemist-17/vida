@@ -159,6 +159,13 @@ func (b *Bytes) ObjectKey() string {
 	return fmt.Sprintf("bytes[%p]", b)
 }
 
+func (b *Bytes) GetVTable(ctx *Context) Value {
+	if ctx.vtables[bytesT] == nil {
+		ctx.loadBytesVT()
+	}
+	return ctx.vtables[bytesT]
+}
+
 func (b *Bytes) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[bytesT] == nil {
 		ctx.loadBytesVT()

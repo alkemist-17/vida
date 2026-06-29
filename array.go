@@ -148,6 +148,13 @@ func (xs *Array) Clone() Value {
 	return &Array{Value: c}
 }
 
+func (xs *Array) GetVTable(ctx *Context) Value {
+	if ctx.vtables[arrayT] == nil {
+		ctx.loadArrayVT()
+	}
+	return ctx.vtables[arrayT]
+}
+
 func (xs *Array) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[arrayT] == nil {
 		ctx.loadArrayVT()

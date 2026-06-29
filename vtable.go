@@ -150,13 +150,14 @@ func (ctx *Context) loadHttpClientVT() {
 }
 
 func (ctx *Context) loadUniversalVT() {
-	vt := &Object{Value: make(map[string]Value, 5)}
+	vt := &Object{Value: make(map[string]Value, 7)}
 	vt.Value["type"] = NativeFunction(coreType)
 	vt.Value["clone"] = NativeFunction(coreClone)
 	vt.Value["isError"] = NativeFunction(coreIsError)
 	vt.Value["isNil"] = NativeFunction(coreIsNil)
 	vt.Value["toString"] = NativeFunction(coreToString)
-	vt.VTable = ctx.vtables[universalT].(*Object)
+	vt.Value["getvt"] = NativeFunction(coreGetVTable)
+	vt.Value["extendvt"] = NativeFunction(coreExtendVTable)
 	ctx.vtables[universalT] = vt
 }
 

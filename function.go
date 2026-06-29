@@ -125,6 +125,13 @@ func (f *Function) ObjectKey() string {
 	return f.String()
 }
 
+func (f *Function) GetVTable(ctx *Context) Value {
+	if ctx.vtables[functionT] == nil {
+		ctx.loadFunctionVT()
+	}
+	return ctx.vtables[functionT]
+}
+
 func (f *Function) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[functionT] == nil {
 		ctx.loadFunctionVT()
@@ -196,6 +203,13 @@ func (nativeFn NativeFunction) String() string {
 
 func (nativeFn NativeFunction) ObjectKey() string {
 	return nativeFuncT
+}
+
+func (nativeFn NativeFunction) GetVTable(ctx *Context) Value {
+	if ctx.vtables[nativeFuncT] == nil {
+		ctx.loadNativeFunctionVT()
+	}
+	return ctx.vtables[nativeFuncT]
 }
 
 func (nativeFn NativeFunction) LookUp(ctx *Context, message Value) Value {

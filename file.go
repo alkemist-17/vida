@@ -191,6 +191,13 @@ func (file *FileHandler) Clone() Value {
 	return file
 }
 
+func (file *FileHandler) GetVTable(ctx *Context) Value {
+	if ctx.vtables[fileHandlerT] == nil {
+		ctx.loadFileHandlerVT()
+	}
+	return ctx.vtables[fileHandlerT]
+}
+
 func (file *FileHandler) LookUp(ctx *Context, message Value) Value {
 	if ctx.vtables[fileHandlerT] == nil {
 		ctx.loadFileHandlerVT()
