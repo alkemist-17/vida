@@ -156,21 +156,21 @@ func (b Bytes) String() string {
 }
 
 func (b *Bytes) ObjectKey() string {
-	return fmt.Sprintf("Bytes(%p)", b)
+	return fmt.Sprintf("bytes[%p]", b)
 }
 
 func (b *Bytes) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[bytesVT] == nil {
-		ctx.vtables[bytesVT] = loadBytesVT()
+	if ctx.vtables[bytesT] == nil {
+		ctx.loadBytesVT()
 	}
-	if vtable, ok := ctx.vtables[bytesVT]; ok {
+	if vtable, ok := ctx.vtables[bytesT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil
 }
 
 func (b *Bytes) Type() string {
-	return "bytes"
+	return bytesT
 }
 
 func (b *Bytes) Clone() Value {

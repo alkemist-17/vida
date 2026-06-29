@@ -24,12 +24,14 @@ type Context struct {
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
-	return &Context{
+	ctx := &Context{
 		src:              src,
 		extensionsLoader: extensionsLoader,
 		contextID:        contextID,
 		vtables:          make(map[string]Value),
 	}
+	ctx.loadUniversalVT()
+	return ctx
 }
 
 func (ctx *Context) Compile() (err error) {

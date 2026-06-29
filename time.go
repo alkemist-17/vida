@@ -71,15 +71,21 @@ func (t Time) String() string {
 }
 
 func (t Time) ObjectKey() string {
-	return time.Time(t).String()
+	return t.String()
 }
 
 func (t Time) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[timeT] == nil {
+		ctx.loadTimeVT()
+	}
+	if vtable, ok := ctx.vtables[timeT]; ok {
+		return vtable.Get(ctx, message)
+	}
 	return Nil
 }
 
 func (t Time) Type() string {
-	return "time"
+	return timeT
 }
 
 func (t Time) Clone() Value {

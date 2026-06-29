@@ -74,18 +74,21 @@ func (b Bool) String() string {
 }
 
 func (b Bool) ObjectKey() string {
-	if b {
-		return "true"
-	}
-	return "false"
+	return b.String()
 }
 
-func (b Bool) LookUp(*Context, Value) Value {
+func (b Bool) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[booleanT] == nil {
+		ctx.loadBooleanVT()
+	}
+	if vtable, ok := ctx.vtables[booleanT]; ok {
+		return vtable.Get(ctx, message)
+	}
 	return Nil
 }
 
 func (b Bool) Type() string {
-	return "bool"
+	return booleanT
 }
 
 func (b Bool) Clone() Value {

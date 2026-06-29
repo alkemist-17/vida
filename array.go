@@ -133,11 +133,11 @@ func (xs *Array) stringify(visited map[uintptr]bool) string {
 }
 
 func (xs *Array) ObjectKey() string {
-	return fmt.Sprintf("Array(%p)", xs)
+	return fmt.Sprintf("array[%p]", xs)
 }
 
 func (xs *Array) Type() string {
-	return "array"
+	return arrayT
 }
 
 func (xs *Array) Clone() Value {
@@ -149,10 +149,10 @@ func (xs *Array) Clone() Value {
 }
 
 func (xs *Array) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[arrayVT] == nil {
-		ctx.vtables[arrayVT] = loadArrayVT()
+	if ctx.vtables[arrayT] == nil {
+		ctx.loadArrayVT()
 	}
-	if vtable, ok := ctx.vtables[arrayVT]; ok {
+	if vtable, ok := ctx.vtables[arrayT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil

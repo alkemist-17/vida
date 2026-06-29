@@ -141,23 +141,23 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 }
 
 func (o *Object) ObjectKey() string {
-	return fmt.Sprintf("Object(%p)", o)
+	return fmt.Sprintf("object[%p]", o)
 }
 
 func (o *Object) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[objectVT] == nil {
-		ctx.vtables[objectVT] = loadObjectVT()
+	if ctx.vtables[objectT] == nil {
+		ctx.loadObjectVT()
 	}
 	if o.VTable != nil {
 		if val := o.VTable.Get(ctx, message); !val.Equals(Nil) {
 			return val
 		}
 	}
-	return ctx.vtables[objectVT].Get(ctx, message)
+	return ctx.vtables[objectT].Get(ctx, message)
 }
 
 func (o *Object) Type() string {
-	return "object"
+	return objectT
 }
 
 func (o *Object) Clone() Value {

@@ -1,17 +1,28 @@
 package vida
 
+// Vtables' names are data type ones.
 const (
-	stringVT      = "StrVT"
-	arrayVT       = "ArrVT"
-	objectVT      = "ObjVT"
-	bytesVT       = "BtsVT"
-	threadVT      = "ThrVT"
-	colorVT       = "ColVT"
-	fileHandlerVT = "FhdVT"
-	httpClientVT  = "htpVT"
+	stringT      = "string"
+	arrayT       = "array"
+	objectT      = "object"
+	bytesT       = "bytes"
+	threadT      = "thread"
+	colorT       = "color"
+	fileHandlerT = "file"
+	httpClientT  = "httpClient"
+	booleanT     = "bool"
+	enumT        = "enum"
+	errorT       = "error"
+	nativeFuncT  = "nativeFunction"
+	functionT    = "function"
+	nilT         = "nil"
+	integerT     = "int"
+	floatT       = "float"
+	timeT        = "time"
+	universalT   = "universal"
 )
 
-func loadStringVT() Value {
+func (ctx *Context) loadStringVT() {
 	vt := &Object{Value: make(map[string]Value, 16)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["toLower"] = NativeFunction(textToLowerCase)
@@ -29,10 +40,11 @@ func loadStringVT() Value {
 	vt.Value["trim"] = NativeFunction(textTrim)
 	vt.Value["isEmpty"] = NativeFunction(textIsEmpty)
 	vt.Value["format"] = NativeFunction(coreFormat)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[stringT] = vt
 }
 
-func loadArrayVT() Value {
+func (ctx *Context) loadArrayVT() {
 	vt := &Object{Value: make(map[string]Value, 16)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
@@ -50,10 +62,11 @@ func loadArrayVT() Value {
 	vt.Value["delete"] = NativeFunction(arrayDelete)
 	vt.Value["contains"] = NativeFunction(arrayContains)
 	vt.Value["concat"] = NativeFunction(arrayConcat)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[arrayT] = vt
 }
 
-func loadObjectVT() Value {
+func (ctx *Context) loadObjectVT() {
 	vt := &Object{Value: make(map[string]Value, 12)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["inject"] = NativeFunction(objectInjectProperties)
@@ -67,10 +80,11 @@ func loadObjectVT() Value {
 	vt.Value["isEmpty"] = NativeFunction(objectIsEmpty)
 	vt.Value["clear"] = NativeFunction(objectClear)
 	vt.Value["getset"] = NativeFunction(objectGetOrSet)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[objectT] = vt
 }
 
-func loadBytesVT() Value {
+func (ctx *Context) loadBytesVT() {
 	vt := &Object{Value: make(map[string]Value, 10)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["toFile"] = NativeFunction(bytesToFile)
@@ -82,10 +96,11 @@ func loadBytesVT() Value {
 	vt.Value["bitLen"] = NativeFunction(bytesBitLen)
 	vt.Value["fill"] = NativeFunction(bytesFill)
 	vt.Value["concat"] = NativeFunction(bytesConcat)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[bytesT] = vt
 }
 
-func loadThreadVT() Value {
+func (ctx *Context) loadThreadVT() {
 	vt := &Object{Value: make(map[string]Value, 6)}
 	vt.Value["run"] = NativeFunction(coRunThread)
 	vt.Value["complete"] = NativeFunction(coCompleteThread)
@@ -93,10 +108,11 @@ func loadThreadVT() Value {
 	vt.Value["isDone"] = NativeFunction(coIsDone)
 	vt.Value["state"] = NativeFunction(coGetThreadState)
 	vt.Value["value"] = NativeFunction(coValue)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[threadT] = vt
 }
 
-func loadColorVT() Value {
+func (ctx *Context) loadColorVT() {
 	vt := &Object{Value: make(map[string]Value, 6)}
 	vt.Value["string"] = NativeFunction(colorString)
 	vt.Value["format"] = NativeFunction(colorFormat)
@@ -104,10 +120,11 @@ func loadColorVT() Value {
 	vt.Value["fg"] = NativeFunction(colorSetFG)
 	vt.Value["reset"] = NativeFunction(colorSetReset)
 	vt.Value["resets"] = NativeFunction(colorGetReset)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[colorT] = vt
 }
 
-func loadFileHandlerVT() Value {
+func (ctx *Context) loadFileHandlerVT() {
 	vt := &Object{Value: make(map[string]Value, 6)}
 	vt.Value["close"] = NativeFunction(fileClose)
 	vt.Value["isClosed"] = NativeFunction(fileIsClosed)
@@ -115,10 +132,11 @@ func loadFileHandlerVT() Value {
 	vt.Value["write"] = NativeFunction(fileWrite)
 	vt.Value["lines"] = NativeFunction(fileReadLines)
 	vt.Value["read"] = NativeFunction(fileRead)
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[fileHandlerT] = vt
 }
 
-func loadHttpClientVT() Value {
+func (ctx *Context) loadHttpClientVT() {
 	vt := &Object{Value: make(map[string]Value, 7)}
 	vt.Value["get"] = NativeFunction(makeRequestFn(httpGET))
 	vt.Value["post"] = NativeFunction(makeRequestFn(httpPOST))
@@ -127,5 +145,71 @@ func loadHttpClientVT() Value {
 	vt.Value["patch"] = NativeFunction(makeRequestFn(httpPATCH))
 	vt.Value["head"] = NativeFunction(makeRequestFn(httpHEAD))
 	vt.Value["options"] = NativeFunction(makeRequestFn(httpOPTIONS))
-	return vt
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[httpClientT] = vt
+}
+
+func (ctx *Context) loadUniversalVT() {
+	vt := &Object{Value: make(map[string]Value, 5)}
+	vt.Value["type"] = NativeFunction(coreType)
+	vt.Value["clone"] = NativeFunction(coreClone)
+	vt.Value["isError"] = NativeFunction(coreIsError)
+	vt.Value["isNil"] = NativeFunction(coreIsNil)
+	vt.Value["toString"] = NativeFunction(coreToString)
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[universalT] = vt
+}
+
+func (ctx *Context) loadBooleanVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[booleanT] = vt
+}
+
+func (ctx *Context) loadEnumVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[enumT] = vt
+}
+
+func (ctx *Context) loadErrorVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[errorT] = vt
+}
+
+func (ctx *Context) loadFunctionVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[functionT] = vt
+}
+
+func (ctx *Context) loadNativeFunctionVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[nativeFuncT] = vt
+}
+
+func (ctx *Context) loadNilVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[nilT] = vt
+}
+
+func (ctx *Context) loadIntegerVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[integerT] = vt
+}
+
+func (ctx *Context) loadFloatVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[floatT] = vt
+}
+
+func (ctx *Context) loadTimeVT() {
+	vt := &Object{Value: make(map[string]Value)}
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[timeT] = vt
 }

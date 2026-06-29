@@ -110,7 +110,7 @@ func (f *Function) IsCallable() Bool {
 }
 
 func (f *Function) Type() string {
-	return "function"
+	return functionT
 }
 
 func (f *Function) Clone() Value {
@@ -118,11 +118,21 @@ func (f *Function) Clone() Value {
 }
 
 func (f Function) String() string {
-	return fmt.Sprintf("Function(%p)", f.CoreFn)
+	return fmt.Sprintf("function[%p]", f.CoreFn)
 }
 
 func (f *Function) ObjectKey() string {
-	return fmt.Sprintf("Function(%p)", f.CoreFn)
+	return f.String()
+}
+
+func (f *Function) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[functionT] == nil {
+		ctx.loadFunctionVT()
+	}
+	if vtable, ok := ctx.vtables[functionT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
 }
 
 type NativeFunction func(ctx *Context, args ...Value) (Value, error)
@@ -181,14 +191,20 @@ func (nativeFn NativeFunction) Iterator() Value {
 }
 
 func (nativeFn NativeFunction) String() string {
-	return "NativeFunction"
+	return nativeFuncT
 }
 
 func (nativeFn NativeFunction) ObjectKey() string {
-	return "NativeFunction"
+	return nativeFuncT
 }
 
 func (nativeFn NativeFunction) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[nativeFuncT] == nil {
+		ctx.loadNativeFunctionVT()
+	}
+	if vtable, ok := ctx.vtables[nativeFuncT]; ok {
+		return vtable.Get(ctx, message)
+	}
 	return Nil
 }
 
@@ -197,7 +213,7 @@ func (nativeFn NativeFunction) Clone() Value {
 }
 
 func (nativeFn NativeFunction) Type() string {
-	return "NativeFunction"
+	return nativeFuncT
 }
 
 func (nativeFn NativeFunction) MarshalJSON() ([]byte, error) {

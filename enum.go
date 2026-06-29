@@ -73,25 +73,31 @@ func (e *Enum) Call(ctx *Context, args ...Value) (Value, error) {
 
 func (e Enum) String() string {
 	if len(e.Pairs) == 0 {
-		return "enum{}"
+		return "enum[]"
 	}
 	var r []string
 	for k, v := range e.Pairs {
 		r = append(r, fmt.Sprintf("%v: %v", k, v))
 	}
-	return fmt.Sprintf("enum{%v}", strings.Join(r, ", "))
+	return fmt.Sprintf("enum[%v]", strings.Join(r, ", "))
 }
 
 func (e *Enum) ObjectKey() string {
-	return fmt.Sprintf("Enum(%p)", e)
+	return fmt.Sprintf("enum[%p]", e)
 }
 
 func (e *Enum) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[enumT] == nil {
+		ctx.loadEnumVT()
+	}
+	if vtable, ok := ctx.vtables[enumT]; ok {
+		return vtable.Get(ctx, message)
+	}
 	return Nil
 }
 
 func (e *Enum) Type() string {
-	return "enum"
+	return enumT
 }
 
 func (e *Enum) Clone() Value {

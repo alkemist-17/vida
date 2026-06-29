@@ -114,17 +114,17 @@ func (s *String) ObjectKey() string {
 }
 
 func (s *String) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[stringVT] == nil {
-		ctx.vtables[stringVT] = loadStringVT()
+	if ctx.vtables[stringT] == nil {
+		ctx.loadStringVT()
 	}
-	if vtable, ok := ctx.vtables[stringVT]; ok {
+	if vtable, ok := ctx.vtables[stringT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil
 }
 
 func (s *String) Type() string {
-	return "string"
+	return stringT
 }
 
 func (s *String) Clone() Value {

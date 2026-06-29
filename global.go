@@ -68,13 +68,10 @@ var coreLibNames = []string{
 	"print",
 	"newArray",
 	"load",
-	"type",
 	"assert",
 	"format",
 	"input",
-	"clone",
 	"error",
-	"isError",
 }
 
 func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
@@ -82,13 +79,10 @@ func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 		NativeFunction(corePrint),
 		NativeFunction(coreNewArray),
 		generateLoadFunction(extensionsLoader),
-		NativeFunction(coreType),
 		NativeFunction(coreAssert),
 		NativeFunction(coreFormat),
 		NativeFunction(coreReadLine),
-		NativeFunction(coreClone),
 		NativeFunction(coreError),
-		NativeFunction(coreIsError),
 	)
 	return store
 }
@@ -712,6 +706,21 @@ func coreIsError(ctx *Context, args ...Value) (Value, error) {
 		return Bool(ok), nil
 	}
 	return False, nil
+}
+
+func coreIsNil(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		_, ok := args[0].(NilValue)
+		return Bool(ok), nil
+	}
+	return False, nil
+}
+
+func coreToString(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		return &String{Value: args[0].String()}, nil
+	}
+	return &String{Value: Nil.String()}, nil
 }
 
 func DeepEqual(ctx *Context, args ...Value) (Value, error) {

@@ -482,11 +482,11 @@ func (client *vidaHttpClient) Equals(other Value) Bool {
 }
 
 func (client *vidaHttpClient) String() string {
-	return fmt.Sprintf("HttpClient(%p)", client)
+	return fmt.Sprintf("httpClient[%p]", client)
 }
 
 func (client *vidaHttpClient) Type() string {
-	return "httpClient"
+	return httpClientT
 }
 
 func (client *vidaHttpClient) Clone() Value {
@@ -494,14 +494,14 @@ func (client *vidaHttpClient) Clone() Value {
 }
 
 func (client *vidaHttpClient) ObjectKey() string {
-	return fmt.Sprintf("HttpClient(%p)", client)
+	return client.String()
 }
 
 func (client *vidaHttpClient) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[httpClientVT] == nil {
-		ctx.vtables[httpClientVT] = loadHttpClientVT()
+	if ctx.vtables[httpClientT] == nil {
+		ctx.loadHttpClientVT()
 	}
-	if vtable, ok := ctx.vtables[httpClientVT]; ok {
+	if vtable, ok := ctx.vtables[httpClientT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil

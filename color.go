@@ -135,11 +135,11 @@ func (c *Color) Equals(other Value) Bool {
 }
 
 func (c *Color) String() string {
-	return fmt.Sprintf("Color(%p)", c)
+	return fmt.Sprintf("color[%p]", c)
 }
 
 func (c *Color) Type() string {
-	return "color"
+	return colorT
 }
 
 func (c *Color) Clone() Value {
@@ -147,14 +147,14 @@ func (c *Color) Clone() Value {
 }
 
 func (c *Color) ObjectKey() string {
-	return fmt.Sprintf("Color(%p)", c)
+	return c.String()
 }
 
 func (c *Color) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[colorVT] == nil {
-		ctx.vtables[colorVT] = loadColorVT()
+	if ctx.vtables[colorT] == nil {
+		ctx.loadColorVT()
 	}
-	if vtable, ok := ctx.vtables[colorVT]; ok {
+	if vtable, ok := ctx.vtables[colorT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil

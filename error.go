@@ -67,15 +67,25 @@ func (e *VidaError) Iterator() Value {
 }
 
 func (e *VidaError) String() string {
-	return fmt.Sprintf("Error(%v)", e.Message.String())
+	return fmt.Sprintf("error[message: %v]", e.Message.String())
 }
 
 func (e *VidaError) ObjectKey() string {
-	return fmt.Sprintf("Error(%v)", e.Message.ObjectKey())
+	return fmt.Sprintf("error[message %v]", e.Message.ObjectKey())
 }
 
 func (e *VidaError) Type() string {
-	return "error"
+	return errorT
+}
+
+func (e *VidaError) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[errorT] == nil {
+		ctx.loadErrorVT()
+	}
+	if vtable, ok := ctx.vtables[errorT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
 }
 
 func (e *VidaError) Clone() Value {

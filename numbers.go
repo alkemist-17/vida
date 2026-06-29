@@ -151,11 +151,17 @@ func (i Integer) ObjectKey() string {
 }
 
 func (i Integer) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[integerT] == nil {
+		ctx.loadIntegerVT()
+	}
+	if vtable, ok := ctx.vtables[integerT]; ok {
+		return vtable.Get(ctx, message)
+	}
 	return Nil
 }
 
 func (i Integer) Type() string {
-	return "int"
+	return integerT
 }
 
 func (i Integer) Clone() Value {
@@ -279,15 +285,21 @@ func (f Float) String() string {
 }
 
 func (f Float) ObjectKey() string {
-	return fmt.Sprintf("%vf", strconv.FormatFloat(float64(f), 'g', -1, 64))
+	return fmt.Sprintf("%vF", strconv.FormatFloat(float64(f), 'g', -1, 64))
 }
 
 func (f Float) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[floatT] == nil {
+		ctx.loadFloatVT()
+	}
+	if vtable, ok := ctx.vtables[floatT]; ok {
+		return vtable.Get(ctx, message)
+	}
 	return Nil
 }
 
 func (f Float) Type() string {
-	return "float"
+	return floatT
 }
 
 func (f Float) Clone() Value {

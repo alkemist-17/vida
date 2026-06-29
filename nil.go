@@ -39,17 +39,27 @@ func (n NilValue) Equals(other Value) Bool {
 }
 
 func (n NilValue) String() string {
-	return "nil"
+	return nilT
 }
 
 func (n NilValue) ObjectKey() string {
-	return "nil"
+	return nilT
 }
 
 func (n NilValue) Type() string {
-	return "nil"
+	return nilT
 }
 
 func (n NilValue) Clone() Value {
 	return n
+}
+
+func (n NilValue) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[nilT] == nil {
+		ctx.loadNilVT()
+	}
+	if vtable, ok := ctx.vtables[nilT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
 }

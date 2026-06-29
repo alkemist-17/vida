@@ -176,11 +176,15 @@ func (file *FileHandler) Equals(other Value) Bool {
 }
 
 func (file *FileHandler) String() string {
-	return fmt.Sprintf("FileHandler(%v)", file.Handler.Fd())
+	return fmt.Sprintf("file[%v]", file.Handler.Fd())
+}
+
+func (file *FileHandler) ObjectKey() string {
+	return file.String()
 }
 
 func (file *FileHandler) Type() string {
-	return "fileHandler"
+	return fileHandlerT
 }
 
 func (file *FileHandler) Clone() Value {
@@ -188,10 +192,10 @@ func (file *FileHandler) Clone() Value {
 }
 
 func (file *FileHandler) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[fileHandlerVT] == nil {
-		ctx.vtables[fileHandlerVT] = loadFileHandlerVT()
+	if ctx.vtables[fileHandlerT] == nil {
+		ctx.loadFileHandlerVT()
 	}
-	if vtable, ok := ctx.vtables[fileHandlerVT]; ok {
+	if vtable, ok := ctx.vtables[fileHandlerT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil

@@ -111,15 +111,15 @@ func (th *Thread) Equals(other Value) Bool {
 }
 
 func (th *Thread) String() string {
-	return fmt.Sprintf("Thread(%p, %v)", th, th.State.String())
+	return fmt.Sprintf("thread[%p, %v]", th, th.State.String())
 }
 
 func (th *Thread) ObjectKey() string {
-	return fmt.Sprintf("Thread(%p)", th)
+	return fmt.Sprintf("thread[%p]", th)
 }
 
 func (th *Thread) Type() string {
-	return "thread"
+	return threadT
 }
 
 func (th *Thread) Clone() Value {
@@ -127,10 +127,10 @@ func (th *Thread) Clone() Value {
 }
 
 func (th *Thread) LookUp(ctx *Context, message Value) Value {
-	if ctx.vtables[threadVT] == nil {
-		ctx.vtables[threadVT] = loadThreadVT()
+	if ctx.vtables[threadT] == nil {
+		ctx.loadThreadVT()
 	}
-	if vtable, ok := ctx.vtables[threadVT]; ok {
+	if vtable, ok := ctx.vtables[threadT]; ok {
 		return vtable.Get(ctx, message)
 	}
 	return Nil
