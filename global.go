@@ -6,11 +6,11 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
-	"reflect"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
 )
 
@@ -731,7 +731,19 @@ func coreGetVTable(ctx *Context, args ...Value) (Value, error) {
 }
 
 func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
+	switch len(args) {
+	case 2:
+		if extension, ok := args[1].(*Object); ok {
+			if vt, isVTable := args[0].GetVTable(ctx).(*Object); isVTable {
+				for k, x := range extension.Value {
+					if _, isPresent := vt.Value[k]; !isPresent {
+						vt.Value[k] = x
+					}
+				}
+				return args[0], nil
+			}
+		}
+	case 3:
 		message, okM := args[1].(*String)
 		if okM && bool(args[2].IsCallable()) {
 			if vt, isVTable := args[0].GetVTable(ctx).(*Object); isVTable {
@@ -739,16 +751,8 @@ func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
 				return args[0], nil
 			}
 		}
-		return &VidaError{Message: &String{Value: "extendvt expected three args: value, string and function"}}, nil
 	}
-	return Nil, nil
-}
-
-func DeepEqual(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		return Bool(reflect.DeepEqual(args[0], args[1])), nil
-	}
-	return Nil, nil
+	return &VidaError{Message: &String{Value: "extendvt expected three args: value, string and function or two args: value, object"}}, nil
 }
 
 func StringLength(input *String) Integer {
@@ -796,6 +800,33 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		}
 	}
 	return False, nil
+}
+
+func tokenOPToString(t token.Token) *String {
+	switch t {
+	case token.ADD:
+		return &String{Value: "+"}
+	case token.SUB:
+		return &String{Value: "-"}
+	case token.MUL:
+		return &String{Value: "*"}
+	case token.DIV:
+		return &String{Value: "/"}
+	case token.REM:
+		return &String{Value: "%"}
+	case token.POW:
+		return &String{Value: "**"}
+	case token.LT:
+		return &String{Value: "<"}
+	case token.LE:
+		return &String{Value: "<="}
+	case token.GT:
+		return &String{Value: ">"}
+	case token.GE:
+		return &String{Value: ">="}
+	default:
+		return &String{Value: EmptyString}
+	}
 }
 
 func pressEnterToContinue() {

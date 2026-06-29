@@ -33,18 +33,88 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case *Object:
 		switch op {
 		case uint64(token.ADD):
-			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
-			maps.Copy(pairs, o.Value)
-			maps.Copy(pairs, r.Value)
-			return &Object{Value: pairs}, nil
-		case uint64(token.SUB):
-			pairs := make(map[string]Value)
-			for k, v := range o.Value {
-				if _, contains := r.Value[k]; !contains {
-					pairs[k] = v
-				}
+			switch method := o.LookUp(ctx, tokenOPToString(token.ADD)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			default:
+				pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+				maps.Copy(pairs, o.Value)
+				maps.Copy(pairs, r.Value)
+				return &Object{Value: pairs}, nil
 			}
-			return &Object{Value: pairs}, nil
+		case uint64(token.SUB):
+			switch method := o.LookUp(ctx, tokenOPToString(token.SUB)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			default:
+				pairs := make(map[string]Value)
+				for k, v := range o.Value {
+					if _, contains := r.Value[k]; !contains {
+						pairs[k] = v
+					}
+				}
+				return &Object{Value: pairs}, nil
+			}
+		case uint64(token.MUL):
+			switch method := o.LookUp(ctx, tokenOPToString(token.MUL)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.DIV):
+			switch method := o.LookUp(ctx, tokenOPToString(token.DIV)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.REM):
+			switch method := o.LookUp(ctx, tokenOPToString(token.REM)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.POW):
+			switch method := o.LookUp(ctx, tokenOPToString(token.POW)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.LT):
+			switch method := o.LookUp(ctx, tokenOPToString(token.LT)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.LE):
+			switch method := o.LookUp(ctx, tokenOPToString(token.LE)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.GT):
+			switch method := o.LookUp(ctx, tokenOPToString(token.GT)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.GE):
+			switch method := o.LookUp(ctx, tokenOPToString(token.GE)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
 		case uint64(token.BAND):
 			pairs := make(map[string]Value)
 			for k := range o.Value {
@@ -142,6 +212,13 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 
 func (o *Object) ObjectKey() string {
 	return fmt.Sprintf("object[%p]", o)
+}
+
+func (o *Object) GetVTable(ctx *Context) Value {
+	if ctx.vtables[objectT] == nil {
+		ctx.loadObjectVT()
+	}
+	return ctx.vtables[objectT]
 }
 
 func (o *Object) LookUp(ctx *Context, message Value) Value {
