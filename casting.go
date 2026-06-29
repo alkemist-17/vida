@@ -41,7 +41,7 @@ func castToNumber(ctx *Context, args ...Value) (Value, error) {
 			}
 		}
 	}
-	return &VidaError{Message: &String{Value: "error is toNum: expected type, str or type, str, base"}}, nil
+	return &VidaError{Message: &String{Value: "error is toNum: check the number of arguments or its values"}}, nil
 }
 
 func castToString(ctx *Context, args ...Value) (Value, error) {
