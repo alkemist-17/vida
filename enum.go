@@ -33,7 +33,7 @@ func (e *Enum) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(e, rhs)
+		return IsMemberOf(ctx, e, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -50,7 +50,7 @@ func (e *Enum) Set(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (e *Enum) Equals(other Value) Bool {
+func (e *Enum) Equals(ctx *Context, other Value) Bool {
 	val, isEnum := other.(*Enum)
 	return Bool(isEnum && val == other)
 }

@@ -106,7 +106,7 @@ func (b *Bytes) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(b, rhs)
+		return IsMemberOf(ctx, b, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -129,7 +129,7 @@ func (b *Bytes) Set(index, val Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (b *Bytes) Equals(other Value) Bool {
+func (b *Bytes) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(*Bytes); ok {
 		return b == val
 	}

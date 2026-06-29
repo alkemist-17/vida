@@ -162,13 +162,13 @@ func (file *FileHandler) Binop(ctx *Context, op uint64, rhs Value) (Value, error
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(file, rhs)
+		return IsMemberOf(ctx, file, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
-func (file *FileHandler) Equals(other Value) Bool {
+func (file *FileHandler) Equals(ctx *Context, other Value) Bool {
 	if v, ok := other.(*FileHandler); ok {
 		return v.Handler.Fd() == file.Handler.Fd()
 	}

@@ -12,7 +12,7 @@ type Value interface {
 	Binop(ctx *Context, op uint64, other Value) (Value, error)
 	Get(ctx *Context, message Value) Value
 	Set(Value, Value) error
-	Equals(Value) Bool
+	Equals(ctx *Context, value Value) Bool
 	IsIterable() Bool
 	Iterator() Value
 	IsCallable() Bool
@@ -48,7 +48,7 @@ func (i ValueSemanticsImpl) Set(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (i ValueSemanticsImpl) Equals(Value) Bool {
+func (i ValueSemanticsImpl) Equals(*Context, Value) Bool {
 	return false
 }
 
@@ -119,7 +119,7 @@ func (i *ReferenceSemanticsImpl) Set(Value, Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (i *ReferenceSemanticsImpl) Equals(Value) Bool {
+func (i *ReferenceSemanticsImpl) Equals(*Context, Value) Bool {
 	return false
 }
 

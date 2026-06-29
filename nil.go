@@ -27,13 +27,13 @@ func (n NilValue) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(n, rhs)
+		return IsMemberOf(ctx, n, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
-func (n NilValue) Equals(other Value) Bool {
+func (n NilValue) Equals(ctx *Context, other Value) Bool {
 	_, ok := other.(NilValue)
 	return Bool(ok)
 }

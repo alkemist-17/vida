@@ -2,8 +2,6 @@ package vida
 
 import (
 	"fmt"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Iterator interface {
@@ -30,38 +28,6 @@ func (it *ArrayIterator) Key(ctx *Context) Value {
 
 func (it *ArrayIterator) Value(ctx *Context) Value {
 	return it.Array[it.Init]
-}
-
-func (it *ArrayIterator) Boolean() Bool {
-	return true
-}
-
-func (it *ArrayIterator) Prefix(uint64) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *ArrayIterator) Get(*Context, Value) Value {
-	return Nil
-}
-
-func (it *ArrayIterator) Set(Value, Value) error {
-	return verror.ErrOpNotDefinedForIterators
-}
-
-func (it *ArrayIterator) Equals(Value) Bool {
-	return false
-}
-
-func (it *ArrayIterator) IsIterable() Bool {
-	return false
-}
-
-func (it *ArrayIterator) IsCallable() Bool {
-	return false
-}
-
-func (it *ArrayIterator) Iterator() Value {
-	return Nil
 }
 
 func (it ArrayIterator) String() string {
@@ -111,38 +77,6 @@ func (it *ObjectIterator) Value(ctx *Context) Value {
 	return it.Obj[it.Keys[it.Init]]
 }
 
-func (it *ObjectIterator) Boolean() Bool {
-	return true
-}
-
-func (it *ObjectIterator) Prefix(uint64) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *ObjectIterator) Get(*Context, Value) Value {
-	return Nil
-}
-
-func (it *ObjectIterator) Set(Value, Value) error {
-	return verror.ErrOpNotDefinedForIterators
-}
-
-func (it *ObjectIterator) Equals(Value) Bool {
-	return false
-}
-
-func (it *ObjectIterator) IsIterable() Bool {
-	return false
-}
-
-func (it *ObjectIterator) IsCallable() Bool {
-	return false
-}
-
-func (it *ObjectIterator) Iterator() Value {
-	return Nil
-}
-
 func (it ObjectIterator) String() string {
 	return fmt.Sprintf("ObjectIterator[i = %v, e = %v]", it.Init, it.End)
 }
@@ -173,38 +107,6 @@ func (it *StringIterator) Key(ctx *Context) Value {
 
 func (it *StringIterator) Value(ctx *Context) Value {
 	return &String{Value: string(it.Runes[it.Init]), Runes: it.Runes[it.Init : it.Init+1]}
-}
-
-func (it *StringIterator) Boolean() Bool {
-	return true
-}
-
-func (it *StringIterator) Prefix(uint64) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *StringIterator) Get(*Context, Value) Value {
-	return Nil
-}
-
-func (it *StringIterator) Set(Value, Value) error {
-	return verror.ErrOpNotDefinedForIterators
-}
-
-func (it *StringIterator) Equals(Value) Bool {
-	return false
-}
-
-func (it *StringIterator) IsIterable() Bool {
-	return false
-}
-
-func (it *StringIterator) IsCallable() Bool {
-	return false
-}
-
-func (it *StringIterator) Iterator() Value {
-	return Nil
 }
 
 func (it StringIterator) String() string {
@@ -238,38 +140,6 @@ func (it *IntegerIterator) Value(ctx *Context) Value {
 	return it.Init
 }
 
-func (it *IntegerIterator) Boolean() Bool {
-	return true
-}
-
-func (it *IntegerIterator) Prefix(uint64) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (it *IntegerIterator) Get(*Context, Value) Value {
-	return Nil
-}
-
-func (it *IntegerIterator) Set(Value, Value) error {
-	return verror.ErrOpNotDefinedForIterators
-}
-
-func (it *IntegerIterator) Equals(Value) Bool {
-	return false
-}
-
-func (it *IntegerIterator) IsIterable() Bool {
-	return false
-}
-
-func (it *IntegerIterator) IsCallable() Bool {
-	return false
-}
-
-func (it *IntegerIterator) Iterator() Value {
-	return Nil
-}
-
 func (it IntegerIterator) String() string {
 	return fmt.Sprintf("IntIterator[i = %v, e = %v]", it.Init, it.End)
 }
@@ -300,38 +170,6 @@ func (bi *BytesIterator) Key(ctx *Context) Value {
 
 func (bi *BytesIterator) Value(ctx *Context) Value {
 	return Integer(bi.Bytes[bi.Init])
-}
-
-func (bi *BytesIterator) Boolean() Bool {
-	return true
-}
-
-func (bi *BytesIterator) Prefix(uint64) (Value, error) {
-	return Nil, verror.ErrOpNotDefinedForIterators
-}
-
-func (bi *BytesIterator) Get(*Context, Value) Value {
-	return Nil
-}
-
-func (bi *BytesIterator) Set(Value, Value) error {
-	return verror.ErrOpNotDefinedForIterators
-}
-
-func (bi *BytesIterator) Equals(Value) Bool {
-	return false
-}
-
-func (bi *BytesIterator) IsIterable() Bool {
-	return false
-}
-
-func (bi *BytesIterator) IsCallable() Bool {
-	return false
-}
-
-func (bi *BytesIterator) Iterator() Value {
-	return Nil
 }
 
 func (bi BytesIterator) String() string {

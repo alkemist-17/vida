@@ -47,7 +47,7 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			copy(values[lLen:], r.Value)
 			return &Array{Value: values}, nil
 		case uint64(token.IN):
-			return IsMemberOf(xs, rhs)
+			return IsMemberOf(ctx, xs, rhs)
 		}
 	}
 	switch op {
@@ -56,7 +56,7 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(xs, rhs)
+		return IsMemberOf(ctx, xs, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -90,7 +90,7 @@ func (xs *Array) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (xs *Array) Equals(other Value) Bool {
+func (xs *Array) Equals(ctx *Context, other Value) Bool {
 	val, isArray := other.(*Array)
 	return Bool(isArray && xs == val)
 }
@@ -280,7 +280,7 @@ func arrayIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
 			for i, v := range xs.Value {
-				if v.Equals(args[1]) {
+				if v.Equals(ctx, args[1]) {
 					return Integer(i), nil
 				}
 			}
@@ -370,7 +370,7 @@ func arrayContains(ctx *Context, args ...Value) (Value, error) {
 		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			val := args[1]
 			return Bool(slices.ContainsFunc(xs.Value, func(v Value) bool {
-				return bool(v.Equals(val))
+				return bool(v.Equals(ctx, val))
 			})), nil
 		}
 	}

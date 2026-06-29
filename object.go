@@ -145,7 +145,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(o, rhs)
+		return IsMemberOf(ctx, o, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -166,9 +166,22 @@ func (o *Object) Set(index, val Value) error {
 	return nil
 }
 
-func (o *Object) Equals(other Value) Bool {
-	val, isObject := other.(*Object)
-	return Bool(isObject && o == val)
+func (o *Object) Equals(ctx *Context, other Value) Bool {
+	switch method := o.LookUp(ctx, tokenOPToString(token.EQ)).(type) {
+	case *Function:
+		if val, err := ctx.runFunctionInNewThread(method, o, other); err == nil {
+			return val.Boolean()
+		}
+		return False
+	case NativeFunction:
+		if val, err := method.Call(ctx, o, other); err == nil {
+			return val.Boolean()
+		}
+		return False
+	default:
+		val, isObject := other.(*Object)
+		return Bool(isObject && o == val)
+	}
 }
 
 func (o *Object) IsIterable() Bool {
@@ -230,7 +243,7 @@ func (o *Object) LookUp(ctx *Context, message Value) Value {
 		ctx.loadObjectVT()
 	}
 	if o.VTable != nil {
-		if val := o.VTable.Get(ctx, message); !val.Equals(Nil) {
+		if val := o.VTable.Get(ctx, message); !val.Equals(ctx, Nil) {
 			return val
 		}
 	}

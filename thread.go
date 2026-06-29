@@ -103,7 +103,7 @@ func (th *Thread) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (th *Thread) Equals(other Value) Bool {
+func (th *Thread) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(*Thread); ok {
 		return th == val
 	}
@@ -329,44 +329,44 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			case storeFromLocal:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromKonst:
 				switch r {
 				case storeFromLocal:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.stack[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromGlobal:
-					val = (*vm.Script.Konstants)[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromGlobal:
 				switch r {
 				case storeFromLocal:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.Frame.stack[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			default:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if s>>4 == 1 {
@@ -833,44 +833,44 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			case storeFromLocal:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromKonst:
 				switch r {
 				case storeFromLocal:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.stack[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromGlobal:
-					val = (*vm.Script.Konstants)[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromGlobal:
 				switch r {
 				case storeFromLocal:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.Frame.stack[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			default:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if s>>4 == 1 {

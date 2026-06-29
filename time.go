@@ -29,7 +29,7 @@ func (t Time) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return t, nil
 	case uint64(token.IN):
-		return IsMemberOf(t, rhs)
+		return IsMemberOf(ctx, t, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -43,7 +43,7 @@ func (t Time) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (t Time) Equals(other Value) Bool {
+func (t Time) Equals(ctx *Context, other Value) Bool {
 	if o, ok := other.(Time); ok {
 		return Bool(time.Time(t).Equal(time.Time(o)))
 	}

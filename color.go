@@ -121,13 +121,13 @@ func (c *Color) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(c, rhs)
+		return IsMemberOf(ctx, c, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
-func (c *Color) Equals(other Value) Bool {
+func (c *Color) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(*Color); ok {
 		return c == val
 	}

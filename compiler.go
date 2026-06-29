@@ -1434,7 +1434,7 @@ func (c *compiler) compileBinaryEq(n *ast.BinaryExpr, isRoot bool) (int, int) {
 		j, jscope := c.compileExpr(n.Rhs, false)
 		switch jscope {
 		case rKonst:
-			val := (*c.kb.Konstants)[i].Equals((*c.kb.Konstants)[j])
+			val := (*c.kb.Konstants)[i].Equals(c.ctx, (*c.kb.Konstants)[j])
 			if n.Op == token.NEQ {
 				val = !val
 			}

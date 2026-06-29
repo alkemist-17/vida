@@ -46,7 +46,7 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(s, rhs)
+		return IsMemberOf(ctx, s, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -80,7 +80,7 @@ func (s *String) Prefix(op uint64) (Value, error) {
 	return Nil, verror.ErrPrefixOpNotDefined
 }
 
-func (s *String) Equals(other Value) Bool {
+func (s *String) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(*String); ok {
 		return s.Value == val.Value
 	}

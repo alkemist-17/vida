@@ -52,7 +52,7 @@ func (c *CoreFunction) Boolean() Bool {
 	return true
 }
 
-func (c *CoreFunction) Equals(other Value) Bool {
+func (c *CoreFunction) Equals(ctx *Context, other Value) Bool {
 	f, ok := other.(*CoreFunction)
 	return Bool(ok && c == f)
 }
@@ -95,12 +95,12 @@ func (f *Function) Binop(ctx *Context, op uint64, r Value) (Value, error) {
 	case uint64(token.AND):
 		return r, nil
 	case uint64(token.IN):
-		return IsMemberOf(f, r)
+		return IsMemberOf(ctx, f, r)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
-func (f *Function) Equals(other Value) Bool {
+func (f *Function) Equals(ctx *Context, other Value) Bool {
 	of, ok := other.(*Function)
 	return Bool(ok && f == of)
 }
@@ -164,7 +164,7 @@ func (nativeFn NativeFunction) Binop(ctx *Context, op uint64, r Value) (Value, e
 	case uint64(token.AND):
 		return r, nil
 	case uint64(token.IN):
-		return IsMemberOf(nativeFn, r)
+		return IsMemberOf(ctx, nativeFn, r)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -177,7 +177,7 @@ func (nativeFn NativeFunction) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (nativeFn NativeFunction) Equals(other Value) Bool {
+func (nativeFn NativeFunction) Equals(ctx *Context, other Value) Bool {
 	return false
 }
 

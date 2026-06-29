@@ -476,7 +476,7 @@ func (client *vidaHttpClient) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (client *vidaHttpClient) Equals(other Value) Bool {
+func (client *vidaHttpClient) Equals(ctx *Context, other Value) Bool {
 	x, ok := other.(*vidaHttpClient)
 	return Bool(ok && x == client)
 }

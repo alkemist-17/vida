@@ -762,13 +762,13 @@ func StringLength(input *String) Integer {
 	return Integer(len(input.Runes))
 }
 
-func IsMemberOf(args ...Value) (Bool, error) {
+func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {
 		case *Array:
 			item := args[0]
 			for _, v := range collection.Value {
-				if item.Equals(v) {
+				if item.Equals(ctx, v) {
 					return True, nil
 				}
 			}
@@ -776,7 +776,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *Object:
 			item := args[0]
 			for k := range collection.Value {
-				if item.Equals(&String{Value: k}) {
+				if item.Equals(ctx, &String{Value: k}) {
 					return True, nil
 				}
 			}
@@ -784,7 +784,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *String:
 			item := args[0]
 			for _, char := range collection.Runes {
-				if item.Equals(&String{Value: string(char)}) {
+				if item.Equals(ctx, &String{Value: string(char)}) {
 					return True, nil
 				}
 			}
@@ -792,7 +792,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *Bytes:
 			item := args[0]
 			for _, b := range collection.Value {
-				if item.Equals(Integer(b)) {
+				if item.Equals(ctx, Integer(b)) {
 					return True, nil
 				}
 			}
@@ -816,6 +816,8 @@ func tokenOPToString(t token.Token) *String {
 		return &String{Value: "rem"}
 	case token.POW:
 		return &String{Value: "pow"}
+	case token.EQ:
+		return &String{Value: "eq"}
 	case token.LT:
 		return &String{Value: "lt"}
 	case token.LE:

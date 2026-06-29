@@ -100,7 +100,7 @@ func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return l, nil
 	case uint64(token.IN):
-		return IsMemberOf(l, rhs)
+		return IsMemberOf(ctx, l, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -113,7 +113,7 @@ func (i Integer) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (i Integer) Equals(other Value) Bool {
+func (i Integer) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(Integer); ok {
 		return i == val
 	}
@@ -248,7 +248,7 @@ func (f Float) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return f, nil
 	case uint64(token.IN):
-		return IsMemberOf(f, rhs)
+		return IsMemberOf(ctx, f, rhs)
 	}
 	return Nil, verror.ErrBinaryOpNotDefined
 }
@@ -261,7 +261,7 @@ func (f Float) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (f Float) Equals(other Value) Bool {
+func (f Float) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(Float); ok {
 		return f == val
 	}

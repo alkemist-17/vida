@@ -32,7 +32,7 @@ func (e *VidaError) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(e, rhs)
+		return IsMemberOf(ctx, e, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
@@ -49,9 +49,9 @@ func (e *VidaError) Set(index, val Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (e *VidaError) Equals(other Value) Bool {
+func (e *VidaError) Equals(ctx *Context, other Value) Bool {
 	v, isError := other.(*VidaError)
-	return Bool(isError) && e.Message.Equals(v.Message)
+	return Bool(isError) && e == v && e.Message.Equals(ctx, v.Message)
 }
 
 func (e *VidaError) IsIterable() Bool {
