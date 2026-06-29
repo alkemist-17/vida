@@ -826,6 +826,16 @@ func tokenOPToString(t token.Token) *String {
 		return &String{Value: "gt"}
 	case token.GE:
 		return &String{Value: "ge"}
+	case token.BOR:
+		return &String{Value: "bor"}
+	case token.BAND:
+		return &String{Value: "band"}
+	case token.BXOR:
+		return &String{Value: "bxor"}
+	case token.BSHL:
+		return &String{Value: "bshl"}
+	case token.BSHR:
+		return &String{Value: "bshr"}
 	default:
 		return &String{Value: EmptyString}
 	}

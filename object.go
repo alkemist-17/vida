@@ -116,18 +116,53 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.BAND):
-			pairs := make(map[string]Value)
-			for k := range o.Value {
-				if x, contains := r.Value[k]; contains {
-					pairs[k] = x
+			switch method := o.LookUp(ctx, tokenOPToString(token.BAND)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			default:
+				pairs := make(map[string]Value)
+				for k := range o.Value {
+					if x, contains := r.Value[k]; contains {
+						pairs[k] = x
+					}
 				}
+				return &Object{Value: pairs}, nil
 			}
-			return &Object{Value: pairs}, nil
 		case uint64(token.BOR):
-			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
-			maps.Copy(pairs, o.Value)
-			maps.Copy(pairs, r.Value)
-			return &Object{Value: pairs}, nil
+			switch method := o.LookUp(ctx, tokenOPToString(token.BOR)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			default:
+				pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+				maps.Copy(pairs, o.Value)
+				maps.Copy(pairs, r.Value)
+				return &Object{Value: pairs}, nil
+			}
+		case uint64(token.BXOR):
+			switch method := o.LookUp(ctx, tokenOPToString(token.BXOR)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.BSHL):
+			switch method := o.LookUp(ctx, tokenOPToString(token.BSHL)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
+		case uint64(token.BSHR):
+			switch method := o.LookUp(ctx, tokenOPToString(token.BSHR)).(type) {
+			case *Function:
+				return ctx.runFunctionInNewThread(method, o, rhs)
+			case NativeFunction:
+				return method.Call(ctx, o, r)
+			}
 		case uint64(token.VTABLE):
 			o.VTable = r
 			return o, nil
