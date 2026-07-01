@@ -79,7 +79,7 @@ func (b Bool) ObjectKey() string {
 
 func (b Bool) GetVTable(ctx *Context) Value {
 	if ctx.vtables[booleanT] == nil {
-		ctx.loadArrayVT()
+		ctx.loadBooleanVT()
 	}
 	return ctx.vtables[booleanT]
 }

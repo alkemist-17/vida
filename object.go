@@ -221,10 +221,16 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
+const maxVTableChainDepth = 2048
+
 func (o *Object) Get(ctx *Context, message Value) Value {
 	current := o
-	for current != nil {
-		if val, ok := current.Value[message.ObjectKey()]; ok {
+	key := message.ObjectKey()
+	for depth := 0; current != nil; depth++ {
+		if depth >= maxVTableChainDepth {
+			return Nil
+		}
+		if val, ok := current.Value[key]; ok {
 			return val
 		}
 		current = current.VTable

@@ -52,7 +52,7 @@ func (e *Enum) Set(Value, Value) error {
 
 func (e *Enum) Equals(ctx *Context, other Value) Bool {
 	val, isEnum := other.(*Enum)
-	return Bool(isEnum && val == other)
+	return Bool(isEnum && e == val)
 }
 
 func (e *Enum) IsIterable() Bool {
