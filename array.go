@@ -129,7 +129,7 @@ func (xs *Array) stringify(visited map[uintptr]bool) string {
 	for _, v := range xs.Value {
 		r = append(r, stringWithVisited(v, visited))
 	}
-	return fmt.Sprintf("array[%v]", strings.Join(r, ", "))
+	return fmt.Sprintf("array[%v]", strings.Join(r, ",  "))
 }
 
 func (xs *Array) ObjectKey() string {

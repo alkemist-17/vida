@@ -23,7 +23,7 @@ const (
 )
 
 func (ctx *Context) loadStringVT() {
-	vt := &Object{Value: make(map[string]Value, 17)}
+	vt := &Object{Value: make(map[string]Value, 19)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["toLower"] = NativeFunction(textToLowerCase)
 	vt.Value["toUpper"] = NativeFunction(textToUpperCase)
@@ -41,6 +41,8 @@ func (ctx *Context) loadStringVT() {
 	vt.Value["isEmpty"] = NativeFunction(textIsEmpty)
 	vt.Value["format"] = NativeFunction(coreFormat)
 	vt.Value["toNum"] = NativeFunction(castToNumber)
+	vt.Value["bytes"] = NativeFunction(textGetBytes)
+	vt.Value["codePoints"] = NativeFunction(textCodepoints)
 	vt.VTable = ctx.vtables[universalT].(*Object)
 	ctx.vtables[stringT] = vt
 }

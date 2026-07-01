@@ -776,6 +776,15 @@ func textCompare(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
+func textGetBytes(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if src, ok := args[0].(*String); ok {
+			return &Bytes{Value: []byte(src.Value)}, nil
+		}
+	}
+	return Nil, nil
+}
+
 // textUrlEncode percent-encodes a string for safe inclusion in URLs.
 //
 // Follows RFC 3986:

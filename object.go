@@ -290,9 +290,9 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 
 	var r []string
 	for k, v := range o.Value {
-		r = append(r, fmt.Sprintf("%v: %v", k, stringWithVisited(v, visited)))
+		r = append(r, fmt.Sprintf("(%v -> %v)", k, stringWithVisited(v, visited)))
 	}
-	return fmt.Sprintf("object[%v]", strings.Join(r, ", "))
+	return fmt.Sprintf("object[%v]", strings.Join(r, ",  "))
 }
 
 func (o *Object) ObjectKey() string {
@@ -338,7 +338,7 @@ func (o *Object) MarshalJSON() ([]byte, error) {
 }
 
 func loadObjectLib() Value {
-	m := &Object{Value: make(map[string]Value, 15)}
+	m := &Object{Value: make(map[string]Value, 13)}
 	m.Value["inject"] = NativeFunction(objectInjectProperties)
 	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
 	m.Value["extract"] = NativeFunction(objectExtractProperties)
@@ -350,8 +350,6 @@ func loadObjectLib() Value {
 	m.Value["keys"] = NativeFunction(objectGetKeys)
 	m.Value["values"] = NativeFunction(objectGetValues)
 	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
-	m.Value["isObject"] = NativeFunction(objectIsObject)
-	m.Value["isCallable"] = NativeFunction(objectIsCallable)
 	m.Value["clear"] = NativeFunction(objectClear)
 	m.Value["getset"] = NativeFunction(objectGetOrSet)
 	return m
@@ -546,23 +544,6 @@ func objectIsEmpty(ctx *Context, args ...Value) (Value, error) {
 		}
 	}
 	return Nil, nil
-}
-
-func objectIsObject(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		_, ok := args[0].(*Object)
-		return Bool(ok), nil
-	}
-	return Nil, nil
-}
-
-func objectIsCallable(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if o, ok := args[0].(*Object); ok {
-			return o.IsCallable(), nil
-		}
-	}
-	return False, nil
 }
 
 func objectClear(ctx *Context, args ...Value) (Value, error) {
