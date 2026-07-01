@@ -69,12 +69,14 @@ func (ctx *Context) loadArrayVT() {
 }
 
 func (ctx *Context) loadObjectVT() {
-	vt := &Object{Value: make(map[string]Value, 12)}
+	vt := &Object{Value: make(map[string]Value, 14)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["inject"] = NativeFunction(objectInjectProperties)
 	vt.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
 	vt.Value["extract"] = NativeFunction(objectExtractProperties)
 	vt.Value["implements"] = NativeFunction(objectCheckProperties)
+	vt.Value["get"] = NativeFunction(objectCircumventGetValue)
+	vt.Value["set"] = NativeFunction(objectCircumventSetValue)
 	vt.Value["has"] = NativeFunction(objectCircumventHasValue)
 	vt.Value["del"] = NativeFunction(objectCircumventDeleteProperty)
 	vt.Value["keys"] = NativeFunction(objectGetKeys)
