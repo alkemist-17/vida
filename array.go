@@ -22,7 +22,7 @@ func (xs *Array) Boolean() Bool {
 	return True
 }
 
-func (xs *Array) Prefix(op uint64) (Value, error) {
+func (xs *Array) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return False, nil
 	}

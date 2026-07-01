@@ -631,7 +631,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 	case *ast.PrefixExpr:
 		from, scope := c.compileExpr(n.Expr, false)
 		if scope == rKonst {
-			if val, err := (*c.kb.Konstants)[from].Prefix(uint64(n.Op)); err == nil {
+			if val, err := (*c.kb.Konstants)[from].Prefix(c.ctx, uint64(n.Op)); err == nil {
 				return c.integrateKonst(val)
 			} else {
 				c.hadError = true

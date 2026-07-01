@@ -15,7 +15,7 @@ func (i Integer) Boolean() Bool {
 	return True
 }
 
-func (i Integer) Prefix(op uint64) (Value, error) {
+func (i Integer) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.SUB):
 		return -i, nil
@@ -181,7 +181,7 @@ func (f Float) Boolean() Bool {
 	return True
 }
 
-func (f Float) Prefix(op uint64) (Value, error) {
+func (f Float) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.SUB):
 		return -f, nil

@@ -1246,7 +1246,7 @@ formatLoop:
 func (p *pp) doPrintln(a []Value) {
 	for argNum, arg := range a {
 		if argNum > 0 {
-			p.buf.writeByte(' ')
+			p.buf.writeByte('\t')
 		}
 		p.printArg(arg, 'v')
 	}

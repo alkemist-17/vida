@@ -8,7 +8,7 @@ import (
 
 type Value interface {
 	Boolean() Bool
-	Prefix(uint64) (Value, error)
+	Prefix(ctx *Context, op uint64) (Value, error)
 	Binop(ctx *Context, op uint64, other Value) (Value, error)
 	Get(ctx *Context, message Value) Value
 	Set(Value, Value) error
@@ -32,7 +32,7 @@ func (i ValueSemanticsImpl) Boolean() Bool {
 	return True
 }
 
-func (i ValueSemanticsImpl) Prefix(uint64) (Value, error) {
+func (i ValueSemanticsImpl) Prefix(*Context, uint64) (Value, error) {
 	return Nil, verror.ErrPrefixOpNotDefined
 }
 
@@ -103,7 +103,7 @@ func (i *ReferenceSemanticsImpl) Boolean() Bool {
 	return True
 }
 
-func (i *ReferenceSemanticsImpl) Prefix(uint64) (Value, error) {
+func (i *ReferenceSemanticsImpl) Prefix(*Context, uint64) (Value, error) {
 	return Nil, verror.ErrPrefixOpNotDefined
 }
 

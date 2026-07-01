@@ -79,7 +79,7 @@ func (f *Function) Boolean() Bool {
 	return true
 }
 
-func (f *Function) Prefix(op uint64) (Value, error) {
+func (f *Function) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil
@@ -148,7 +148,7 @@ func (nativeFn NativeFunction) Boolean() Bool {
 	return True
 }
 
-func (nativeFn NativeFunction) Prefix(op uint64) (Value, error) {
+func (nativeFn NativeFunction) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil

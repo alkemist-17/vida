@@ -13,7 +13,7 @@ func (t Time) Boolean() Bool {
 	return True
 }
 
-func (t Time) Prefix(op uint64) (Value, error) {
+func (t Time) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil

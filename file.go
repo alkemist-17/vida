@@ -146,7 +146,7 @@ func (file *FileHandler) Boolean() Bool {
 	return Bool(!file.IsClosed)
 }
 
-func (file *FileHandler) Prefix(op uint64) (Value, error) {
+func (file *FileHandler) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return !file.Boolean(), nil

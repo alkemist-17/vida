@@ -13,7 +13,7 @@ func (n NilValue) Boolean() Bool {
 	return False
 }
 
-func (n NilValue) Prefix(op uint64) (Value, error) {
+func (n NilValue) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return True, nil
 	}

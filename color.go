@@ -105,7 +105,7 @@ func (c *Color) Boolean() Bool {
 	return true
 }
 
-func (c *Color) Prefix(op uint64) (Value, error) {
+func (c *Color) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return True, nil

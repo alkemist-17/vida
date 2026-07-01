@@ -17,7 +17,7 @@ func (e *Enum) Boolean() Bool {
 	return true
 }
 
-func (e *Enum) Prefix(op uint64) (Value, error) {
+func (e *Enum) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil

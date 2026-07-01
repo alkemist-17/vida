@@ -82,7 +82,7 @@ func (th *Thread) Boolean() Bool {
 	return True
 }
 
-func (th *Thread) Prefix(op uint64) (Value, error) {
+func (th *Thread) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil
@@ -374,7 +374,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			}
 			vm.Frame.stack[B] = val
 		case prefix:
-			val, err := vm.Frame.stack[A].Prefix(P)
+			val, err := vm.Frame.stack[A].Prefix(vm.ctx, P)
 			if err != nil {
 				return vm.createError(ip, err)
 			}
@@ -878,7 +878,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			}
 			vm.Frame.stack[B] = val
 		case prefix:
-			val, err := vm.Frame.stack[A].Prefix(P)
+			val, err := vm.Frame.stack[A].Prefix(vm.ctx, P)
 			if err != nil {
 				return vm.createError(ip, err)
 			}

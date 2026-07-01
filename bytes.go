@@ -72,7 +72,7 @@ func (b *Bytes) Boolean() Bool {
 	return True
 }
 
-func (b *Bytes) Prefix(op uint64) (Value, error) {
+func (b *Bytes) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil

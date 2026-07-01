@@ -158,7 +158,7 @@ func (vm *VM) run() error {
 			}
 			vm.Frame.stack[B] = val
 		case prefix:
-			val, err := vm.Frame.stack[A].Prefix(P)
+			val, err := vm.Frame.stack[A].Prefix(vm.ctx, P)
 			if err != nil {
 				return vm.createError(ip, err)
 			}

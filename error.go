@@ -16,7 +16,7 @@ func (e *VidaError) Boolean() Bool {
 	return false
 }
 
-func (e *VidaError) Prefix(op uint64) (Value, error) {
+func (e *VidaError) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return True, nil

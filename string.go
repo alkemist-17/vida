@@ -73,7 +73,7 @@ func (s *String) Set(index, val Value) error {
 	return verror.ErrValueIsConstant
 }
 
-func (s *String) Prefix(op uint64) (Value, error) {
+func (s *String) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return False, nil
 	}

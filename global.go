@@ -802,7 +802,7 @@ func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
 	return False, nil
 }
 
-func tokenOPToString(t token.Token) *String {
+func tokenBinopToString(t token.Token) *String {
 	switch t {
 	case token.ADD:
 		return &String{Value: "add"}
@@ -836,6 +836,19 @@ func tokenOPToString(t token.Token) *String {
 		return &String{Value: "bshl"}
 	case token.BSHR:
 		return &String{Value: "bshr"}
+	default:
+		return &String{Value: EmptyString}
+	}
+}
+
+func tokenPrefixToString(t token.Token) *String {
+	switch t {
+	case token.ADD:
+		return &String{Value: "padd"}
+	case token.SUB:
+		return &String{Value: "psub"}
+	case token.TILDE:
+		return &String{Value: "ptilde"}
 	default:
 		return &String{Value: EmptyString}
 	}

@@ -467,7 +467,7 @@ func (client *vidaHttpClient) Boolean() Bool {
 	return True
 }
 
-func (client *vidaHttpClient) Prefix(op uint64) (Value, error) {
+func (client *vidaHttpClient) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil

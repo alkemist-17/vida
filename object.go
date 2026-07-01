@@ -21,9 +21,31 @@ func (o *Object) Boolean() Bool {
 	return true
 }
 
-func (o *Object) Prefix(op uint64) (Value, error) {
-	if op == uint64(token.NOT) {
+func (o *Object) Prefix(ctx *Context, op uint64) (Value, error) {
+	switch op {
+	case uint64(token.NOT):
 		return False, nil
+	case uint64(token.SUB):
+		switch method := o.LookUp(ctx, tokenPrefixToString(token.SUB)).(type) {
+		case *Function:
+			return ctx.runFunctionInNewThread(method, o)
+		case NativeFunction:
+			return method.Call(ctx, o)
+		}
+	case uint64(token.ADD):
+		switch method := o.LookUp(ctx, tokenPrefixToString(token.ADD)).(type) {
+		case *Function:
+			return ctx.runFunctionInNewThread(method, o)
+		case NativeFunction:
+			return method.Call(ctx, o)
+		}
+	case uint64(token.TILDE):
+		switch method := o.LookUp(ctx, tokenPrefixToString(token.TILDE)).(type) {
+		case *Function:
+			return ctx.runFunctionInNewThread(method, o)
+		case NativeFunction:
+			return method.Call(ctx, o)
+		}
 	}
 	return Nil, verror.ErrPrefixOpNotDefined
 }
@@ -33,7 +55,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case *Object:
 		switch op {
 		case uint64(token.ADD):
-			switch method := o.LookUp(ctx, tokenOPToString(token.ADD)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.ADD)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
@@ -45,7 +67,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return &Object{Value: pairs}, nil
 			}
 		case uint64(token.SUB):
-			switch method := o.LookUp(ctx, tokenOPToString(token.SUB)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.SUB)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
@@ -60,63 +82,63 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return &Object{Value: pairs}, nil
 			}
 		case uint64(token.MUL):
-			switch method := o.LookUp(ctx, tokenOPToString(token.MUL)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.MUL)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.DIV):
-			switch method := o.LookUp(ctx, tokenOPToString(token.DIV)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.DIV)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.REM):
-			switch method := o.LookUp(ctx, tokenOPToString(token.REM)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.REM)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.POW):
-			switch method := o.LookUp(ctx, tokenOPToString(token.POW)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.POW)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.LT):
-			switch method := o.LookUp(ctx, tokenOPToString(token.LT)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.LT)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.LE):
-			switch method := o.LookUp(ctx, tokenOPToString(token.LE)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.LE)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.GT):
-			switch method := o.LookUp(ctx, tokenOPToString(token.GT)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.GT)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.GE):
-			switch method := o.LookUp(ctx, tokenOPToString(token.GE)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.GE)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.BAND):
-			switch method := o.LookUp(ctx, tokenOPToString(token.BAND)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.BAND)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
@@ -131,7 +153,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return &Object{Value: pairs}, nil
 			}
 		case uint64(token.BOR):
-			switch method := o.LookUp(ctx, tokenOPToString(token.BOR)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.BOR)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
@@ -143,21 +165,21 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return &Object{Value: pairs}, nil
 			}
 		case uint64(token.BXOR):
-			switch method := o.LookUp(ctx, tokenOPToString(token.BXOR)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.BXOR)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.BSHL):
-			switch method := o.LookUp(ctx, tokenOPToString(token.BSHL)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.BSHL)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
 				return method.Call(ctx, o, r)
 			}
 		case uint64(token.BSHR):
-			switch method := o.LookUp(ctx, tokenOPToString(token.BSHR)).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.BSHR)).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
@@ -180,7 +202,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			uint64(token.LT), uint64(token.LE), uint64(token.GT),
 			uint64(token.GE), uint64(token.BAND), uint64(token.BOR),
 			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
-			switch method := o.LookUp(ctx, tokenOPToString(token.Token(op))).(type) {
+			switch method := o.LookUp(ctx, tokenBinopToString(token.Token(op))).(type) {
 			case *Function:
 				return ctx.runFunctionInNewThread(method, o, rhs)
 			case NativeFunction:
@@ -216,7 +238,7 @@ func (o *Object) Set(index, val Value) error {
 }
 
 func (o *Object) Equals(ctx *Context, other Value) Bool {
-	switch method := o.LookUp(ctx, tokenOPToString(token.EQ)).(type) {
+	switch method := o.LookUp(ctx, tokenBinopToString(token.EQ)).(type) {
 	case *Function:
 		if val, err := ctx.runFunctionInNewThread(method, o, other); err == nil {
 			return val.Boolean()

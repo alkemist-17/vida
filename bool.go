@@ -11,7 +11,7 @@ func (b Bool) Boolean() Bool {
 	return b
 }
 
-func (b Bool) Prefix(op uint64) (Value, error) {
+func (b Bool) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return !b, nil
 	}
