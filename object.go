@@ -571,6 +571,7 @@ func objectClear(ctx *Context, args ...Value) (Value, error) {
 			for k := range o.Value {
 				delete(o.Value, k)
 			}
+			return o, nil
 		}
 	}
 	return Nil, nil
