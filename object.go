@@ -283,12 +283,12 @@ func (o *Object) String() string {
 
 func (o *Object) stringify(visited map[uintptr]bool) string {
 	if len(o.Value) == 0 {
-		return "object[]"
+		return "{}"
 	}
 
 	ptr := reflect.ValueOf(o).Pointer()
 	if visited[ptr] {
-		return "object[...]"
+		return "{...}"
 	}
 
 	visited[ptr] = true
@@ -298,7 +298,7 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 	for k, v := range o.Value {
 		r = append(r, fmt.Sprintf("[%v: %v]", k, stringWithVisited(v, visited)))
 	}
-	return fmt.Sprintf("object[%v]", strings.Join(r, ",  "))
+	return fmt.Sprintf("{%v}", strings.Join(r, ",  "))
 }
 
 func (o *Object) ObjectKey() string {
