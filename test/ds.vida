@@ -1,0 +1,462 @@
+//
+// Basic Data Structures
+//
+
+
+
+
+
+// Binary Tree
+// Add max method to integers
+var config = fun {
+	var _ = (0).extendvt("max", fun self, other {
+		if self > other {
+			ret self
+		}
+		ret other
+	})
+}
+
+
+config()
+
+
+// Node constructor
+var Node = fun val -> { val = val, left, right }
+
+
+// BinaryTree Vtable
+var vt = {}
+
+
+vt.isEmpty = fun self -> self.root == nil
+
+
+vt.insert = fun self, val {
+	if not self.root {
+		self.root = Node(val)
+	} else {
+		self.insertRecursive(self.root, val)
+	}
+	ret self
+}
+
+
+vt.insertRecursive = fun self, node, val {
+	if val < node.val {
+		if not node.left {
+			node.left = Node(val)
+		} else {
+			self.insertRecursive(node.left, val)
+		}
+	} else {
+		if not node.right {
+			node.right = Node(val)
+		} else {
+			self.insertRecursive(node.right, val)
+		}
+	}
+}
+
+
+vt.inorder = fun self {
+	var result = []
+	self.inorderRecursive(self.root, result)
+	ret result
+}
+
+
+vt.inorderRecursive = fun self, node, result {
+	if node {
+		self.inorderRecursive(node.left, result)
+		result.append(node.val)
+		self.inorderRecursive(node.right, result)
+	}
+}
+
+
+vt.preorder = fun self {
+	var result = []
+	self.preorderRecursive(self.root, result)
+	ret result
+}
+
+
+vt.preorderRecursive = fun self, node, result {
+	if node {
+		result.append(node.val)
+		self.preorderRecursive(node.left, result)
+		self.preorderRecursive(node.right, result)
+	}
+}
+
+
+vt.postorder = fun self {
+	var result = []
+	self.postorderRecursive(self.root, result)
+	ret result
+}
+
+
+vt.postorderRecursive = fun self, node, result {
+	if node {
+		self.postorderRecursive(node.left, result)
+		self.postorderRecursive(node.right, result)
+		result.append(node.val)
+	}
+}
+
+
+vt.search = fun self, val -> self.searchRecursive(self.root, val)
+
+
+vt.searchRecursive = fun self, node, val {
+	if not node { 
+		ret false
+	}
+	
+	if node.val == val { 
+		ret true
+	} else if val < node.val { 
+		ret self.searchRecursive(node.left, val)
+	} else { 
+		ret self.searchRecursive(node.right, val)
+	}
+}
+
+
+vt.height = fun self -> self.heightRecursive(self.root)
+
+
+vt.heightRecursive = fun self, node {
+	if not node { ret -1 }
+	ret 1 + self.heightRecursive(node.left).max(self.heightRecursive(node.right))
+}
+
+
+var BinaryTree = fun -> { root } =< vt
+
+var tree = BinaryTree()
+
+assert(tree.isEmpty() == true, "When created, a binary tree must be empty")
+
+var values = [50, 30, 70, 20, 40, 60, 80]
+
+for _, v in values { tree.insert(v) }
+
+var r = tree.inorder()
+
+assert(
+    r[0] == 20 and 
+    r[1] == 30 and 
+    r[2] == 40 and 
+    r[3] == 50 and 
+    r[4] == 60 and 
+    r[5] == 70 and 
+    r[6] == 80,
+	"binary tree inorder traversal should return the values in ascending order"
+)
+
+r = tree.preorder()
+
+assert(
+    r[0] == 50 and 
+    r[1] == 30 and 
+    r[2] == 20 and 
+    r[3] == 40 and 
+    r[4] == 70 and 
+    r[5] == 60 and 
+    r[6] == 80,
+	"binary tree preorder traversal is useful for copying binary trees"
+)
+
+r = tree.postorder()
+
+assert(
+    r[0] == 20 and 
+    r[1] == 40 and 
+    r[2] == 30 and 
+    r[3] == 60 and 
+    r[4] == 80 and 
+    r[5] == 70 and 
+    r[6] == 50,
+	"binary tree postorder traversal is useful for deletion in binary trees"
+)
+
+
+assert(tree.isEmpty() == false, "after adding at least one node, the binary tree must not be empty")
+
+for _, v in values { assert(tree.search(v), "searching for the same values inserted in the binary tree must always be true") }
+
+assert(tree.search(100) == false, "searching for a value not inserted should be false")
+
+assert(tree.height() == 2, "a binary tree with seven nodes inserted should be of height 2")
+
+
+
+
+
+// Single Linked List
+
+// ListNode
+var SListNode = fun val -> { val = val, next }
+
+
+var slvt = {}
+
+
+slvt.append = fun self, val {
+	var newNode = SListNode(val)
+	if not self.head {
+		self.head = newNode
+	} else {
+		var current = self.head
+		while current.next {
+			current = current.next
+		}
+		current.next = newNode
+	}
+	ret self
+}
+
+
+slvt.prepend = fun self, val {
+	var newNode = SListNode(val)
+	newNode.next = self.head
+	self.head = newNode
+	ret self
+}
+
+
+slvt.insertAt = fun self, index, val {
+	if index < 0 {
+		ret error("index cannot be negative")
+	}
+
+	if index == 0 {
+		self.prepend(val)
+		ret self
+	}
+
+	var current = self.head
+	var pos = 0
+
+	while current and pos < index - 1 {
+		current = current.next
+		pos = pos + 1
+	}
+
+	if not current {
+		ret error("index out of range")
+	}
+
+	var newNode = SListNode(val)
+	newNode.next = current.next
+	current.next = newNode
+	ret self
+}
+
+
+slvt.search = fun self, val {
+	var current = self.head
+	while current {
+		if current.val == val {
+			ret true
+		}
+		current = current.next
+	}
+	ret false
+}
+
+
+slvt.delete = fun self, val {
+	if not self.head {
+		ret self
+	}
+
+	if self.head.val == val {
+		self.head = self.head.next
+		ret self
+	}
+
+	var current = self.head
+	while current.next {
+		if current.next.val == val {
+			current.next = current.next.next
+			ret self
+		}
+		current = current.next
+	}
+
+	ret self
+}
+
+
+slvt.deleteAt = fun self, index {
+	if index < 0 {
+		ret error("index cannot be negative")
+	}
+
+	if not self.head {
+		ret error("list is empty")
+	}
+
+	if index == 0 {
+		self.head = self.head.next
+		ret self
+	}
+
+	var current = self.head
+	var pos = 0
+
+	while current.next and pos < index - 1 {
+		current = current.next
+		pos = pos + 1
+	}
+
+	if not current.next {
+		ret error("index out of range")
+	}
+
+	current.next = current.next.next
+	
+	ret self
+}
+
+
+slvt.isEmpty = fun self -> not self.head
+
+
+slvt.clear = fun self {
+	self.head = nil
+	ret self
+}
+
+
+slvt.len = fun self {
+	var count = 0
+	var current = self.head
+	while current {
+		count = count + 1
+		current = current.next
+	}
+	ret count
+}
+
+
+slvt.reverse = fun self {
+	var prev = nil
+	var current = self.head
+
+	while current {
+		var next = current.next
+		current.next = prev
+		prev = current
+		current = next
+	}
+
+	self.head = prev
+	ret self
+}
+
+
+slvt.display = fun self {
+	var values = []
+	var current = self.head
+	while current {
+		values.append(current.val)
+		current = current.next
+	}
+	ret values
+}
+
+
+slvt.get = fun self, index {
+	if index < 0 {
+		ret error("index cannot be negative")
+	}
+
+	var current = self.head
+	var pos = 0
+
+	while current {
+		if pos == index {
+			ret current.val
+		}
+		current =  current.next
+		pos = pos + 1
+	}
+	ret error("index out of range")
+}
+
+
+
+var SingleLinkedList = fun -> { head } =< slvt
+
+
+var slist = SingleLinkedList()
+
+slist.append(10)
+slist.append(20)
+slist.append(30)
+slist.append(40)
+slist.append(50)
+
+r = slist.display()
+
+assert(r.type() == [].type())
+
+assert(r.len() == 5)
+
+assert(
+	r[0] == 10 and 
+	r[1] == 20 and 
+	r[2] == 30 and 
+	r[3] == 40 and 
+	r[4] == 50
+)
+
+slist.prepend(42)
+
+assert(slist.len() == 6)
+
+assert(slist.get(0) == 42)
+
+slist.insertAt(2, 15)
+
+assert(slist.len() == 7)
+
+assert(slist.get(2) == 15)
+
+assert(slist.search(20) == true)
+
+assert(slist.search(200) == false)
+
+assert(slist.get(6) == 50)
+
+assert(slist.search(15) == true)
+
+slist.delete(15)
+
+assert(slist.search(15) == false)
+
+assert(slist.get(1) == 10)
+
+slist.deleteAt(1)
+
+assert(slist.get(1) == 20)
+
+slist.reverse()
+
+assert(slist.get(slist.len()-1) == 42)
+
+assert(slist.isEmpty() == false)
+
+slist.clear()
+
+assert(slist.len() == 0)
+
+assert(slist.isEmpty() == true)
+
+print(slist.display())
+
