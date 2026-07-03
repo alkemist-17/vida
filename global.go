@@ -734,7 +734,7 @@ func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 2:
 		if extension, ok := args[1].(*Object); ok {
-			if vt, isVTable := args[0].GetVTable(ctx).(*Object); isVTable {
+			if vt, hasVTable := args[0].GetVTable(ctx).(*Object); hasVTable {
 				for k, x := range extension.Value {
 					if _, isPresent := vt.Value[k]; !isPresent {
 						vt.Value[k] = x
@@ -744,10 +744,12 @@ func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
 			}
 		}
 	case 3:
-		message, okM := args[1].(*String)
-		if okM && bool(args[2].IsCallable()) {
-			if vt, isVTable := args[0].GetVTable(ctx).(*Object); isVTable {
-				vt.Value[message.Value] = args[2]
+		messageName, okMessage := args[1].(*String)
+		if okMessage && bool(args[2].IsCallable()) {
+			if vt, hasVTable := args[0].GetVTable(ctx).(*Object); hasVTable {
+				if _, isPresent := vt.Value[messageName.Value]; !isPresent {
+					vt.Value[messageName.Value] = args[2]
+				}
 				return args[0], nil
 			}
 		}
