@@ -716,13 +716,6 @@ func coreIsNil(ctx *Context, args ...Value) (Value, error) {
 	return False, nil
 }
 
-func coreToString(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		return &String{Value: args[0].String()}, nil
-	}
-	return &String{Value: Nil.String()}, nil
-}
-
 func coreGetVTable(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return args[0].GetVTable(ctx), nil
