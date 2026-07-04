@@ -458,5 +458,222 @@ assert(slist.len() == 0)
 
 assert(slist.isEmpty() == true)
 
-print(slist.display())
+
+
+
+
+// Double Linked List
+
+// DoubleListNode Constructor
+var DoubleListNode = fun val -> { val = val, prev, next }
+
+
+// Vtable
+var dlvt = {}
+
+
+dlvt.append = fun self, val {
+	var newNode = DoubleListNode(val)
+
+	if self.head.isNil() {
+		self.head = newNode
+		self.tail = newNode
+		ret self
+	}
+
+	newNode.prev = self.tail
+	self.tail.next = newNode
+	self.tail = newNode
+	
+	ret self
+}
+
+
+
+dlvt.prepend = fun self, val {
+	var newNode = DoubleListNode(val)
+
+	if self.head.isNil() {
+		self.head = newNode
+		self.tail = newNode
+		ret self
+	}
+
+	newNode.next = self.head
+	self.head.prev = newNode
+	self.head = newNode
+
+	ret self
+}
+
+
+
+dlvt.insertAt = fun self, index, val {
+	if index < 0 {
+		ret error("index cannot be negative")
+	}
+
+	if index == 0 {
+		ret self.prepend(val)
+	}
+
+	var current = self.head
+	var pos = 0
+
+	while current and pos < index - 1 {
+		current = current.next
+		pos = pos + 1
+	}
+
+	if current.isNil() {
+		ret error("index out of range")
+	}
+
+	var newNode = DoubleListNode(val)
+
+	newNode.next = current.next
+	newNode.prev = current
+
+	if current.next {
+		current.next.prev = newNode
+	} else {
+		self.tail = newNode
+	}
+
+	current.next = newNode
+
+	ret self
+}
+
+
+dlvt.search = fun self, val {
+	var current = self.head
+	while current {
+		if current.val == val {
+			ret true
+		}
+		current = current.next
+	}
+	ret false
+}
+
+
+dlvt.delete = fun self, val {
+	var current = self.head
+	while current {
+		if current.val == val {
+			if current.prev.isNil() {
+				self.head = current.next
+				if self.head {
+					self.head.prev = nil
+				} else {
+					self.tail = nil
+				}
+				ret self
+			}
+			
+			if current.next.isNil() {
+				self.tail = current.prev
+				self.tail.next = nil
+				ret self
+			}
+			
+			current.prev.next = current.next
+			current.next.prev = current.prev
+			ret self
+		}
+		current = current.next
+	}
+	ret self
+}
+
+
+dlvt.isEmpty = fun self -> self.head.isNil()
+
+
+dlvt.clear = fun self {
+	self.head = nil
+	self.tail = nil
+	ret self
+}
+
+
+dlvt.len = fun self {
+	var count = 0
+	var current = self.head
+	while current {
+		count = count + 1
+		current = current.next
+	}
+	ret count
+}
+
+
+dlvt.display = fun self {
+	var values = []
+	var current = self.head
+	while current {
+		values.append(current.val)
+		current = current.next
+	}
+	ret values
+}
+
+
+// Constructor
+var DoublyLinkedList = fun -> { head tail } =< dlvt
+
+
+var dll = DoublyLinkedList()
+
+
+assert(dll.isEmpty())
+
+
+values = [10, 20, 30, 40, 50]
+
+
+for _, v in values {
+	dll.append(v)
+}
+
+
+assert(dll.isEmpty() == false)
+
+
+assert(dll.len() == values.len())
+
+
+for _, v in values {
+	assert(dll.search(v))
+}
+
+
+for _, v in values {
+	assert(dll.delete(v))
+}
+
+
+assert(dll.isEmpty() == true)
+
+
+assert(dll.len() == 0)
+
+
+assert(dll.insertAt(-1, nil).isError())
+
+
+assert(dll.insertAt(1, nil).isError())
+
+
+for _, v in values {
+	dll.prepend(v)
+}
+
+
+assert(dll.len() ==  values.len())
+
+
+assert(dll.isEmpty() == false)
+
 
