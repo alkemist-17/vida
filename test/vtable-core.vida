@@ -18,7 +18,6 @@ var ex = load("std.exception")
 //                      Module objects returned by `load(...)` store their
 //                      exports as OWN fields with no vtable at all, so
 //                      calling them always requires `::`, e.g. `ex::protected(...)`
-//                      unless a vt is set to such module.
 //   - `.getvt()`       returns a value's current vtable (universal method)
 //   - `.extendvt(...)` adds to a vtable, either one message at a time
 //                      (3-arg form) or by merging a whole object of
@@ -321,3 +320,81 @@ var overriddenAdd = { x = 10 }
 var addVt = { add = fun self, other -> self.x + other }
 overriddenAdd = overriddenAdd =< addVt
 assert(overriddenAdd + 5 == 15, "Objects, and only Objects, may override binary operators via their vtable, keyed by the operator's name (add/sub/mul/div/rem/pow/eq/lt/le/gt/ge/bor/band/bxor/bshl/bshr)")
+
+
+// =============================================================================
+// 9. REGRESSION — two fixes to Object.Binop's operator-override dispatch:
+//
+//    (a) a `nil` right-hand side used to bypass override lookup entirely
+//        for every operator except `=<` (e.g. `obj + nil` could never
+//        reach a user-defined `add` override, no matter what). Fixed: nil
+//        now goes through the same override lookup as any other rhs type.
+//        `=<` stays the one deliberate exception — `obj =< nil` always
+//        clears the vtable, never a user override, regardless of rhs.
+//
+//    (b) a vtable entry found under an operator's message name but which
+//        isn't callable (e.g. a plain value assigned by mistake) used to
+//        be silently treated as "no override at all" — for `add`/`sub`/
+//        `band`/`bor` specifically, this meant it silently fell back to
+//        the structural default instead of surfacing the mistake. Fixed:
+//        a non-callable override now always produces a distinct,
+//        specific error, never confused with "no override was defined".
+// =============================================================================
+
+// -- 9a. `obj + nil` now reaches a real `add` override.
+var addsWithNil = { tally = 100 }
+var addNilVt = { add = fun self, other -> self.tally }
+addsWithNil = addsWithNil =< addNilVt
+assert(addsWithNil + nil == 100, "a `nil` right-hand side must still reach a defined `add` override (previously it never could)")
+
+// Also true for a comparison operator, not just `add` — this was a
+// blanket bypass for every operator, not an ADD-specific one.
+var ltWithNil = { }
+var ltNilVt = { lt = fun self, other -> true }
+ltWithNil = ltWithNil =< ltNilVt
+assert((ltWithNil < nil) == true, "a `nil` right-hand side must still reach a defined `lt` override")
+
+// `=<` remains the one hardcoded exception: `obj =< nil` always clears
+// the vtable, even though addNilVt / ltNilVt above have nothing to do
+// with `=<` — included here to make the exception explicit, not implied.
+addsWithNil = addsWithNil =< nil
+var afterNilVtableClear = ex::protected(fun -> addsWithNil.tally)
+assert(afterNilVtableClear.isError() == false, "`obj =< nil` must still just clear the vtable; addsWithNil's own `tally` field is untouched by any of this")
+
+// -- 9b. Baseline: with NO override defined at all, `+ nil` still fails,
+//        with the generic "operator not defined" message.
+var noOverrideAtAll = {}
+var noOverrideResult = ex::protected(fun -> noOverrideAtAll + nil)
+assert(noOverrideResult.isError(), "with no `add` override anywhere in the chain, `+ nil` must still error")
+assert(("not callable" in noOverrideResult.message) == false, "the generic 'no override defined' error must NOT be phrased as a callability problem — the two failure modes must stay textually distinguishable")
+
+// -- 9c. A vtable entry present under "add" but NOT a function must
+//        produce the new, distinct, specific error — not the generic one.
+var brokenVt = { add = 99 }
+var brokenObj = {}
+brokenObj = brokenObj =< brokenVt
+var brokenResult = ex::protected(fun -> brokenObj + nil)
+assert(brokenResult.isError(), "a non-callable value sitting under 'add' must still cause `+` to fail")
+assert("not callable" in brokenResult.message, "a non-callable override must produce the SPECIFIC not-callable error, not the generic 'operator not defined' one")
+assert(brokenResult.message != noOverrideResult.message, "the two failure modes ('no override' vs 'broken override') must produce genuinely different messages, not the same generic text")
+
+// -- 9d. The same non-callable-override check applies with an *Object*
+//        right-hand side too — this is the trickier regression. Before the
+//        fix, ADD/SUB/BAND/BOR had their own inline structural fallback
+//        that silently absorbed a non-callable override as if it were
+//        simply "not found", so `brokenObj + anotherObject` used to
+//        silently perform the structural merge instead of erroring.
+var anotherObject = { z = 1 }
+var brokenWithObjectRhs = ex::protected(fun -> brokenObj + anotherObject)
+assert(brokenWithObjectRhs.isError(), "a non-callable 'add' override must cause `+` to error even when the right-hand side is a plain Object (previously this silently fell back to a structural merge instead)")
+assert("not callable" in brokenWithObjectRhs.message, "...and it must be the specific not-callable error, not a silently-produced merged object nor the generic error")
+
+// -- 9e. Non-callable-override detection also applies to operators that
+//        have NO structural fallback at all (e.g. `lt`), confirming the
+//        fix is uniform across every dispatch site, not just add/sub/band/bor.
+var brokenLtVt = { lt = "not a function" }
+var brokenLtObj = {}
+brokenLtObj = brokenLtObj =< brokenLtVt
+var brokenLtResult = ex::protected(fun -> brokenLtObj < nil)
+assert(brokenLtResult.isError(), "a non-callable 'lt' override must cause `<` to error")
+assert("not callable" in brokenLtResult.message, "...with the same specific not-callable error, regardless of which operator or rhs type triggered it")
