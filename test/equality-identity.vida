@@ -1,0 +1,219 @@
+// =============================================================================
+// Vida equality / identity matrix — regression test suite
+//
+// `==` is implemented per-type as `Equals(ctx, other) Bool` — note there is
+// NO error channel here, unlike Binop. A mismatched-type comparison always
+// just returns false, it never errors.
+//
+// Only *Object supports a user-defined "eq" override (via the same
+// tokenBinopToString("eq") vtable mechanism as other operators — see
+// vtable-core.vida section 8). No other type consults a vtable for
+// equality at all: Array, Bytes-vs-Bytes, Function, and NativeFunction are
+// all hardcoded to pointer identity (or, for NativeFunction, hardcoded to
+// always false — see section 9), and String/Bytes-cross-type and
+// Integer/Float are hardcoded to compare by value.
+//
+// IMPORTANT ASYMMETRY: `==` is receiver-driven. `a == b` calls a.Equals(b),
+// not b.Equals(a). Since only Object ever consults an override, and no
+// type ever calls back into the OTHER side's Equals, `myObject == 5` can
+// be made true by an "eq" override, while `5 == myObject` is unconditionally
+// false — Integer.Equals never looks at what's on the right beyond a plain
+// Integer/Float check. `==` is not guaranteed commutative in this language
+// once custom equality is involved. Section 1 demonstrates this directly.
+// =============================================================================
+
+
+// =============================================================================
+// 1. Object: identity by default, overridable via "eq" — and the override
+//    can be triggered by ANY right-hand type, not just other Objects.
+// =============================================================================
+
+var a = {}
+var b = {}
+assert(a == a, "an object must equal itself (pointer identity)")
+assert((a == b) == false, "two separate object literals, with no override, must NOT be equal even if both are empty")
+
+// Attaching an "eq" override changes this, and the override receives
+// whatever is on the right — including non-Object values.
+var alwaysEqualVt = { eq = fun self, other -> true }
+var c = {} =< alwaysEqualVt
+var d = {} =< alwaysEqualVt
+assert(c == d, "an `eq` override lets two distinct objects compare equal, overriding identity entirely")
+assert(c == 5, "an `eq` override is invoked regardless of the right-hand side's type — it is not restricted to Object-vs-Object comparisons")
+assert(c == "anything", "...it can be triggered by a string just as easily as a number or another object")
+
+// But the reverse direction is NOT symmetric: `5 == c` calls Integer's
+// Equals, which never consults c's override — `==` is receiver-driven.
+assert((5 == c) == false, "`==` is not commutative once custom equality is involved: `5 == c` calls Integer.Equals, which never looks at c's `eq` override at all")
+
+
+// =============================================================================
+// 2. Array: always identity-only. Never overridable — Array.Equals never
+//    consults a vtable at all, unlike Object.
+// =============================================================================
+
+var arr1 = [1, 2, 3]
+var arr2 = [1, 2, 3]
+assert(arr1 == arr1, "an array must equal itself")
+assert((arr1 == arr2) == false, "two arrays with IDENTICAL contents must still not be equal — Array equality is identity-only, never structural")
+
+// Confirms this isn't just "no override was defined yet" — extending an
+// array's vtable with an "eq" entry has zero effect on `==`, because
+// Array.Equals is hardcoded and never looks at a vtable at all.
+var _ = arr1.extendvt("eq", fun self, other -> true)
+assert((arr1 == arr2) == false, "extending an array's vtable with an `eq` entry must have NO effect — Array.Equals never consults a vtable, unlike Object.Equals")
+
+
+// =============================================================================
+// 3. String / Bytes: value-based, and cross-type comparison is genuinely
+//    symmetric (checked from both directions).
+// =============================================================================
+
+var bytesMod = load("std.bytes")
+
+var s1 = "hello"
+var s2 = "hello"
+var s3 = "world"
+assert(s1 == s2, "two different String values with identical content must be equal — String equality is by value")
+assert((s1 == s3) == false, "different content must compare unequal")
+
+var bytesHello = bytesMod::new("hello")
+assert(s1 == bytesHello, "a String must equal a Bytes value with the same content (String.Equals converts Bytes to a Go string for comparison)")
+assert(bytesHello == s1, "...and this must hold in the other direction too: Bytes.Equals converts itself to a Go string for comparison against a String")
+
+var bytesHello2 = bytesMod::new("hello")
+assert((bytesHello == bytesHello2) == false, "two DIFFERENT Bytes values, even with identical content, must NOT be equal — Bytes-vs-Bytes is identity-only, unlike Bytes-vs-String")
+assert(bytesHello == bytesHello, "a Bytes value must still equal itself (identity)")
+
+
+// =============================================================================
+// 4. Integer / Float: same-type is exact value equality. Cross-type
+//    coercion HAD a real, asymmetric bug — fixed; regression-tested below.
+// =============================================================================
+
+assert(3 == 3, "same-type Integer equality")
+assert(3.5 == 3.5, "same-type Float equality")
+assert((3 == 4) == false, "different Integers must not be equal")
+
+// Same-VALUE cross-type comparison works fine in both directions, since no
+// truncation is involved when the float is already an integer value.
+assert(3 == 3.0, "an Integer must equal a Float carrying the same whole-number value")
+assert(3.0 == 3, "...and this must hold symmetrically")
+
+// FIXED BUG (previously documented here as current-but-buggy behavior):
+// Integer.Equals used to convert a Float to an Integer by TRUNCATION
+// before comparing (`i == Integer(val)`), while Float.Equals correctly
+// converted the Integer to a Float instead (`f == Float(val)`, no
+// precision loss). That made `==` genuinely asymmetric: comparing a
+// fractional Float against an Integer gave a DIFFERENT answer depending
+// on which side was the receiver (`1 == 1.5` was true; `1.5 == 1` was
+// false). Fixed: Integer.Equals now promotes itself to a Float instead of
+// truncating the Float, mirroring Float.Equals exactly, so both
+// directions agree.
+assert((1 == 1.5) == false, "REGRESSION: Integer.Equals now promotes to Float instead of truncating, so a fractional Float is correctly never equal to an Integer, from either side")
+assert((1.5 == 1) == false, "...confirmed symmetric from the other side too")
+
+// Both directions must still agree even at a scale where float64 can no
+// longer represent every integer exactly — the fix doesn't need to be
+// mathematically perfect at arbitrary magnitude, only CONSISTENT with
+// itself regardless of which side is the receiver. 2^60 is well past
+// float64's 53-bit exact-integer range.
+var bigInt = 1152921504606846977
+var bigIntAsFloatIsh = 1152921504606846976.0
+assert((bigInt == bigIntAsFloatIsh) == (bigIntAsFloatIsh == bigInt), "even where float64 precision is inherently limited for huge integers, both comparison directions must still agree with each other")
+
+
+// =============================================================================
+// 5. Bool: value equality only among Bools. No coercion with Integer, even
+//    though other languages often treat true/false as 1/0.
+// =============================================================================
+
+assert(true == true, "same Bool value")
+assert((true == false) == false, "different Bool values")
+assert((true == 1) == false, "Bool must NOT be considered equal to the Integer 1, despite true often being conflated with 1 in other languages")
+assert((false == 0) == false, "Bool must NOT be considered equal to the Integer 0 either")
+
+
+// =============================================================================
+// 6. Nil: only ever equal to Nil — not to false, not to an error, not to
+//    anything else, despite all three being the language's "falsy" values.
+// =============================================================================
+
+assert(nil == nil, "nil must equal nil")
+assert((nil == false) == false, "nil and false are both falsy, but they are NOT equal to each other")
+
+
+// =============================================================================
+// 7. Function: identity-only. Two syntactically-identical closures are
+//    still two different values.
+// =============================================================================
+
+var f1 = fun -> 1
+var f2 = fun -> 1
+assert(f1 == f1, "a function must equal itself")
+assert((f1 == f2) == false, "two separately-created closures with identical bodies must NOT be equal — Function equality is identity-only")
+
+
+// =============================================================================
+// 8. NativeFunction: KNOWN, DEFERRED LIMITATION (not fixed in this pass) —
+//    NativeFunction.Equals is hardcoded to always return false, even
+//    against itself. This stems from Go's native functions not carrying a
+//    stable, comparable identity the way a *Function pointer does (see
+//    NativeFunction.ObjectKey's matching "everything collides" issue,
+//    tracked separately). Documenting current behavior so it's a known,
+//    deliberate limitation rather than a silent surprise.
+// =============================================================================
+
+var ex = load("std.exception")
+var nf1 = ex.get("protected")
+var nf2 = ex.get("protected")
+assert(nf1 != nil, "sanity check: we actually fetched a real, non-nil native function value")
+assert((nf1 == nf1) == false, "KNOWN LIMITATION: a NativeFunction never equals itself under `==` — this is a hardcoded `return false`, not a comparison at all")
+assert((nf1 == nf2) == false, "...consistent with the same fetch producing 'unequal' results even though it's the exact same underlying function")
+
+
+// =============================================================================
+// 9. Enum: REGRESSION for the fixed bug (Enum.Equals used to compare the
+//    extracted value against itself, which was trivially always true for
+//    ANY two enums — see vtable-core.vida's bug history). Now correctly
+//    identity-based: an enum declaration only equals itself.
+// =============================================================================
+
+var PlanetsA = enum {
+    mercury
+    venus
+    earth
+}
+
+var PlanetsB = enum {
+    mercury
+    venus
+    earth
+}
+
+assert(PlanetsA == PlanetsA, "an enum must equal itself (identity)")
+assert((PlanetsA == PlanetsB) == false, "REGRESSION: two structurally-identical but distinct enum declarations must NOT be equal — before the fix, ANY two enums compared equal unconditionally")
+
+// Enum MEMBERS, once accessed, are plain Integers (see enum.go's Get,
+// which returns e.Pairs[name] directly) — so member equality is ordinary
+// Integer equality, with no enum-specific logic involved at all. Two
+// unrelated enums whose members happen to share the same underlying
+// integer value will compare equal, because they ARE just integers by
+// that point — this is expected, not a bug, and worth pinning down so it
+// isn't mistaken for one later.
+assert(PlanetsA.mercury == PlanetsB.mercury, "enum MEMBERS decay to plain Integers once accessed, so members sharing the same value compare equal across unrelated enums — this is ordinary Integer equality, not enum identity")
+assert(PlanetsA.mercury == 0, "confirms the member truly is just an Integer, with no residual enum identity attached")
+
+
+// =============================================================================
+// 10. Cross-family default: any two values of genuinely unrelated types
+//     compare false, never error, regardless of which side is the receiver.
+// =============================================================================
+
+assert(({} == []) == false, "an Object and an Array must not be equal")
+assert(([] == {}) == false, "...and the same holds from the Array side")
+assert(("1" == 1) == false, "a String must not equal an Integer with the 'same' textual value")
+assert((1 == "1") == false, "...and the same holds from the Integer side")
+assert((true == "true") == false, "a Bool must not equal a String spelling it out")
+assert(([] == nil) == false, "an empty Array must not equal nil")
+assert(({} == nil) == false, "an empty Object (with no `eq` override) must not equal nil either")
