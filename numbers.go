@@ -118,7 +118,7 @@ func (i Integer) Equals(ctx *Context, other Value) Bool {
 		return i == val
 	}
 	if val, ok := other.(Float); ok {
-		return i == Integer(val)
+		return Float(i) == val
 	}
 	return false
 }
