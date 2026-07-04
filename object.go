@@ -50,141 +50,86 @@ func (o *Object) Prefix(ctx *Context, op uint64) (Value, error) {
 	return Nil, verror.ErrPrefixOpNotDefined
 }
 
+// dispatchOperatorOverride looks up a user-defined override for a binary
+// operator on o's vtable chain (keyed by the operator's spelled-out message
+// name, e.g. "add", "lt" — see tokenBinopToString) and, if one is found and
+// callable, invokes it with (o, rhs).
+//
+// There are three possible outcomes, distinguished by the returned bool:
+//   - no override is defined at all: (Nil, nil, false) — the caller should
+//     fall back to whatever default behavior makes sense for that operator
+//     (a structural default for Objects, or "operator not defined").
+//   - an override is defined and callable: it is invoked and its result or
+//     error is returned as-is, with handled=true.
+//   - an override IS defined under that message name, but the value stored
+//     there is not callable (e.g. a plain value was assigned by mistake
+//     instead of a function): handled=true with a dedicated error, kept
+//     deliberately distinct from "no override was ever defined" so this
+//     class of mistake doesn't get silently masked as ErrBinaryOpNotDefined.
+func (o *Object) dispatchOperatorOverride(ctx *Context, op uint64, rhs Value) (Value, error, bool) {
+	messageKey := tokenBinopToString(token.Token(op))
+	switch method := o.LookUp(ctx, messageKey).(type) {
+	case *Function:
+		val, err := ctx.runFunctionInNewThread(method, o, rhs)
+		return val, err, true
+	case NativeFunction:
+		val, err := method.Call(ctx, o, rhs)
+		return val, err, true
+	case NilValue:
+		return Nil, nil, false
+	default:
+		return Nil, verror.ErrOperatorOverrideNotCallable(messageKey.Value), true
+	}
+}
+
 func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	switch r := rhs.(type) {
 	case *Object:
 		switch op {
 		case uint64(token.ADD):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.ADD)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			default:
-				pairs := make(map[string]Value, len(o.Value)+len(r.Value))
-				maps.Copy(pairs, o.Value)
-				maps.Copy(pairs, r.Value)
-				return &Object{Value: pairs}, nil
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
 			}
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
 		case uint64(token.SUB):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.SUB)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			default:
-				pairs := make(map[string]Value)
-				for k, v := range o.Value {
-					if _, contains := r.Value[k]; !contains {
-						pairs[k] = v
-					}
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+			pairs := make(map[string]Value)
+			for k, v := range o.Value {
+				if _, contains := r.Value[k]; !contains {
+					pairs[k] = v
 				}
-				return &Object{Value: pairs}, nil
 			}
-		case uint64(token.MUL):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.MUL)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.DIV):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.DIV)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.REM):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.REM)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.POW):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.POW)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.LT):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.LT)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.LE):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.LE)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.GT):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.GT)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.GE):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.GE)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
+			return &Object{Value: pairs}, nil
+		case uint64(token.MUL), uint64(token.DIV), uint64(token.REM), uint64(token.POW),
+			uint64(token.LT), uint64(token.LE), uint64(token.GT), uint64(token.GE),
+			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
 			}
 		case uint64(token.BAND):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.BAND)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			default:
-				pairs := make(map[string]Value)
-				for k := range o.Value {
-					if x, contains := r.Value[k]; contains {
-						pairs[k] = x
-					}
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+			pairs := make(map[string]Value)
+			for k := range o.Value {
+				if x, contains := r.Value[k]; contains {
+					pairs[k] = x
 				}
-				return &Object{Value: pairs}, nil
 			}
+			return &Object{Value: pairs}, nil
 		case uint64(token.BOR):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.BOR)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			default:
-				pairs := make(map[string]Value, len(o.Value)+len(r.Value))
-				maps.Copy(pairs, o.Value)
-				maps.Copy(pairs, r.Value)
-				return &Object{Value: pairs}, nil
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
 			}
-		case uint64(token.BXOR):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.BXOR)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.BSHL):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.BSHL)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
-		case uint64(token.BSHR):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.BSHR)).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
-			}
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
 		case uint64(token.VTABLE):
 			o.VTable = r
 			return o, nil
@@ -196,11 +141,8 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			uint64(token.LT), uint64(token.LE), uint64(token.GT),
 			uint64(token.GE), uint64(token.BAND), uint64(token.BOR),
 			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.Token(op))).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
 			}
 		case uint64(token.VTABLE):
 			o.VTable = nil
@@ -213,11 +155,8 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			uint64(token.LT), uint64(token.LE), uint64(token.GT),
 			uint64(token.GE), uint64(token.BAND), uint64(token.BOR),
 			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
-			switch method := o.LookUp(ctx, tokenBinopToString(token.Token(op))).(type) {
-			case *Function:
-				return ctx.runFunctionInNewThread(method, o, rhs)
-			case NativeFunction:
-				return method.Call(ctx, o, r)
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
 			}
 		}
 	}
@@ -232,6 +171,10 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	return Nil, verror.ErrBinaryOpNotDefined
 }
 
+// maxVTableChainDepth bounds vtable-chain traversal in Get. A legitimate
+// prototype/inheritance chain will never come close to this depth, so
+// hitting it means the chain is cyclic (e.g. `a =< b; b =< a`, or `v =< v`).
+// Without this guard such a cycle makes Get loop forever.
 const maxVTableChainDepth = 1024
 
 func (o *Object) Get(ctx *Context, message Value) Value {

@@ -100,3 +100,22 @@ const (
 	ErrNonEmptyTaskArray                = internalBasicError("parallel tasks must be inside a non empty array")
 	ErrInvalidJSON                      = internalBasicError("invalid json")
 )
+
+// ErrOperatorOverrideNotCallable reports that a vtable entry was found under
+// a binary operator's message name (e.g. "add", "lt" — see
+// tokenBinopToString) but the value stored there is not a function — so it
+// cannot actually be used as an operator override. This is kept distinct
+// from ErrBinaryOpNotDefined on purpose: "no override exists" and "an
+// override exists but is broken" are different problems for a developer to
+// diagnose, and collapsing them into the same generic message hides a very
+// findable mistake (usually a plain value assigned to a vtable slot where a
+// function was meant to go).
+//
+// Note: this does not apply to equality ("eq"). Object.Equals has its own
+// separate, inline override-lookup logic and can't surface this error at
+// all, since the Value.Equals contract returns only a Bool, with no error
+// channel — a non-callable "eq" override is currently treated the same as
+// no override at all (falls back to pointer identity) rather than erroring.
+func ErrOperatorOverrideNotCallable(operator string) error {
+	return fmt.Errorf("operator override '%v' is defined on the vtable but is not callable: expected a function or native function", operator)
+}
