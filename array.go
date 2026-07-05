@@ -225,9 +225,16 @@ func arrayConcat(ctx *Context, args ...Value) (Value, error) {
 
 func arrayRandomElement(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			elem := xs.Value[rand.Int()%len(xs.Value)]
-			return elem, nil
+		switch val := args[0].(type) {
+		case *Array:
+			return val.Value[rand.Int()%len(val.Value)], nil
+		case *String:
+			if val.Runes == nil {
+				val.Runes = []rune(val.Value)
+			}
+			return &String{Value: string(val.Runes[rand.Int()%len(val.Runes)])}, nil
+		case *Bytes:
+			return Integer(val.Value[rand.Int()%len(val.Value)]), nil
 		}
 	}
 	return Nil, nil
