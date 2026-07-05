@@ -3,6 +3,7 @@ package vida
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
@@ -177,8 +178,13 @@ func (nativeFn NativeFunction) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
+func (nativeFn NativeFunction) nativeFunctionIdentity() uintptr {
+	return reflect.ValueOf(nativeFn).Pointer()
+}
+
 func (nativeFn NativeFunction) Equals(ctx *Context, other Value) Bool {
-	return false
+	of, ok := other.(NativeFunction)
+	return Bool(ok && nativeFn.nativeFunctionIdentity() == of.nativeFunctionIdentity())
 }
 
 func (nativeFn NativeFunction) IsIterable() Bool {
@@ -198,11 +204,11 @@ func (nativeFn NativeFunction) Iterator() Value {
 }
 
 func (nativeFn NativeFunction) String() string {
-	return nativeFuncT
+	return fmt.Sprintf("nativeFunction[%#x]", nativeFn.nativeFunctionIdentity())
 }
 
 func (nativeFn NativeFunction) ObjectKey() string {
-	return nativeFuncT
+	return nativeFn.String()
 }
 
 func (nativeFn NativeFunction) GetVTable(ctx *Context) Value {
