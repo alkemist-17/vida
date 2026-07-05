@@ -191,6 +191,8 @@ func (vm *VM) debug() error {
 					val = vm.Frame.stack[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
 				case storeFromGlobal:
 					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
 				default:
 					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
 				}
@@ -200,6 +202,8 @@ func (vm *VM) debug() error {
 					val = vm.Frame.stack[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
 					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
 				default:
 					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
 				}
@@ -209,6 +213,8 @@ func (vm *VM) debug() error {
 					val = vm.Frame.stack[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
 				case storeFromGlobal:
 					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
 					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
 				}
@@ -218,6 +224,8 @@ func (vm *VM) debug() error {
 					val = vm.Frame.stack[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				case storeFromGlobal:
 					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				default:
 					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
