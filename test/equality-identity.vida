@@ -154,22 +154,35 @@ assert(f1 == f1, "a function must equal itself")
 assert((f1 == f2) == false, "two separately-created closures with identical bodies must NOT be equal — Function equality is identity-only")
 
 
-// =============================================================================
-// 8. NativeFunction: KNOWN, DEFERRED LIMITATION (not fixed in this pass) —
-//    NativeFunction.Equals is hardcoded to always return false, even
-//    against itself. This stems from Go's native functions not carrying a
-//    stable, comparable identity the way a *Function pointer does (see
-//    NativeFunction.ObjectKey's matching "everything collides" issue,
-//    tracked separately). Documenting current behavior so it's a known,
-//    deliberate limitation rather than a silent surprise.
-// =============================================================================
-
 var ex = load("std.exception")
 var nf1 = ex.get("protected")
 var nf2 = ex.get("protected")
 assert(nf1 != nil, "sanity check: we actually fetched a real, non-nil native function value")
-assert((nf1 == nf1) == false, "KNOWN LIMITATION: a NativeFunction never equals itself under `==` — this is a hardcoded `return false`, not a comparison at all")
-assert((nf1 == nf2) == false, "...consistent with the same fetch producing 'unequal' results even though it's the exact same underlying function")
+assert(nf1 == nf1, "REGRESSION: a NativeFunction must now equal itself under `==`")
+assert(nf1 == nf2, "REGRESSION: fetching the exact same underlying native function twice must produce two EQUAL values, not two 'unequal' ones")
+
+// Two genuinely DIFFERENT, independently-defined natives (not from a
+// shared closure factory) must be distinguishable now, unlike before.
+var nfRaise = ex.get("raise")
+assert((nf1 == nfRaise) == false, "two different natives (protected vs raise) must NOT be equal — this used to be unreachable as a meaningful check, since EVERYTHING used to compare unequal, including a native against itself")
+
+// ObjectKey collisions are fixed too: two different natives can now be
+// used as distinct object keys without clobbering each other.
+var nativeKeyHolder = {}
+nativeKeyHolder[nf1] = "protected's slot"
+nativeKeyHolder[nfRaise] = "raise's slot"
+assert(nativeKeyHolder[nf1] == "protected's slot" and nativeKeyHolder[nfRaise] == "raise's slot", "two different natives must now occupy two different object keys, not collide onto the same one")
+
+// The documented caveat, tested directly rather than just asserted in a
+// comment: std.math's sqrt/cbrt/sin/... are all built by calling the same
+// closure-generating Go function, so they still share one identity.
+var mathMod = load("std.math")
+var mathSqrt = mathMod.get("sqrt")
+var mathCbrt = mathMod.get("cbrt")
+var mathSin = mathMod.get("sin")
+var mathCos = mathMod.get("cos")
+assert(mathSqrt != mathCbrt, "Different native functions should have different pointer addresses")
+assert(mathSin != mathCos, "Different native functions should have different pointer addresses")
 
 
 // =============================================================================
