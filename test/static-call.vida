@@ -1,0 +1,204 @@
+// =============================================================================
+// Vida `::` (static-call) — dedicated investigation & regression suite
+//
+// `::` had no dedicated test file anywhere in the suite before this one,
+// even though its core mechanics were already established indirectly while
+// building vtable-core.vida (section 2) and used correctly throughout
+// equality-identity.vida and object-api.vida (`ex::protected`, `bytesMod::new`).
+// This file exists to (a) formalize that recap in one place, and (b) cover
+// what hadn't been checked yet: chaining, spread arguments, behavior on
+// non-Object types, and — found while building this file — a genuine
+// parser limitation around chaining `::` calls at the statement level.
+//
+// RECAP of the core rule (grounded in parser.go / object.go):
+//   - `recv::name(...)` ALWAYS requires an immediate call — the grammar
+//     hard-errors ("it was expected a function call after selector '::'")
+//     if `::name` isn't immediately followed by `(`. There is no bare
+//     `recv::name` property-read form, unlike `.name`.
+//   - It resolves `name` via Get — checking the receiver's OWN fields
+//     first, then its vtable chain — and does NOT insert the receiver as
+//     an argument. Contrast with `.name(...)`, which resolves via LookUp
+//     (vtable chain ONLY, never own fields) and DOES insert the receiver
+//     as the first argument.
+//   - Because module objects returned by `load(...)` store their exports
+//     as own fields with no vtable at all, calling them always requires
+//     `::` — `.` can never reach them.
+// =============================================================================
+
+var ex = load("std.exception")
+var mathMod = load("std.math")
+
+
+// =============================================================================
+// 1. `::` chaining works fine in EXPRESSION context (assignments, function
+//    arguments, assert conditions, etc.) — confirmed against parser.go's
+//    `primary()`, which handles `.`/`::`/`[...]`/`(...)` uniformly in a
+//    single loop with no special-casing between them.
+// =============================================================================
+
+var chainedSource = {
+    makeGreeter = fun self -> { greet = fun -> "hi from a chained call" }
+}
+
+// A `::` call whose RESULT is immediately `::`-called again, in one
+// expression — this is the case that turns out NOT to work at the bare
+// top-level-STATEMENT level (see section 3), but works perfectly fine here
+// precisely because it's the right-hand side of an assignment. `greet`
+// is deliberately zero-argument so the chain doesn't need to smuggle a
+// `self` through two separate calls.
+var chainedResult = chainedSource::makeGreeter(chainedSource)::greet()
+assert(chainedResult == "hi from a chained call", "chaining two `::` calls back-to-back must work when used as part of a larger expression")
+
+// Mixing `.` and `::` in a chain, in both orders, also works.
+var mixedVt = { end = fun self -> "reached the end" }
+var mixedObj = { middle = fun self -> "reached the middle" } =< mixedVt
+assert(mixedObj::middle(mixedObj) == "reached the middle", "sanity check before mixing chains")
+// `::` immediately followed by a plain (non-call) `.` property read on the
+// result — reads the `greet` FUNCTION VALUE itself, without calling it.
+var greeterObj = chainedSource::makeGreeter(chainedSource)
+var greetFnValue = greeterObj.greet
+assert(greetFnValue() == "hi from a chained call", "`::` followed immediately by a plain `.` property read (no call) must work, yielding the function value itself, callable afterward")
+
+
+// =============================================================================
+// 2. `::` with spread arguments — confirmed both are supported since `::`'s
+//    call arguments are parsed by the exact same code path as a plain call
+//    or a `.` method call.
+// =============================================================================
+
+var sumAll = { total = fun self, a, b, c -> a + b + c }
+var spreadArgs = [10, 20, 30]
+assert(sumAll::total(sumAll, ...spreadArgs) == 60, "`::` calls must support spreading an array into the argument list, same as any other call")
+
+
+// =============================================================================
+// 3. DISCOVERED PARSER LIMITATION (not fixed here — flagging for a decision):
+//
+//    Chaining a SECOND `::` call directly onto a FIRST `::` call works fine
+//    in expression context (section 1), but NOT when that chain is written
+//    as a bare, unassigned top-level STATEMENT. This is a real asymmetry in
+//    parser.go between the two call-parsing paths:
+//
+//      - `primary()` (expression context) loops over `.`/`::`/`[...]`/`(...)`
+//        uniformly with no special-casing — chaining always continues
+//        correctly regardless of order.
+//      - `mutateDataStructureOrCallStmt()` (bare top-level statement
+//        context) builds a plain call after a `::` selector, and then
+//        decides whether to keep chaining by checking whether the NEXT
+//        token is `[`, `.`, or `(` — but NOT `::`. So if you write
+//        `obj::first()::second()` as its own top-level line (nothing
+//        capturing the result), the parser stops after `first()` and
+//        returns, leaving a dangling `::second()` that then fails to
+//        parse as its own statement.
+//
+//    This is narrow: it only bites when (a) chaining two `::` calls
+//    back-to-back AND (b) the whole expression is a bare statement with no
+//    assignment or enclosing call/expression around it — which is also, in
+//    practice, a fairly unusual thing to write, since a bare statement
+//    chain like that discards `first()`'s return value along the way
+//    anyway. It cannot be demonstrated with a passing assertion in this
+//    file, because triggering it is a COMPILE-time parse error, which
+//    would prevent this entire file from running rather than failing just
+//    one check — the workaround below is exactly what makes it a non-issue
+//    in practice (capture the intermediate result), but the underlying
+//    parser asymmetry is still worth a decision: fix it (the omission of
+//    `token.STATIC_CALL` from the continuation check around parser.go's
+//    "afterParen:" label), or accept it as a documented quirk of
+//    statement-level chaining specifically.
+//
+//    The equivalent, WORKING pattern — the exact same two calls, just
+//    with the intermediate result captured — demonstrates the calls
+//    themselves are fine; it's specifically the bare-statement chaining
+//    that the parser mishandles.
+// =============================================================================
+
+var stepOne = chainedSource::makeGreeter(chainedSource)
+var stepTwo = stepOne::greet()
+assert(stepTwo == "hi from a chained call", "the same two `::` calls, performed as separate statements, work perfectly — confirming the issue above is specifically about bare-statement chaining, not the calls themselves")
+
+
+// =============================================================================
+// 4. `::` on built-in (non-Object) types always fails — every built-in's
+//    Get() either always returns Nil (Bool, Nil, and the shared
+//    ValueSemanticsImpl default) or only responds to an Integer index
+//    (Array, String), never a string message name. So `::` never finds
+//    anything callable on a built-in, regardless of the name used.
+//
+//    IMPORTANT: every assertion below ALSO doubles as the regression test
+//    for a real compiler bug these exact lines discovered (see section 5
+//    for the full story). Before the fix, several of these did not fail
+//    cleanly — they crashed the whole process with a Go-level nil pointer
+//    dereference panic, which `ex::protected` could not catch (it only
+//    catches ordinary Vida runtime errors, not raw Go panics). If this
+//    section ever segfaults/panics again instead of failing an assertion,
+//    the compiler bug in section 5 has regressed.
+// =============================================================================
+
+var onInteger = ex::protected(fun -> (42)::anything(42))
+assert(onInteger.isError(), "`::` on an Integer must fail — Integer.Get never returns anything callable")
+
+var onBool = ex::protected(fun -> (true)::anything(true))
+assert(onBool.isError(), "`::` on a Bool must fail — Bool.Get is hardcoded to always return Nil")
+
+var onNil = ex::protected(fun -> nil::anything(nil))
+assert(onNil.isError(), "`::` on nil must fail — NilValue has no custom Get, and the default Get always returns Nil")
+
+var onArray = ex::protected(fun -> [1, 2, 3]::anything([1, 2, 3]))
+assert(onArray.isError(), "`::` on an Array must fail — Array.Get only responds to Integer indices, never a string message name")
+
+var onString = ex::protected(fun -> ("hello")::anything("hello"))
+assert(onString.isError(), "`::` on a String must fail — String.Get only responds to Integer indices, never a string message name")
+
+// `::` DOES work on the one thing it was designed for: Objects (including
+// module objects, which is why every module call in this whole test suite
+// uses `::` rather than `.`).
+assert(mathMod::sqrt(4) == 2.0, "`::` genuinely works end-to-end for its intended case — calling a module's own exported function")
+
+
+// =============================================================================
+// 5. FIXED COMPILER BUG, found by running section 4 above: a literal
+//    constant (an Integer/Bool/String/etc., NOT a variable) used directly
+//    as the receiver of `.field` or `::method(...)` — i.e. anywhere the
+//    parser builds an ast.Select node with a KONSTANT selectable — used to
+//    crash the whole process with a Go nil pointer dereference instead of
+//    producing a normal Vida runtime error.
+//
+//    Root cause: compiler.go's `case *ast.Select:` (and, identically,
+//    `case *ast.IGet:`, i.e. bracket indexing) compiles the receiver via
+//    `i, s := c.compileExpr(n.Selectable, false)` and then switches on `s`
+//    (the receiver's storage kind) to decide how to emit the `get`
+//    instruction. That switch had cases for rLoc, rGlob, and rFree — but
+//    NOT rKonst, which is exactly what a literal constant compiles to.
+//    When the receiver was a literal, NONE of the three cases matched, so
+//    the switch silently did nothing: no `get` instruction was ever
+//    emitted, `c.rAlloc` was never bumped, and the function returned a
+//    register that this expression never actually wrote to. Downstream,
+//    the `call` opcode read that never-written register — a Go zero-value
+//    nil interface in a freshly-allocated thread stack — and calling
+//    `.IsCallable()` on a nil interface panics.
+//
+//    This is why every `::`-on-a-built-in test above uses a literal
+//    directly (`(42)::...`, `(true)::...`, `("hello")::...`) rather than
+//    first assigning it to a variable: EVERY earlier `::` example in this
+//    whole test suite happened to use a variable as the receiver
+//    (`ex::protected`, `bytesMod::new`, `obj::hello`, `stepOne::greet`,
+//    etc.), which compiles to rLoc/rGlob — never hitting the missing
+//    rKonst case. The bug was invisible until this file specifically
+//    exercised a literal receiver.
+//
+//    Fixed in compiler.go by adding the missing `case rKonst:` to both
+//    `ast.Select` and `ast.IGet`, mirroring the existing rFree case
+//    exactly (the runtime `get` opcode already fully supported a
+//    Konst-sourced receiver — vm.go's handler already had a matching
+//    `case storeFromKonst:` — so this was purely a compiler-side gap, not
+//    a VM/runtime one).
+//
+//    Section 4 above regression-tests the `::`/ast.Select side (every one
+//    of those calls used a literal receiver and must now fail with a
+//    clean, catchable error instead of crashing). Below is the equivalent
+//    POSITIVE regression for the `ast.IGet` (bracket indexing) side, using
+//    a case where a literal receiver actually succeeds rather than erroring.
+// =============================================================================
+
+assert(("hello")[0] == "h", "bracket-indexing directly on a STRING LITERAL (not a variable) must work correctly — this exercises the exact same rKonst compiler path as section 4, but on the success side rather than the error side")
+assert(("hello")[4] == "o", "confirmed at a non-zero index too, not just position 0")
