@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"reflect"
 	"slices"
 	"strings"
@@ -170,7 +171,9 @@ func (xs *Array) MarshalJSON() ([]byte, error) {
 }
 
 func loadFoundationArray() Value {
-	m := &Object{Value: make(map[string]Value, 24)}
+	m := &Object{Value: make(map[string]Value, 26)}
+	m.Value["shuffled"] = NativeFunction(randShuffled)
+	m.Value["randomElement"] = NativeFunction(arrayRandomElement)
 	m.Value["concat"] = NativeFunction(arrayConcat)
 	m.Value["clear"] = NativeFunction(arrayClear)
 	m.Value["index"] = NativeFunction(arrayIndex)
@@ -216,6 +219,16 @@ func arrayConcat(ctx *Context, args ...Value) (Value, error) {
 			}
 		}
 		return &Array{Value: result}, nil
+	}
+	return Nil, nil
+}
+
+func arrayRandomElement(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if xs, ok := args[0].(*Array); ok {
+			elem := xs.Value[rand.Int()%len(xs.Value)]
+			return elem, nil
+		}
 	}
 	return Nil, nil
 }
@@ -313,7 +326,7 @@ func arrayReverse(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayDelete(ctx *Context, args ...Value) (Value, error) {
+func arrayRemove(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 2 {
 		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			if i, ok := args[1].(Integer); ok {

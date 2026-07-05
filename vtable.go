@@ -61,7 +61,7 @@ func (ctx *Context) loadArrayVT() {
 	vt.Value["sortBy"] = NativeFunction(arraySortWithCompareVidaFunction)
 	vt.Value["sort"] = NativeFunction(arraySort)
 	vt.Value["reverse"] = NativeFunction(arrayReverse)
-	vt.Value["delete"] = NativeFunction(arrayDelete)
+	vt.Value["remove"] = NativeFunction(arrayRemove)
 	vt.Value["contains"] = NativeFunction(arrayContains)
 	vt.Value["concat"] = NativeFunction(arrayConcat)
 	vt.VTable = ctx.vtables[universalT].(*Object)
