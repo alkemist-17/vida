@@ -155,50 +155,36 @@ assert(onString.isError(), "`::` on a String must fail — String.Get only respo
 assert(mathMod::sqrt(4) == 2.0, "`::` genuinely works end-to-end for its intended case — calling a module's own exported function")
 
 
-// =============================================================================
-// 5. FIXED COMPILER BUG, found by running section 4 above: a literal
-//    constant (an Integer/Bool/String/etc., NOT a variable) used directly
-//    as the receiver of `.field` or `::method(...)` — i.e. anywhere the
-//    parser builds an ast.Select node with a KONSTANT selectable — used to
-//    crash the whole process with a Go nil pointer dereference instead of
-//    producing a normal Vida runtime error.
-//
-//    Root cause: compiler.go's `case *ast.Select:` (and, identically,
-//    `case *ast.IGet:`, i.e. bracket indexing) compiles the receiver via
-//    `i, s := c.compileExpr(n.Selectable, false)` and then switches on `s`
-//    (the receiver's storage kind) to decide how to emit the `get`
-//    instruction. That switch had cases for rLoc, rGlob, and rFree — but
-//    NOT rKonst, which is exactly what a literal constant compiles to.
-//    When the receiver was a literal, NONE of the three cases matched, so
-//    the switch silently did nothing: no `get` instruction was ever
-//    emitted, `c.rAlloc` was never bumped, and the function returned a
-//    register that this expression never actually wrote to. Downstream,
-//    the `call` opcode read that never-written register — a Go zero-value
-//    nil interface in a freshly-allocated thread stack — and calling
-//    `.IsCallable()` on a nil interface panics.
-//
-//    This is why every `::`-on-a-built-in test above uses a literal
-//    directly (`(42)::...`, `(true)::...`, `("hello")::...`) rather than
-//    first assigning it to a variable: EVERY earlier `::` example in this
-//    whole test suite happened to use a variable as the receiver
-//    (`ex::protected`, `bytesMod::new`, `obj::hello`, `stepOne::greet`,
-//    etc.), which compiles to rLoc/rGlob — never hitting the missing
-//    rKonst case. The bug was invisible until this file specifically
-//    exercised a literal receiver.
-//
-//    Fixed in compiler.go by adding the missing `case rKonst:` to both
-//    `ast.Select` and `ast.IGet`, mirroring the existing rFree case
-//    exactly (the runtime `get` opcode already fully supported a
-//    Konst-sourced receiver — vm.go's handler already had a matching
-//    `case storeFromKonst:` — so this was purely a compiler-side gap, not
-//    a VM/runtime one).
-//
-//    Section 4 above regression-tests the `::`/ast.Select side (every one
-//    of those calls used a literal receiver and must now fail with a
-//    clean, catchable error instead of crashing). Below is the equivalent
-//    POSITIVE regression for the `ast.IGet` (bracket indexing) side, using
-//    a case where a literal receiver actually succeeds rather than erroring.
-// =============================================================================
-
 assert(("hello")[0] == "h", "bracket-indexing directly on a STRING LITERAL (not a variable) must work correctly — this exercises the exact same rKonst compiler path as section 4, but on the success side rather than the error side")
 assert(("hello")[4] == "o", "confirmed at a non-zero index too, not just position 0")
+assert(([1,2,3,4,5])[0] == 1, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[1] == 2, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[2] == 3, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[3] == 4, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[4] == 5, "Indexable literal should respond to the index message")
+
+assert([1,2,3,4,5][0] == 1, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][1] == 2, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][2] == 3, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][3] == 4, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][4] == 5, "Indexable literal should respond to the index message")
+
+assert({hello}["hello"] == nil, "Indexable literal should respond to the index message")
+assert(({hello})["hello"] == nil, "Indexable literal should respond to the index message")
+assert("hello"[0] == "h", "Indexable literal should respond to the index message")
+assert("hello"[1] == "e", "Indexable literal should respond to the index message")
+assert("hello"[2] == "l", "Indexable literal should respond to the index message")
+assert("hello"[3] == "l", "Indexable literal should respond to the index message")
+assert("hello"[4] == "o", "Indexable literal should respond to the index message")
+
+assert("hello".bytes()[0] == 0x68, "Indexable literal should respond to the index message")
+assert("hello".bytes()[1] == 0x65, "Indexable literal should respond to the index message")
+assert("hello".bytes()[2] == 0x6C, "Indexable literal should respond to the index message")
+assert("hello".bytes()[3] == 0x6C, "Indexable literal should respond to the index message")
+assert("hello".bytes()[4] == 0x6F, "Indexable literal should respond to the index message")
+
+assert(("hello".bytes())[0] == 0x68, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[1] == 0x65, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[2] == 0x6C, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[3] == 0x6C, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[4] == 0x6F, "Indexable literal should respond to the index message")
