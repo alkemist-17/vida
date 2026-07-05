@@ -8,6 +8,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"golang.org/x/text/unicode/norm"
+
 	"github.com/alkemist-17/vida/verror"
 )
 
@@ -133,11 +135,12 @@ func textHasSuffix(ctx *Context, args ...Value) (Value, error) {
 func textFromCodepoints(ctx *Context, args ...Value) (Value, error) {
 	runes := make([]rune, 0, len(args))
 	for _, a := range args {
-		if v, ok := a.(Integer); ok && v > 0 {
-			runes = append(runes, int32(v))
+		if v, ok := a.(Integer); ok && 0 <= v && v <= utf8.MaxRune {
+			runes = append(runes, rune(v))
 		}
 	}
-	return &String{Value: string(runes), Runes: runes}, nil
+	normalized := norm.NFKC.String(string(runes))
+	return &String{Value: normalized, Runes: []rune(normalized)}, nil
 }
 
 func textTrim(ctx *Context, args ...Value) (Value, error) {
