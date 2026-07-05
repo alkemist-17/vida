@@ -12,7 +12,8 @@ import (
 )
 
 func loadFoundationText() Value {
-	m := &Object{Value: make(map[string]Value, 42)}
+	m := &Object{Value: make(map[string]Value, 43)}
+	m.Value["randomElement"] = NativeFunction(arrayRandomElement)
 	m.Value["hasPrefix"] = NativeFunction(textHasPrefix)
 	m.Value["hasSuffix"] = NativeFunction(textHasSuffix)
 	m.Value["fromCodePoints"] = NativeFunction(textFromCodepoints)
@@ -60,8 +61,8 @@ func loadFoundationText() Value {
 
 func textMatch(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		pattern, okPatt := args[1].(*String)
 		input, okIn := args[0].(*String)
+		pattern, okPatt := args[1].(*String)
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
@@ -75,20 +76,24 @@ func textMatch(ctx *Context, args ...Value) (Value, error) {
 
 func textFindFirstIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		pattern, okPatt := args[1].(*String)
 		input, okIn := args[0].(*String)
+		pattern, okPatt := args[1].(*String)
 		if okPatt && okIn {
 			re, err := regexp.Compile(pattern.Value)
 			if err != nil {
 				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
-			res := re.FindStringIndex(input.Value)
+			res := re.FindAllStringIndex(input.Value, -1)
 			if res == nil {
-				return Nil, nil
+				return &Array{}, nil
 			}
-			arr := &Array{Value: make([]Value, 2)}
-			arr.Value[0] = Integer(res[0])
-			arr.Value[1] = Integer(res[1])
+			arr := &Array{Value: make([]Value, 0, len(res))}
+			for _, v := range res {
+				idx := &Array{Value: make([]Value, 2)}
+				idx.Value[0] = Integer(v[0])
+				idx.Value[1] = Integer(v[1])
+				arr.Value = append(arr.Value, idx)
+			}
 			return arr, nil
 		}
 	}
@@ -219,6 +224,9 @@ func textRepeat(ctx *Context, args ...Value) (Value, error) {
 }
 
 func textReplaceN(ctx *Context, args ...Value) (Value, error) {
+	if len(args) == 3 {
+		return textReplaceAll(ctx, args...)
+	}
 	if len(args) > 3 {
 		if s, ok := args[0].(*String); ok {
 			if old, ok := args[1].(*String); ok {
@@ -310,8 +318,8 @@ func textIndex(ctx *Context, args ...Value) (Value, error) {
 
 func textJoin(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		xs, ok := args[1].(*Array)
 		sep, okSep := args[0].(*String)
+		xs, ok := args[1].(*Array)
 		if ok && okSep {
 			r := make([]string, 0, len(xs.Value))
 			for _, v := range xs.Value {

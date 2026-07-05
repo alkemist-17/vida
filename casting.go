@@ -23,9 +23,17 @@ func castToNumber(ctx *Context, args ...Value) (Value, error) {
 		if okInput && okType {
 			switch typeOf.Value {
 			case integerT:
-				return castToInt(ctx, inputStr)
+				i, e := strconv.ParseInt(inputStr.Value, 0, 64)
+				if e == nil {
+					return Integer(i), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
 			case floatT:
-				return castToFloat(ctx, inputStr)
+				r, e := strconv.ParseFloat(inputStr.Value, 64)
+				if e == nil {
+					return Float(r), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
 			}
 		}
 	case 3:
@@ -35,13 +43,21 @@ func castToNumber(ctx *Context, args ...Value) (Value, error) {
 		if ok && okType && okInput && base == 0 || (2 <= base && base <= 36) {
 			switch typeOf.Value {
 			case integerT:
-				return castToInt(ctx, inputStr, base)
+				i, e := strconv.ParseInt(inputStr.Value, 0, int(base))
+				if e == nil {
+					return Integer(i), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
 			case floatT:
-				return castToFloat(ctx, inputStr)
+				r, e := strconv.ParseFloat(inputStr.Value, 64)
+				if e == nil {
+					return Float(r), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
 			}
 		}
 	}
-	return &VidaError{Message: &String{Value: "error is toNum: check the number of arguments or its values"}}, nil
+	return &VidaError{Message: &String{Value: "error in method string.toNum: check the number of arguments or its values"}}, nil
 }
 
 func castToString(ctx *Context, args ...Value) (Value, error) {

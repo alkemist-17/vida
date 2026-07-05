@@ -36,7 +36,7 @@ func (ctx *Context) loadStringVT() {
 	vt.Value["join"] = NativeFunction(textJoin)
 	vt.Value["replace"] = NativeFunction(textReplaceN)
 	vt.Value["match"] = NativeFunction(textMatch)
-	vt.Value["findFirstIndex"] = NativeFunction(textFindFirstIndex)
+	vt.Value["find"] = NativeFunction(textFindFirstIndex)
 	vt.Value["trim"] = NativeFunction(textTrim)
 	vt.Value["isEmpty"] = NativeFunction(textIsEmpty)
 	vt.Value["format"] = NativeFunction(coreFormat)
