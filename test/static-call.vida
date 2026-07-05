@@ -53,12 +53,15 @@ assert(chainedResult == "hi from a chained call", "chaining two `::` calls back-
 var mixedVt = { end = fun self -> "reached the end" }
 var mixedObj = { middle = fun self -> "reached the middle" } =< mixedVt
 assert(mixedObj::middle(mixedObj) == "reached the middle", "sanity check before mixing chains")
+
 // `::` immediately followed by a plain (non-call) `.` property read on the
 // result — reads the `greet` FUNCTION VALUE itself, without calling it.
 var greeterObj = chainedSource::makeGreeter(chainedSource)
 var greetFnValue = greeterObj.greet
 assert(greetFnValue() == "hi from a chained call", "`::` followed immediately by a plain `.` property read (no call) must work, yielding the function value itself, callable afterward")
 
+greetFnValue = chainedSource::makeGreeter(chainedSource).greet
+assert(greetFnValue() == "hi from a chained call", "`::` followed immediately by a plain `.` property read (no call) must work, yielding the function value itself, callable afterward")
 
 // =============================================================================
 // 2. `::` with spread arguments — confirmed both are supported since `::`'s
@@ -71,50 +74,23 @@ var spreadArgs = [10, 20, 30]
 assert(sumAll::total(sumAll, ...spreadArgs) == 60, "`::` calls must support spreading an array into the argument list, same as any other call")
 
 
-// =============================================================================
-// 3. DISCOVERED PARSER LIMITATION (not fixed here — flagging for a decision):
-//
-//    Chaining a SECOND `::` call directly onto a FIRST `::` call works fine
-//    in expression context (section 1), but NOT when that chain is written
-//    as a bare, unassigned top-level STATEMENT. This is a real asymmetry in
-//    parser.go between the two call-parsing paths:
-//
-//      - `primary()` (expression context) loops over `.`/`::`/`[...]`/`(...)`
-//        uniformly with no special-casing — chaining always continues
-//        correctly regardless of order.
-//      - `mutateDataStructureOrCallStmt()` (bare top-level statement
-//        context) builds a plain call after a `::` selector, and then
-//        decides whether to keep chaining by checking whether the NEXT
-//        token is `[`, `.`, or `(` — but NOT `::`. So if you write
-//        `obj::first()::second()` as its own top-level line (nothing
-//        capturing the result), the parser stops after `first()` and
-//        returns, leaving a dangling `::second()` that then fails to
-//        parse as its own statement.
-//
-//    This is narrow: it only bites when (a) chaining two `::` calls
-//    back-to-back AND (b) the whole expression is a bare statement with no
-//    assignment or enclosing call/expression around it — which is also, in
-//    practice, a fairly unusual thing to write, since a bare statement
-//    chain like that discards `first()`'s return value along the way
-//    anyway. It cannot be demonstrated with a passing assertion in this
-//    file, because triggering it is a COMPILE-time parse error, which
-//    would prevent this entire file from running rather than failing just
-//    one check — the workaround below is exactly what makes it a non-issue
-//    in practice (capture the intermediate result), but the underlying
-//    parser asymmetry is still worth a decision: fix it (the omission of
-//    `token.STATIC_CALL` from the continuation check around parser.go's
-//    "afterParen:" label), or accept it as a documented quirk of
-//    statement-level chaining specifically.
-//
-//    The equivalent, WORKING pattern — the exact same two calls, just
-//    with the intermediate result captured — demonstrates the calls
-//    themselves are fine; it's specifically the bare-statement chaining
-//    that the parser mishandles.
-// =============================================================================
+var chainFlag = { hit = false }
+var chainStepSource = {
+    step1 = fun self -> { step2 = fun { chainFlag.hit = true } }
+}
 
+// A bare, unassigned, top-level statement chaining two `::` calls back to
+// back — this line alone is the regression test: it used to be a parse
+// error and would have prevented this entire file from loading.
+chainStepSource::step1(chainStepSource)::step2()
+assert(chainFlag.hit, "REGRESSION: a bare top-level statement chaining two `::` calls back-to-back must now parse and execute correctly")
+
+// The previously-necessary workaround (capturing the intermediate result
+// as separate statements) still works too, exactly as before — the fix
+// only adds the missing case, it doesn't change this working pattern.
 var stepOne = chainedSource::makeGreeter(chainedSource)
 var stepTwo = stepOne::greet()
-assert(stepTwo == "hi from a chained call", "the same two `::` calls, performed as separate statements, work perfectly — confirming the issue above is specifically about bare-statement chaining, not the calls themselves")
+assert(stepTwo == "hi from a chained call", "the equivalent two `::` calls, performed as separate statements, must continue to work exactly as before")
 
 
 // =============================================================================
@@ -123,15 +99,6 @@ assert(stepTwo == "hi from a chained call", "the same two `::` calls, performed 
 //    ValueSemanticsImpl default) or only responds to an Integer index
 //    (Array, String), never a string message name. So `::` never finds
 //    anything callable on a built-in, regardless of the name used.
-//
-//    IMPORTANT: every assertion below ALSO doubles as the regression test
-//    for a real compiler bug these exact lines discovered (see section 5
-//    for the full story). Before the fix, several of these did not fail
-//    cleanly — they crashed the whole process with a Go-level nil pointer
-//    dereference panic, which `ex::protected` could not catch (it only
-//    catches ordinary Vida runtime errors, not raw Go panics). If this
-//    section ever segfaults/panics again instead of failing an assertion,
-//    the compiler bug in section 5 has regressed.
 // =============================================================================
 
 var onInteger = ex::protected(fun -> (42)::anything(42))
@@ -153,7 +120,6 @@ assert(onString.isError(), "`::` on a String must fail — String.Get only respo
 // module objects, which is why every module call in this whole test suite
 // uses `::` rather than `.`).
 assert(mathMod::sqrt(4) == 2.0, "`::` genuinely works end-to-end for its intended case — calling a module's own exported function")
-
 
 assert(("hello")[0] == "h", "bracket-indexing directly on a STRING LITERAL (not a variable) must work correctly — this exercises the exact same rKonst compiler path as section 4, but on the success side rather than the error side")
 assert(("hello")[4] == "o", "confirmed at a non-zero index too, not just position 0")
@@ -188,3 +154,4 @@ assert(("hello".bytes())[1] == 0x65, "Indexable literal should respond to the in
 assert(("hello".bytes())[2] == 0x6C, "Indexable literal should respond to the index message")
 assert(("hello".bytes())[3] == 0x6C, "Indexable literal should respond to the index message")
 assert(("hello".bytes())[4] == 0x6F, "Indexable literal should respond to the index message")
+

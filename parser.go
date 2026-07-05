@@ -321,6 +321,7 @@ Loop:
 			p.expect(token.RPAREN)
 			if p.next.Token != token.LBRACKET &&
 				p.next.Token != token.DOT &&
+				p.next.Token != token.STATIC_CALL &&
 				p.next.Token != token.LPAREN {
 				p.advance()
 				return &ast.CallStmt{Args: args, Ellipsis: ellipsis, Line: l}
