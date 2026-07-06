@@ -336,7 +336,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 					for i := range size {
 						A[i] = Bool(rand.IntN(2) == 1)
 					}
-				case "byte":
+				case "bytes":
 					for i := range size {
 						A[i] = Integer(rand.IntN(256))
 					}
