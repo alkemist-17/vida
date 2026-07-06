@@ -53,6 +53,11 @@ const (
 	foundationColor     = "color"
 )
 
+const (
+	assertionFailureDefaultMessage = "Default assertion failure message"
+	exceptionDefaultMessage        = "Defatul exception message"
+)
+
 func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {
 	case *Array:
@@ -139,17 +144,17 @@ func coreAssert(ctx *Context, args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage   : %v\n\n", verror.AssertionErrType, assertionFailureDefaultMessage))
 		return Nil, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage   : %v\n\n", verror.AssertionErrType, args[1].String()))
 		return Nil, err
 	}
-	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
+	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage   : %v\n\n", verror.AssertionErrType, assertionFailureDefaultMessage))
 	return Nil, err
 }
 
