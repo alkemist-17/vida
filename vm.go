@@ -627,7 +627,7 @@ func (vm *VM) printCallStack() {
 		fn := vm.Frames[i].lambda
 		var nearLine uint
 		if fn.CoreFn.MapScriptIPLine[modName][ip] == 0 {
-			nearLine = getNonZeroLine(fn, modName, ip, vm)
+			nearLine = getNonZeroLine(fn, modName, ip)
 		} else {
 			nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 		}
@@ -643,14 +643,14 @@ func (vm *VM) createError(ip int, err error) error {
 	vm.Frame.ip = ip
 	var nearLine uint
 	if fn.CoreFn.MapScriptIPLine[modName][ip] == 0 {
-		nearLine = getNonZeroLine(fn, modName, ip, vm)
+		nearLine = getNonZeroLine(fn, modName, ip)
 	} else {
 		nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 	}
 	return verror.New(modName, err.Error(), verror.RunTimeErrType, nearLine)
 }
 
-func getNonZeroLine(fn *Function, modName string, ip int, vm *VM) uint {
+func getNonZeroLine(fn *Function, modName string, ip int) uint {
 	var nearLine uint
 	for i := ip; i >= 0; i-- {
 		nearLine = fn.CoreFn.MapScriptIPLine[modName][i]
