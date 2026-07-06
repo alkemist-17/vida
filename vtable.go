@@ -89,7 +89,7 @@ func (ctx *Context) loadObjectVT() {
 }
 
 func (ctx *Context) loadBytesVT() {
-	vt := &Object{Value: make(map[string]Value, 10)}
+	vt := &Object{Value: make(map[string]Value, 11)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["toFile"] = NativeFunction(bytesToFile)
 	vt.Value["xor"] = NativeFunction(bytesXOR)
@@ -100,6 +100,7 @@ func (ctx *Context) loadBytesVT() {
 	vt.Value["bitLen"] = NativeFunction(bytesBitLen)
 	vt.Value["fill"] = NativeFunction(bytesFill)
 	vt.Value["concat"] = NativeFunction(bytesConcat)
+	vt.Value["isEmpty"] = NativeFunction(bytesIsEmpty)
 	vt.VTable = ctx.vtables[universalT].(*Object)
 	ctx.vtables[bytesT] = vt
 }

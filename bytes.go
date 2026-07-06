@@ -541,6 +541,15 @@ func bytesToString(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
+func bytesIsEmpty(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if b, ok := args[0].(*Bytes); ok {
+			return Bool(len(b.Value) == 0), nil
+		}
+	}
+	return Nil, nil
+}
+
 func bytesBitLen(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {

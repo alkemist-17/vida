@@ -2,13 +2,13 @@
 let N = 10_000_000
 let data = newArray(N, 0)
 
-for i in 0, len(data) {
+for i in 0, data.len() {
     data[i] = i
 }
 
 let binarySearch = fun xs, key {
     var lo = 0
-    var hi = len(xs)-1
+    var hi = xs.len()-1
     while lo <= hi {
         var mid = lo + (hi-lo) / 2
         if key < xs[mid] {
@@ -21,9 +21,9 @@ let binarySearch = fun xs, key {
     }
 }
 
-assert(binarySearch(data, 7)==7)
-assert(binarySearch(data, 176_565)==176_565)
-assert(binarySearch(data, -1)==nil)
-assert(binarySearch(data, N+1)==nil)
-assert(binarySearch(data, 567_901)==567_901)
+assert(binarySearch(data, 7) == 7)
+assert(binarySearch(data, 176_565) == 176_565)
+assert(binarySearch(data, -1) == nil)
+assert(binarySearch(data, N+1) == nil)
+assert(binarySearch(data, 567_901) == 567_901)
 
