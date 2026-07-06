@@ -17,12 +17,13 @@ type freeVarsInfo struct {
 
 type CoreFunction struct {
 	ReferenceSemanticsImpl
-	Code          []uint64
-	FreeVarsInfo  []freeVarsInfo
-	ScriptID      string
-	FreeVarsCount int
-	Arity         int
-	IsVarArg      bool
+	Code            []uint64
+	FreeVarsInfo    []freeVarsInfo
+	ScriptID        string
+	MapScriptIPLine MapScriptIPLine
+	FreeVarsCount   int
+	Arity           int
+	IsVarArg        bool
 }
 
 type coreFNConfigType = uint8

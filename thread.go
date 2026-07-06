@@ -69,7 +69,6 @@ func newInternalThread(fn *Function, script *Script) *Thread {
 		Script: &Script{
 			Konstants:    script.Konstants,
 			GlobalStore:  script.GlobalStore,
-			ErrorInfo:    script.ErrorInfo,
 			MainFunction: fn,
 		},
 		Frames:  make([]frame, frameSize),

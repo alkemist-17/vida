@@ -22,7 +22,7 @@ const False = Bool(false)
 
 type ExtensionsLoader map[string]func() Value
 
-type ErrorInfo map[string]map[int]uint
+type MapScriptIPLine map[string]map[int]uint
 
 const (
 	VidaFileExtension       = ".vida"
@@ -57,6 +57,12 @@ const (
 	assertionFailureDefaultMessage = "Default assertion failure message"
 	exceptionDefaultMessage        = "Defatul exception message"
 )
+
+func createNewMapScriptIPLine(scriptID string) MapScriptIPLine {
+	mapScriptIPLine := make(MapScriptIPLine)
+	mapScriptIPLine[scriptID] = make(map[int]uint)
+	return mapScriptIPLine
+}
 
 func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {

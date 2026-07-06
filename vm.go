@@ -624,11 +624,12 @@ func (vm *VM) printCallStack() {
 	for i := vm.fp; i >= 0; i-- {
 		modName := vm.Frames[i].lambda.CoreFn.ScriptID
 		ip := vm.Frames[i].ip
+		fn := vm.Frames[i].lambda
 		var nearLine uint
-		if vm.Script.ErrorInfo[modName][ip] == 0 {
-			nearLine = getNonZeroLine(modName, ip, vm)
+		if fn.CoreFn.MapScriptIPLine[modName][ip] == 0 {
+			nearLine = getNonZeroLine(fn, modName, ip, vm)
 		} else {
-			nearLine = vm.Script.ErrorInfo[modName][ip]
+			nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 		}
 		err := verror.NewStackFrameInfo(modName, nearLine)
 		fmt.Printf("%v\n\n\n", err)
@@ -638,20 +639,21 @@ func (vm *VM) printCallStack() {
 func (vm *VM) createError(ip int, err error) error {
 	vm.Thread.State = Done
 	modName := vm.Frame.lambda.CoreFn.ScriptID
+	fn := vm.Frame.lambda
 	vm.Frame.ip = ip
 	var nearLine uint
-	if vm.Script.ErrorInfo[modName][ip] == 0 {
-		nearLine = getNonZeroLine(modName, ip, vm)
+	if fn.CoreFn.MapScriptIPLine[modName][ip] == 0 {
+		nearLine = getNonZeroLine(fn, modName, ip, vm)
 	} else {
-		nearLine = vm.Script.ErrorInfo[modName][ip]
+		nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 	}
 	return verror.New(modName, err.Error(), verror.RunTimeErrType, nearLine)
 }
 
-func getNonZeroLine(modName string, ip int, vm *VM) uint {
+func getNonZeroLine(fn *Function, modName string, ip int, vm *VM) uint {
 	var nearLine uint
 	for i := ip; i >= 0; i-- {
-		nearLine = vm.Script.ErrorInfo[modName][i]
+		nearLine = fn.CoreFn.MapScriptIPLine[modName][i]
 		if nearLine != 0 {
 			break
 		}

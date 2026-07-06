@@ -200,6 +200,7 @@ type Fun struct {
 
 type Ret struct {
 	Expr Node
+	Line uint
 }
 
 type Export struct {

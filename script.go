@@ -12,14 +12,13 @@ type Script struct {
 	GlobalStore  *[]Value
 	Konstants    *[]Value
 	MainFunction *Function
-	ErrorInfo
 }
 
 func newScript(scriptID string, extensionsLoader ExtensionsLoader) *Script {
 	s := Script{
 		Konstants:    nil,
 		GlobalStore:  loadCoreLib(new([]Value), extensionsLoader),
-		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID}},
+		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID, MapScriptIPLine: createNewMapScriptIPLine(scriptID)}},
 	}
 	return &s
 }
@@ -28,7 +27,7 @@ func newSubScript(scriptID string, store *[]Value, extensionsLoader ExtensionsLo
 	s := Script{
 		Konstants:    nil,
 		GlobalStore:  loadCoreLib(store, extensionsLoader),
-		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID}},
+		MainFunction: &Function{CoreFn: &CoreFunction{ScriptID: scriptID, MapScriptIPLine: createNewMapScriptIPLine(scriptID)}},
 	}
 	return &s
 }

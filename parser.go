@@ -70,7 +70,7 @@ func (p *parser) parse() (*ast.Ast, error) {
 			}
 			return nil, p.err
 		case token.EOF:
-			p.ast.Statement = append(p.ast.Statement, &ast.Ret{Expr: &ast.Nil{}})
+			p.ast.Statement = append(p.ast.Statement, &ast.Ret{Expr: &ast.Nil{}, Line: p.current.Line})
 			return p.ast, nil
 		default:
 			if p.current.Token == token.UNEXPECTED {
@@ -683,10 +683,11 @@ func (p *parser) operand() ast.Node {
 		}
 	endParams:
 		if p.current.Token == token.ARROW {
+			l := p.current.Line
 			p.advance()
 			e := p.expression(token.LowestPrec)
 			b := &ast.Block{}
-			b.Statement = append(b.Statement, &ast.Ret{Expr: e})
+			b.Statement = append(b.Statement, &ast.Ret{Expr: e, Line: l})
 			f.Body = b
 			return f
 		}
@@ -735,10 +736,11 @@ func (p *parser) operand() ast.Node {
 }
 
 func (p *parser) ret() ast.Node {
+	l := p.current.Line
 	p.advance()
 	e := p.expression(token.LowestPrec)
 	p.advance()
-	return &ast.Ret{Expr: e}
+	return &ast.Ret{Expr: e, Line: l}
 }
 
 func (p *parser) export() ast.Node {
