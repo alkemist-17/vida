@@ -323,9 +323,13 @@ func arrayReverse(ctx *Context, args ...Value) (Value, error) {
 }
 
 func arrayRemove(ctx *Context, args ...Value) (Value, error) {
-	if len(args) == 2 {
+	switch len(args) {
+	case 2:
 		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			if i, ok := args[1].(Integer); ok {
+				if i < 0 {
+					i = i + Integer(len(xs.Value))
+				}
 				if 0 <= i && i < Integer(len(xs.Value)) {
 					val := xs.Value[i]
 					xs.Value = slices.Delete(xs.Value, int(i), int(i+1))
@@ -333,10 +337,16 @@ func arrayRemove(ctx *Context, args ...Value) (Value, error) {
 				}
 			}
 		}
-	} else if len(args) == 3 {
+	case 3:
 		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
 			if i, ok := args[1].(Integer); ok {
 				if j, ok := args[2].(Integer); ok {
+					if i < 0 {
+						i = i + Integer(len(xs.Value))
+					}
+					if j < 0 {
+						j = j + Integer(len(xs.Value))
+					}
 					if 0 <= i && i < Integer(len(xs.Value)) && 0 <= j && j <= Integer(len(xs.Value)) && i < j {
 						val := make([]Value, len(xs.Value[i:j]))
 						copy(val, xs.Value[i:j])
