@@ -354,6 +354,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.NEQ
 			} else {
 				tok = token.UNEXPECTED
+				lit = string(ch)
 				l.LexicalError = verror.New(l.ScriptID, "found an exclamation mark '!' out of place", verror.LexicalErrType, l.line)
 			}
 		case '<':
@@ -396,6 +397,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.STATIC_CALL
 			} else {
 				tok = token.UNEXPECTED
+				lit = string(ch)
 				l.LexicalError = verror.New(l.ScriptID, "found a colon ':' out of place", verror.LexicalErrType, l.line)
 			}
 		case '~':

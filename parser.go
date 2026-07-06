@@ -861,7 +861,7 @@ func (p *parser) selector(e ast.Node) ast.Node {
 func (p *parser) expect(tok token.Token) {
 	if p.current.Token != tok && p.ok {
 		p.ok = false
-		message := fmt.Sprintf("it was expected the symbol '%v', but got '%v'", tok, p.current.Token)
+		message := fmt.Sprintf("expected symbol '%v', but got '%v'", tok, p.current.Lit)
 		p.err = verror.New(p.lexer.ScriptID, message, verror.SyntaxErrType, p.current.Line)
 	}
 }
