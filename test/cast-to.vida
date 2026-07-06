@@ -1,215 +1,215 @@
 
-var cast = load("std/cast")
-var bytes = load("std/bytes")
+var cast = load("std.cast")
+var bytes = load("std.bytes")
 
 assert(cast and bytes)
 
-assert(cast.toBool("true") == true)
-assert(cast.toBool("false") == false)
-assert(not cast.toBool("") == not "")
-assert(cast.toBool("") == true)
-assert(cast.toBool(0) == true)
-assert(cast.toBool(1) == true)
-assert(not cast.toBool())
-assert(cast.toBool() == false)
-assert(cast.toBool([1,2,3,4,5]))
-assert(cast.toBool([1,2,3,4,5]) == true)
-assert(cast.toBool({}))
-assert(cast.toBool({}) == true)
-assert(not cast.toBool(error(42)))
-assert(cast.toBool(error(42)) == false)
-assert(not cast.toBool(nil))
-assert(cast.toBool(nil) == false)
+assert(cast::toBool("true") == true)
+assert(cast::toBool("false") == false)
+assert(not cast::toBool("") == not "")
+assert(cast::toBool("") == true)
+assert(cast::toBool(0) == true)
+assert(cast::toBool(1) == true)
+assert(not cast::toBool())
+assert(cast::toBool() == false)
+assert(cast::toBool([1,2,3,4,5]))
+assert(cast::toBool([1,2,3,4,5]) == true)
+assert(cast::toBool({}))
+assert(cast::toBool({}) == true)
+assert(not cast::toBool(error(42)))
+assert(cast::toBool(error(42)) == false)
+assert(not cast::toBool(nil))
+assert(cast::toBool(nil) == false)
 
-assert(cast.toFloat("1.42") == 1.42)
-assert(cast.toFloat("2.7182") == 2.7182)
-assert(cast.toFloat("100") == 100.0)
-assert(cast.toFloat("1e-5") == 1e-5)
-assert(cast.toFloat("-1e5") == -1e5)
-assert(cast.toFloat("0.0") == 0.0)
-assert(cast.toFloat("-0.0") == -0.0)
-assert(cast.toFloat(12.4) == 12.4)
-assert(cast.toFloat(1200) == 1200.00)
-assert(cast.toFloat(nil) == 0.0)
-assert(cast.toFloat(true) == 1.0)
-assert(cast.toFloat(false) == cast.toFloat(nil))
-assert(cast.toFloat() == cast.toFloat(nil))
+assert(cast::toFloat("1.42") == 1.42)
+assert(cast::toFloat("2.7182") == 2.7182)
+assert(cast::toFloat("100") == 100.0)
+assert(cast::toFloat("1e-5") == 1e-5)
+assert(cast::toFloat("-1e5") == -1e5)
+assert(cast::toFloat("0.0") == 0.0)
+assert(cast::toFloat("-0.0") == -0.0)
+assert(cast::toFloat(12.4) == 12.4)
+assert(cast::toFloat(1200) == 1200.00)
+assert(cast::toFloat(nil) == 0.0)
+assert(cast::toFloat(true) == 1.0)
+assert(cast::toFloat(false) == cast::toFloat(nil))
+assert(cast::toFloat() == cast::toFloat(nil))
 
-assert(cast.toInt("-42") == -42)
-assert(cast.toInt("42") == 42)
-assert(cast.toInt("42.25") == 42)
-assert(cast.toInt("abcde") == nil)
-assert(cast.toInt("0xFF") == 0xFF)
-assert(cast.toInt("0b1010") == 0b1010)
-assert(cast.toInt(42) == 42)
-assert(cast.toInt(true) == 1)
-assert(cast.toInt(false) == 0)
-assert(cast.toInt(nil) == cast.toInt(false))
-assert(cast.toInt(nil) == 0)
-assert(cast.toInt() == 0)
-assert(cast.toInt(42.23456) == 42)
-assert(cast.toInt("100", 16) == cast.toInt("0x100"))
-assert(cast.toInt("FF", 16) == cast.toInt("0xFF"))
-assert(cast.toInt("1010", 2) == cast.toInt("0b1010"))
-assert(cast.toInt(3.9) == 3)
+assert(cast::toInt("-42") == -42)
+assert(cast::toInt("42") == 42)
+assert(cast::toInt("42.25") == 42)
+assert(cast::toInt("abcde") == nil)
+assert(cast::toInt("0xFF") == 0xFF)
+assert(cast::toInt("0b1010") == 0b1010)
+assert(cast::toInt(42) == 42)
+assert(cast::toInt(true) == 1)
+assert(cast::toInt(false) == 0)
+assert(cast::toInt(nil) == cast::toInt(false))
+assert(cast::toInt(nil) == 0)
+assert(cast::toInt() == 0)
+assert(cast::toInt(42.23456) == 42)
+assert(cast::toInt("100", 16) == cast::toInt("0x100"))
+assert(cast::toInt("FF", 16) == cast::toInt("0xFF"))
+assert(cast::toInt("1010", 2) == cast::toInt("0b1010"))
+assert(cast::toInt(3.9) == 3)
 
-assert(cast.toString(90) == "90")
-assert(cast.toString(42) == "42")
-assert(cast.toString(true) == "true")
-assert(cast.toString(false) == "false")
-assert(cast.toString(nil) == "nil")
-assert(cast.toString(45.899) == "45.899")
-assert(cast.toString(3.141592) == "3.141592")
-assert(cast.toString("h3llo") == "h3llo")
-assert(cast.toString("already string") == "already string")
-assert(cast.toString("") == "")
-assert(cast.toString() == "")
-assert(cast.toString(error(42)) == "Error(42)")
+assert(cast::toString(90) == "90")
+assert(cast::toString(42) == "42")
+assert(cast::toString(true) == "true")
+assert(cast::toString(false) == "false")
+assert(cast::toString(nil) == "nil")
+assert(cast::toString(45.899) == "45.899")
+assert(cast::toString(3.141592) == "3.141592")
+assert(cast::toString("h3llo") == "h3llo")
+assert(cast::toString("already string") == "already string")
+assert(cast::toString("") == "")
+assert(cast::toString() == "")
+assert(cast::toString(error(42)) == "error[message: 42]")
 
 
 
-assert(cast.toBool(cast.toArray()) == true)
-assert(len(cast.toArray([[], [], []])) == len([[], [], []]))
+assert(cast::toBool(cast::toArray()) == true)
+assert(cast::toArray([[], [], []]).len() == [[], [], []].len())
 var A = [[[[[]]]]]
-assert(type(cast.toArray()) == type(A) and len(cast.toArray()) == 0)
-assert(type(cast.toArray(A)) == type(A))
-assert(not (cast.toArray(A) == A))
-assert(not (cast.toArray(A)[0] == A[0]))
-assert(not (cast.toArray(A)[0][0] == A[0][0]))
-assert(not (cast.toArray(A)[0][0][0] == A[0][0][0]))
-assert(not (cast.toArray(A)[0][0][0][0] == A[0][0][0][0]))
+assert(cast::toArray().type() == A.type() and cast::toArray().len() == 0)
+assert(cast::toArray(A).type() == A.type())
+assert(not (cast::toArray(A) == A))
+assert(not (cast::toArray(A)[0] == A[0]))
+assert(not (cast::toArray(A)[0][0] == A[0][0]))
+assert(not (cast::toArray(A)[0][0][0] == A[0][0][0]))
+assert(not (cast::toArray(A)[0][0][0][0] == A[0][0][0][0]))
 
 var N = 10
 var K = 0xFF
-var B = bytes.new(N)
+var B = bytes::new(N)
 A = newArray(N, 0)
 
 for i in N {
-    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+    assert(B[i] == A[i] and B[i].type() == A[i].type() and A[i].type() == cast::toInt(true).type())
 }
 
-B = bytes.new(N, K)
+B = bytes::new(N, K)
 A = newArray(N, K)
 
 for i in N {
-    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+    assert(B[i] == A[i] and B[i].type() == A[i].type() and A[i].type() == cast::toInt(true).type())
 }
 
-B = bytes.from("hello, world")
+B = bytes::from("hello, world")
 A = [0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x2C, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64]
 
-for i in len(B) {
-    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+for i in B.len() {
+    assert(B[i] == A[i] and B[i].type() == A[i].type() and A[i].type() == cast::toInt(true).type())
 }
 
-B = bytes.from(B)
-A = cast.toArray(B)
+B = bytes::from(B)
+A = cast::toArray(B)
 
-for i in len(B) {
-    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+for i in B.len() {
+    assert(B[i] == A[i] and B[i].type() == A[i].type() and A[i].type() == cast::toInt(true).type())
 }
 
 A = newArray({from = 10, to = 21})
-B = cast.toArray(bytes.from(A))
+B = cast::toArray(bytes::from(A))
 
-assert(type(A) == type(B) and type(B) == type([]))
+assert(A.type() == B.type() and B.type() == [].type())
 
-for i in len(B) {
-    assert(B[i] == A[i] and type(B[i]) == type(A[i]) and type(A[i]) == type(cast.toInt(true)))
+for i in B.len() {
+    assert(B[i] == A[i] and B[i].type() == A[i].type() and A[i].type() == cast::toInt(true).type())
 }
 
-assert(len(cast.toArray({})) == len(cast.toArray([])))
-assert(type(cast.toArray({})) == type(cast.toArray([])))
+assert( cast::toArray({}).len() == cast::toArray([]).len())
+assert(cast::toArray({}).type() == cast::toArray([]).type())
 
 A = [["hello", 42]]
-B = cast.toArray({hello = 42})
-assert(len(B) == len(cast.toArray(A)) and B[0][0] == "hello" and B[0][1] == 42)
-assert(type(cast.toArray({hello = 42})) == type(A))
+B = cast::toArray({hello = 42})
+assert(B.len() == cast::toArray(A).len() and B[0][0] == "hello" and B[0][1] == 42)
+assert(cast::toArray({hello = 42}).type() == A.type())
 
-B = {hello = cast.toInt("42"), world = cast.toInt("43", 10), lang = clone("vida")}
+B = {hello = cast::toInt("42"), world = cast::toInt("43", 10), lang = "vida".clone()}
 
-N = cast.toArray(B)
-assert(len(N) == len(B))
-assert(type(N) == type(A))
+N = cast::toArray(B)
+assert(N.len() == B.len())
+assert(N.type() == A.type())
 
 for _, v in N {
     assert("hello" in v and 42 in v or "world" in v and 43 in v or "lang" in v and "vida" in v)
 }
 
 B = enum { hello world }
-assert(B and type(B) == "enum")
+assert(B and B.type() == "enum")
 
-N = cast.toArray(B)
-assert(type(N) == type(A))
+N = cast::toArray(B)
+assert(N.type() == A.type())
 
 for _, v in N {
     assert("hello" in v and 0 in N or "world" in v and 1 in v or not ("lang" in v) and not ("vida" in v))
 }
 
 B = error(B)
-N = cast.toArray(B)
-assert(type(N) == type(A) and len(N) == 1 and type(N[0]) == "enum")
+N = cast::toArray(B)
+assert(N.type() == A.type() and N.len() == 1 and N[0].type() == (enum { hello }).type())
 assert(N[0].hello == 0 and N[0].world == 1)
 
-assert(cast.toBool(cast.toObject()))
-assert(cast.toObject() != nil)
-assert(len(cast.toObject()) == N[0].hello)
-assert(type(cast.toObject()) == "object")
+assert(cast::toBool(cast::toObject()))
+assert(cast::toObject() != nil)
+assert(cast::toObject().len() == N[0].hello)
+assert(cast::toObject().type() == "object")
 
 A = {hello = 42}
-B = cast.toObject(A)
+B = cast::toObject(A)
 
-assert(type(B) == type(A))
+assert(B.type() == A.type())
 assert(A != B)
 assert(A.hello == B.hello and B.hello == 42)
 
 A = [1,2,3,4,5]
-B = cast.toObject(A)
+B = cast::toObject(A)
 
-assert(type(B) == type({}))
+assert(B.type() == {}.type())
 
 for i, v in A {
     assert(B[i] == v)
 }
 
-A = bytes.from(A)
-B = cast.toObject(A)
+A = bytes::from(A)
+B = cast::toObject(A)
 
-assert(type(B) == type({}))
+assert(B.type() == {}.type())
 
 for i, v in A {
     assert(B[i] == v)
 }
 
 A = error(42)
-B = cast.toObject(A)
+B = cast::toObject(A)
 
-assert(type(B) == type({}))
+assert(B.type() == {}.type())
 assert(B.message and B.message == A.message and A.message == 42)
 
 A = enum { hello world }
-B = cast.toObject(A)
+B = cast::toObject(A)
 
-assert(type(B) == type({}))
+assert(B.type() == {}.type())
 
 assert(B.hello and B.world and B.hello == 0 and B.world == 1)
 
 A = true
-B = cast.toObject(A)
+B = cast::toObject(A)
 
-assert(type(B) == type({}))
+assert(B.type() == {}.type())
 
 assert(B.value and B.value == true)
 
 A = "hello"
-B = cast.toObject(A)
+B = cast::toObject(A)
 
-assert(type(B) == type({}))
+assert(B.type() == {}.type())
 assert(B.value and B.value == "hello")
 
 A = { "name" = "Vida", "version" = 1, "stable" = true }
-B = cast.toArray(A)
-assert(len(B) == 3)
+B = cast::toArray(A)
+assert(B.len() == 3)
 
 for _, pair in B {
     if pair[0] == "name" { assert(pair[1] == "Vida") }
