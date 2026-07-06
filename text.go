@@ -158,6 +158,44 @@ func textTrim(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
+func textExtendedTrim(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 1:
+		if v, ok := args[0].(*String); ok {
+			return &String{Value: strings.Trim(v.Value, " ")}, nil
+		}
+	case 2:
+		if val, ok := args[0].(*String); ok {
+			switch p := args[1].(type) {
+			case *String:
+				return &String{Value: strings.Trim(val.Value, p.Value)}, nil
+			case *Object:
+				if target, ok := p.Value["target"].(*String); ok {
+					switch target.Value {
+					case "left":
+						if cutset, ok := p.Value["cutset"].(*String); ok {
+							return &String{Value: strings.TrimLeft(val.Value, cutset.Value)}, nil
+						} else {
+							return &String{Value: strings.TrimLeft(val.Value, " ")}, nil
+						}
+					case "right":
+						if cutset, ok := p.Value["cutset"].(*String); ok {
+							return &String{Value: strings.TrimRight(val.Value, cutset.Value)}, nil
+						} else {
+							return &String{Value: strings.TrimRight(val.Value, " ")}, nil
+						}
+					default:
+						return &VidaError{Message: &String{Value: "'target' should have 'left' or 'right' values for string.trim config object"}}, nil
+					}
+				} else {
+					return &VidaError{Message: &String{Value: "'target' is a required property of type string for string.trim config object"}}, nil
+				}
+			}
+		}
+	}
+	return Nil, nil
+}
+
 func textTrimLeft(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 0 {
