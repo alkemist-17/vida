@@ -195,7 +195,7 @@ func loadFoundationArray() Value {
 	m.Value["clip"] = NativeFunction(arrayClip)
 	m.Value["replace"] = NativeFunction(arrayReplace)
 	m.Value["cap"] = NativeFunction(arrayCap)
-	m.Value["view"] = NativeFunction(arrayView)
+	m.Value["view"] = NativeFunction(collectionProcessView)
 	m.Value["grow"] = NativeFunction(arrayGrow)
 	m.Value["overlaps"] = NativeFunction(arrayOverlaps)
 	return m
@@ -265,20 +265,6 @@ func arrayOverlaps(ctx *Context, args ...Value) (Value, error) {
 		b, okB := args[1].(*Array)
 		if okA && okB {
 			return Bool(overlapsBackingArray(a.Value, b.Value)), nil
-		}
-	}
-	return Nil, nil
-}
-
-func arrayView(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
-		xs, ok := args[0].(*Array)
-		init, okI := args[1].(Integer)
-		length, okE := args[2].(Integer)
-		if ok && okI && okE {
-			srclen := len(xs.Value)
-			start, end, _ := sliceBounds(init, init+length, Integer(srclen))
-			return &Array{Value: xs.Value[start:end]}, nil
 		}
 	}
 	return Nil, nil
@@ -662,4 +648,70 @@ func arraySortWithCompareVidaFunction(ctx *Context, args ...Value) (Value, error
 		}
 	}
 	return Nil, nil
+}
+
+func collectionProcessView(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 1:
+		return args[0], nil
+	case 2:
+		val := args[0]
+		startIdx, okStartIdx := args[1].(Integer)
+		var endIdx Integer
+		if okStartIdx {
+			var hasStart, hasEnd = true, false
+			return processView(val, startIdx, endIdx, hasStart, hasEnd)
+		}
+	case 3:
+		val := args[0]
+		startIdx, okStartIdx := args[1].(Integer)
+		endIdx, okEndIdx := args[2].(Integer)
+		if okStartIdx && okEndIdx {
+			var hasStart, hasEnd = true, true
+			return processView(val, startIdx, endIdx, hasStart, hasEnd)
+		}
+	}
+	return Nil, verror.ErrView
+}
+
+func processView(val Value, startIdx, endIdx Integer, hasStart, hasEnd bool) (Value, error) {
+	resolve := func(length Integer) (Integer, Integer, bool) {
+		s := Integer(0)
+		if hasStart {
+			s = startIdx
+		}
+		e := length
+		if hasEnd {
+			e = endIdx
+		}
+		return sliceBounds(s, e, length)
+	}
+	switch v := val.(type) {
+	case *Array:
+		length := Integer(len(v.Value))
+		s, e, empty := resolve(length)
+		if empty {
+			return &Array{}, nil
+		}
+		return &Array{Value: v.Value[s:e]}, nil
+	case *String:
+		if v.Runes == nil {
+			v.Runes = []rune(v.Value)
+		}
+		length := Integer(len(v.Runes))
+		s, e, empty := resolve(length)
+		if empty {
+			return &String{}, nil
+		}
+		return &String{Value: string(v.Runes[s:e])}, nil
+
+	case *Bytes:
+		length := Integer(len(v.Value))
+		s, e, empty := resolve(length)
+		if empty {
+			return &Bytes{}, nil
+		}
+		return &Bytes{Value: v.Value[s:e]}, nil
+	}
+	return Nil, verror.ErrView
 }

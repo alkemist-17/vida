@@ -51,7 +51,7 @@ func (ctx *Context) loadArrayVT() {
 	vt := &Object{Value: make(map[string]Value, 15)}
 	vt.Value["len"] = NativeFunction(coreLen)
 	vt.Value["isEmpty"] = NativeFunction(arrayIsEmpty)
-	vt.Value["view"] = NativeFunction(arrayView)
+	vt.Value["view"] = NativeFunction(collectionProcessView)
 	vt.Value["clear"] = NativeFunction(arrayClear)
 	vt.Value["index"] = NativeFunction(arrayIndex)
 	vt.Value["insert"] = NativeFunction(arrayInsert)
@@ -94,7 +94,7 @@ func (ctx *Context) loadBytesVT() {
 	vt.Value["toFile"] = NativeFunction(bytesToFile)
 	vt.Value["xor"] = NativeFunction(bytesXOR)
 	vt.Value["toString"] = NativeFunction(bytesToString)
-	vt.Value["view"] = NativeFunction(bytesView)
+	vt.Value["view"] = NativeFunction(collectionProcessView)
 	vt.Value["reverse"] = NativeFunction(bytesReverse)
 	vt.Value["timingSafeEqual"] = NativeFunction(bytesTimingSafeEqual)
 	vt.Value["bitLen"] = NativeFunction(bytesBitLen)

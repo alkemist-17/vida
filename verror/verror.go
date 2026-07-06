@@ -80,6 +80,7 @@ const (
 	ErrNotEnoughArgs                    = internalBasicError("not given enough arguments to the function")
 	ErrVariadicArgs                     = internalBasicError("expected an array for variradic arguments or array length overflows the current stack")
 	ErrSlice                            = internalBasicError("could not process the slice")
+	ErrView                             = internalBasicError("could not process the value view")
 	ErrValueIsConstant                  = internalBasicError("value is constant")
 	ErrMaxMemSize                       = internalBasicError("max memory size reached")
 	ErrNotImplemented                   = internalBasicError("not implemented functionality for this value")

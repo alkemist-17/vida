@@ -205,7 +205,7 @@ func loadFoundationBytes() Value {
 	m.Value["bitLen"] = NativeFunction(bytesBitLen)
 	m.Value["hexdump"] = NativeFunction(bytesDump)
 	m.Value["getSystemEndianess"] = NativeFunction(bytesEndianess)
-	m.Value["view"] = NativeFunction(bytesView)
+	m.Value["view"] = NativeFunction(collectionProcessView)
 	m.Value["copyTo"] = NativeFunction(bytesCopyTo)
 	m.Value["fill"] = NativeFunction(bytesFill)
 	m.Value["reverse"] = NativeFunction(bytesReverse)
@@ -585,20 +585,6 @@ func bytesEndianess(ctx *Context, args ...Value) (Value, error) {
 		return &String{Value: bigEndian}, nil
 	}
 	return &String{Value: littleEndian}, nil
-}
-
-func bytesView(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
-		b, okB := args[0].(*Bytes)
-		offset, okO := args[1].(Integer)
-		length, okL := args[2].(Integer)
-		if okB && okO && okL {
-			srclen := Integer(len(b.Value))
-			start, end, _ := sliceBounds(offset, offset+length, srclen)
-			return &Bytes{Value: b.Value[start:end]}, nil
-		}
-	}
-	return Nil, nil
 }
 
 func bytesCopyTo(ctx *Context, args ...Value) (Value, error) {
