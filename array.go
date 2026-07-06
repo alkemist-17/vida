@@ -299,8 +299,11 @@ func arrayInsert(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if xs, ok := args[0].(*Array); ok {
 			if idx, ok := args[1].(Integer); ok {
+				if idx < 0 {
+					idx = idx + Integer(len(xs.Value))
+				}
 				if idx >= 0 && idx <= Integer(len(xs.Value)) {
-					xs.Value = slices.Insert(xs.Value, int(idx), args[2])
+					xs.Value = slices.Insert(xs.Value, int(idx), args[2:]...)
 					return xs, nil
 				}
 			}
