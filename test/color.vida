@@ -1,30 +1,30 @@
-var color = load("std/color")
+var color = load("std.color")
 
-color.printPaletteChart()
+color::printPaletteChart()
 
 var bg = 39
 var fg = 15
 
-var red = color.new({bg = bg, fg = fg})
+var red = color::new({bg = bg, fg = fg})
 
 for in 10 {
-    print(red:string("Hello, World!"))
-    print(red:format("This is the answer: %v", 42))
+    print(red.string("Hello, World!"))
+    print(red.format("This is the answer: %v", 42))
 }
 
 
 var message = "     Quick Alert!     "
 var fmt = "     Here is the answer of everytyhing: %v     " 
 
-print(color.string({fg = 196, bg = 236}, message))
-print(color.string({fg = nil, bg = 236}, message))
-print(color.string({bg = nil, fg = 226}, message))
+print(color::string({fg = 196, bg = 236}, message))
+print(color::string({fg = nil, bg = 236}, message))
+print(color::string({bg = nil, fg = 226}, message))
 
-print(color.format({bg = 196, fg = 236}, fmt, 42))
-print(color.format({bg = 196, fg = 236}, fmt, 42))
-print(color.format({bg = 196, fg = 236}, fmt, 42))
+print(color::format({bg = 196, fg = 236}, fmt, 42))
+print(color::format({bg = 196, fg = 236}, fmt, 42))
+print(color::format({bg = 196, fg = 236}, fmt, 42))
 
-print(color.new():string("color object with no args"))
+print(color::new().string("color object with no args"))
 
 var cow = `
 
@@ -64,17 +64,17 @@ var cow = `
 `
 
 
-print(red:string(cow))
+print(red.string(cow))
 
-red:bg(35)
+red.bg(35)
 
-print(red:string(cow))
+print(red.string(cow))
 
-red:bg(161)
+red.bg(161)
 
-print(red:string(cow))
+print(red.string(cow))
 
-print(red:resets())
+print(red.resets())
 
 var cows = `
 
@@ -127,6 +127,6 @@ Martian Cow?   Money-mad    Chinese Cow    Wink#2    Black eye
 `
 
 
-red:bg(194):fg(0)
+red.bg(194).fg(0)
 
-print(red:string(cows))
+print(red.string(cows))

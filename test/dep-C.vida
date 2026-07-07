@@ -1,5 +1,5 @@
 
-let math = load("std/math")
+let math = load("std.math")
 
 let script = {}
 

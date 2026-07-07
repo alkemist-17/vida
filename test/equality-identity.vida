@@ -155,8 +155,8 @@ assert((f1 == f2) == false, "two separately-created closures with identical bodi
 
 
 var ex = load("std.exception")
-var nf1 = ex.get("protected")
-var nf2 = ex.get("protected")
+var nf1 = ex.get("protect")
+var nf2 = ex.get("protect")
 assert(nf1 != nil, "sanity check: we actually fetched a real, non-nil native function value")
 assert(nf1 == nf1, "REGRESSION: a NativeFunction must now equal itself under `==`")
 assert(nf1 == nf2, "REGRESSION: fetching the exact same underlying native function twice must produce two EQUAL values, not two 'unequal' ones")
