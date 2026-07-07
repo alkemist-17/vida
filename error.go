@@ -51,7 +51,7 @@ func (e *VidaError) Set(index, val Value) error {
 
 func (e *VidaError) Equals(ctx *Context, other Value) Bool {
 	v, isError := other.(*VidaError)
-	return Bool(isError) && e == v && e.Message.Equals(ctx, v.Message)
+	return Bool(isError) && e.Message.Equals(ctx, v.Message)
 }
 
 func (e *VidaError) IsIterable() Bool {
