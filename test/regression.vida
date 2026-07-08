@@ -1,10 +1,29 @@
 
+// First test with local variables on module level
+
 var a = "hello"
 var b = nil
 var f = fun -> a + format("%v", b)
-var result = f()
-assert(result == "hellonil")
 
+var result = f()
+assert(result == "hellonil", "format should work as function alone and it should have + as rhs of addition op")
+
+f = fun -> a + "%v".format(b)
+result = f()
+assert(result == "hellonil", "format should work as string method and it should have + as rhs of addition op")
+
+f = fun -> format("%v", b) + a
+result = f()
+assert(result == "nilhello", "format should work as function alone and it should have + as lhs of addition op")
+
+f = fun -> "%v".format(b) + a
+result = f()
+assert(result == "nilhello", "format should work as string method and it should have + as lhs of addition op")
+
+
+// An arbitrary object can in principle be a vtable of itself
+// although it is memory redundat in case of having fields
+// because of innecessary duplication of data as we will see in this test.
 var data = {
     id = 42
     name = "data"
@@ -14,14 +33,30 @@ var data = {
     getEmail = fun self -> self.email
 }
 
+
+data = data =< data
+assert(data == data, "after an object vtable assignment the object should be the same")
+assert(data == data, "an object can be the vtable of itself")
+assert(data.id == 42 and data.name == "data" and data.email == "data@data.data", "selection operations on own fields should work well")
+
 for in 1000 {
-    var data = clone(data)
-    assert(data:getId() == data.id)
-    assert(data:getName() == data.name)
-    assert(data:getEmail() == data.email)
-    data:getId()
-    data:getName()
-    data:getEmail()
+    var data = data.clone()
+    assert(data.getId() == data.id, "method call on itself as its own vtable should retrieve its own fields")
+    assert(data.getName() == data.name, "method call on itself as its own vtable should retrieve its own fields")
+    assert(data.getEmail() == data.email, "method call on itself as its own vtable should retrieve its own fields")
+    data.getId() // This is for method call as stmt
+    data.getName()
+    data.getEmail()
+}
+
+for in 1000 {
+    var data = data.clone()
+    assert(data::getId(data) == data.id, "static calls with explicit object receiver setting should get the same results as method calls")
+    assert(data::getName(data) == data.name, "static calls with explicit object receiver setting should get the same results as method calls")
+    assert(data::getEmail(data) == data.email, "static calls with explicit object receiver setting should get the same results as method calls")
+    data::getId(data) // This is for static calls as stmts
+    data::getName(data)
+    data::getEmail(data)
 }
 
 var src = [1, 2, 3, 4, 5] // This values should be all different
@@ -42,20 +77,22 @@ data = [
     ]
 ]
 
+// To test combinations of locals and module level vars used as indexes in arrays
 var i = 0
 let j = [0, 1, 2, 3, 4, ]
+assert(j and j.type() == [].type() and j.len() == 5, "an array can have a trailing comman after the last element")
 
-assert(data[i][i][i][i][j[0]] == src[0])
-assert(data[i][i][i][i][j[1]] == src[1])
-assert(data[i][i][i][i][j[2]] == src[2])
-assert(data[i][i][i][i][j[3]] == src[3])
-assert(data[i][i][i][i][j[4]] == src[4])
+assert(data[i][i][i][i][j[0]] == src[0], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[1]] == src[1], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[2]] == src[2], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[3]] == src[3], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[4]] == src[4], "combinations of locals and module level vars can be used as indexes in arrays")
 
-assert(data[i][i][i][i][j[0]] != src[4])
-assert(data[i][i][i][i][j[1]] != src[3])
-assert(data[i][i][i][i][j[2]] != src[0])
-assert(data[i][i][i][i][j[3]] != src[1])
-assert(data[i][i][i][i][j[4]] != src[0])
+assert(data[i][i][i][i][j[0]] != src[4], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[1]] != src[3], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[2]] != src[0], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[3]] != src[1], "combinations of locals and module level vars can be used as indexes in arrays")
+assert(data[i][i][i][i][j[4]] != src[0], "combinations of locals and module level vars can be used as indexes in arrays")
 
 
 data = [
@@ -72,7 +109,8 @@ assert(
     data[2] == 1 and data[4] == 1 and data[6] == 1 or
     data[0] == 1 and data[3] == 1 and data[6] == 1 or
     data[1] == 1 and data[4] == 1 and data[7] == 1 or
-    data[2] == 1 and data[5] == 1 and data[8] == 1
+    data[2] == 1 and data[5] == 1 and data[8] == 1,
+    "const numerics literals can be used as indexes in arrays"
 )
 
 assert(
@@ -83,7 +121,8 @@ assert(
     data[2] == 1 and data[4] == 1 and data[6] == 0 or
     data[0] == 1 and data[3] == 1 and data[6] == 0 or
     data[1] == 1 and data[4] == 1 and data[7] == 0 or
-    data[2] == 1 and data[5] == 1 and data[8] == 0
+    data[2] == 1 and data[5] == 1 and data[8] == 0,
+    "const numerics literals can be used as indexes in arrays"
 )
 
 assert(
@@ -94,7 +133,8 @@ assert(
     data[2] == 1 and data[4] == 1 and data[6] == 2 or
     data[0] == 1 and data[3] == 1 and data[6] == 2 or
     data[1] == 1 and data[4] == 1 and data[7] == 2 or
-    data[2] == 1 and data[5] == 1 and data[8] == 2
+    data[2] == 1 and data[5] == 1 and data[8] == 2,
+    "const numerics literals can be used as indexes in arrays"
 )
 
 var cmp = {
@@ -135,70 +175,70 @@ assert(___a == ___ref)
 
 
 data = [1,]
-assert(len(data) == 1 and data[0] == 1)
+assert(data.len() == 1 and data[0] == 1)
 
 data = [1, 2,]
-assert(len(data) == 2 and data[0] == 1 and data[1] == 2)
+assert(data.len() == 2 and data[0] == 1 and data[1] == 2)
 
 data = [1, 2, ]
-assert(len(data) == 2 and data[0] == 1 and data[1] == 2)
+assert(data.len() == 2 and data[0] == 1 and data[1] == 2)
 
 data = [1, 2, 3,]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3,]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3,]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3,]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3,]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = [1, 2, 3]
-assert(len(data) == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
+assert(data.len() == 3 and data[0] == 1 and data[1] == 2 and data[2] == 3)
 
 data = {}
-assert(len(data) == 0 and data.hello == nil)
+assert(data.len() == 0 and data.hello == nil)
 
 data = { hello beautiful world }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello, beautiful, world, }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello, beautiful world }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello beautiful, world }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello beautiful world, }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello, beautiful, world }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello beautiful, world, }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello, beautiful world, }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 data = { hello, beautiful, world }
-assert(len(data) == 3 and not data.hello and not data.beautiful and not data.world)
+assert(data.len() == 3 and not data.hello and not data.beautiful and not data.world)
 
 i = 90
 
@@ -207,32 +247,32 @@ data = {
     beautiful = i
     world = i
 }
-assert(len(data) == 3 and data.hello == i and data.beautiful == i and data.world == i)
-assert(len(data) == 3 and -data.hello == -i and -data.beautiful == -i and -data.world == -i)
+assert(data.len() == 3 and data.hello == i and data.beautiful == i and data.world == i)
+assert(data.len() == 3 and -data.hello == -i and -data.beautiful == -i and -data.world == -i)
 
 data = {
     hello = i
     beautiful
     world
 }
-assert(len(data) == 3 and data.hello == i and data.beautiful == nil and data.world == nil)
-assert(len(data) == 3 and -data.hello == -i and not data.beautiful and not data.world)
+assert(data.len() == 3 and data.hello == i and data.beautiful == nil and data.world == nil)
+assert(data.len() == 3 and -data.hello == -i and not data.beautiful and not data.world)
 
 data = {
     hello
     beautiful = i
     world
 }
-assert(len(data) == 3 and data.hello == nil and data.beautiful == i and data.world == nil)
-assert(len(data) == 3 and not data.hello and -data.beautiful == -i and not data.world)
+assert(data.len() == 3 and data.hello == nil and data.beautiful == i and data.world == nil)
+assert(data.len() == 3 and not data.hello and -data.beautiful == -i and not data.world)
 
 data = {
     hello
     beautiful
     world = i
 }
-assert(len(data) == 3 and data.hello == nil and data.beautiful == nil and data.world == i)
-assert(len(data) == 3 and not data.hello and not data.beautiful and -data.world == -i)
+assert(data.len() == 3 and data.hello == nil and data.beautiful == nil and data.world == i)
+assert(data.len() == 3 and not data.hello and not data.beautiful and -data.world == -i)
 
 
 data = {
@@ -240,8 +280,8 @@ data = {
     beautiful = i
     world = i
 }
-assert(len(data) == 3 and data.hello == nil and data.beautiful == i and data.world == i)
-assert(len(data) == 3 and not data.hello and -data.beautiful == -i and -data.world == -i)
+assert(data.len() == 3 and data.hello == nil and data.beautiful == i and data.world == i)
+assert(data.len() == 3 and not data.hello and -data.beautiful == -i and -data.world == -i)
 
 
 data = {
@@ -249,16 +289,16 @@ data = {
     beautiful = i
     world
 }
-assert(len(data) == 3 and data.hello == i and data.beautiful == i and data.world == nil)
-assert(len(data) == 3 and -data.hello == -i and -data.beautiful == -i and not data.world)
+assert(data.len() == 3 and data.hello == i and data.beautiful == i and data.world == nil)
+assert(data.len() == 3 and -data.hello == -i and -data.beautiful == -i and not data.world)
 
 data = {
     hello = i
     beautiful
     world = i
 }
-assert(len(data) == 3 and data.hello == i and data.beautiful == nil and data.world == i)
-assert(len(data) == 3 and -data.hello == -i and not data.beautiful and -data.world == -i)
+assert(data.len() == 3 and data.hello == i and data.beautiful == nil and data.world == i)
+assert(data.len() == 3 and -data.hello == -i and not data.beautiful and -data.world == -i)
 
 
 i = [10, 20, 30]
