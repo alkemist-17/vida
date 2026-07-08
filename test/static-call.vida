@@ -101,19 +101,19 @@ assert(stepTwo == "hi from a chained call", "the equivalent two `::` calls, perf
 //    anything callable on a built-in, regardless of the name used.
 // =============================================================================
 
-var onInteger = ex::protected(fun -> (42)::anything(42))
+var onInteger = ex::protect(fun -> (42)::anything(42))
 assert(onInteger.isError(), "`::` on an Integer must fail — Integer.Get never returns anything callable")
 
-var onBool = ex::protected(fun -> (true)::anything(true))
+var onBool = ex::protect(fun -> (true)::anything(true))
 assert(onBool.isError(), "`::` on a Bool must fail — Bool.Get is hardcoded to always return Nil")
 
-var onNil = ex::protected(fun -> nil::anything(nil))
+var onNil = ex::protect(fun -> nil::anything(nil))
 assert(onNil.isError(), "`::` on nil must fail — NilValue has no custom Get, and the default Get always returns Nil")
 
-var onArray = ex::protected(fun -> [1, 2, 3]::anything([1, 2, 3]))
+var onArray = ex::protect(fun -> [1, 2, 3]::anything([1, 2, 3]))
 assert(onArray.isError(), "`::` on an Array must fail — Array.Get only responds to Integer indices, never a string message name")
 
-var onString = ex::protected(fun -> ("hello")::anything("hello"))
+var onString = ex::protect(fun -> ("hello")::anything("hello"))
 assert(onString.isError(), "`::` on a String must fail — String.Get only responds to Integer indices, never a string message name")
 
 // `::` DOES work on the one thing it was designed for: Objects (including

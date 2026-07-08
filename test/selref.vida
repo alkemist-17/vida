@@ -7,7 +7,7 @@
 // ──────────────────────────────────────────────
 
 var a = []
-append(a, a)
+a.append(a)
 print(a)                       // [[...]]
 
 // ──────────────────────────────────────────────
@@ -16,7 +16,7 @@ print(a)                       // [[...]]
 
 var b = []
 var inner = [b]
-append(b, inner)
+b.append(inner)
 print(b)                       // [[[...]]]
 
 // ──────────────────────────────────────────────
@@ -25,8 +25,8 @@ print(b)                       // [[[...]]]
 
 var c = []
 var d = []
-append(c, d)
-append(d, c)
+c.append(d)
+d.append(c)
 print(c)                       // [[[...]]]
 print(d)                       // [[[...]]]
 
@@ -84,7 +84,7 @@ print(arr)                     // [1, {self: {...}}, 2]
 var base = []
 var node = {}
 node.arr = base
-append(base, node)
+base.append(node)
 print(base)                    // [{arr: [...]}]
 
 // ──────────────────────────────────────────────
@@ -96,7 +96,7 @@ var s = {}
 var t = {}
 s.next = t
 t.root = r
-append(r, s)
+r.append(s)
 print(r)                       // [{next: {root: [...]}}]
 
 // ──────────────────────────────────────────────
@@ -119,10 +119,10 @@ var level2 = []
 var level3 = []
 var level4 = [deep]
 
-append(level3, level4)
-append(level2, level3)
-append(level1, level2)
-append(deep, level1)
+level3.append(level4)
+level2.append(level3)
+level1.append(level2)
+deep.append(level1)
 print(deep)                    // [[[[[ [...] ]]]]]
 
 // ──────────────────────────────────────────────
@@ -131,7 +131,7 @@ print(deep)                    // [[[[[ [...] ]]]]]
 
 var safe = [1, 2, 3]
 var cyc  = []
-append(cyc, cyc)
+cyc.append(cyc)
 var mixed = [safe, cyc, safe]
 print(mixed)                   // [[1, 2, 3], [[...]], [1, 2, 3]]
 
@@ -152,9 +152,9 @@ print(mixedObj)                // {a: {x: 1}, b: {self: {...}}, c: {x: 1}}
 var x = []
 var y = []
 var z = []
-append(x, y)
-append(y, z)
-append(z, x)
+x.append(y)
+y.append(z)
+z.append(x)
 print(x)                       // [[[ [...] ]]]
 print(y)                       // [[[ [...] ]]]
 print(z)                       // [[[ [...] ]]]

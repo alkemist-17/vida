@@ -43,7 +43,7 @@ var o = {}
 
 // A brand-new plain object has no custom vtable of its own: `.` lookup for a
 // name that isn't provided by the default global object vtable must fail.
-var beforeAssign = ex::protected(fun -> o.greeting())
+var beforeAssign = ex::protect(fun -> o.greeting())
 assert(beforeAssign.isError(), "`.greeting()` must fail before any vtable is attached")
 
 o = o =< vt1
@@ -55,7 +55,7 @@ assert(o.greeting() == "hello from vt2", "`=<` must replace, not merge, the prev
 
 // `obj =< nil` clears the custom vtable back to "none".
 o = o =< nil
-var afterClear = ex::protected(fun -> o.greeting())
+var afterClear = ex::protect(fun -> o.greeting())
 assert(afterClear.isError(), "`obj =< nil` must detach the vtable entirely")
 
 
@@ -73,7 +73,7 @@ var obj = { hello = fun self -> "hi, " + self.name, name = "Ada" }
 // `.hello()` looks the message up on obj's VTABLE CHAIN ONLY. obj has no
 // custom vtable at all, so this must fail even though `hello` exists as a
 // field directly on obj.
-var dotOnOwnField = ex::protected(fun -> obj.hello())
+var dotOnOwnField = ex::protect(fun -> obj.hello())
 assert(dotOnOwnField.isError(), "`.` method-call must not see the receiver's own fields, only its vtable chain")
 
 // `::hello(...)` uses Get, which DOES check the receiver's own fields first.
@@ -82,7 +82,7 @@ assert(obj::hello(obj) == "hi, Ada", "`::` finds the field directly but requires
 
 // Proof that `::` performs no self-insertion: calling with zero args is an
 // arity error, since `hello`'s only parameter (`self`) never gets bound.
-var staticNoArgs = ex::protected(fun -> obj::hello())
+var staticNoArgs = ex::protect(fun -> obj::hello())
 assert(staticNoArgs.isError(), "`::` must not auto-insert the receiver; omitting it is an arity error")
 
 // Now attach a vtable exposing the SAME message name. `.hello()` should now
@@ -199,7 +199,7 @@ var cycleA = {}
 var cycleB = {}
 cycleA = cycleA =< cycleB
 cycleB = cycleB =< cycleA
-var cycleLookup = ex::protected(fun -> cycleA::nonExistentMessage(cycleA))
+var cycleLookup = ex::protect(fun -> cycleA::nonExistentMessage(cycleA))
 assert(cycleLookup.isError(), "a lookup miss on a cyclic vtable chain must terminate (as a miss), not hang forever")
 // This exercises the fix directly: before it, this file would never finish
 // running. If this suite hangs again, this section is almost certainly why.
@@ -248,7 +248,7 @@ assert(composedObj.get("role") == "overridden", "override must overwrite an alre
 var traitGreet = { greet = fun self -> "hi from a trait" }
 composedObj.inject(traitGreet)
 assert(composedObj.has("greet"), "inject must add the message as composedObj's own property")
-var dotAfterInject = ex::protected(fun -> composedObj.greet())
+var dotAfterInject = ex::protect(fun -> composedObj.greet())
 assert(dotAfterInject.isError(), "inject populates the object's OWN fields, which `.` method-call dispatch never consults — inject is not a substitute for `=<`")
 assert(composedObj::greet(composedObj) == "hi from a trait", "`::` (via Get) does see fields added by inject, since Get checks the object's own fields first")
 
@@ -292,13 +292,13 @@ assert(intersection.has("c") == false, "`&` fallback must drop keys that only ex
 
 // Operators with NO default fallback must error cleanly rather than silently
 // doing something unexpected.
-assert(ex::protected(fun -> left * right).isError(),  "`*` has no Object fallback and must error")
-assert(ex::protected(fun -> left / right).isError(),  "`/` has no Object fallback and must error")
-assert(ex::protected(fun -> left % right).isError(),  "`%` has no Object fallback and must error")
-assert(ex::protected(fun -> left ** right).isError(), "`**` has no Object fallback and must error")
-assert(ex::protected(fun -> left < right).isError(),  "`<` has no Object fallback and must error")
-assert(ex::protected(fun -> left > right).isError(),  "`>` has no Object fallback and must error")
-assert(ex::protected(fun -> left ^ right).isError(),  "`^` has no Object fallback and must error")
+assert(ex::protect(fun -> left * right).isError(),  "`*` has no Object fallback and must error")
+assert(ex::protect(fun -> left / right).isError(),  "`/` has no Object fallback and must error")
+assert(ex::protect(fun -> left % right).isError(),  "`%` has no Object fallback and must error")
+assert(ex::protect(fun -> left ** right).isError(), "`**` has no Object fallback and must error")
+assert(ex::protect(fun -> left < right).isError(),  "`<` has no Object fallback and must error")
+assert(ex::protect(fun -> left > right).isError(),  "`>` has no Object fallback and must error")
+assert(ex::protect(fun -> left ^ right).isError(),  "`^` has no Object fallback and must error")
 
 
 // =============================================================================
@@ -358,13 +358,13 @@ assert((ltWithNil < nil) == true, "a `nil` right-hand side must still reach a de
 // the vtable, even though addNilVt / ltNilVt above have nothing to do
 // with `=<` — included here to make the exception explicit, not implied.
 addsWithNil = addsWithNil =< nil
-var afterNilVtableClear = ex::protected(fun -> addsWithNil.tally)
+var afterNilVtableClear = ex::protect(fun -> addsWithNil.tally)
 assert(afterNilVtableClear.isError() == false, "`obj =< nil` must still just clear the vtable; addsWithNil's own `tally` field is untouched by any of this")
 
 // -- 9b. Baseline: with NO override defined at all, `+ nil` still fails,
 //        with the generic "operator not defined" message.
 var noOverrideAtAll = {}
-var noOverrideResult = ex::protected(fun -> noOverrideAtAll + nil)
+var noOverrideResult = ex::protect(fun -> noOverrideAtAll + nil)
 assert(noOverrideResult.isError(), "with no `add` override anywhere in the chain, `+ nil` must still error")
 assert(("not callable" in noOverrideResult.message) == false, "the generic 'no override defined' error must NOT be phrased as a callability problem — the two failure modes must stay textually distinguishable")
 
@@ -373,7 +373,7 @@ assert(("not callable" in noOverrideResult.message) == false, "the generic 'no o
 var brokenVt = { add = 99 }
 var brokenObj = {}
 brokenObj = brokenObj =< brokenVt
-var brokenResult = ex::protected(fun -> brokenObj + nil)
+var brokenResult = ex::protect(fun -> brokenObj + nil)
 assert(brokenResult.isError(), "a non-callable value sitting under 'add' must still cause `+` to fail")
 assert("not callable" in brokenResult.message, "a non-callable override must produce the SPECIFIC not-callable error, not the generic 'operator not defined' one")
 assert(brokenResult.message != noOverrideResult.message, "the two failure modes ('no override' vs 'broken override') must produce genuinely different messages, not the same generic text")
@@ -385,7 +385,7 @@ assert(brokenResult.message != noOverrideResult.message, "the two failure modes 
 //        simply "not found", so `brokenObj + anotherObject` used to
 //        silently perform the structural merge instead of erroring.
 var anotherObject = { z = 1 }
-var brokenWithObjectRhs = ex::protected(fun -> brokenObj + anotherObject)
+var brokenWithObjectRhs = ex::protect(fun -> brokenObj + anotherObject)
 assert(brokenWithObjectRhs.isError(), "a non-callable 'add' override must cause `+` to error even when the right-hand side is a plain Object (previously this silently fell back to a structural merge instead)")
 assert("not callable" in brokenWithObjectRhs.message, "...and it must be the specific not-callable error, not a silently-produced merged object nor the generic error")
 
@@ -395,6 +395,6 @@ assert("not callable" in brokenWithObjectRhs.message, "...and it must be the spe
 var brokenLtVt = { lt = "not a function" }
 var brokenLtObj = {}
 brokenLtObj = brokenLtObj =< brokenLtVt
-var brokenLtResult = ex::protected(fun -> brokenLtObj < nil)
+var brokenLtResult = ex::protect(fun -> brokenLtObj < nil)
 assert(brokenLtResult.isError(), "a non-callable 'lt' override must cause `<` to error")
 assert("not callable" in brokenLtResult.message, "...with the same specific not-callable error, regardless of which operator or rhs type triggered it")

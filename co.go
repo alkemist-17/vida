@@ -7,7 +7,7 @@ import (
 )
 
 func loadFoundationCoroutine() Value {
-	m := &Object{Value: make(map[string]Value, 13)}
+	m := &Object{Value: make(map[string]Value, 18)}
 	m.Value["new"] = NativeFunction(coNewThread)
 	m.Value["run"] = NativeFunction(coRunThread)
 	m.Value["suspend"] = NativeFunction(coSuspendThread)
@@ -21,6 +21,11 @@ func loadFoundationCoroutine() Value {
 	m.Value["getStackSize"] = NativeFunction(coGetStackSize)
 	m.Value["getFrameSize"] = NativeFunction(coGetFrameSize)
 	m.Value["value"] = NativeFunction(coValue)
+	m.Value["READY"] = &String{Value: "ready"}
+	m.Value["RUNNING"] = &String{Value: "running"}
+	m.Value["SUSPENDED"] = &String{Value: "suspended"}
+	m.Value["WAITING"] = &String{Value: "waiting"}
+	m.Value["DONE"] = &String{Value: "done"}
 	return m
 }
 
