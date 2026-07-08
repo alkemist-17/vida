@@ -620,7 +620,7 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 
 func (vm *VM) printCallStack() {
 	fmt.Printf("\t[Call Stack]\n")
-	fmt.Printf("\t(Most recent call first)\n\n\n")
+	fmt.Printf("\t(Most recent call first)\n\n\n\n")
 	for i := vm.fp; i >= 0; i-- {
 		modName := vm.Frames[i].lambda.CoreFn.ScriptID
 		ip := vm.Frames[i].ip
@@ -631,7 +631,7 @@ func (vm *VM) printCallStack() {
 		} else {
 			nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 		}
-		err := verror.NewStackFrameInfo(modName, nearLine)
+		err := verror.NewStackFrameInfo(modName, nearLine, uint(i))
 		fmt.Printf("%v\n\n\n", err)
 	}
 }

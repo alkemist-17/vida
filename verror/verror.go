@@ -25,11 +25,11 @@ type VidaError struct {
 func (e *VidaError) Error() string {
 	switch e.ErrType {
 	case ExceptionErrType:
-		return fmt.Sprintf("\n\n\tScript    : [%v]\n\t%v\n\tNear line : %v\n\tMessage   : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\n\tScript    : [%v]\n\t%v\n\t≈ at line : %v\n\tReason    : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	case AssertionErrType:
-		return fmt.Sprintf("\n\n\tScript    : [%v]\n\t%v\n\tNear line : %v\n\tMessage   : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\n\tScript    : [%v]\n\t%v\n\t≈ at line : %v\n\tReason    : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	default:
-		return fmt.Sprintf("\n\n\t[%v Error]\n\tScript    : %v\n\tNear line : %v\n\tMessage   : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
+		return fmt.Sprintf("\n\n\n\t[%v Error]\n\tScript    : %v\n\t≈ at line : %v\n\tReason    : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
 	}
 }
 
@@ -45,17 +45,19 @@ func New(scriptID string, message string, errorType string, line uint) *VidaErro
 type StackFrameInfo struct {
 	ScriptID string
 	Line     uint
+	Frame    uint
 }
 
-func NewStackFrameInfo(scriptID string, line uint) StackFrameInfo {
+func NewStackFrameInfo(scriptID string, line, frame uint) StackFrameInfo {
 	return StackFrameInfo{
 		ScriptID: scriptID,
 		Line:     line,
+		Frame:    frame,
 	}
 }
 
 func (sfi StackFrameInfo) Error() string {
-	return fmt.Sprintf("\tScript    : %v\n\tNear line : %v\n", sfi.ScriptID, sfi.Line)
+	return fmt.Sprintf("\tScript    : %v\n\t≈ at line : %v\n\tFrame     : %v\n", sfi.ScriptID, sfi.Line, sfi.Frame)
 }
 
 type internalBasicError string
@@ -65,36 +67,36 @@ func (ibe internalBasicError) Error() string {
 }
 
 const (
-	ErrStringLimit                      = internalBasicError("strings max size has been reached")
+	ErrStringLimit                      = internalBasicError("max size for strings has been reached")
 	ErrOpNotDefinedForIterators         = internalBasicError("operation not defined for iterators")
-	ErrValueNotIndexable                = internalBasicError("value is not indexable")
+	ErrValueNotIndexable                = internalBasicError("value not indexable")
 	ErrPrefixOpNotDefined               = internalBasicError("prefix operation not defined")
 	ErrBinaryOpNotDefined               = internalBasicError("binary operation not defined")
-	ErrDivisionByZero                   = internalBasicError("division by zero not defined")
+	ErrDivisionByZero                   = internalBasicError("division by zero")
 	ErrExpectedInteger                  = internalBasicError("expected a value of type integer")
 	ErrExpectedIntegerDifferentFromZero = internalBasicError("expected an integer value different from zero")
 	ErrValueNotIterable                 = internalBasicError("value is not iterable")
 	ErrValueNotCallable                 = internalBasicError("value is not callable")
 	ErrStackOverflow                    = internalBasicError("stack overflow")
-	ErrArity                            = internalBasicError("given arguments count is different from arity definition")
-	ErrNotEnoughArgs                    = internalBasicError("not given enough arguments to the function")
-	ErrVariadicArgs                     = internalBasicError("expected an array for variradic arguments or array length overflows the current stack")
+	ErrArity                            = internalBasicError("number of arguments different from function arity")
+	ErrNotEnoughArgs                    = internalBasicError("not enough arguments passed to the function")
+	ErrVariadicArgs                     = internalBasicError("expected an array for variadic arguments or the given array overflows the stack")
 	ErrSlice                            = internalBasicError("could not process the slice")
-	ErrView                             = internalBasicError("could not process the value view")
+	ErrView                             = internalBasicError("could not process the view")
 	ErrValueIsConstant                  = internalBasicError("value is constant")
 	ErrMaxMemSize                       = internalBasicError("max memory size reached")
 	ErrNotImplemented                   = internalBasicError("not implemented functionality for this value")
-	ErrNotThread                        = internalBasicError("value is not a thread value")
+	ErrNotThread                        = internalBasicError("value is not a thread")
 	ErrResumingNotSuspendedThread       = internalBasicError("cannot run a completed, running or waiting thread")
-	ErrNotAFunction                     = internalBasicError("threads must be build from function values")
+	ErrNotAFunction                     = internalBasicError("threads must be build from functions")
 	ErrSuspendingMainThread             = internalBasicError("cannot suspend the main thread")
 	ErrSuspendingRunningThread          = internalBasicError("cannot suspend a running thread")
 	ErrClosingAThread                   = internalBasicError("cannot complete a running, waiting or completed thread")
-	ErrStartThreadSignal                = internalBasicError("start thread signal")
-	ErrResumeThreadSignal               = internalBasicError("resume thread signal")
-	ErrSuspendThreadSignal              = internalBasicError("suspend thread signal")
+	ErrStartThreadSignal                = internalBasicError("start-thread-signal")
+	ErrResumeThreadSignal               = internalBasicError("resume-thread-signal")
+	ErrSuspendThreadSignal              = internalBasicError("suspend-thread-signal")
 	ErrRecyclingThread                  = internalBasicError("cannot recycle an active thread")
-	ErrSoringMixedTypes                 = internalBasicError("cannot sort mixed value types")
+	ErrSoringMixedTypes                 = internalBasicError("cannot sort mixed data types")
 	ErrParallelArgs                     = internalBasicError("arguments for parallel tasks must be non empty arrays")
 	ErrParallelFn                       = internalBasicError("first argument of a parallel argument must be a function")
 	ErrNonNegativeIntegerTimeout        = internalBasicError("timeout must be a non negative integer milliseconds")

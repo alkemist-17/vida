@@ -54,8 +54,8 @@ const (
 )
 
 const (
-	assertionFailureDefaultMessage = "Default assertion failure message"
-	exceptionDefaultMessage        = "Defatul exception message"
+	assertionFailureDefaultMessage = "no assumption was given for the assertion"
+	exceptionDefaultMessage        = "no reason was given for the raised exception"
 )
 
 func createNewMapScriptIPLine(scriptID string) MapScriptIPLine {
@@ -150,17 +150,17 @@ func coreAssert(ctx *Context, args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage   : %v\n\n", verror.AssertionErrType, assertionFailureDefaultMessage))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, assertionFailureDefaultMessage))
 		return Nil, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage   : %v\n\n", verror.AssertionErrType, args[1].String()))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, args[1].String()))
 		return Nil, err
 	}
-	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage   : %v\n\n", verror.AssertionErrType, assertionFailureDefaultMessage))
+	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, assertionFailureDefaultMessage))
 	return Nil, err
 }
 
