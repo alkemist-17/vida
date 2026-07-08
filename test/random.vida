@@ -1,47 +1,47 @@
-var rand = load("std/rand")
+var rand = load("std.rand")
 
 var N = 20
 
-for in N {print(rand.N())}
-for in N {print(rand.I())}
-for in N {print(rand.U32())}
-for in N {print(rand.F())}
-for in N {print(rand.norm())}
-for in N {print(rand.exp())}
-for in N {print(rand.perm(10))}
-for in N {print(rand.zipf())}
-for in N {print(rand.pcg())}
-for in N {print(rand.CC8())}
-for in N {print(rand.bytes(16))}
-for in N {print(rand.text())}
-for in N {print(rand.nanoid())}
-for in N {print(rand.uuid())}
-for in N {assert(len(rand.nanoid()) == rand.nanoidDefaultSize)}
+for in N {print(rand::N())}
+for in N {print(rand::I())}
+for in N {print(rand::U32())}
+for in N {print(rand::F())}
+for in N {print(rand::norm())}
+for in N {print(rand::exp())}
+for in N {print(rand::perm(10))}
+for in N {print(rand::zipf())}
+for in N {print(rand::pcg())}
+for in N {print(rand::CC8())}
+for in N {print(rand::bytes(16))}
+for in N {print(rand::text())}
+for in N {print(rand::nanoid())}
+for in N {print(rand::uuid())}
+for in N {assert(rand::nanoid().len() == rand.nanoidDefaultSize)}
 
 var size = 31
-for in N {print(rand.nanoid(size))}
-for in N {assert(len(rand.nanoid(size)) == size)}
+for in N {print(rand::nanoid(size))}
+for in N {assert(rand::nanoid(size).len() == size)}
 
 size = 119
-var nanoid = rand.customNanoid(rand.numeric, size)
+var nanoid = rand::customNanoid(rand.numeric, size)
 
 for in N {print(nanoid())}
-for in N {assert(len(nanoid()) == size)}
+for in N {assert(nanoid().len() == size)}
 
-nanoid = rand.customNanoid(rand.password, size)
+nanoid = rand::customNanoid(rand.password, size)
 for in N {print(nanoid())}
-for in N {assert(len(nanoid()) == size)}
+for in N {assert(nanoid().len() == size)}
 
-nanoid = rand.customNanoid(rand.alpha, size)
+nanoid = rand::customNanoid(rand.alpha, size)
 for in N {print(nanoid())}
-for in N {assert(len(nanoid()) == size)}
+for in N {assert(nanoid().len() == size)}
 
-assert(rand.uuid(nil) == "00000000-0000-0000-0000-000000000000")
-assert(rand.uuid(422) == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
+assert(rand::uuid(nil) == "00000000-0000-0000-0000-000000000000")
+assert(rand::uuid(422) == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
 
-var uuid = rand.uuid()
+var uuid = rand::uuid()
 var dash = "-"
-assert(len(uuid) == 36)
+assert(uuid.len() == 36)
 assert(uuid[8] == dash)
 assert(uuid[13] == dash)
 assert(uuid[18] == dash)
