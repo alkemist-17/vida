@@ -476,6 +476,21 @@ func (client *vidaHttpClient) Prefix(ctx *Context, op uint64) (Value, error) {
 	}
 }
 
+func (client *vidaHttpClient) Get(ctx *Context, message Value) Value {
+	current := client.GetVTable(ctx).(*Object)
+	key := message.ObjectKey()
+	for depth := 0; current != nil; depth++ {
+		if depth >= maxVTableChainDepth {
+			return Nil
+		}
+		if val, ok := current.Value[key]; ok {
+			return val
+		}
+		current = current.VTable
+	}
+	return Nil
+}
+
 func (client *vidaHttpClient) Equals(ctx *Context, other Value) Bool {
 	x, ok := other.(*vidaHttpClient)
 	return Bool(ok && x == client)
