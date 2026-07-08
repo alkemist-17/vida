@@ -17,7 +17,7 @@ let iComparable = {
 }
 
 let less = fun v, w {
-    if v:comparedTo(w) < 0 {
+    if v::comparedTo(v, w) < 0 {
         ret true
     }
     ret false
@@ -30,7 +30,7 @@ let swap = fun comparables, i, j {
 }
 
 let isSorted = fun comparables {
-    for i in 1, len(comparables) {
+    for i in 1, comparables.len() {
         if less(comparables[i], comparables[i-1]) {
             ret false
         }
@@ -45,7 +45,7 @@ let number = {
 
 
 let shellSort = fun comparables {
-    var N = len(comparables)
+    var N = comparables.len()
     var h = 1
     while h < N/3 {
         h = 3*h + 1
@@ -68,7 +68,7 @@ let N = 13
 
 let fillList = fun xs, N {
     var count = N
-    for i in 0, len(xs) {
+    for i in 0, xs.len() {
         xs[i] = count
         count = count + 1
     }
@@ -80,7 +80,7 @@ let randomInt = fillList(newArray(N), N)
 let data = newArray(N)
 
 for i, v in randomInt {
-    var val = clone(number)
+    var val = number.clone()
     val.val = v
     data[i] = val
 }

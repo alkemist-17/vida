@@ -1,4 +1,4 @@
-var cast = load("std/cast")
+var cast = load("std.cast")
 
 assert(nil == nil)
 
@@ -6,9 +6,9 @@ assert(not nil)
 
 assert(not nil == true)
 
-assert(cast.toBool(nil) == false)
+assert(cast::toBool(nil) == false)
 
-assert(cast.toString(nil) == type(nil) and type(nil) == "nil")
+assert(cast::toString(nil) == nil.type() and nil.type() == "nil")
 
 if nil {
     assert(false)
@@ -34,7 +34,7 @@ assert((nil or nil) == nil)
 // something or nil should be equal to something
 assert((true or nil) == true)
 assert((42 or nil) == 42)
-assert(("true" or nil) == cast.toString(true))
+assert(("true" or nil) == cast::toString(true))
 assert((1.5 or nil) >= 1.5 and (1.5 or nil) <= 1.5)
 
 assert((nil and true) == nil)
@@ -44,8 +44,8 @@ assert((nil or false) == false)
 
 assert(nil != 42)
 assert(nil != 0.0)
-assert(type(nil) == type(nil and true))
-assert(type(nil) == type(nil and false))
+assert(nil.type() == (nil and true).type())
+assert(nil.type() == (nil and false).type())
 
 var M = {}
 M[nil] = 42
@@ -53,7 +53,7 @@ assert(M[nil] == 42)
 M[nil] = nil
 assert(M[nil] == nil)
 
-assert(clone(nil) == nil)
+assert(nil.clone() == nil)
 
 while not nil {
     assert(true)
@@ -61,8 +61,8 @@ while not nil {
 }
 
 
-assert((nil or true) == true and type(nil or true) == type(true))
-assert((nil or false) == false and type(nil or false) == type(false))
+assert((nil or true) == true and (nil or true).type() == true.type())
+assert((nil or false) == false and (nil or false).type() == false.type())
 
 // AND
 // nil and something should be nil

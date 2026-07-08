@@ -1,8 +1,8 @@
-var example = load("example")
+var example = load("extension.example")
 
 assert(example)
 
-var r = example.sayHello()
+var r = example::sayHello()
 
 assert(r)
-assert(type(r) == type("string"))
+assert(r.type() == "string".type())

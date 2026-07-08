@@ -16,7 +16,7 @@ var r = g(true)
 assert(r.message == errors.whenTrue.message)
 assert(r.message == error(errors.whenTrue.message).message)
 
-if isError(r) {
+if r.isError() {
     assert(not r)
 }
 
@@ -24,7 +24,7 @@ r = g(nil)
 assert(r.message == errors.whenFalse.message)
 assert(r.message == error(errors.whenFalse.message).message)
 
-if isError(r) {
+if r.isError() {
     assert(not r)
 }
 
@@ -40,13 +40,13 @@ assert((error() or 42) == error(42).message)
 r = error()
 
 if not r {
-    assert(isError(r))
+    assert(r.isError())
 }
 
 if r {
     assert(true)
 } else {
-    assert(isError(r))
+    assert(r.isError())
 }
 
 var val = 0b11111111

@@ -1263,7 +1263,7 @@ func (p *pp) doPrint(a []Value) {
 	}
 }
 
-// Custom Basic print functions
+// Custom Basic ftm family of functions
 func VFprintln(w io.Writer, a ...Value) (n int, err error) {
 	p := newPrinter()
 	p.doPrintln(a)

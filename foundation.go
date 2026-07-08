@@ -9,16 +9,16 @@ import (
 func loadFoundationException() Value {
 	m := &Object{Value: make(map[string]Value, 2)}
 	m.Value["raise"] = NativeFunction(exceptionRaise)
-	m.Value["protected"] = NativeFunction(exceptionProtectedCall)
+	m.Value["protect"] = NativeFunction(exceptionProtectedCall)
 	return m
 }
 
 func exceptionRaise(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		err := fmt.Errorf("\n\n\t[%v]\n\tMessage : %v\n\n", verror.ExceptionErrType, args[0].String())
+		err := fmt.Errorf("\n\n\n\n\t[%v]\n\tReason    : %v", verror.ExceptionErrType, args[0].String())
 		return Nil, err
 	}
-	err := fmt.Errorf("\n\n\t[%v]\n\n", verror.ExceptionErrType)
+	err := fmt.Errorf("\n\n\n\n\t[%v]\n\tReason    : %v", verror.ExceptionErrType, exceptionDefaultMessage)
 	return Nil, err
 }
 

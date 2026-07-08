@@ -13,7 +13,7 @@ func (t Time) Boolean() Bool {
 	return True
 }
 
-func (t Time) Prefix(op uint64) (Value, error) {
+func (t Time) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil
@@ -22,28 +22,28 @@ func (t Time) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (t Time) Binop(op uint64, rhs Value) (Value, error) {
+func (t Time) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.OR):
 		return t, nil
 	case uint64(token.IN):
-		return IsMemberOf(t, rhs)
+		return IsMemberOf(ctx, t, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
-func (t Time) IGet(index Value) (Value, error) {
-	return Nil, verror.ErrValueNotIndexable
+func (t Time) Get(ctx *Context, index Value) Value {
+	return Nil
 }
 
-func (t Time) ISet(index, val Value) error {
+func (t Time) Set(index, val Value) error {
 	return verror.ErrValueNotIndexable
 }
 
-func (t Time) Equals(other Value) Bool {
+func (t Time) Equals(ctx *Context, other Value) Bool {
 	if o, ok := other.(Time); ok {
 		return Bool(time.Time(t).Equal(time.Time(o)))
 	}
@@ -71,11 +71,28 @@ func (t Time) String() string {
 }
 
 func (t Time) ObjectKey() string {
-	return time.Time(t).String()
+	return t.String()
+}
+
+func (t Time) GetVTable(ctx *Context) Value {
+	if ctx.vtables[timeT] == nil {
+		ctx.loadTimeVT()
+	}
+	return ctx.vtables[timeT]
+}
+
+func (t Time) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[timeT] == nil {
+		ctx.loadTimeVT()
+	}
+	if vtable, ok := ctx.vtables[timeT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
 }
 
 func (t Time) Type() string {
-	return "time"
+	return timeT
 }
 
 func (t Time) Clone() Value {

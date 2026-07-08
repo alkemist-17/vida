@@ -17,17 +17,21 @@ type Context struct {
 	currentThread    *Thread
 	script           *Script
 	extensionsLoader ExtensionsLoader
-	extensionCache   map[string]*Object
+	extensionsCache  map[string]*Object
+	vtables          map[string]Value
 	threadPool       *internalThreadPool
 	vm               *VM
 }
 
 func NewContext(src []byte, contextID string, extensionsLoader ExtensionsLoader) *Context {
-	return &Context{
+	ctx := &Context{
 		src:              src,
 		extensionsLoader: extensionsLoader,
 		contextID:        contextID,
+		vtables:          make(map[string]Value),
 	}
+	ctx.loadUniversalVT()
+	return ctx
 }
 
 func (ctx *Context) Compile() (err error) {
@@ -35,7 +39,7 @@ func (ctx *Context) Compile() (err error) {
 	if err != nil {
 		return
 	}
-	script, err := newCompiler(ast, ctx.contextID, ctx.extensionsLoader).compileScript()
+	script, err := newCompiler(ast, ctx.contextID, ctx, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}
@@ -59,7 +63,7 @@ func (ctx *Context) CompileAndRun() (err error) {
 	if err != nil {
 		return
 	}
-	script, err := newCompiler(ast, ctx.contextID, ctx.extensionsLoader).compileScript()
+	script, err := newCompiler(ast, ctx.contextID, ctx, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}
@@ -121,7 +125,7 @@ func (ctx *Context) RunDebugSession() (err error) {
 	}
 	fmt.Println(ast.StringifyAST(scriptAST))
 	pressEnterToContinue()
-	script, err := newCompiler(scriptAST, ctx.contextID, ctx.extensionsLoader).compileScript()
+	script, err := newCompiler(scriptAST, ctx.contextID, ctx, ctx.extensionsLoader).compileScript()
 	if err != nil {
 		return
 	}
@@ -190,4 +194,15 @@ func (ctx *Context) releaseInternalThread() {
 	if ctx.threadPool != nil {
 		ctx.threadPool.release()
 	}
+}
+
+func (ctx *Context) runFunctionInNewThread(fn *Function, args ...Value) (Value, error) {
+	vm := &VM{ctx.getInternalThread(fn), ctx}
+	var err error
+	if err = vm.runThread(0, 0, true, args...); err == nil {
+		result := vm.Channel
+		ctx.releaseInternalThread()
+		return result, nil
+	}
+	return Nil, err
 }

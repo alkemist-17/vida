@@ -1,45 +1,45 @@
-var text = load("std/text")
+var text = load("std.text")
 assert(text)
 
 var data = "Hello, World"
 var R = nil
 
-assert(text.hasPrefix(data, "Hell"))
-assert(not text.hasPrefix(data, "amber"))
+assert(text::hasPrefix(data, "Hell"))
+assert(not text::hasPrefix(data, "amber"))
 
-assert(text.hasSuffix(data, "ld"))
-assert(not text.hasSuffix(data, "groovy"))
+assert(text::hasSuffix(data, "ld"))
+assert(not text::hasSuffix(data, "groovy"))
 
-assert(type(text.fromCodePoints(9731, 9733, 9842, nil, true, false, 0x2f804)) == "string")
+assert(text::fromCodePoints(9731, 9733, 9842, nil, true, false, 0x2f804).type() == "string".type())
 
-assert(text.trim("¡¡¡Hello, World!!!", "!¡") == data)
-assert(text.trim("   Hello, World   ") == data)
-assert(text.trim("   Hello, World   ", nil) == data)
-assert(text.trim("Hello, World   ") == data)
-assert(text.trim("   Hello, World") == data)
+assert(text::trim("¡¡¡Hello, World!!!", "!¡") == data)
+assert(text::trim("   Hello, World   ") == data)
+assert(text::trim("   Hello, World   ", nil) == data)
+assert(text::trim("Hello, World   ") == data)
+assert(text::trim("   Hello, World") == data)
 
 
-R = text.split("a,b,c", ",")
-assert(type(R) == "array" and len(R) == 3)
+R = text::split("a,b,c", ",")
+assert(R.type() == [].type() and R.len() == 3)
 
-R = text.split("a man a plan a canal panama", "a ")
-assert(type(R) == "array" and len(R) == 4)
+R = text::split("a man a plan a canal panama", "a ")
+assert(R.type() == [].type() and R.len() == 4)
 
-R = text.split(" xyz ", "")
-assert(type(R) == "array" and len(R) == 5)
+R = text::split(" xyz ", "")
+assert(R.type() == [].type() and R.len() == 5)
 
-R = text.split("", "Bernardo O'Higgins")
-assert(type(R) == "array" and len(R) == 1) // empty string
+R = text::split("", "Bernardo O'Higgins")
+assert(R.type() == [].type() and R.len() == 1) // empty string
 
-R = text.split(" xyz ", nil)
-assert(R != nil and len(R) == 3 and R[0] == "" and R[1] == "xyz" and R[2] == "")
+R = text::split(" xyz ", nil)
+assert(R != nil and R.len() == 3 and R[0] == "" and R[1] == "xyz" and R[2] == "")
 
-R = text.split(" xyz ", 0.0)
-assert(R != nil and len(R) == 3 and R[0] == "" and R[1] == "xyz" and R[2] == "")
+R = text::split(" xyz ", 0.0)
+assert(R != nil and R.len() == 3 and R[0] == "" and R[1] == "xyz" and R[2] == "")
 
 // Check equality
 var checkListEquality = fun l, r {
-    for i in len(l) {
+    for i in l.len() {
         assert(l[i] == r[i])
     }
 }
@@ -56,66 +56,66 @@ var words = [
 
 
 // hasPrefix
-assert(text.hasPrefix(words[0], "phil"))
-assert(text.hasPrefix(words[1], "ser"))
-assert(text.hasPrefix(words[2], "nebula"))
-assert(text.hasPrefix(words[3], "origin"))
-assert(text.hasPrefix(words[4], "percep"))
-assert(text.hasPrefix(words[5], "card"))
+assert(text::hasPrefix(words[0], "phil"))
+assert(text::hasPrefix(words[1], "ser"))
+assert(text::hasPrefix(words[2], "nebula"))
+assert(text::hasPrefix(words[3], "origin"))
+assert(text::hasPrefix(words[4], "percep"))
+assert(text::hasPrefix(words[5], "card"))
 
 // hasSuffix
-assert(text.hasSuffix(words[0], "py"))
-assert(text.hasSuffix(words[1], "pity"))
-assert(text.hasSuffix(words[2], "nebula"))
-assert(text.hasSuffix(words[3], "origin"))
-assert(text.hasSuffix(words[4], "ception"))
-assert(text.hasSuffix(words[5], "ality"))
+assert(text::hasSuffix(words[0], "py"))
+assert(text::hasSuffix(words[1], "pity"))
+assert(text::hasSuffix(words[2], "nebula"))
+assert(text::hasSuffix(words[3], "origin"))
+assert(text::hasSuffix(words[4], "ception"))
+assert(text::hasSuffix(words[5], "ality"))
 
 // fields
-data = text.fields("philanthropy serendipity nebula origin perception cardinality")
+data = text::fields("philanthropy serendipity nebula origin perception cardinality")
 checkListEquality(words, data)
 
 // split
-data = text.split("philanthropy, serendipity, nebula, origin, perception, cardinality", ", ")
+data = text::split("philanthropy, serendipity, nebula, origin, perception, cardinality", ", ")
 checkListEquality(words, data)
 
-data = text.split("philanthropy,serendipity,nebula,origin,perception,cardinality", ",")
+data = text::split("philanthropy,serendipity,nebula,origin,perception,cardinality", ",")
 checkListEquality(words, data)
 
-data = text.split("philanthropyXXXserendipityXXXnebulaXXXoriginXXXperceptionXXXcardinality", "XXX")
+data = text::split("philanthropyXXXserendipityXXXnebulaXXXoriginXXXperceptionXXXcardinality", "XXX")
 checkListEquality(words, data)
 
 // repeat
 var someText = "Some Serendipity Star"
 var factor = 1024
-data = text.repeat(someText, factor)
-assert(len(someText) * factor == len(data))
+data = text::repeat(someText, factor)
+assert(someText.len() * factor == data.len())
 factor = 0
-data = text.repeat(someText, factor)
-assert(len(data) == 0 and type(data) == "string") // empty string
+data = text::repeat(someText, factor)
+assert(data.len() == 0 and data.type() == "string".type()) // empty string
 
 // fromCodePoints
-data = text.fromCodePoints(65, 66, 67, 68, 69, 70)
+data = text::fromCodePoints(65, 66, 67, 68, 69, 70)
 someText = "ABCDEF"
 assert(data == someText)
 
 // replace
 someText = "With or without you, I cannot live with or without you"
-data = text.replaceN(someText, "I", "you", -1)
+data = text::replaceN(someText, "I", "you", -1)
 assert(data == "With or without you, you cannot live with or without you")
 
 someText = "Peter Piper picked a peck of pickled peppers"
-data = text.replaceN(someText, "p", "v", 2)
+data = text::replaceN(someText, "p", "v", 2)
 assert(data == "Peter Piver vicked a peck of pickled peppers")
 
-data = text.replaceN(someText, "p", "v", 4)
+data = text::replaceN(someText, "p", "v", 4)
 assert(data == "Peter Piver vicked a veck of vickled peppers")
 
-data = text.replaceN(someText, "", "P", -1)
+data = text::replaceN(someText, "", "P", -1)
 assert(data == "PPPePtPePrP PPPiPpPePrP PpPiPcPkPePdP PaP PpPePcPkP PoPfP PpPiPcPkPlPePdP PpPePpPpPePrPsP")
 
 // replaceAll
-data = text.replaceAll(someText, "p", "v")
+data = text::replaceAll(someText, "p", "v")
 assert(data == "Peter Piver vicked a veck of vickled vevvers")
 
 // center
@@ -123,38 +123,38 @@ assert(data == "Peter Piver vicked a veck of vickled vevvers")
 someText = "hello"
 var sep = "-"
 
-assert(text.center(someText, -10) == someText)
-assert(text.center(someText, 0) == someText)
-assert(text.center(someText, 1) == someText)
-assert(text.center(someText, 2) == someText)
-assert(text.center(someText, 3) == someText)
-assert(text.center(someText, 5) == someText)
+assert(text::center(someText, -10) == someText)
+assert(text::center(someText, 0) == someText)
+assert(text::center(someText, 1) == someText)
+assert(text::center(someText, 2) == someText)
+assert(text::center(someText, 3) == someText)
+assert(text::center(someText, 5) == someText)
 
-assert(text.center(someText, 6, sep) == "hello-")
-assert(text.center(someText, 7, sep) == "-hello-")
-assert(text.center(someText, 8, sep) == "-hello--")
-assert(text.center(someText, 9, sep) == "--hello--")
-assert(text.center(someText, 10, sep) == "--hello---")
-assert(text.center(someText, 11, sep) == "---hello---")
+assert(text::center(someText, 6, sep) == "hello-")
+assert(text::center(someText, 7, sep) == "-hello-")
+assert(text::center(someText, 8, sep) == "-hello--")
+assert(text::center(someText, 9, sep) == "--hello--")
+assert(text::center(someText, 10, sep) == "--hello---")
+assert(text::center(someText, 11, sep) == "---hello---")
 
-assert(text.center(someText, 6) == "hello ")
-assert(text.center(someText, 7) == " hello ")
-assert(text.center(someText, 8) == " hello  ")
-assert(text.center(someText, 9) == "  hello  ")
-assert(text.center(someText, 10) == "  hello   ")
-assert(text.center(someText, 11) == "   hello   ")
+assert(text::center(someText, 6) == "hello ")
+assert(text::center(someText, 7) == " hello ")
+assert(text::center(someText, 8) == " hello  ")
+assert(text::center(someText, 9) == "  hello  ")
+assert(text::center(someText, 10) == "  hello   ")
+assert(text::center(someText, 11) == "   hello   ")
 
 someText = "hi"
 
-assert(text.center(someText, 2) == someText)
-assert(text.center(someText, 6, sep) == "--hi--")
-assert(text.center(someText, 5, sep) == "-hi--")
+assert(text::center(someText, 2) == someText)
+assert(text::center(someText, 6, sep) == "--hi--")
+assert(text::center(someText, 5, sep) == "-hi--")
 
 someText = "X"
-assert(text.center(someText, 7, "ab") == "abababXababab")
+assert(text::center(someText, 7, "ab") == "abababXababab")
 
 someText = "🦀"
-assert(text.center(someText, 5) == "  🦀  ")
+assert(text::center(someText, 5) == "  🦀  ")
 
 
 
@@ -162,37 +162,37 @@ assert(text.center(someText, 5) == "  🦀  ")
 someText = "For some other reasons we did not know when it was happening ... "
 data = "other "
 
-assert(text.contains(someText, data))
+assert(text::contains(someText, data))
 
 data = "hello, world"
 
-assert(not text.contains(someText, data))
+assert(not text::contains(someText, data))
 
 // contains any
 data = "kp"
-assert(text.containsAny(someText, data))
+assert(text::containsAny(someText, data))
 
 // index
 data = "F"
-assert(text.index(someText, data) == 0)
+assert(text::index(someText, data) == 0)
 
 data = "Yellow"
-assert(text.index(someText, data) == -1)
+assert(text::index(someText, data) == -1)
 
 
 // join
 data = [1,2,3,4,5]
-assert(text.join(data, ",") == "1,2,3,4,5")
+assert(",".join(data) == "1,2,3,4,5")
 
 data = ["hello", "world", "this", "is", "a chocolate"]
-assert(text.join(data, "-") == "hello-world-this-is-a chocolate")
+assert("-".join(data) == "hello-world-this-is-a chocolate")
 
 // toLower, toUpper
 data = "alphabet"
-assert(text.toUpper(data) == "ALPHABET")
+assert(text::toUpper(data) == "ALPHABET")
 
 data = "ALPHABET"
-assert(text.toLower(data) == "alphabet")
+assert(text::toLower(data) == "alphabet")
 
 
 // isAscii
@@ -234,12 +234,12 @@ assert(all(someText, text.isSpace))
 // codePoint
 
 someText = "A"
-assert(text.codePoints(someText)[0] == 65)
-assert(text.fromCodePoints(...text.codePoints(someText)) == someText)
+assert(text::codePoints(someText)[0] == 65)
+assert(text::fromCodePoints(...text::codePoints(someText)) == someText)
 
 someText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 for k, v in someText {
-    assert(text.fromCodePoints(...text.codePoints(v)) == v)
+    assert(text::fromCodePoints(...text::codePoints(v)) == v)
 }
 
 
@@ -266,14 +266,14 @@ var assertFalse = fun value, msg {
 // PROPERTY: Empty string always returns false for predicates
 // ============================================================================
 var test_empty_string_properties = fun {
-    assertTrue(text.isDecimal("") == false, "empty not decimal")
-    assertTrue(text.isDigit("") == false, "empty not digit")
-    assertTrue(text.isHexDigit("") == false, "empty not hex")
-    assertTrue(text.isLetter("") == false, "empty not letter")
-    assertTrue(text.isNumber("") == false, "empty not number")
-    assertTrue(text.isAscii("") == false, "empty not ascii")
-    assertTrue(text.isSpace("") == false, "empty not space")
-    assertTrue(text.isSpaceChar("") == false, "empty not spacechar")
+    assertTrue(text::isDecimal("") == false, "empty not decimal")
+    assertTrue(text::isDigit("") == false, "empty not digit")
+    assertTrue(text::isHexDigit("") == false, "empty not hex")
+    assertTrue(text::isLetter("") == false, "empty not letter")
+    assertTrue(text::isNumber("") == false, "empty not number")
+    assertTrue(text::isAscii("") == false, "empty not ascii")
+    assertTrue(text::isSpace("") == false, "empty not space")
+    assertTrue(text::isSpaceChar("") == false, "empty not spacechar")
 }
 
 // ============================================================================
@@ -281,11 +281,11 @@ var test_empty_string_properties = fun {
 // ============================================================================
 var test_single_char_consistency = fun {
     // If a single char passes, the same char in a multi-char string of repeats should pass
-    assertTrue(text.isDecimal("5") == text.isDecimal("555"), "decimal single vs repeat")
-    assertTrue(text.isDigit("٣") == text.isDigit("٣٣٣"), "unicode digit consistency")
-    assertTrue(text.isLetter("α") == text.isLetter("ααα"), "greek letter consistency")
-    assertTrue(text.isAscii("A") == text.isAscii("AAA"), "ascii consistency")
-    assertTrue(text.isSpace(" ") == text.isSpace("   "), "space consistency")
+    assertTrue(text::isDecimal("5") == text::isDecimal("555"), "decimal single vs repeat")
+    assertTrue(text::isDigit("٣") == text::isDigit("٣٣٣"), "unicode digit consistency")
+    assertTrue(text::isLetter("α") == text::isLetter("ααα"), "greek letter consistency")
+    assertTrue(text::isAscii("A") == text::isAscii("AAA"), "ascii consistency")
+    assertTrue(text::isSpace(" ") == text::isSpace("   "), "space consistency")
 }
 
 // ============================================================================
@@ -293,13 +293,13 @@ var test_single_char_consistency = fun {
 // ============================================================================
 var test_decimal_subset_of_digit = fun {
     // All ASCII decimal strings should also be Unicode digit strings
-    assertTrue(text.isDecimal("0") == true and text.isDigit("0") == true, "0 subset")
-    assertTrue(text.isDecimal("123") == true and text.isDigit("123") == true, "123 subset")
-    assertTrue(text.isDecimal("999") == true and text.isDigit("999") == true, "999 subset")
+    assertTrue(text::isDecimal("0") == true and text::isDigit("0") == true, "0 subset")
+    assertTrue(text::isDecimal("123") == true and text::isDigit("123") == true, "123 subset")
+    assertTrue(text::isDecimal("999") == true and text::isDigit("999") == true, "999 subset")
     
     // But not vice versa: Unicode-only digits
-    assertTrue(text.isDecimal("١٢٣") == false and text.isDigit("١٢٣") == true, "arabic-indic superset")
-    assertTrue(text.isDecimal("४५६") == false and text.isDigit("४५६") == true, "devanagari superset")
+    assertTrue(text::isDecimal("١٢٣") == false and text::isDigit("١٢٣") == true, "arabic-indic superset")
+    assertTrue(text::isDecimal("४५६") == false and text::isDigit("४५६") == true, "devanagari superset")
 }
 
 // ============================================================================
@@ -307,18 +307,18 @@ var test_decimal_subset_of_digit = fun {
 // ============================================================================
 var test_hex_digit_properties = fun {
     // Case insensitivity
-    assertTrue(text.isHexDigit("abc") == text.isHexDigit("ABC"), "hex case insensitive")
-    assertTrue(text.isHexDigit("aBcDeF") == true, "mixed case hex")
+    assertTrue(text::isHexDigit("abc") == text::isHexDigit("ABC"), "hex case insensitive")
+    assertTrue(text::isHexDigit("aBcDeF") == true, "mixed case hex")
     
     // ASCII only
-    assertTrue(text.isHexDigit("123abc") == true, "valid hex")
-    assertTrue(text.isHexDigit("123xyz") == false, "invalid hex chars")
-    assertTrue(text.isHexDigit("12α") == false, "unicode not hex")
+    assertTrue(text::isHexDigit("123abc") == true, "valid hex")
+    assertTrue(text::isHexDigit("123xyz") == false, "invalid hex chars")
+    assertTrue(text::isHexDigit("12α") == false, "unicode not hex")
     
     // Edge: single valid chars
-    assertTrue(text.isHexDigit("0") == true, "hex zero")
-    assertTrue(text.isHexDigit("f") == true, "hex f lowercase")
-    assertTrue(text.isHexDigit("F") == true, "hex F uppercase")
+    assertTrue(text::isHexDigit("0") == true, "hex zero")
+    assertTrue(text::isHexDigit("f") == true, "hex f lowercase")
+    assertTrue(text::isHexDigit("F") == true, "hex F uppercase")
 }
 
 // ============================================================================
@@ -326,27 +326,27 @@ var test_hex_digit_properties = fun {
 // ============================================================================
 var test_letter_unicode_coverage = fun {
     // Latin
-    assertTrue(text.isLetter("abcXYZ") == true, "latin letters")
+    assertTrue(text::isLetter("abcXYZ") == true, "latin letters")
     
     // Greek
-    assertTrue(text.isLetter("αβγΩ") == true, "greek letters")
+    assertTrue(text::isLetter("αβγΩ") == true, "greek letters")
     
     // Cyrillic
-    assertTrue(text.isLetter("абвЯ") == true, "cyrillic letters")
+    assertTrue(text::isLetter("абвЯ") == true, "cyrillic letters")
     
     // CJK
-    assertTrue(text.isLetter("中文") == true, "cjk ideographs are letters")
+    assertTrue(text::isLetter("中文") == true, "cjk ideographs are letters")
     
     // Arabic
-    assertTrue(text.isLetter("عربي") == true, "arabic letters")
+    assertTrue(text::isLetter("عربي") == true, "arabic letters")
     
     // NOT letters: digits, punctuation, emoji
-    assertTrue(text.isLetter("123") == false, "digits not letters")
-    assertTrue(text.isLetter("!!!") == false, "punctuation not letters")
-    assertTrue(text.isLetter("🦀🎉") == false, "emoji not letters")
+    assertTrue(text::isLetter("123") == false, "digits not letters")
+    assertTrue(text::isLetter("!!!") == false, "punctuation not letters")
+    assertTrue(text::isLetter("🦀🎉") == false, "emoji not letters")
     
     // Mixed: any non-letter fails the "all" predicate
-    assertTrue(text.isLetter("abc123") == false, "mixed letter+digit fails")
+    assertTrue(text::isLetter("abc123") == false, "mixed letter+digit fails")
 }
 
 // ============================================================================
@@ -354,15 +354,15 @@ var test_letter_unicode_coverage = fun {
 // ============================================================================
 var test_number_vs_digit = fun {
     // Digits are numbers
-    assertTrue(text.isDigit("123") == true and text.isNumber("123") == true, "digits are numbers")
+    assertTrue(text::isDigit("123") == true and text::isNumber("123") == true, "digits are numbers")
     
     // But numbers include more: Roman numerals, fractions, superscripts
-    assertTrue(text.isDigit("Ⅳ") == false and text.isNumber("Ⅳ") == true, "roman numeral")
-    assertTrue(text.isDigit("½") == false and text.isNumber("½") == true, "fraction")
-    assertTrue(text.isDigit("²") == false and text.isNumber("²") == true, "superscript")
+    assertTrue(text::isDigit("Ⅳ") == false and text::isNumber("Ⅳ") == true, "roman numeral")
+    assertTrue(text::isDigit("½") == false and text::isNumber("½") == true, "fraction")
+    assertTrue(text::isDigit("²") == false and text::isNumber("²") == true, "superscript")
     
     // Non-numeric characters fail both
-    assertTrue(text.isDigit("abc") == false and text.isNumber("abc") == false, "letters fail both")
+    assertTrue(text::isDigit("abc") == false and text::isNumber("abc") == false, "letters fail both")
 }
 
 // ============================================================================
@@ -370,18 +370,18 @@ var test_number_vs_digit = fun {
 // ============================================================================
 var test_ascii_byte_semantics = fun {
     // Pure ASCII
-    assertTrue(text.isAscii("Hello123!") == true, "pure ascii")
+    assertTrue(text::isAscii("Hello123!") == true, "pure ascii")
     
     // Any multi-byte UTF-8 rune fails, even if the rune's codepoint < 128 (impossible, but test the byte logic)
-    assertTrue(text.isAscii("α") == false, "greek alpha not ascii bytes")
-    assertTrue(text.isAscii("€") == false, "euro symbol not ascii")
-    assertTrue(text.isAscii("🦀") == false, "emoji not ascii")
+    assertTrue(text::isAscii("α") == false, "greek alpha not ascii bytes")
+    assertTrue(text::isAscii("€") == false, "euro symbol not ascii")
+    assertTrue(text::isAscii("🦀") == false, "emoji not ascii")
     
     // Mixed: one non-ASCII byte fails the whole string
-    assertTrue(text.isAscii("Helloα") == false, "mixed ascii+unicode fails")
+    assertTrue(text::isAscii("Helloα") == false, "mixed ascii+unicode fails")
     
     // Edge: empty already tested, but single ASCII char
-    assertTrue(text.isAscii("A") == true, "single ascii char")
+    assertTrue(text::isAscii("A") == true, "single ascii char")
 }
 
 // ============================================================================
@@ -389,21 +389,21 @@ var test_ascii_byte_semantics = fun {
 // ============================================================================
 var test_space_predicates = fun {
     // isSpace: ALL chars must be whitespace
-    assertTrue(text.isSpace("   ") == true, "multiple spaces")
-    assertTrue(text.isSpace("\t\n\r") == true, "mixed whitespace chars")
-    assertTrue(text.isSpace(" \u00A0\u2003") == true, "unicode spaces (NBSP, EM)")
-    assertTrue(text.isSpace("  x") == false, "space+non-space fails")
+    assertTrue(text::isSpace("   ") == true, "multiple spaces")
+    assertTrue(text::isSpace("\t\n\r") == true, "mixed whitespace chars")
+    assertTrue(text::isSpace(" \u00A0\u2003") == true, "unicode spaces (NBSP, EM)")
+    assertTrue(text::isSpace("  x") == false, "space+non-space fails")
     
     // isSpaceChar: EXACTLY ONE whitespace rune
-    assertTrue(text.isSpaceChar(" ") == true, "single space char")
-    assertTrue(text.isSpaceChar("\t") == true, "single tab char")
-    assertTrue(text.isSpaceChar("\n") == true, "single newline char")
-    assertTrue(text.isSpaceChar("\u00A0") == true, "single NBSP char")
+    assertTrue(text::isSpaceChar(" ") == true, "single space char")
+    assertTrue(text::isSpaceChar("\t") == true, "single tab char")
+    assertTrue(text::isSpaceChar("\n") == true, "single newline char")
+    assertTrue(text::isSpaceChar("\u00A0") == true, "single NBSP char")
     
     // Fails for: empty, multi-char, non-space
-    assertTrue(text.isSpaceChar("") == false, "empty not spacechar")
-    assertTrue(text.isSpaceChar("  ") == false, "two spaces not spacechar")
-    assertTrue(text.isSpaceChar("a") == false, "letter not spacechar")
+    assertTrue(text::isSpaceChar("") == false, "empty not spacechar")
+    assertTrue(text::isSpaceChar("  ") == false, "two spaces not spacechar")
+    assertTrue(text::isSpaceChar("a") == false, "letter not spacechar")
 }
 
 // ============================================================================
@@ -411,34 +411,34 @@ var test_space_predicates = fun {
 // ============================================================================
 var test_edge_cases = fun {
     // Decimal boundaries
-    assertTrue(text.isDecimal("0") == true, "decimal zero")
-    assertTrue(text.isDecimal("9") == true, "decimal nine")
-    assertTrue(text.isDecimal("00") == true, "leading zeros ok")
-    assertTrue(text.isDecimal("-5") == false, "negative sign not decimal")
-    assertTrue(text.isDecimal("5.0") == false, "decimal point not decimal")
+    assertTrue(text::isDecimal("0") == true, "decimal zero")
+    assertTrue(text::isDecimal("9") == true, "decimal nine")
+    assertTrue(text::isDecimal("00") == true, "leading zeros ok")
+    assertTrue(text::isDecimal("-5") == false, "negative sign not decimal")
+    assertTrue(text::isDecimal("5.0") == false, "decimal point not decimal")
     
     // Hex boundaries
-    assertTrue(text.isHexDigit("0") == true, "hex zero")
-    assertTrue(text.isHexDigit("9") == true, "hex nine")
-    assertTrue(text.isHexDigit("a") == true, "hex a")
-    assertTrue(text.isHexDigit("f") == true, "hex f")
-    assertTrue(text.isHexDigit("g") == false, "hex stops at f")
+    assertTrue(text::isHexDigit("0") == true, "hex zero")
+    assertTrue(text::isHexDigit("9") == true, "hex nine")
+    assertTrue(text::isHexDigit("a") == true, "hex a")
+    assertTrue(text::isHexDigit("f") == true, "hex f")
+    assertTrue(text::isHexDigit("g") == false, "hex stops at f")
     
     // Unicode edge: combining marks, zero-width chars
-    assertTrue(text.isLetter("e\u0301") == false, "base+combining mark not single letter rune")
-    assertTrue(text.isAscii("\u007F") == true, "DEL char (127) is ascii")
-    assertTrue(text.isAscii("\u0080") == false, "U+0080 not ascii (first non-ascii)")
+    assertTrue(text::isLetter("e\u0301") == false, "base+combining mark not single letter rune")
+    assertTrue(text::isAscii("\u007F") == true, "DEL char (127) is ascii")
+    assertTrue(text::isAscii("\u0080") == false, "U+0080 not ascii (first non-ascii)")
     
     // Whitespace edge cases
-    assertTrue(text.isSpace("\u200B") == false, "zero-width space is NOT unicode.IsSpace")
-    assertTrue(text.isSpace("\u3000") == true, "ideographic space IS unicode.IsSpace")
+    assertTrue(text::isSpace("\u200B") == false, "zero-width space is NOT unicode.IsSpace")
+    assertTrue(text::isSpace("\u3000") == true, "ideographic space IS unicode.IsSpace")
     
     // Very long strings (performance smoke test)
-    var longDecimal = text.repeat("1", 10000)
-    assertTrue(text.isDecimal(longDecimal) == true, "long decimal string")
+    var longDecimal = text::repeat("1", 10000)
+    assertTrue(text::isDecimal(longDecimal) == true, "long decimal string")
     
-    var longMixed = "123abc" + text.repeat("456", 1000)
-    assertTrue(text.isDecimal(longMixed) == false, "long mixed fails fast")
+    var longMixed = "123abc" + text::repeat("456", 1000)
+    assertTrue(text::isDecimal(longMixed) == false, "long mixed fails fast")
 }
 
 // ============================================================================
@@ -447,11 +447,11 @@ var test_edge_cases = fun {
 var test_early_termination = fun {
     // A non-matching char at the start should fail immediately
     // (We can't measure time in pure Vida, but we can test correctness)
-    assertTrue(text.isDecimal("a123456789") == false, "fails on first char")
-    assertTrue(text.isLetter("1abcdefgh") == false, "digit at start fails letter")
+    assertTrue(text::isDecimal("a123456789") == false, "fails on first char")
+    assertTrue(text::isLetter("1abcdefgh") == false, "digit at start fails letter")
     
     // A non-matching char at the end should still fail (full scan needed)
-    assertTrue(text.isDecimal("123456789a") == false, "fails on last char")
+    assertTrue(text::isDecimal("123456789a") == false, "fails on last char")
 }
 
 // ============================================================================
@@ -476,27 +476,27 @@ run_all_predicate_tests()
 
 
 // Basic usage
-var codes = text.codePoints("Hello")
-assert(len(codes) == 5 and type(codes) == "array")
+var codes = text::codePoints("Hello")
+assert(codes.len() == 5 and codes.type() == [].type())
 assert(codes[0] == 72 and codes[1] == 101 and codes[2] == 108 and codes[3] == 108 and codes[4] == 111)
 
 
 // Unicode support
-var emojiCodes = text.codePoints("🦀🎉")
-assert(len(emojiCodes) == 2 and type(emojiCodes) == "array")
+var emojiCodes = text::codePoints("🦀🎉")
+assert(emojiCodes.len() == 2 and emojiCodes.type() == [].type())
 assert(emojiCodes[0] == 129408 and emojiCodes[1] == 127881)
 
 
 // Round-trip: codepoints → fromCodePoints
 var original = "Vida✨"
-var roundtrip = text.fromCodePoints(...text.codePoints(original))
+var roundtrip = text::fromCodePoints(...text::codePoints(original))
 assert(original == roundtrip)
 
 var filter = fun A, p {
     var R = []
     for _, v in A {
         if p(v) {
-            append(A, v)
+            A.append(v)
         }
     }
     ret A
@@ -505,8 +505,8 @@ var filter = fun A, p {
 
 // Filter non-ASCII codepoints
 var isAscii = fun cp -> cp <= 127
-var asciiOnly = filter(text.codePoints("Hiα"), isAscii)
-assert(len(asciiOnly) == 5 and asciiOnly[0] == 72 and asciiOnly[1] == 105)
+var asciiOnly = filter(text::codePoints("Hiα"), isAscii)
+assert(asciiOnly.len() == 5 and asciiOnly[0] == 72 and asciiOnly[1] == 105)
 
 
 // ============================================================================
@@ -516,8 +516,8 @@ var test_codepoints_roundtrip = fun {
     var testStrings = ["", "a", "Hello", "🦀", "αβγ", "Hello🌍123"]
     
     for i, s in testStrings {
-        var cps = text.codePoints(s)
-        var reconstructed = text.fromCodePoints(...cps)
+        var cps = text::codePoints(s)
+        var reconstructed = text::fromCodePoints(...cps)
         assertEqual(s, reconstructed, "roundtrip: " + s)
     }
 }
@@ -526,18 +526,18 @@ var test_codepoints_roundtrip = fun {
 // PROPERTY: codepoints length matches rune count
 // ============================================================================
 var test_codepoints_length = fun {
-    assertEqual(len(text.codePoints("")), 0, "empty length")
-    assertEqual(len(text.codePoints("abc")), 3, "ascii length")
-    assertEqual(len(text.codePoints("🦀🎉")), 2, "emoji length")
-    assertEqual(len(text.codePoints("αβγ")), 3, "greek length")
-    assertEqual(len(text.codePoints("")), len(""), "length match")
+    assertEqual(text::codePoints("").len(), 0, "empty length")
+    assertEqual(text::codePoints("abc").len(), 3, "ascii length")
+    assertEqual(text::codePoints("🦀🎉").len(), 2, "emoji length")
+    assertEqual(text::codePoints("αβγ").len(), 3, "greek length")
+    assertEqual(text::codePoints("").len(), "".len(), "length match")
 }
 
 // ============================================================================
 // PROPERTY: codepoint values are valid Unicode scalar values
 // ============================================================================
 var test_codepoints_valid_range = fun {
-    var cps = text.codePoints("Hello🌍123")
+    var cps = text::codePoints("Hello🌍123")
     for i, cp in cps {
         // Unicode scalar values: 0 to 0x10FFFF, excluding surrogates
         assert(cp >= 0)
@@ -552,7 +552,7 @@ var test_codepoints_valid_range = fun {
 var test_codepoints_ascii_range = fun {
     var asciiStrings = ["", " ", "ABC", "123", "!@#"]
     for i, s in asciiStrings {
-        for j, cp in text.codePoints(s) {
+        for j, cp in text::codePoints(s) {
             assert(cp <= 127)
         }
     }
@@ -561,7 +561,7 @@ var test_codepoints_ascii_range = fun {
     var nonAscii = ["α", "🦀", "café", "Москва"]
     for i, s in nonAscii {
         var hasHigh = false
-        for j, cp in text.codePoints(s) {
+        for j, cp in text::codePoints(s) {
             if cp > 127 { hasHigh = true }
         }
         assert(hasHigh, "non-ascii has high cp: " + s)
@@ -573,27 +573,27 @@ var test_codepoints_ascii_range = fun {
 // ============================================================================
 var test_codepoints_edge_cases = fun {
     // Single characters at boundaries
-    var A = text.codePoints("\u0000")
-    assert(len(A) == 1 and A[0] == 0)
-    A = text.codePoints("\u007F")
-    assert(len(A) == 1 and A[0] == 127, "DEL char")
-    A = text.codePoints("\u0080")
-    assert(len(A) == 1 and A[0] == 128, "first non-ASCII")
-    A = text.codePoints("\u10FFFF")
-    assert(len(A) == 3 and A[0] == 4351 and A[1] == 70 and A[2] == 70, "max Unicode")
+    var A = text::codePoints("\u0000")
+    assert(A.len() == 1 and A[0] == 0)
+    A = text::codePoints("\u007F")
+    assert(A.len() == 1 and A[0] == 127, "DEL char")
+    A = text::codePoints("\u0080")
+    assert(A.len() == 1 and A[0] == 128, "first non-ASCII")
+    A = text::codePoints("\u10FFFF")
+    assert(A.len() == 3 and A[0] == 4351 and A[1] == 70 and A[2] == 70, "max Unicode")
     // Empty string
-    A = text.codePoints("")
-    assert(len(A) == 0, "empty returns empty array")
+    A = text::codePoints("")
+    assert(A.len() == 0, "empty returns empty array")
     
     // Combining marks are separate codepoints
     var eAcute = "é"  // Could be precomposed U+00E9 or e + combining acute
-    var cps = text.codePoints(eAcute)
-    assert(len(cps) == 1 or len(cps) == 2, "combining mark handling")
+    var cps = text::codePoints(eAcute)
+    assert(cps.len() == 1 or cps.len() == 2, "combining mark handling")
     
     // Performance smoke: long string
-    var longStr = text.repeat("a", 10000)
-    cps = text.codePoints(longStr)
-    assert(len(cps) == 10000, "long string length")
+    var longStr = text::repeat("a", 10000)
+    cps = text::codePoints(longStr)
+    assert(cps.len() == 10000, "long string length")
     // All should be 97 ('a')
     for _, v in cps {
         assert(v == 97)
@@ -609,38 +609,38 @@ test_codepoints_edge_cases()
 
 
 // split
-R = text.split("hello world")
-assert(len(R) == 2 and R[0] == "hello" and R[1] == "world")
+R = text::split("hello world")
+assert(R.len() == 2 and R[0] == "hello" and R[1] == "world")
 
-R = text.split("a,b,c", ",")         // -> ["a", "b", "c"]
-assert(len(R) == 3 and R[0] == "a" and R[1] == "b" and R[2] == "c")
+R = text::split("a,b,c", ",")         // -> ["a", "b", "c"]
+assert(R.len() == 3 and R[0] == "a" and R[1] == "b" and R[2] == "c")
 
-R = text.split("x||y||z", "||")
-assert(len(R) == 3 and R[0] == "x" and R[1] == "y" and R[2] == "z")
+R = text::split("x||y||z", "||")
+assert(R.len() == 3 and R[0] == "x" and R[1] == "y" and R[2] == "z")
 
-R = text.split("  spaced  ", " ")    // -> ["", "", "spaced", "", ""]
-assert(len(R) == 5 and R[0] == "" and R[1] == "" and R[2] == "spaced")
+R = text::split("  spaced  ", " ")    // -> ["", "", "spaced", "", ""]
+assert(R.len() == 5 and R[0] == "" and R[1] == "" and R[2] == "spaced")
 
 // When you want to collapse whitespace & drop empties:
-R = text.fields("  spaced  here  ")
-assert(len(R) == 2 and R[0] == "spaced" and R[1] == "here")
+R = text::fields("  spaced  here  ")
+assert(R.len() == 2 and R[0] == "spaced" and R[1] == "here")
 
 
 
 // join
-R = text.join([1, 2, 3], "-")
+R = "-".join([1, 2, 3])
 assert(R == "1-2-3")
 
-R = text.join(["a", nil, "c"], ",")
+R = ",".join(["a", nil, "c"])
 assert(R == "a,nil,c")
 
-R = text.join([], ",")
+R = ",".join([])
 assert(R == "")
 
-R = text.join([true, false], " ")
+R = " ".join([true, false])
 assert(R == "true false")
 
-R = text.join("not-an-array", ",")
+R = ",".join("not-an-array")
 assert(R == nil)
 
 
@@ -649,71 +649,71 @@ assert(R == nil)
 // 1. capitalize
 // ============================================================================
 var test_capitalize = fun {
-    assertEqual(text.capitalize("hello"), "Hello", "basic")
-    assertEqual(text.capitalize("hELLo"), "Hello", "mixed case")
-    assertEqual(text.capitalize("αβγ"), "Αβγ", "greek")
-    assertEqual(text.capitalize(""), "", "empty")
-    assertEqual(text.capitalize("123abc"), "123abc", "starts with digit")
+    assertEqual(text::capitalize("hello"), "Hello", "basic")
+    assertEqual(text::capitalize("hELLo"), "Hello", "mixed case")
+    assertEqual(text::capitalize("αβγ"), "Αβγ", "greek")
+    assertEqual(text::capitalize(""), "", "empty")
+    assertEqual(text::capitalize("123abc"), "123abc", "starts with digit")
 }
 
 // ============================================================================
 // 2. padLeft & padRight
 // ============================================================================
 var test_pad = fun {
-    assertEqual(text.padLeft("hi", 5), "   hi", "padLeft default")
-    assertEqual(text.padLeft("hi", 5, "."), "...hi", "padLeft custom")
-    assertEqual(text.padLeft("hello", 3), "hello", "padLeft no-op")
+    assertEqual(text::padLeft("hi", 5), "   hi", "padLeft default")
+    assertEqual(text::padLeft("hi", 5, "."), "...hi", "padLeft custom")
+    assertEqual(text::padLeft("hello", 3), "hello", "padLeft no-op")
     
-    assertEqual(text.padRight("hi", 5), "hi   ", "padRight default")
-    assertEqual(text.padRight("hi", 5, "."), "hi...", "padRight custom")
-    assertEqual(text.padRight("hello", 3), "hello", "padRight no-op")
+    assertEqual(text::padRight("hi", 5), "hi   ", "padRight default")
+    assertEqual(text::padRight("hi", 5, "."), "hi...", "padRight custom")
+    assertEqual(text::padRight("hello", 3), "hello", "padRight no-op")
     
-    assertEqual(text.padLeft("🦀", 3, "."), ".🦀", "padLeft unicode")
-    assertEqual(text.padRight("🦀", 3, "."), "🦀.", "padRight unicode")
+    assertEqual(text::padLeft("🦀", 3, "."), ".🦀", "padLeft unicode")
+    assertEqual(text::padRight("🦀", 3, "."), "🦀.", "padRight unicode")
 }
 
 // ============================================================================
 // 3. truncate
 // ============================================================================
 var test_truncate = fun {
-    assertEqual(text.truncate("hello world", 8, "..."), "hello...", "basic")
-    assertEqual(text.truncate("hi", 10, "..."), "hi", "no truncation needed")
-    assertEqual(text.truncate("abc", 2, "..."), "...", "suffix longer than max")
-    assertEqual(text.truncate("abc", 0, "..."), "...", "zero max with suffix")
-    assertEqual(text.truncate("🦀🎉✨", 2, "!"), "🦀🎉!", "unicode truncation")
-    assertEqual(text.truncate("hello", 3), "hel", "no suffix")
+    assertEqual(text::truncate("hello world", 8, "..."), "hello...", "basic")
+    assertEqual(text::truncate("hi", 10, "..."), "hi", "no truncation needed")
+    assertEqual(text::truncate("abc", 2, "..."), "...", "suffix longer than max")
+    assertEqual(text::truncate("abc", 0, "..."), "...", "zero max with suffix")
+    assertEqual(text::truncate("🦀🎉✨", 2, "!"), "🦀🎉!", "unicode truncation")
+    assertEqual(text::truncate("hello", 3), "hel", "no suffix")
 }
 
 // ============================================================================
 // 4. lines
 // ============================================================================
 var test_lines = fun {
-    assertEqual(text.lines("a\nb\nc"), ["a", "b", "c"], "unix newlines")
-    assertEqual(text.lines("a\r\nb\r\nc"), ["a", "b", "c"], "windows newlines")
-    assertEqual(text.lines("a\rb\rc"), ["a", "b", "c"], "old mac newlines")
-    assertEqual(text.lines("a\n"), ["a"], "trailing newline drops empty")
-    assertEqual(text.lines(""), [], "empty string")
-    assertEqual(text.lines("a\n\nb"), ["a", "", "b"], "preserves internal empty lines")
+    assertEqual(text::lines("a\nb\nc"), ["a", "b", "c"], "unix newlines")
+    assertEqual(text::lines("a\r\nb\r\nc"), ["a", "b", "c"], "windows newlines")
+    assertEqual(text::lines("a\rb\rc"), ["a", "b", "c"], "old mac newlines")
+    assertEqual(text::lines("a\n"), ["a"], "trailing newline drops empty")
+    assertEqual(text::lines(""), [], "empty string")
+    assertEqual(text::lines("a\n\nb"), ["a", "", "b"], "preserves internal empty lines")
 }
 
 // ============================================================================
 // 5. wrap (PROPERTY TESTS INCLUDED)
 // ============================================================================
 var test_wrap = fun {
-    assert(text.wrap("The quick brown fox", 10) == "The quick \nbrown fox", "basic wrap")
-    assert(text.wrap("Hello\nWorld", 5) == "Hello\nWorld", "preserves existing newlines")
-    assert(text.wrap("superlongword", 4) == "supe\nrlon\ngwor\nd", "forced mid-word break")
-    assert(text.wrap("short", 20) == "short", "no wrap needed")
-    assert(text.wrap("a b c d e", 3) == "a b\n c \nd e", "exact boundary wrap")
+    assert(text::wrap("The quick brown fox", 10) == "The quick \nbrown fox", "basic wrap")
+    assert(text::wrap("Hello\nWorld", 5) == "Hello\nWorld", "preserves existing newlines")
+    assert(text::wrap("superlongword", 4) == "supe\nrlon\ngwor\nd", "forced mid-word break")
+    assert(text::wrap("short", 20) == "short", "no wrap needed")
+    assert(text::wrap("a b c d e", 3) == "a b\n c \nd e", "exact boundary wrap")
     
     // 🔍 PROPERTY: No line exceeds width (except single forced words)
     var prop_wrap_line_width = fun txt, width {
-        var wrapped = text.wrap(txt, width)
-        var lines = text.lines(wrapped)
+        var wrapped = text::wrap(txt, width)
+        var lines = text::lines(wrapped)
         for _, line in lines {
-            var runeLen = len(text.codePoints(line))
+            var runeLen = text::codePoints(line).len()
             // Allow overflow only if the original token was longer than width
-            assert(runeLen <= width or runeLen == len(text.codePoints(text.trim(line))))
+            assert(runeLen <= width or runeLen == text::codePoints(text::trim(line).len()))
         }
     }
     prop_wrap_line_width("Alpha Beta Gamma Delta Epsilon", 8)
@@ -725,32 +725,32 @@ var test_wrap = fun {
 // ============================================================================
 var test_slugify = fun {
     // --- Unicode-aware mode (default) ---
-    assertEqual(text.slugify("Hello, Vida! ✨"), "hello-vida", "basic unicode")
-    assertEqual(text.slugify("αβγ_δ"), "αβγ-δ", "greek letters kept")
-    assertEqual(text.slugify("Привет_мир"), "привет-мир", "cyrillic")
-    assertEqual(text.slugify("中文_测试"), "中文-测试", "cjk")
-    assertEqual(text.slugify("café_résumé"), "café-résumé", "latin extended")
+    assertEqual(text::slugify("Hello, Vida! ✨"), "hello-vida", "basic unicode")
+    assertEqual(text::slugify("αβγ_δ"), "αβγ-δ", "greek letters kept")
+    assertEqual(text::slugify("Привет_мир"), "привет-мир", "cyrillic")
+    assertEqual(text::slugify("中文_测试"), "中文-测试", "cjk")
+    assertEqual(text::slugify("café_résumé"), "café-résumé", "latin extended")
     
     // --- ASCII-only mode ---
-    assertEqual(text.slugify("Hello αβγ!", "-", true), "hello", "ascii strips unicode")
-    assertEqual(text.slugify("café_123", "_", true), "caf_123", "ascii keeps digits")
-    assertEqual(text.slugify("🦀🎉", "-", true), "", "emoji stripped in ascii mode")
+    assertEqual(text::slugify("Hello αβγ!", "-", true), "hello", "ascii strips unicode")
+    assertEqual(text::slugify("café_123", "_", true), "caf_123", "ascii keeps digits")
+    assertEqual(text::slugify("🦀🎉", "-", true), "", "emoji stripped in ascii mode")
     
     // --- Separator handling ---
-    assertEqual(text.slugify("a b c", "+"), "a+b+c", "custom separator")
-    assertEqual(text.slugify("a---b", "-"), "a-b", "collapses consecutive seps")
-    assertEqual(text.slugify("-hello-", "-"), "hello", "trims edges")
-    assertEqual(text.slugify("a b c", ""), "abc", "empty separator = concat")
+    assertEqual(text::slugify("a b c", "+"), "a+b+c", "custom separator")
+    assertEqual(text::slugify("a---b", "-"), "a-b", "collapses consecutive seps")
+    assertEqual(text::slugify("-hello-", "-"), "hello", "trims edges")
+    assertEqual(text::slugify("a b c", ""), "abc", "empty separator = concat")
     
     // --- Edge cases ---
-    assertEqual(text.slugify(""), "", "empty input")
-    assertEqual(text.slugify("!!!"), "", "only special chars")
-    assertEqual(text.slugify("   "), "", "only whitespace")
-    assertEqual(text.slugify("123"), "123", "digits only")
-    assertEqual(text.slugify("ABC"), "abc", "lowercases")
+    assertEqual(text::slugify(""), "", "empty input")
+    assertEqual(text::slugify("!!!"), "", "only special chars")
+    assertEqual(text::slugify("   "), "", "only whitespace")
+    assertEqual(text::slugify("123"), "123", "digits only")
+    assertEqual(text::slugify("ABC"), "abc", "lowercases")
     
     // --- Mixed content ---
-    assertEqual(text.slugify("Test-123_αβγ!@#"), "test-123-αβγ", "mixed unicode+ascii")
+    assertEqual(text::slugify("Test-123_αβγ!@#"), "test-123-αβγ", "mixed unicode+ascii")
 }
 
 // ============================================================================
@@ -759,8 +759,8 @@ var test_slugify = fun {
 var test_slugify_properties = fun {
     // 🔍 PROPERTY: Result never has double separators (unless sep is empty)
     var prop_no_double_seps = fun t, sep, ascii {
-        var slug = text.slugify(t, sep, ascii)
-        if sep != "" and text.index(slug, sep + sep) != -1 {
+        var slug = text::slugify(t, sep, ascii)
+        if sep != "" and text::index(slug, sep + sep) != -1 {
             error("Double separator in slug: ")
         }
     }
@@ -770,10 +770,10 @@ var test_slugify_properties = fun {
     
     // 🔍 PROPERTY: No leading/trailing separators (unless result is empty)
     var prop_trimmed_edges = fun t, sep, ascii {
-        var slug = text.slugify(t, sep, ascii)
+        var slug = text::slugify(t, sep, ascii)
         if slug != "" {
-            assert(text.hasPrefix(slug, sep) == false, "Leading separator: ")
-            assert(text.hasSuffix(slug, sep) == false, "Trailing separator: ")
+            assert(text::hasPrefix(slug, sep) == false, "Leading separator: ")
+            assert(text::hasSuffix(slug, sep) == false, "Trailing separator: ")
         }
     }
     prop_trimmed_edges("---hello---", "-", false)
@@ -781,12 +781,12 @@ var test_slugify_properties = fun {
     
     // 🔍 PROPERTY: ASCII-only mode produces only [a-z0-9] + separator
     var prop_ascii_only_chars = fun t, sep {
-        var slug = text.slugify(t, sep, true)
+        var slug = text::slugify(t, sep, true)
         if slug == "" { ret nil }
-        for _, cp in text.codePoints(slug) {
+        for _, cp in text::codePoints(slug) {
             var isLower = cp >= 97 and cp <= 122
             var isDigit = cp >= 48 and cp <= 57
-            var isSep = cp == text.codePoints(sep)[0]
+            var isSep = cp == text::codePoints(sep)[0]
             assert(isLower or isDigit or isSep, "Invalid char in ASCII slug")
         }
     }
@@ -794,18 +794,18 @@ var test_slugify_properties = fun {
     
     // 🔍 PROPERTY: Unicode mode preserves script diversity
     var prop_unicode_preservation = fun t {
-        var slug = text.slugify(t, "-", false)
+        var slug = text::slugify(t, "-", false)
         // If input had non-ASCII letters, output should too (unless all stripped by other rules)
         var hadUnicodeLetter = false
-        for _, cp in text.codePoints(t) {
-            if cp >= 128 and text.isLetter(cp) {  // Simplified check
+        for _, cp in text::codePoints(t) {
+            if cp >= 128 and text::isLetter(cp) {  // Simplified check
                 hadUnicodeLetter = true
                 break
             }
         }
         if hadUnicodeLetter {
             var hasUnicodeInSlug = false
-            for cp in text.codePoints(slug) {
+            for cp in text::codePoints(slug) {
                 if cp >= 128 {
                     hasUnicodeInSlug = true
                     break
@@ -820,32 +820,32 @@ var test_slugify_properties = fun {
 // 7. startsWithAny & endsWithAny
 // ============================================================================
 var test_starts_ends_with_any = fun {
-    assertTrue(text.startsWithAny("config.yaml", [".json", ".yaml", ".yml"]), "match middle")
-    assertFalse(text.startsWithAny("config.txt", [".json", ".yaml"]), "no match")
-    assertTrue(text.startsWithAny("", [""]), "empty matches empty")
-    assertFalse(text.startsWithAny("hello", []), "empty array false")
+    assertTrue(text::startsWithAny("config.yaml", [".json", ".yaml", ".yml"]), "match middle")
+    assertFalse(text::startsWithAny("config.txt", [".json", ".yaml"]), "no match")
+    assertTrue(text::startsWithAny("", [""]), "empty matches empty")
+    assertFalse(text::startsWithAny("hello", []), "empty array false")
     
-    assertTrue(text.endsWithAny("file.tar.gz", [".tar.gz", ".zip"]), "match compound")
-    assertFalse(text.endsWithAny("file.doc", [".pdf"]), "no match")
-    assertFalse(text.endsWithAny("text", ""), "empty suffix false (unless string empty)")
+    assertTrue(text::endsWithAny("file.tar.gz", [".tar.gz", ".zip"]), "match compound")
+    assertFalse(text::endsWithAny("file.doc", [".pdf"]), "no match")
+    assertFalse(text::endsWithAny("text", ""), "empty suffix false (unless string empty)")
     
     // Graceful skip of non-strings in array
-    assertTrue(text.startsWithAny("hello", [123, "hel", nil]), "skips non-strings")
+    assertTrue(text::startsWithAny("hello", [123, "hel", nil]), "skips non-strings")
 }
 
 // ============================================================================
 // 8. compare
 // ============================================================================
 var test_compare = fun {
-    assertEqual(text.compare("apple", "banana"), -1, "less")
-    assertEqual(text.compare("cherry", "cherry"), 0, "equal")
-    assertEqual(text.compare("zebra", "apple"), 1, "greater")
-    assertEqual(text.compare("a", "A"), 1, "byte order: lowercase > uppercase")
-    assertEqual(text.compare("", ""), 0, "empty vs empty")
-    assertEqual(text.compare("a", ""), 1, "non-empty vs empty")
+    assertEqual(text::compare("apple", "banana"), -1, "less")
+    assertEqual(text::compare("cherry", "cherry"), 0, "equal")
+    assertEqual(text::compare("zebra", "apple"), 1, "greater")
+    assertEqual(text::compare("a", "A"), 1, "byte order: lowercase > uppercase")
+    assertEqual(text::compare("", ""), 0, "empty vs empty")
+    assertEqual(text::compare("a", ""), 1, "non-empty vs empty")
     
     // Property: compare is deterministic and transitive
-    assertTrue(text.compare("x", "y") == -text.compare("y", "x"), "antisymmetric")
+    assertTrue(text::compare("x", "y") == -text::compare("y", "x"), "antisymmetric")
 }
 
 // ============================================================================
@@ -874,37 +874,37 @@ run_new_text_tests()
 // ============================================================================
 var test_urlEncode = fun {
     // --- ASCII unreserved (no encoding) ---
-    assert(text.urlEncode("hello") == "hello", "lowercase ascii")
-    assert(text.urlEncode("ABC123") == "ABC123", "uppercase + digits")
-    assert(text.urlEncode("test-file_name.txt~") == "test-file_name.txt~", "unreserved symbols")
+    assert(text::urlEncode("hello") == "hello", "lowercase ascii")
+    assert(text::urlEncode("ABC123") == "ABC123", "uppercase + digits")
+    assert(text::urlEncode("test-file_name.txt~") == "test-file_name.txt~", "unreserved symbols")
     
     // --- ASCII reserved/special (encoded) ---
-    assert(text.urlEncode("hello world") == "hello%20world", "space → %20")
-    assert(text.urlEncode("a+b") == "a%2Bb", "plus sign encoded")
-    assert(text.urlEncode("key=value") == "key%3Dvalue", "equals encoded")
-    assert(text.urlEncode("path/to/file") == "path%2Fto%2Ffile", "slash encoded")
-    assert(text.urlEncode("query?foo=bar") == "query%3Ffoo%3Dbar", "question mark encoded")
+    assert(text::urlEncode("hello world") == "hello%20world", "space → %20")
+    assert(text::urlEncode("a+b") == "a%2Bb", "plus sign encoded")
+    assert(text::urlEncode("key=value") == "key%3Dvalue", "equals encoded")
+    assert(text::urlEncode("path/to/file") == "path%2Fto%2Ffile", "slash encoded")
+    assert(text::urlEncode("query?foo=bar") == "query%3Ffoo%3Dbar", "question mark encoded")
     
     // --- Unicode (UTF-8 bytes encoded) ---
-    assert(text.urlEncode("αβγ") == "%CE%B1%CE%B2%CE%B3", "greek")
-    assert(text.urlEncode("café") == "caf%C3%A9", "latin extended")
-    assert(text.urlEncode("🦀") == "%F0%9F%A6%80", "emoji (4-byte UTF-8)")
-    assert(text.urlEncode("中文") == "%E4%B8%AD%E6%96%87", "cjk")
+    assert(text::urlEncode("αβγ") == "%CE%B1%CE%B2%CE%B3", "greek")
+    assert(text::urlEncode("café") == "caf%C3%A9", "latin extended")
+    assert(text::urlEncode("🦀") == "%F0%9F%A6%80", "emoji (4-byte UTF-8)")
+    assert(text::urlEncode("中文") == "%E4%B8%AD%E6%96%87", "cjk")
     
     // --- Combined with slugify (real-world usage) ---
-    var slug1 = text.slugify("Hello αβγ!")  // → "hello-αβγ"
-    assert(text.urlEncode(slug1) == "hello-%CE%B1%CE%B2%CE%B3", "slug + encode")
+    var slug1 = text::slugify("Hello αβγ!")  // → "hello-αβγ"
+    assert(text::urlEncode(slug1) == "hello-%CE%B1%CE%B2%CE%B3", "slug + encode")
     
-    var slug2 = text.slugify("café_résumé", "_", false)  // → "café_résumé"
-    assert(text.urlEncode(slug2) == "caf%C3%A9_r%C3%A9sum%C3%A9", "unicode slug encoded")
+    var slug2 = text::slugify("café_résumé", "_", false)  // → "café_résumé"
+    assert(text::urlEncode(slug2) == "caf%C3%A9_r%C3%A9sum%C3%A9", "unicode slug encoded")
     
     // --- Edge cases ---
-    assert(text.urlEncode("") == "", "empty string")
-    assert(text.urlEncode("%") == "%25", "percent sign encoded")
-    assert(text.urlEncode("%20") == "%2520", "already-encoded stays encoded (no double-decode)")
+    assert(text::urlEncode("") == "", "empty string")
+    assert(text::urlEncode("%") == "%25", "percent sign encoded")
+    assert(text::urlEncode("%20") == "%2520", "already-encoded stays encoded (no double-decode)")
     
     // --- Case sensitivity of hex ---
-    var encoded = text.urlEncode("α")
+    var encoded = text::urlEncode("α")
     assert(encoded == "%CE%B1", "uppercase hex: " + encoded)
     assert(encoded != "%ce%b1", "lowercase hex not used")
 }
@@ -915,8 +915,8 @@ var test_urlEncode = fun {
 var test_urlEncode_properties = fun {
     // 🔍 PROPERTY: Output only contains [A-Za-z0-9-_.~%]
     var prop_output_charset = fun t {
-        var encoded = text.urlEncode(t)
-        for _, cp in text.codePoints(encoded) {
+        var encoded = text::urlEncode(t)
+        for _, cp in text::codePoints(encoded) {
             var isHex = (cp >= 48 and cp <= 57) or (cp >= 65 and cp <= 70)  // 0-9, A-F
             var isSafe = (cp >= 65 and cp <= 90) or (cp >= 97 and cp <= 122) or (cp >= 48 and cp <= 57) or cp == 45 or cp == 95 or cp == 46 or cp == 126  // unreserved
             var isPercent = cp == 37  // '%'
@@ -928,16 +928,16 @@ var test_urlEncode_properties = fun {
     
     // 🔍 PROPERTY: Percent signs always appear as %XX (triplets)
     var prop_percent_triplets = fun t {
-        var encoded = text.urlEncode(t)
+        var encoded = text::urlEncode(t)
         var i = 0
-        var encodedBytes = text.bytesLen(encoded)
-        var encodedCps = text.codePoints(encoded)
+        var encodedBytes = text::bytesLen(encoded)
+        var encodedCps = text::codePoints(encoded)
 
-        while i < text.bytesLen(encoded) {
+        while i < text::bytesLen(encoded) {
             var cp = encodedCps[i]
             if cp == 37 {  // '%'
                 // Next two chars must be hex digits
-                assert(i + 2 < text.bytesLen(encoded), "Incomplete percent-encoding at end")
+                assert(i + 2 < text::bytesLen(encoded), "Incomplete percent-encoding at end")
                 // (Full validation would check hex range; simplified for test brevity)
                 i = i + 3
             } else {
@@ -952,8 +952,8 @@ var test_urlEncode_properties = fun {
     
     // 🔍 PROPERTY: Round-trip with urlDecode
     var prop_roundtrip = fun t {
-        var encoded = text.urlEncode(t)
-        var decoded = text.urlDecode(encoded)
+        var encoded = text::urlEncode(t)
+        var decoded = text::urlDecode(encoded)
         assertEqual(decoded, t, "roundtrip failed")
     }
 
@@ -977,19 +977,19 @@ var test_slugify_encode_workflow = fun {
     ]
     
     for _, title in titles {
-        var slug = text.slugify(title)  // Unicode-aware, human-readable
-        var urlSafe = text.urlEncode(slug)
+        var slug = text::slugify(title)  // Unicode-aware, human-readable
+        var urlSafe = text::urlEncode(slug)
         
         // Verify urlSafe contains no spaces or unsafe chars
-        assertFalse(text.contains(urlSafe, " "), "no spaces in URL: " + urlSafe)
-        assertFalse(text.contains(urlSafe, "!"), "no exclamation: " + urlSafe)
+        assertFalse(text::contains(urlSafe, " "), "no spaces in URL: " + urlSafe)
+        assertFalse(text::contains(urlSafe, "!"), "no exclamation: " + urlSafe)
         
         // Print for manual verification (optional)
         // print(title + " → " + slug + " → " + urlSafe)
     }
     
     // Specific example from docs
-    var result = text.urlEncode(text.slugify("Hello αβγ!"))
+    var result = text::urlEncode(text::slugify("Hello αβγ!"))
     assertEqual(result, "hello-%CE%B1%CE%B2%CE%B3", "full workflow example")
 }
 

@@ -21,11 +21,11 @@ func loadFoundationCoroutine() Value {
 	m.Value["getStackSize"] = NativeFunction(coGetStackSize)
 	m.Value["getFrameSize"] = NativeFunction(coGetFrameSize)
 	m.Value["value"] = NativeFunction(coValue)
-	m.Value["READY"] = &String{Value: Ready.String()}
-	m.Value["RUNNING"] = &String{Value: Running.String()}
-	m.Value["WAITING"] = &String{Value: Waiting.String()}
-	m.Value["SUSPENDED"] = &String{Value: Suspended.String()}
-	m.Value["DONE"] = &String{Value: Done.String()}
+	m.Value["READY"] = &String{Value: "ready"}
+	m.Value["RUNNING"] = &String{Value: "running"}
+	m.Value["SUSPENDED"] = &String{Value: "suspended"}
+	m.Value["WAITING"] = &String{Value: "waiting"}
+	m.Value["DONE"] = &String{Value: "done"}
 	return m
 }
 
@@ -204,7 +204,6 @@ func coNewThreadWithSizeControl(fn *Function, script *Script, frameSize, stackSi
 		Script: &Script{
 			Konstants:    script.Konstants,
 			GlobalStore:  script.GlobalStore,
-			ErrorInfo:    script.ErrorInfo,
 			MainFunction: fn,
 		},
 		Frames:  make([]frame, frameSize),

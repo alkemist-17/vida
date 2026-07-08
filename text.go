@@ -3,15 +3,19 @@ package vida
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationText() Value {
-	m := &Object{Value: make(map[string]Value, 42)}
+	m := &Object{Value: make(map[string]Value, 43)}
+	m.Value["randomElement"] = NativeFunction(arrayRandomElement)
 	m.Value["hasPrefix"] = NativeFunction(textHasPrefix)
 	m.Value["hasSuffix"] = NativeFunction(textHasSuffix)
 	m.Value["fromCodePoints"] = NativeFunction(textFromCodepoints)
@@ -57,6 +61,55 @@ func loadFoundationText() Value {
 	return m
 }
 
+func textMatch(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 1 {
+		input, okIn := args[0].(*String)
+		pattern, okPatt := args[1].(*String)
+		if okPatt && okIn {
+			re, err := regexp.Compile(pattern.Value)
+			if err != nil {
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			return Bool(re.MatchString(input.Value)), nil
+		}
+	}
+	return Nil, nil
+}
+
+func textFindFirstIndex(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 1 {
+		input, okIn := args[0].(*String)
+		pattern, okPatt := args[1].(*String)
+		if okPatt && okIn {
+			re, err := regexp.Compile(pattern.Value)
+			if err != nil {
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			res := re.FindAllStringIndex(input.Value, -1)
+			if res == nil {
+				return &Array{}, nil
+			}
+			arr := &Array{Value: make([]Value, 0, len(res))}
+			for _, v := range res {
+				idx := &Array{Value: make([]Value, 2)}
+				idx.Value[0] = Integer(v[0])
+				idx.Value[1] = Integer(v[1])
+				arr.Value = append(arr.Value, idx)
+			}
+			return arr, nil
+		}
+	}
+	return Nil, nil
+}
+
+func textIsEmpty(ctx *Context, args ...Value) (Value, error) {
+	l, _ := coreLen(ctx, args...)
+	if v, ok := l.(Integer); ok {
+		return Bool(v == 0), nil
+	}
+	return Nil, nil
+}
+
 func textHasPrefix(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		v, okV := args[0].(*String)
@@ -82,11 +135,12 @@ func textHasSuffix(ctx *Context, args ...Value) (Value, error) {
 func textFromCodepoints(ctx *Context, args ...Value) (Value, error) {
 	runes := make([]rune, 0, len(args))
 	for _, a := range args {
-		if v, ok := a.(Integer); ok && v > 0 {
-			runes = append(runes, int32(v))
+		if v, ok := a.(Integer); ok && 0 <= v && v <= utf8.MaxRune {
+			runes = append(runes, rune(v))
 		}
 	}
-	return &String{Value: string(runes), Runes: runes}, nil
+	normalized := norm.NFKC.String(string(runes))
+	return &String{Value: normalized, Runes: []rune(normalized)}, nil
 }
 
 func textTrim(ctx *Context, args ...Value) (Value, error) {
@@ -99,6 +153,44 @@ func textTrim(ctx *Context, args ...Value) (Value, error) {
 				}
 			}
 			return &String{Value: strings.Trim(v.Value, " ")}, nil
+		}
+	}
+	return Nil, nil
+}
+
+func textExtendedTrim(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 1:
+		if v, ok := args[0].(*String); ok {
+			return &String{Value: strings.Trim(v.Value, " ")}, nil
+		}
+	case 2:
+		if val, ok := args[0].(*String); ok {
+			switch p := args[1].(type) {
+			case *String:
+				return &String{Value: strings.Trim(val.Value, p.Value)}, nil
+			case *Object:
+				if target, ok := p.Value["target"].(*String); ok {
+					switch target.Value {
+					case "left":
+						if cutset, ok := p.Value["cutset"].(*String); ok {
+							return &String{Value: strings.TrimLeft(val.Value, cutset.Value)}, nil
+						} else {
+							return &String{Value: strings.TrimLeft(val.Value, " ")}, nil
+						}
+					case "right":
+						if cutset, ok := p.Value["cutset"].(*String); ok {
+							return &String{Value: strings.TrimRight(val.Value, cutset.Value)}, nil
+						} else {
+							return &String{Value: strings.TrimRight(val.Value, " ")}, nil
+						}
+					default:
+						return &VidaError{Message: &String{Value: "'target' should have 'left' or 'right' values for string.trim config object"}}, nil
+					}
+				} else {
+					return &VidaError{Message: &String{Value: "'target' is a required property of type string for string.trim config object"}}, nil
+				}
+			}
 		}
 	}
 	return Nil, nil
@@ -173,6 +265,9 @@ func textRepeat(ctx *Context, args ...Value) (Value, error) {
 }
 
 func textReplaceN(ctx *Context, args ...Value) (Value, error) {
+	if len(args) == 3 {
+		return textReplaceAll(ctx, args...)
+	}
 	if len(args) > 3 {
 		if s, ok := args[0].(*String); ok {
 			if old, ok := args[1].(*String); ok {
@@ -264,8 +359,8 @@ func textIndex(ctx *Context, args ...Value) (Value, error) {
 
 func textJoin(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		xs, ok := args[0].(*Array)
-		sep, okSep := args[1].(*String)
+		sep, okSep := args[0].(*String)
+		xs, ok := args[1].(*Array)
 		if ok && okSep {
 			r := make([]string, 0, len(xs.Value))
 			for _, v := range xs.Value {
@@ -725,6 +820,15 @@ func textCompare(ctx *Context, args ...Value) (Value, error) {
 		b, ok2 := args[1].(*String)
 		if ok1 && ok2 {
 			return Integer(strings.Compare(a.Value, b.Value)), nil
+		}
+	}
+	return Nil, nil
+}
+
+func textGetBytes(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if src, ok := args[0].(*String); ok {
+			return &Bytes{Value: []byte(src.Value)}, nil
 		}
 	}
 	return Nil, nil

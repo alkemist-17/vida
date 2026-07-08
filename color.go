@@ -66,12 +66,12 @@ func colorNew(ctx *Context, args ...Value) (Value, error) {
 				fgColor, fgok := colorValue(fgval)
 				bgColor, bgok := colorValue(bgval)
 				if fgok && bgok {
-					return generateColorInterface(NewColor().Bg(bgColor).Fg(fgColor)), nil
+					return NewColor().Bg(bgColor).Fg(fgColor), nil
 				}
 			}
 		}
 	}
-	return generateColorInterface(NewColor()), nil
+	return NewColor(), nil
 }
 
 func colorReset(ctx *Context, args ...Value) (Value, error) {
@@ -105,7 +105,7 @@ func (c *Color) Boolean() Bool {
 	return true
 }
 
-func (c *Color) Prefix(op uint64) (Value, error) {
+func (c *Color) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return True, nil
@@ -114,20 +114,20 @@ func (c *Color) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (c *Color) Binop(op uint64, rhs Value) (Value, error) {
+func (c *Color) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	switch op {
 	case uint64(token.AND):
 		return Nil, nil
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(c, rhs)
+		return IsMemberOf(ctx, c, rhs)
 	default:
 		return Nil, verror.ErrBinaryOpNotDefined
 	}
 }
 
-func (c *Color) Equals(other Value) Bool {
+func (c *Color) Equals(ctx *Context, other Value) Bool {
 	if val, ok := other.(*Color); ok {
 		return c == val
 	}
@@ -135,11 +135,11 @@ func (c *Color) Equals(other Value) Bool {
 }
 
 func (c *Color) String() string {
-	return fmt.Sprintf("Color(%p)", c)
+	return fmt.Sprintf("color[%p]", c)
 }
 
 func (c *Color) Type() string {
-	return "color"
+	return colorT
 }
 
 func (c *Color) Clone() Value {
@@ -147,7 +147,24 @@ func (c *Color) Clone() Value {
 }
 
 func (c *Color) ObjectKey() string {
-	return fmt.Sprintf("Color(%p)", c)
+	return c.String()
+}
+
+func (c *Color) GetVTable(ctx *Context) Value {
+	if ctx.vtables[colorT] == nil {
+		ctx.loadColorVT()
+	}
+	return ctx.vtables[colorT]
+}
+
+func (c *Color) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[colorT] == nil {
+		ctx.loadColorVT()
+	}
+	if vtable, ok := ctx.vtables[colorT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
 }
 
 // ANSI Codes
@@ -262,25 +279,10 @@ func Sprint256(fg, bg int, a ...any) string {
 	return c.Sprint(a...)
 }
 
-// Color Value Interface
-func generateColorInterface(color *Color) Value {
-	o := &Object{Value: make(map[string]Value, 7)}
-	o.Value[colorName] = color
-	o.Value["string"] = NativeFunction(colorString)
-	o.Value["format"] = NativeFunction(colorFormat)
-	o.Value["bg"] = NativeFunction(colorSetBG)
-	o.Value["fg"] = NativeFunction(colorSetFG)
-	o.Value["reset"] = NativeFunction(colorSetReset)
-	o.Value["resets"] = NativeFunction(colorGetReset)
-	return o
-}
-
 func colorString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if obj, ok := args[0].(*Object); ok {
-			if c, ok := obj.Value[colorName].(*Color); ok {
-				return &String{Value: c.Sprint(args[1])}, nil
-			}
+		if c, ok := args[0].(*Color); ok {
+			return &String{Value: c.Sprint(args[1])}, nil
 		}
 	}
 	return Nil, nil
@@ -288,12 +290,10 @@ func colorString(ctx *Context, args ...Value) (Value, error) {
 
 func colorFormat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
-		if obj, ok := args[0].(*Object); ok {
-			if c, ok := obj.Value[colorName].(*Color); ok {
-				if format, ok := args[1].(*String); ok {
-					message, e := VSprintf(format.Value, args[2:]...)
-					return &String{Value: c.Sprint(message)}, e
-				}
+		if c, ok := args[0].(*Color); ok {
+			if format, ok := args[1].(*String); ok {
+				message, e := VSprintf(format.Value, args[2:]...)
+				return &String{Value: c.Sprint(message)}, e
 			}
 		}
 	}
@@ -302,12 +302,10 @@ func colorFormat(ctx *Context, args ...Value) (Value, error) {
 
 func colorSetBG(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if obj, ok := args[0].(*Object); ok {
-			if c, ok := obj.Value[colorName].(*Color); ok {
-				if val, ok := args[1].(Integer); ok {
-					c.Bg(int((Integer(math.Abs(float64(val))) % 256)))
-					return obj, nil
-				}
+		if c, ok := args[0].(*Color); ok {
+			if val, ok := args[1].(Integer); ok {
+				c.Bg(int((Integer(math.Abs(float64(val))) % 256)))
+				return c, nil
 			}
 		}
 	}
@@ -316,12 +314,10 @@ func colorSetBG(ctx *Context, args ...Value) (Value, error) {
 
 func colorSetFG(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
-		if obj, ok := args[0].(*Object); ok {
-			if c, ok := obj.Value[colorName].(*Color); ok {
-				if val, ok := args[1].(Integer); ok {
-					c.Fg(int((Integer(math.Abs(float64(val))) % 256)))
-					return obj, nil
-				}
+		if c, ok := args[0].(*Color); ok {
+			if val, ok := args[1].(Integer); ok {
+				c.Fg(int((Integer(math.Abs(float64(val))) % 256)))
+				return c, nil
 			}
 		}
 	}
@@ -344,10 +340,8 @@ func colorSetReset(ctx *Context, args ...Value) (Value, error) {
 
 func colorGetReset(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		if obj, ok := args[0].(*Object); ok {
-			if c, ok := obj.Value[colorName].(*Color); ok {
-				return Bool(c.reset), nil
-			}
+		if c, ok := args[0].(*Color); ok {
+			return Bool(c.reset), nil
 		}
 	}
 	return Nil, nil

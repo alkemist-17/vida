@@ -5,12 +5,12 @@ import (
 )
 
 func loadFoundationMath() Value {
-	m := &Object{Value: make(map[string]Value, 28)}
+	m := &Object{Value: make(map[string]Value, 42)}
 	m.Value["pi"] = Float(math.Pi)
 	m.Value["tau"] = Float(math.Pi * 2)
 	m.Value["phi"] = Float(math.Phi)
 	m.Value["e"] = Float(math.E)
-	m.Value["inf"] = mathInf(math.Inf)
+	m.Value["inf"] = mathIntFloat(math.Inf)
 	m.Value["isNan"] = mathIsNan(math.IsNaN)
 	m.Value["isInf"] = mathIsInf(math.IsInf)
 	m.Value["nan"] = mathNan(math.NaN)
@@ -27,6 +27,7 @@ func loadFoundationMath() Value {
 	m.Value["asin"] = mathFromFloatToFloat(math.Asin)
 	m.Value["acos"] = mathFromFloatToFloat(math.Acos)
 	m.Value["atan"] = mathFromFloatToFloat(math.Atan)
+	m.Value["atan2"] = mathFrom2FloatsToFloat(math.Atan2)
 	m.Value["sinh"] = mathFromFloatToFloat(math.Sinh)
 	m.Value["cosh"] = mathFromFloatToFloat(math.Cosh)
 	m.Value["tanh"] = mathFromFloatToFloat(math.Tanh)
@@ -34,10 +35,23 @@ func loadFoundationMath() Value {
 	m.Value["acosh"] = mathFromFloatToFloat(math.Acosh)
 	m.Value["atanh"] = mathFromFloatToFloat(math.Atanh)
 	m.Value["pow"] = mathPow(math.Pow)
+	m.Value["pow10"] = mathIntFloat(math.Pow10)
+	m.Value["mod"] = mathFrom2FloatsToFloat(math.Mod)
+	m.Value["rem"] = mathFrom2FloatsToFloat(math.Remainder)
+	m.Value["exp"] = mathFromFloatToFloat(math.Exp)
+	m.Value["exp2"] = mathFromFloatToFloat(math.Exp2)
+	m.Value["gamma"] = mathFromFloatToFloat(math.Gamma)
+	m.Value["hypot"] = mathFrom2FloatsToFloat(math.Hypot)
+	m.Value["max"] = mathFrom2FloatsToFloat(math.Max)
+	m.Value["min"] = mathFrom2FloatsToFloat(math.Min)
+	m.Value["log"] = mathFromFloatToFloat(math.Log)
+	m.Value["log2"] = mathFromFloatToFloat(math.Log2)
+	m.Value["log10"] = mathFromFloatToFloat(math.Log10)
+	m.Value["trunc"] = mathFromFloatToFloat(math.Trunc)
 	return m
 }
 
-func mathInf(fn func(int) float64) NativeFunction {
+func mathIntFloat(fn func(int) float64) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
 		if len(args) > 0 {
 			if v, ok := args[0].(Integer); ok {
@@ -98,6 +112,29 @@ func mathFromFloatToFloat(fn func(float64) float64) NativeFunction {
 		}
 		return Nil, nil
 	}
+}
+
+func mathFrom2FloatsToFloat(fn func(float64, float64) float64) NativeFunction {
+	return func(ctx *Context, args ...Value) (Value, error) {
+		if len(args) > 1 {
+			l, okl := getFloat(args[0])
+			r, okr := getFloat(args[1])
+			if okl && okr {
+				return Float(fn(float64(l), float64(r))), nil
+			}
+		}
+		return Nil, nil
+	}
+}
+
+func getFloat(value Value) (Float, bool) {
+	if v, ok := value.(Float); ok {
+		return v, true
+	}
+	if v, ok := value.(Integer); ok {
+		return Float(v), true
+	}
+	return 0.0, false
 }
 
 func mathPow(fn func(float64, float64) float64) NativeFunction {

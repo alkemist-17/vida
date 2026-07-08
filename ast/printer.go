@@ -176,7 +176,7 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeChildren(sb, cont, []Node{n.Lhs, n.Rhs}, color)
 
 	case *IGet:
-		writeLine(sb, own, "IGet", col, color)
+		writeLine(sb, own, "Get", col, color)
 		writeChildren(sb, cont, []Node{n.Indexable, n.Index}, color)
 
 	case *IGetStmt:
@@ -184,7 +184,7 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeChild(sb, cont, n.Index, color)
 
 	case *ISet:
-		writeLine(sb, own, "ISet", col, color)
+		writeLine(sb, own, "Set", col, color)
 		writeChildren(sb, cont, []Node{n.Index, n.Expr}, color)
 
 	case *Slice:

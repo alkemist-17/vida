@@ -1,0 +1,157 @@
+// =============================================================================
+// Vida `::` (static-call) — dedicated investigation & regression suite
+//
+// `::` had no dedicated test file anywhere in the suite before this one,
+// even though its core mechanics were already established indirectly while
+// building vtable-core.vida (section 2) and used correctly throughout
+// equality-identity.vida and object-api.vida (`ex::protected`, `bytesMod::new`).
+// This file exists to (a) formalize that recap in one place, and (b) cover
+// what hadn't been checked yet: chaining, spread arguments, behavior on
+// non-Object types, and — found while building this file — a genuine
+// parser limitation around chaining `::` calls at the statement level.
+//
+// RECAP of the core rule (grounded in parser.go / object.go):
+//   - `recv::name(...)` ALWAYS requires an immediate call — the grammar
+//     hard-errors ("it was expected a function call after selector '::'")
+//     if `::name` isn't immediately followed by `(`. There is no bare
+//     `recv::name` property-read form, unlike `.name`.
+//   - It resolves `name` via Get — checking the receiver's OWN fields
+//     first, then its vtable chain — and does NOT insert the receiver as
+//     an argument. Contrast with `.name(...)`, which resolves via LookUp
+//     (vtable chain ONLY, never own fields) and DOES insert the receiver
+//     as the first argument.
+//   - Because module objects returned by `load(...)` store their exports
+//     as own fields with no vtable at all, calling them always requires
+//     `::` — `.` can never reach them.
+// =============================================================================
+
+var ex = load("std.exception")
+var mathMod = load("std.math")
+
+
+// =============================================================================
+// 1. `::` chaining works fine in EXPRESSION context (assignments, function
+//    arguments, assert conditions, etc.) — confirmed against parser.go's
+//    `primary()`, which handles `.`/`::`/`[...]`/`(...)` uniformly in a
+//    single loop with no special-casing between them.
+// =============================================================================
+
+var chainedSource = {
+    makeGreeter = fun self -> { greet = fun -> "hi from a chained call" }
+}
+
+// A `::` call whose RESULT is immediately `::`-called again, in one
+// expression — this is the case that turns out NOT to work at the bare
+// top-level-STATEMENT level (see section 3), but works perfectly fine here
+// precisely because it's the right-hand side of an assignment. `greet`
+// is deliberately zero-argument so the chain doesn't need to smuggle a
+// `self` through two separate calls.
+var chainedResult = chainedSource::makeGreeter(chainedSource)::greet()
+assert(chainedResult == "hi from a chained call", "chaining two `::` calls back-to-back must work when used as part of a larger expression")
+
+// Mixing `.` and `::` in a chain, in both orders, also works.
+var mixedVt = { end = fun self -> "reached the end" }
+var mixedObj = { middle = fun self -> "reached the middle" } =< mixedVt
+assert(mixedObj::middle(mixedObj) == "reached the middle", "sanity check before mixing chains")
+
+// `::` immediately followed by a plain (non-call) `.` property read on the
+// result — reads the `greet` FUNCTION VALUE itself, without calling it.
+var greeterObj = chainedSource::makeGreeter(chainedSource)
+var greetFnValue = greeterObj.greet
+assert(greetFnValue() == "hi from a chained call", "`::` followed immediately by a plain `.` property read (no call) must work, yielding the function value itself, callable afterward")
+
+greetFnValue = chainedSource::makeGreeter(chainedSource).greet
+assert(greetFnValue() == "hi from a chained call", "`::` followed immediately by a plain `.` property read (no call) must work, yielding the function value itself, callable afterward")
+
+// =============================================================================
+// 2. `::` with spread arguments — confirmed both are supported since `::`'s
+//    call arguments are parsed by the exact same code path as a plain call
+//    or a `.` method call.
+// =============================================================================
+
+var sumAll = { total = fun self, a, b, c -> a + b + c }
+var spreadArgs = [10, 20, 30]
+assert(sumAll::total(sumAll, ...spreadArgs) == 60, "`::` calls must support spreading an array into the argument list, same as any other call")
+
+
+var chainFlag = { hit = false }
+var chainStepSource = {
+    step1 = fun self -> { step2 = fun { chainFlag.hit = true } }
+}
+
+// A bare, unassigned, top-level statement chaining two `::` calls back to
+// back — this line alone is the regression test: it used to be a parse
+// error and would have prevented this entire file from loading.
+chainStepSource::step1(chainStepSource)::step2()
+assert(chainFlag.hit, "REGRESSION: a bare top-level statement chaining two `::` calls back-to-back must now parse and execute correctly")
+
+// The previously-necessary workaround (capturing the intermediate result
+// as separate statements) still works too, exactly as before — the fix
+// only adds the missing case, it doesn't change this working pattern.
+var stepOne = chainedSource::makeGreeter(chainedSource)
+var stepTwo = stepOne::greet()
+assert(stepTwo == "hi from a chained call", "the equivalent two `::` calls, performed as separate statements, must continue to work exactly as before")
+
+
+// =============================================================================
+// 4. `::` on built-in (non-Object) types always fails — every built-in's
+//    Get() either always returns Nil (Bool, Nil, and the shared
+//    ValueSemanticsImpl default) or only responds to an Integer index
+//    (Array, String), never a string message name. So `::` never finds
+//    anything callable on a built-in, regardless of the name used.
+// =============================================================================
+
+var onInteger = ex::protect(fun -> (42)::anything(42))
+assert(onInteger.isError(), "`::` on an Integer must fail — Integer.Get never returns anything callable")
+
+var onBool = ex::protect(fun -> (true)::anything(true))
+assert(onBool.isError(), "`::` on a Bool must fail — Bool.Get is hardcoded to always return Nil")
+
+var onNil = ex::protect(fun -> nil::anything(nil))
+assert(onNil.isError(), "`::` on nil must fail — NilValue has no custom Get, and the default Get always returns Nil")
+
+var onArray = ex::protect(fun -> [1, 2, 3]::anything([1, 2, 3]))
+assert(onArray.isError(), "`::` on an Array must fail — Array.Get only responds to Integer indices, never a string message name")
+
+var onString = ex::protect(fun -> ("hello")::anything("hello"))
+assert(onString.isError(), "`::` on a String must fail — String.Get only responds to Integer indices, never a string message name")
+
+// `::` DOES work on the one thing it was designed for: Objects (including
+// module objects, which is why every module call in this whole test suite
+// uses `::` rather than `.`).
+assert(mathMod::sqrt(4) == 2.0, "`::` genuinely works end-to-end for its intended case — calling a module's own exported function")
+
+assert(("hello")[0] == "h", "bracket-indexing directly on a STRING LITERAL (not a variable) must work correctly — this exercises the exact same rKonst compiler path as section 4, but on the success side rather than the error side")
+assert(("hello")[4] == "o", "confirmed at a non-zero index too, not just position 0")
+assert(([1,2,3,4,5])[0] == 1, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[1] == 2, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[2] == 3, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[3] == 4, "Indexable literal should respond to the index message")
+assert(([1,2,3,4,5])[4] == 5, "Indexable literal should respond to the index message")
+
+assert([1,2,3,4,5][0] == 1, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][1] == 2, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][2] == 3, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][3] == 4, "Indexable literal should respond to the index message")
+assert([1,2,3,4,5][4] == 5, "Indexable literal should respond to the index message")
+
+assert({hello}["hello"] == nil, "Indexable literal should respond to the index message")
+assert(({hello})["hello"] == nil, "Indexable literal should respond to the index message")
+assert("hello"[0] == "h", "Indexable literal should respond to the index message")
+assert("hello"[1] == "e", "Indexable literal should respond to the index message")
+assert("hello"[2] == "l", "Indexable literal should respond to the index message")
+assert("hello"[3] == "l", "Indexable literal should respond to the index message")
+assert("hello"[4] == "o", "Indexable literal should respond to the index message")
+
+assert("hello".bytes()[0] == 0x68, "Indexable literal should respond to the index message")
+assert("hello".bytes()[1] == 0x65, "Indexable literal should respond to the index message")
+assert("hello".bytes()[2] == 0x6C, "Indexable literal should respond to the index message")
+assert("hello".bytes()[3] == 0x6C, "Indexable literal should respond to the index message")
+assert("hello".bytes()[4] == 0x6F, "Indexable literal should respond to the index message")
+
+assert(("hello".bytes())[0] == 0x68, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[1] == 0x65, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[2] == 0x6C, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[3] == 0x6C, "Indexable literal should respond to the index message")
+assert(("hello".bytes())[4] == 0x6F, "Indexable literal should respond to the index message")
+

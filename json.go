@@ -52,9 +52,9 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 				case float64:
 					return Float(v), nil
 				case map[string]any:
-					return parseObject(v), nil
+					return parseObject(ctx, v), nil
 				case []any:
-					return parseArray(v), nil
+					return parseArray(ctx, v), nil
 				}
 			} else {
 				return &VidaError{Message: &String{Value: err.Error()}}, nil
@@ -72,9 +72,9 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 				case float64:
 					return Float(v), nil
 				case map[string]any:
-					return parseObject(v), nil
+					return parseObject(ctx, v), nil
 				case []any:
-					return parseArray(v), nil
+					return parseArray(ctx, v), nil
 				}
 			} else {
 				return &VidaError{Message: &String{Value: err.Error()}}, nil
@@ -109,7 +109,7 @@ func jsonPretty(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func parseObject(input map[string]any) *Object {
+func parseObject(ctx *Context, input map[string]any) *Object {
 	o := &Object{Value: make(map[string]Value, len(input))}
 	for kk, vv := range input {
 		switch tt := vv.(type) {
@@ -122,15 +122,15 @@ func parseObject(input map[string]any) *Object {
 		case float64:
 			o.Value[kk] = Float(tt)
 		case map[string]any:
-			o.Value[kk] = parseObject(tt)
+			o.Value[kk] = parseObject(ctx, tt)
 		case []any:
-			o.Value[kk] = parseArray(tt)
+			o.Value[kk] = parseArray(ctx, tt)
 		}
 	}
 	return o
 }
 
-func parseArray(input []any) *Array {
+func parseArray(ctx *Context, input []any) *Array {
 	A := &Array{Value: make([]Value, len(input))}
 	for ii, vv := range input {
 		switch tt := vv.(type) {
@@ -143,9 +143,9 @@ func parseArray(input []any) *Array {
 		case float64:
 			A.Value[ii] = Float(tt)
 		case map[string]any:
-			A.Value[ii] = parseObject(tt)
+			A.Value[ii] = parseObject(ctx, tt)
 		case []any:
-			A.Value[ii] = parseArray(tt)
+			A.Value[ii] = parseArray(ctx, tt)
 		}
 	}
 	return A

@@ -1,5 +1,5 @@
 
-var rand = load("std/rand")
+var rand = load("std.rand")
 
 var swap = fun xs, i, j {
     var aux = xs[i]
@@ -8,10 +8,10 @@ var swap = fun xs, i, j {
 }
 
 var shuffle = fun xs {
-    var N = len(xs)
+    var N = xs.len()
     var r = nil
     for i in 0, N {
-        r = rand.I(i + 1)
+        r = rand::I(i + 1)
         swap(xs, i, r)
     }
     ret xs
@@ -34,11 +34,11 @@ assert(r != nil)
 var alpha = "abcdefghiklmopqrstuvwxyz"
 
 for in 10 {
-    var r = rand.shuffled(alpha) 
+    var r = rand::shuffled(alpha) 
     print(r)
-    assert(len(r)==len(alpha))
+    assert(r.len()==alpha.len())
 }
 
 for in 10 {
-    print(format("%032b", rand.U32()))
+    print(format("%032b", rand::U32()))
 }

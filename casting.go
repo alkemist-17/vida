@@ -15,6 +15,51 @@ func loadFoundationCasting() Value {
 	return m
 }
 
+func castToNumber(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 2:
+		inputStr, okInput := args[0].(*String)
+		typeOf, okType := args[1].(*String)
+		if okInput && okType {
+			switch typeOf.Value {
+			case integerT:
+				i, e := strconv.ParseInt(inputStr.Value, 0, 64)
+				if e == nil {
+					return Integer(i), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
+			case floatT:
+				r, e := strconv.ParseFloat(inputStr.Value, 64)
+				if e == nil {
+					return Float(r), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
+			}
+		}
+	case 3:
+		inputStr, okInput := args[0].(*String)
+		typeOf, okType := args[1].(*String)
+		base, ok := args[2].(Integer)
+		if ok && okType && okInput && base == 0 || (2 <= base && base <= 36) {
+			switch typeOf.Value {
+			case integerT:
+				i, e := strconv.ParseInt(inputStr.Value, 0, int(base))
+				if e == nil {
+					return Integer(i), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
+			case floatT:
+				r, e := strconv.ParseFloat(inputStr.Value, 64)
+				if e == nil {
+					return Float(r), nil
+				}
+				return &VidaError{Message: &String{Value: e.Error()}}, nil
+			}
+		}
+	}
+	return &VidaError{Message: &String{Value: "error in method string.toNum: check the number of arguments or its values"}}, nil
+}
+
 func castToString(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		return &String{Value: args[0].String()}, nil

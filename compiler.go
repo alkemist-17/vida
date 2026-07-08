@@ -22,10 +22,10 @@ type compiler struct {
 	script           *Script
 	kb               *konstBuilder
 	sb               *symbolBuilder
+	ctx              *Context
 	scriptMap        map[string]int
 	depMap           map[string]struct{}
 	extensionsLoader ExtensionsLoader
-	errorInfo        ErrorInfo
 	lineErr          uint
 	scope            int
 	level            int
@@ -39,19 +39,17 @@ type compiler struct {
 
 var dummy = struct{}{}
 
-func newCompiler(ast *ast.Ast, scriptID string, extensionsLoader ExtensionsLoader) *compiler {
+func newCompiler(ast *ast.Ast, scriptID string, ctx *Context, extensionsLoader ExtensionsLoader) *compiler {
 	dm := make(map[string]struct{})
 	dm[scriptID] = dummy
-	ei := make(ErrorInfo)
-	ei[scriptID] = make(map[int]uint)
 	c := &compiler{
+		ctx:              ctx,
 		ast:              ast,
 		script:           newScript(scriptID, extensionsLoader),
 		kb:               newKonstBuilder(),
 		sb:               newSymbolBuilder(0),
 		scriptMap:        make(map[string]int),
 		depMap:           dm,
-		errorInfo:        ei,
 		mainScriptID:     scriptID,
 		extensionsLoader: extensionsLoader,
 	}
@@ -62,8 +60,7 @@ func newCompiler(ast *ast.Ast, scriptID string, extensionsLoader ExtensionsLoade
 	return c
 }
 
-func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Value, scriptMap map[string]int, depMap map[string]struct{}, ei ErrorInfo, initialIndex int, extensionsLoader ExtensionsLoader) *compiler {
-	ei[scriptID] = make(map[int]uint)
+func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Value, scriptMap map[string]int, depMap map[string]struct{}, initialIndex int, extensionsLoader ExtensionsLoader) *compiler {
 	c := &compiler{
 		ast:           ast,
 		script:        newSubScript(scriptID, store, extensionsLoader),
@@ -72,7 +69,6 @@ func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Va
 		isSubcompiler: true,
 		scriptMap:     scriptMap,
 		depMap:        depMap,
-		errorInfo:     ei,
 		mainScriptID:  scriptID,
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
@@ -90,7 +86,6 @@ func (c *compiler) compileScript() (*Script, error) {
 		}
 	}
 	c.script.Konstants = c.kb.Konstants
-	c.script.ErrorInfo = c.errorInfo
 	c.appendEnd()
 	return c.script, nil
 }
@@ -108,7 +103,7 @@ func (c *compiler) compileSubScript() (*Script, error) {
 func (c *compiler) compileStmt(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.Mut:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		to, sIdent := c.refScope(n.Identifier)
 		switch sIdent {
 		case rFree:
@@ -160,7 +155,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.generateReferenceError(n.Identifier, n.Line)
 		}
 	case *ast.Let:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		to, isPresent := c.sb.addGlobal(n.Identifier)
 		if isPresent {
 			c.generateGlobalAlreadyDefinedError(n.Identifier, n.Line)
@@ -185,7 +180,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.emitStore(from, to, storeFromLocal, storeFromGlobal)
 		}
 	case *ast.MultipleLet:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		for _, id := range n.Identifiers {
 			to, isPresent := c.sb.addGlobal(id)
 			if isPresent {
@@ -212,7 +207,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			}
 		}
 	case *ast.Var:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if _, isGlobal := c.sb.isGlobal(n.Identifier); isGlobal {
 			c.generateGlobalShadowedByLocalError(n.Identifier, n.Line)
 			return
@@ -245,7 +240,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 		c.rAlloc++
 	case *ast.MultipleVar:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		for _, id := range n.Identifiers {
 			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
 				c.generateGlobalShadowedByLocalError(id, n.Line)
@@ -280,7 +275,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.rAlloc++
 		}
 	case *ast.Branch:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		elifCount := len(n.Elifs)
 		hasElif := elifCount != 0
 		e, hasElse := n.Else.(*ast.Else)
@@ -303,7 +298,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.jumps = c.jumps[:0]
 		}
 	case *ast.For:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.startLoopScope()
 		c.scope++
 		ireg := c.rAlloc
@@ -338,7 +333,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc -= 3
 		c.scope--
 	case *ast.IFor:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.startLoopScope()
 		c.scope++
 		ireg := c.rAlloc
@@ -370,7 +365,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc--
 		c.scope--
 	case *ast.While:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.startLoopScope()
 		init := len(c.currentFn.Code)
 		idx, scope := c.compileExpr(n.Condition, true)
@@ -408,7 +403,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.continueCount[len(c.continueCount)-1]++
 		c.emitJump(0)
 	case *ast.ReferenceStmt:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		c.fromRefStmt = true
 		i, s := c.refScope(n.Value)
 		switch s {
@@ -423,7 +418,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 		c.rAlloc++
 	case *ast.IGetStmt:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		i := c.rAlloc
 		if c.fromRefStmt {
 			i -= 1
@@ -433,19 +428,19 @@ func (c *compiler) compileStmt(node ast.Node) {
 		j, t := c.compileExpr(n.Index, true)
 		switch t {
 		case rKonst:
-			c.emitIGet(i, j, i, storeFromKonst, storeFromLocal)
+			c.emitGet(i, j, i, storeFromKonst, storeFromLocal)
 		case rLoc:
-			c.emitIGet(i, j, i, storeFromLocal, storeFromLocal)
+			c.emitGet(i, j, i, storeFromLocal, storeFromLocal)
 		case rGlob:
-			c.emitIGet(i, j, i, storeFromGlobal, storeFromLocal)
+			c.emitGet(i, j, i, storeFromGlobal, storeFromLocal)
 		case rFree:
-			c.emitIGet(i, j, i, storeFromFree, storeFromLocal)
+			c.emitGet(i, j, i, storeFromFree, storeFromLocal)
 		}
 		if !c.fromRefStmt {
 			c.rAlloc--
 		}
 	case *ast.SelectStmt:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		i := c.rAlloc
 		if c.fromRefStmt {
 			i -= 1
@@ -455,19 +450,19 @@ func (c *compiler) compileStmt(node ast.Node) {
 		j, t := c.compileExpr(n.Selector, true)
 		switch t {
 		case rKonst:
-			c.emitIGet(i, j, i, storeFromKonst, storeFromLocal)
+			c.emitGet(i, j, i, storeFromKonst, storeFromLocal)
 		case rLoc:
-			c.emitIGet(i, j, i, storeFromLocal, storeFromLocal)
+			c.emitGet(i, j, i, storeFromLocal, storeFromLocal)
 		case rGlob:
-			c.emitIGet(i, j, i, storeFromGlobal, storeFromLocal)
+			c.emitGet(i, j, i, storeFromGlobal, storeFromLocal)
 		case rFree:
-			c.emitIGet(i, j, i, storeFromFree, storeFromLocal)
+			c.emitGet(i, j, i, storeFromFree, storeFromLocal)
 		}
 		if !c.fromRefStmt {
 			c.rAlloc--
 		}
 	case *ast.ISet:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		i := c.rAlloc
 		if c.fromRefStmt {
 			i -= 1
@@ -481,13 +476,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 			k, u := c.compileExpr(n.Expr, true)
 			switch u {
 			case rLoc:
-				c.emitISet(i, j, k, storeFromLocal, storeFromLocal)
+				c.emitSet(i, j, k, storeFromLocal, storeFromLocal)
 			case rKonst:
-				c.emitISet(i, j, k, storeFromLocal, storeFromKonst)
+				c.emitSet(i, j, k, storeFromLocal, storeFromKonst)
 			case rGlob:
-				c.emitISet(i, j, k, storeFromLocal, storeFromGlobal)
+				c.emitSet(i, j, k, storeFromLocal, storeFromGlobal)
 			case rFree:
-				c.emitISet(i, j, k, storeFromLocal, storeFromFree)
+				c.emitSet(i, j, k, storeFromLocal, storeFromFree)
 			}
 			c.rAlloc--
 		case rGlob:
@@ -495,13 +490,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 			k, u := c.compileExpr(n.Expr, true)
 			switch u {
 			case rLoc:
-				c.emitISet(i, j, k, storeFromGlobal, storeFromLocal)
+				c.emitSet(i, j, k, storeFromGlobal, storeFromLocal)
 			case rKonst:
-				c.emitISet(i, j, k, storeFromGlobal, storeFromKonst)
+				c.emitSet(i, j, k, storeFromGlobal, storeFromKonst)
 			case rGlob:
-				c.emitISet(i, j, k, storeFromGlobal, storeFromGlobal)
+				c.emitSet(i, j, k, storeFromGlobal, storeFromGlobal)
 			case rFree:
-				c.emitISet(i, j, k, storeFromGlobal, storeFromFree)
+				c.emitSet(i, j, k, storeFromGlobal, storeFromFree)
 			}
 			c.rAlloc--
 		case rKonst:
@@ -509,13 +504,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 			k, u := c.compileExpr(n.Expr, true)
 			switch u {
 			case rLoc:
-				c.emitISet(i, j, k, storeFromKonst, storeFromLocal)
+				c.emitSet(i, j, k, storeFromKonst, storeFromLocal)
 			case rKonst:
-				c.emitISet(i, j, k, storeFromKonst, storeFromKonst)
+				c.emitSet(i, j, k, storeFromKonst, storeFromKonst)
 			case rGlob:
-				c.emitISet(i, j, k, storeFromKonst, storeFromGlobal)
+				c.emitSet(i, j, k, storeFromKonst, storeFromGlobal)
 			case rFree:
-				c.emitISet(i, j, k, storeFromKonst, storeFromFree)
+				c.emitSet(i, j, k, storeFromKonst, storeFromFree)
 			}
 			c.rAlloc--
 		case rFree:
@@ -523,13 +518,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 			k, u := c.compileExpr(n.Expr, true)
 			switch u {
 			case rLoc:
-				c.emitISet(i, j, k, storeFromFree, storeFromLocal)
+				c.emitSet(i, j, k, storeFromFree, storeFromLocal)
 			case rKonst:
-				c.emitISet(i, j, k, storeFromFree, storeFromKonst)
+				c.emitSet(i, j, k, storeFromFree, storeFromKonst)
 			case rGlob:
-				c.emitISet(i, j, k, storeFromFree, storeFromGlobal)
+				c.emitSet(i, j, k, storeFromFree, storeFromGlobal)
 			case rFree:
-				c.emitISet(i, j, k, storeFromFree, storeFromGlobal)
+				c.emitSet(i, j, k, storeFromFree, storeFromGlobal)
 			}
 			c.rAlloc--
 		}
@@ -545,6 +540,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.scope--
 	case *ast.Ret:
 		if c.level != 0 || c.isSubcompiler {
+			c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 			i, s := c.compileExpr(n.Expr, true)
 			switch s {
 			case rLoc:
@@ -558,7 +554,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			}
 		}
 	case *ast.CallStmt:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		callable := c.rAlloc
 		if c.fromRefStmt {
 			callable -= 1
@@ -574,7 +570,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.fromRefStmt = false
 		c.emitCall(callable, len(n.Args), n.Ellipsis, 1)
 	case *ast.MethodCallStmt:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		o := c.rAlloc
 		if c.fromRefStmt {
 			o -= 1
@@ -584,7 +580,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.emitLoad(o, c.rAlloc, loadFromLocal)
 		c.rAlloc++
 		j, _ := c.compileExpr(n.Prop, true)
-		c.emitIGet(o, j, o, storeFromKonst, storeFromLocal)
+		c.emitSend(o, j, o, storeFromKonst, storeFromLocal)
 		for _, v := range n.Args {
 			i, s := c.compileExpr(v, true)
 			c.exprToReg(i, s)
@@ -594,7 +590,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.fromRefStmt = false
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
 	case *ast.Export:
-		c.errorInfo[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		if c.isSubcompiler {
 			i, s := c.compileExpr(n.Expr, true)
 			switch s {
@@ -629,7 +625,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 	case *ast.PrefixExpr:
 		from, scope := c.compileExpr(n.Expr, false)
 		if scope == rKonst {
-			if val, err := (*c.kb.Konstants)[from].Prefix(uint64(n.Op)); err == nil {
+			if val, err := (*c.kb.Konstants)[from].Prefix(c.ctx, uint64(n.Op)); err == nil {
 				return c.integrateKonst(val)
 			} else {
 				c.hadError = true
@@ -704,13 +700,13 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			v, sv := c.compileExpr(v.Value, false)
 			switch sv {
 			case rKonst:
-				c.emitISet(o, k, v, storeFromKonst, storeFromKonst)
+				c.emitSet(o, k, v, storeFromKonst, storeFromKonst)
 			case rLoc:
-				c.emitISet(o, k, v, storeFromKonst, storeFromLocal)
+				c.emitSet(o, k, v, storeFromKonst, storeFromLocal)
 			case rGlob:
-				c.emitISet(o, k, v, storeFromKonst, storeFromGlobal)
+				c.emitSet(o, k, v, storeFromKonst, storeFromGlobal)
 			case rFree:
-				c.emitISet(o, k, v, storeFromKonst, storeFromFree)
+				c.emitSet(o, k, v, storeFromKonst, storeFromFree)
 			}
 			c.rAlloc--
 		}
@@ -729,38 +725,38 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			switch t {
 			case rLoc:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromLocal, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromLocal, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromLocal, storeFromLocal)
 					c.rAlloc--
 				}
 			case rGlob:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromGlobal, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromGlobal, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromLocal)
 					c.rAlloc--
 				}
 			case rKonst:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromKonst, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromKonst, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromKonst, storeFromLocal)
 					c.rAlloc--
 				}
 			case rFree:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromFree, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromFree, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromFree, storeFromLocal)
 					c.rAlloc--
 				}
 			}
@@ -770,38 +766,79 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			switch t {
 			case rLoc:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromLocal, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromLocal, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromLocal, storeFromGlobal)
 					c.rAlloc--
 				}
 			case rGlob:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromGlobal, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromGlobal, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromGlobal)
 					c.rAlloc--
 				}
 			case rKonst:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromKonst, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromKonst, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromKonst, storeFromGlobal)
 					c.rAlloc--
 				}
 			case rFree:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromFree, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromFree, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromFree, storeFromGlobal)
+					c.rAlloc--
+				}
+			}
+		case rKonst:
+			c.rAlloc++
+			j, t := c.compileExpr(n.Index, false)
+			switch t {
+			case rLoc:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromLocal, storeFromKonst)
+					c.rAlloc--
+				}
+			case rGlob:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromKonst)
+					c.rAlloc--
+				}
+			case rKonst:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromKonst, storeFromKonst)
+					c.rAlloc--
+				}
+			case rFree:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromFree, storeFromKonst)
 					c.rAlloc--
 				}
 			}
@@ -811,37 +848,37 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			switch t {
 			case rLoc:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromLocal, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromFree)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromLocal, storeFromFree)
+					c.emitGet(i, j, dest, storeFromLocal, storeFromFree)
 					c.rAlloc--
 				}
 			case rGlob:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromGlobal, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
 				} else {
-					c.emitIGet(i, j, dest, storeFromGlobal, storeFromFree)
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
 				}
 			case rKonst:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromKonst, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromFree)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromKonst, storeFromFree)
+					c.emitGet(i, j, dest, storeFromKonst, storeFromFree)
 					c.rAlloc--
 				}
 			case rFree:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromFree, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromFree)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromFree, storeFromFree)
+					c.emitGet(i, j, dest, storeFromFree, storeFromFree)
 					c.rAlloc--
 				}
 			}
@@ -857,38 +894,38 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			switch t {
 			case rLoc:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromLocal, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromLocal, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromLocal, storeFromLocal)
 					c.rAlloc--
 				}
 			case rGlob:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromGlobal, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromGlobal, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromLocal)
 					c.rAlloc--
 				}
 			case rKonst:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromKonst, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromKonst, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromKonst, storeFromLocal)
 					c.rAlloc--
 				}
 			case rFree:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromFree, storeFromLocal)
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromLocal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromFree, storeFromLocal)
+					c.emitGet(i, j, dest, storeFromFree, storeFromLocal)
 					c.rAlloc--
 				}
 			}
@@ -898,38 +935,79 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			switch t {
 			case rLoc:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromLocal, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromLocal, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromLocal, storeFromGlobal)
 					c.rAlloc--
 				}
 			case rGlob:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromGlobal, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromGlobal, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromGlobal)
 					c.rAlloc--
 				}
 			case rKonst:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromKonst, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromKonst, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromKonst, storeFromGlobal)
 					c.rAlloc--
 				}
 			case rFree:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromFree, storeFromGlobal)
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromGlobal)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromFree, storeFromGlobal)
+					c.emitGet(i, j, dest, storeFromFree, storeFromGlobal)
+					c.rAlloc--
+				}
+			}
+		case rKonst:
+			c.rAlloc++
+			j, t := c.compileExpr(n.Selector, false)
+			switch t {
+			case rLoc:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromLocal, storeFromKonst)
+					c.rAlloc--
+				}
+			case rGlob:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromKonst)
+					c.rAlloc--
+				}
+			case rKonst:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromKonst, storeFromKonst)
+					c.rAlloc--
+				}
+			case rFree:
+				if c.mutLoc && isRoot {
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromKonst)
+					c.rAlloc--
+					return c.rDest, rLoc
+				} else {
+					c.emitGet(i, j, dest, storeFromFree, storeFromKonst)
 					c.rAlloc--
 				}
 			}
@@ -939,37 +1017,37 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			switch t {
 			case rLoc:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromLocal, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromLocal, storeFromFree)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromLocal, storeFromFree)
+					c.emitGet(i, j, dest, storeFromLocal, storeFromFree)
 					c.rAlloc--
 				}
 			case rGlob:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromGlobal, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
 				} else {
-					c.emitIGet(i, j, dest, storeFromGlobal, storeFromFree)
+					c.emitGet(i, j, dest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
 				}
 			case rKonst:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromKonst, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromKonst, storeFromFree)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromKonst, storeFromFree)
+					c.emitGet(i, j, dest, storeFromKonst, storeFromFree)
 					c.rAlloc--
 				}
 			case rFree:
 				if c.mutLoc && isRoot {
-					c.emitIGet(i, j, c.rDest, storeFromFree, storeFromFree)
+					c.emitGet(i, j, c.rDest, storeFromFree, storeFromFree)
 					c.rAlloc--
 					return c.rDest, rLoc
 				} else {
-					c.emitIGet(i, j, dest, storeFromFree, storeFromFree)
+					c.emitGet(i, j, dest, storeFromFree, storeFromFree)
 					c.rAlloc--
 				}
 			}
@@ -1025,7 +1103,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		}
 		return c.rAlloc, rLoc
 	case *ast.Fun:
-		fn := &CoreFunction{ScriptID: c.script.MainFunction.CoreFn.ScriptID}
+		fn := &CoreFunction{ScriptID: c.script.MainFunction.CoreFn.ScriptID, MapScriptIPLine: createNewMapScriptIPLine(c.script.MainFunction.CoreFn.ScriptID)}
 		c.fn = append(c.fn, fn)
 		c.emitFun(c.kb.FunctionIndex(fn), c.rAlloc)
 		c.currentFn = fn
@@ -1063,7 +1141,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		i = c.rAlloc
 		c.rAlloc++
 		j, _ := c.compileExpr(n.Prop, false)
-		c.emitIGet(i, j, o, storeFromKonst, storeFromLocal)
+		c.emitSend(i, j, o, storeFromKonst, storeFromLocal)
 		for _, v := range n.Args {
 			i, s := c.compileExpr(v, false)
 			c.exprToReg(i, s)
@@ -1108,7 +1186,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			c.lineErr = n.Line
 			return 0, rGlob
 		}
-		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.GlobalStore, c.scriptMap, c.depMap, c.errorInfo, len(*c.script.GlobalStore), c.extensionsLoader)
+		subCompiler := newSubCompiler(scriptAST, importFilePath, c.kb, c.script.GlobalStore, c.scriptMap, c.depMap, len(*c.script.GlobalStore), c.extensionsLoader)
 		m, err := subCompiler.compileSubScript()
 		c.sb.index = len(*c.script.GlobalStore)
 		if err != nil {
@@ -1256,7 +1334,7 @@ func (c *compiler) compileBinaryExpr(n *ast.BinaryExpr, isRoot bool) (int, int) 
 		ridx, rscope := c.compileExpr(n.Rhs, false)
 		switch rscope {
 		case rKonst:
-			if val, err := (*c.kb.Konstants)[lidx].Binop(uint64(n.Op), (*c.kb.Konstants)[ridx]); err == nil {
+			if val, err := (*c.kb.Konstants)[lidx].Binop(c.ctx, uint64(n.Op), (*c.kb.Konstants)[ridx]); err == nil {
 				return c.integrateKonst(val)
 			} else {
 				c.hadError = true
@@ -1432,7 +1510,7 @@ func (c *compiler) compileBinaryEq(n *ast.BinaryExpr, isRoot bool) (int, int) {
 		j, jscope := c.compileExpr(n.Rhs, false)
 		switch jscope {
 		case rKonst:
-			val := (*c.kb.Konstants)[i].Equals((*c.kb.Konstants)[j])
+			val := (*c.kb.Konstants)[i].Equals(c.ctx, (*c.kb.Konstants)[j])
 			if n.Op == token.NEQ {
 				val = !val
 			}

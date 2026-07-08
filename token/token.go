@@ -23,7 +23,6 @@ const (
 	ASSIGN
 	QUOTE
 	COMMA
-	METHOD_CALL
 	DOT
 	LPAREN
 	RPAREN
@@ -35,6 +34,7 @@ const (
 	DOUBLE_DOT
 	ELLIPSIS
 	TILDE
+	STATIC_CALL
 	operator_end
 
 	binary_op_init
@@ -55,7 +55,7 @@ const (
 	BXOR
 	BSHL
 	BSHR
-	META
+	VTABLE
 	binary_op_end
 
 	keyword_init
@@ -84,7 +84,7 @@ const (
 )
 
 var Tokens = [...]string{
-	UNEXPECTED:  "some unexpected character",
+	UNEXPECTED:  "Unexpected symbol",
 	EOF:         "EOF",
 	COMMENT:     "Comment",
 	NOOP:        ";",
@@ -95,7 +95,6 @@ var Tokens = [...]string{
 	ASSIGN:      "=",
 	QUOTE:       "\"",
 	COMMA:       ",",
-	METHOD_CALL: ":",
 	DOT:         ".",
 	LPAREN:      "(",
 	RPAREN:      ")",
@@ -107,6 +106,7 @@ var Tokens = [...]string{
 	DOUBLE_DOT:  "..",
 	ELLIPSIS:    "...",
 	TILDE:       "~",
+	STATIC_CALL: "::",
 	ADD:         "+",
 	SUB:         "-",
 	MUL:         "*",
@@ -124,7 +124,7 @@ var Tokens = [...]string{
 	BXOR:        "^",
 	BSHL:        "<<",
 	BSHR:        ">>",
-	META:        "=<",
+	VTABLE:      "=<",
 	AND:         "and",
 	OR:          "or",
 	FOR:         "for",
@@ -180,7 +180,7 @@ func (token Token) IsBinaryOperator() bool {
 }
 
 func (token Token) IsRightAssociative() bool {
-	return token == META || token == POW
+	return token == VTABLE || token == POW
 }
 
 func IsKeyword(name string) bool {
@@ -219,7 +219,7 @@ func (op Token) Precedence() int {
 		return 1
 	case AND:
 		return 2
-	case EQ, NEQ, LT, LE, GT, GE, IN, META:
+	case EQ, NEQ, LT, LE, GT, GE, IN, VTABLE:
 		return 3
 	case ADD, SUB, BOR, BXOR:
 		return 4

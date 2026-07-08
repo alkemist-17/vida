@@ -20,6 +20,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
 )
 
@@ -56,14 +57,138 @@ const (
 )
 
 const (
-	littleEndian = "l"
-	bigEndian    = "b"
+	littleEndian = "little"
+	bigEndian    = "big"
 )
 
 const bytesUUIDLen = 16
 
+type Bytes struct {
+	ReferenceSemanticsImpl
+	Value []byte
+}
+
+func (b *Bytes) Boolean() Bool {
+	return True
+}
+
+func (b *Bytes) Prefix(ctx *Context, op uint64) (Value, error) {
+	switch op {
+	case uint64(token.NOT):
+		return False, nil
+	default:
+		return Nil, verror.ErrPrefixOpNotDefined
+	}
+}
+
+func (b *Bytes) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
+	switch r := rhs.(type) {
+	case *Bytes:
+		switch op {
+		case uint64(token.ADD):
+			rLen := len(r.Value)
+			if rLen == 0 {
+				return b, nil
+			}
+			lLen := len(b.Value)
+			if rLen+lLen >= verror.MaxMemSize {
+				return Nil, verror.ErrMaxMemSize
+			}
+			values := make([]byte, lLen+rLen)
+			copy(values[:lLen], b.Value)
+			copy(values[lLen:], r.Value)
+			return &Bytes{Value: values}, nil
+		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return b, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(ctx, b, rhs)
+	}
+	return Nil, verror.ErrBinaryOpNotDefined
+}
+
+func (b *Bytes) Get(ctx *Context, index Value) Value {
+	switch r := index.(type) {
+	case Integer:
+		l := Integer(len(b.Value))
+		if r < 0 {
+			r += l
+		}
+		if 0 <= r && r < l {
+			return Integer(b.Value[r])
+		}
+	}
+	return Nil
+}
+
+func (b *Bytes) Set(index, val Value) error {
+	return verror.ErrValueIsConstant
+}
+
+func (b *Bytes) Equals(ctx *Context, other Value) Bool {
+	if val, ok := other.(*Bytes); ok {
+		return b == val
+	}
+	if val, ok := other.(*String); ok {
+		return string(b.Value) == val.Value
+	}
+	return false
+}
+
+func (b *Bytes) IsIterable() Bool {
+	return true
+}
+
+func (b *Bytes) IsCallable() Bool {
+	return false
+}
+
+func (b *Bytes) Iterator() Value {
+	return &BytesIterator{Bytes: b.Value, Init: -1, End: len(b.Value)}
+}
+
+func (b Bytes) String() string {
+	if len(b.Value) == 0 {
+		return "bytes[]"
+	}
+	return fmt.Sprintf("bytes[% x]", b.Value)
+}
+
+func (b *Bytes) ObjectKey() string {
+	return fmt.Sprintf("bytes[%p]", b)
+}
+
+func (b *Bytes) GetVTable(ctx *Context) Value {
+	if ctx.vtables[bytesT] == nil {
+		ctx.loadBytesVT()
+	}
+	return ctx.vtables[bytesT]
+}
+
+func (b *Bytes) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[bytesT] == nil {
+		ctx.loadBytesVT()
+	}
+	if vtable, ok := ctx.vtables[bytesT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
+}
+
+func (b *Bytes) Type() string {
+	return bytesT
+}
+
+func (b *Bytes) Clone() Value {
+	return &Bytes{Value: b.Value}
+}
+
 func loadFoundationBytes() Value {
-	m := &Object{Value: make(map[string]Value, 32)}
+	m := &Object{Value: make(map[string]Value, 31)}
 	m.Value["new"] = NativeFunction(bytesCreateNewBytesValue)
 	m.Value["from"] = NativeFunction(bytesFromValue)
 	m.Value["genCryptoRand"] = NativeFunction(bytesGenerateCryptoRand)
@@ -71,7 +196,6 @@ func loadFoundationBytes() Value {
 	m.Value["encode"] = NativeFunction(bytesEncode)
 	m.Value["decode"] = NativeFunction(bytesDecode)
 	m.Value["encoding"] = bytesEncodings()
-	m.Value["endian"] = bytesEndian()
 	m.Value["fromFile"] = NativeFunction(bytesFromFile)
 	m.Value["toFile"] = NativeFunction(bytesToFile)
 	m.Value["xor"] = NativeFunction(bytesXOR)
@@ -81,7 +205,7 @@ func loadFoundationBytes() Value {
 	m.Value["bitLen"] = NativeFunction(bytesBitLen)
 	m.Value["hexdump"] = NativeFunction(bytesDump)
 	m.Value["getSystemEndianess"] = NativeFunction(bytesEndianess)
-	m.Value["view"] = NativeFunction(bytesView)
+	m.Value["view"] = NativeFunction(collectionProcessView)
 	m.Value["copyTo"] = NativeFunction(bytesCopyTo)
 	m.Value["fill"] = NativeFunction(bytesFill)
 	m.Value["reverse"] = NativeFunction(bytesReverse)
@@ -299,13 +423,6 @@ func bytesEncodings() *Object {
 	return &Object{Value: e}
 }
 
-func bytesEndian() *Object {
-	e := make(map[string]Value, 2)
-	e["big"] = &String{Value: bigEndian}
-	e["little"] = &String{Value: littleEndian}
-	return &Object{Value: e}
-}
-
 func bytesChecksums() *Object {
 	m := make(map[string]Value, 8)
 	m["crc32"] = Integer(csCRC32)
@@ -424,6 +541,15 @@ func bytesToString(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
+func bytesIsEmpty(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if b, ok := args[0].(*Bytes); ok {
+			return Bool(len(b.Value) == 0), nil
+		}
+	}
+	return Nil, nil
+}
+
 func bytesBitLen(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if b, ok := args[0].(*Bytes); ok {
@@ -468,20 +594,6 @@ func bytesEndianess(ctx *Context, args ...Value) (Value, error) {
 		return &String{Value: bigEndian}, nil
 	}
 	return &String{Value: littleEndian}, nil
-}
-
-func bytesView(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
-		b, okB := args[0].(*Bytes)
-		offset, okO := args[1].(Integer)
-		length, okL := args[2].(Integer)
-		if okB && okO && okL {
-			srclen := Integer(len(b.Value))
-			start, end, _ := sliceBounds(offset, offset+length, srclen)
-			return &Bytes{Value: b.Value[start:end]}, nil
-		}
-	}
-	return Nil, nil
 }
 
 func bytesCopyTo(ctx *Context, args ...Value) (Value, error) {
@@ -742,9 +854,7 @@ func bytesGetBit(ctx *Context, args ...Value) (Value, error) {
 
 	totalBits := len(b.Value) * 8
 	if int(bitIdx) >= totalBits {
-		return &VidaError{Message: &String{
-			Value: fmt.Sprintf("bytes.getBit: bit index %d out of range (buffer has %d bits)", bitIdx, totalBits),
-		}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.getBit: bit index %d out of range (buffer has %d bits)", bitIdx, totalBits)}}, nil
 	}
 
 	byteIndex, mask := bitByteIdx(int(bitIdx))
@@ -821,13 +931,11 @@ func bytesBitView(ctx *Context, args ...Value) (Value, error) {
 	dst := make([]byte, dstLen)
 
 	for i := 0; i < int(length); i++ {
-		// Source bit (MSB-first): global index = start + i
 		srcGlobal := int(start) + i
 		srcByteIdx := srcGlobal / 8
 		srcMask := byte(0x80 >> uint(srcGlobal%8))
 		bitVal := (b.Value[srcByteIdx] & srcMask) != 0
 
-		// Destination bit (MSB-first): global index = i within result
 		dstByteIdx := i / 8
 		dstMask := byte(0x80 >> uint(i%8))
 		if bitVal {
@@ -860,44 +968,32 @@ func bytesReadUInt(ctx *Context, args ...Value) (Value, error) {
 	endian, okE := args[3].(*String)
 
 	if !ok || !okS || !okL || !okE || start < 0 || bitLen < 1 || bitLen > 64 {
-		return &VidaError{Message: &String{Value: "bytes.readUInt: invalid arguments (bitLength must be 1–64)"}}, nil
+		return &VidaError{Message: &String{Value: "bytes.readUInt: invalid arguments (bitLength must be 1-64)"}}, nil
 	}
 	if int(start)+int(bitLen) > len(b.Value)*8 {
 		return &VidaError{Message: &String{Value: "bytes.readUInt: bit range exceeds buffer"}}, nil
 	}
 
-	// Extract the raw bits, MSB-first packed.
 	extracted, err := bytesBitView(ctx, b, start, bitLen)
 	if err != nil {
 		return extracted, err
 	}
 	extBytes := extracted.(*Bytes).Value
 
-	// Assemble the integer.  extBytes is MSB-first (i.e. big-endian) by
-	// construction from bitView.  If the caller wants little-endian, they are
-	// telling us that the bytes in the *source buffer* were laid out
-	// little-endian — so we reverse the byte order when assembling.
 	var val uint64
 	n := len(extBytes)
 
 	switch endian.Value {
 	case bigEndian:
-		// extBytes[0] is most-significant byte — shift left by decreasing amounts.
 		for i := range n {
 			val = (val << 8) | uint64(extBytes[i])
 		}
-		// The top byte may be a partial byte (fewer than 8 bits filled).
-		// bitView already placed bits at the MSB positions of the first byte, so
-		// no further adjustment is needed.
-
 	case littleEndian:
-		// extBytes[0] is least-significant byte.
 		for i := n - 1; i >= 0; i-- {
 			val = (val << 8) | uint64(extBytes[i])
 		}
-
 	default:
-		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.readUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian.Value)}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.readUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian)}}, nil
 	}
 
 	unusedBits := (n * 8) - int(bitLen)
@@ -928,7 +1024,7 @@ func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 	endian, okE := args[2].(*String)
 
 	if !okV || !okL || !okE || bitLen < 1 || bitLen > 64 || val < 0 {
-		return &VidaError{Message: &String{Value: "bytes.fromUInt: invalid arguments (value must be ≥ 0, bitLength must be 1–64)"}}, nil
+		return &VidaError{Message: &String{Value: "bytes.fromUInt: invalid arguments (value must be ≥ 0, bitLength must be 1-64)"}}, nil
 	}
 
 	u := uint64(val)
@@ -939,19 +1035,13 @@ func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 		maxVal = (uint64(1) << uint(bitLen)) - 1
 	}
 	if u > maxVal {
-		return &VidaError{Message: &String{
-			Value: fmt.Sprintf("bytes.fromUInt: value %d exceeds %d-bit capacity (%d max)", val, bitLen, maxVal),
-		}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.fromUInt: value %d exceeds %d-bit capacity (%d max)", val, bitLen, maxVal)}}, nil
 	}
 
 	dstLen := (int(bitLen) + 7) / 8
 	dst := make([]byte, dstLen)
 
-	// Place bits MSB-first into dst.
-	// Bit i of the result (i=0 is MSB of the field) gets placed at
-	// MSB position i within dst.
 	for i := 0; i < int(bitLen); i++ {
-		// Which bit of val? (bitLen-1-i) is the most-significant remaining bit.
 		bitPos := uint(int(bitLen) - 1 - i)
 		bitVal := (u >> bitPos) & 1
 
@@ -962,17 +1052,14 @@ func bytesFromUInt(ctx *Context, args ...Value) (Value, error) {
 		}
 	}
 
-	// Apply endianness: big-endian is already correct (MSB byte first).
-	// Little-endian reverses the byte slice.
 	switch endian.Value {
 	case bigEndian:
-		// already in correct order
 	case littleEndian:
 		for i, j := 0, len(dst)-1; i < j; i, j = i+1, j-1 {
 			dst[i], dst[j] = dst[j], dst[i]
 		}
 	default:
-		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.fromUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian.Value)}}, nil
+		return &VidaError{Message: &String{Value: fmt.Sprintf("bytes.fromUInt: unknown endian %q (use bytes.endian.big or bytes.endian.little)", endian)}}, nil
 	}
 
 	return &Bytes{Value: dst}, nil

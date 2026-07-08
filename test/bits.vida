@@ -13,3 +13,62 @@ print(format("BSHR: %032b", x >> y))
 print(format("BNOT: %032b", ~x))
 print(format("BNOT: %032b", ~y))
 
+
+// Tiny Encryption Algorithm
+let bytes = load("std.bytes")
+let ksize = 4
+
+let encrypt = fun v, k {
+	var d = 0x9E3779B9
+	var sum = 0
+	
+	var v0 = v[0]
+	var v1 = v[1]
+
+	var k0 = k[0]
+	var k1 = k[1]
+	var k2 = k[2]
+	var k3 = k[3]
+
+	for in 32 {
+		sum = sum + d
+		v0 = v0 + (((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1))
+		v1 = v1 + (((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3))
+	}
+
+	ret [v0, v1]
+}
+
+
+let decrypt = fun v, k {
+	var d = 0x9E3779B9
+	var sum = 0xC6EF3720
+	
+	var v0 = v[0]
+	var v1 = v[1]
+	
+	var k0 = k[0]
+	var k1 = k[1]
+	var k2 = k[2]
+	var k3 = k[3]
+
+	for i in 32 {
+		v1 = v1 - (((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3))
+		v0 = v0 - (((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1))
+		sum = sum - d
+	}
+
+	ret [v0, v1]
+}
+
+let N = 10
+let M = 20
+
+let k = bytes::genCryptoRand(ksize)
+let v = [N, M]
+
+let c = encrypt(v, k)
+let t = decrypt(c, k)
+
+assert(t[0] == v[0] and t[1] == v[1] and v[0] == N and v[1] == M)
+

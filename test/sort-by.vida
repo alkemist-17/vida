@@ -1,5 +1,5 @@
-var array = load("std/array")
-var rand = load("std/rand")
+var array = load("std.array")
+var rand = load("std.rand")
 
 
 var model = {
@@ -13,11 +13,11 @@ var N = 10_000
 
 
 var generateData = fun N {
-    var A = array.new({len = N, val = model, clone = true})
+    var A = array::new({len = N, val = model, clone = true})
     for i, v in A {
-        v.stringData = rand.text()
-        v.intData = rand.I()
-        v.floatData = rand.F() * N
+        v.stringData = rand::text()
+        v.intData = rand::I()
+        v.floatData = rand::F() * N
     }
     ret A
 }
@@ -30,7 +30,7 @@ var check = fun A, field, desc {
     } else {
         f = fun a, b -> a > b
     }
-    for i in 1, len(A) {
+    for i in 1, A.len() {
         if not f(A[i-1][field], A[i][field]) {
             ret false
         }
@@ -58,7 +58,7 @@ var F = [
 
 
 for _, K in F {
-    assert(check(array.sortBy(generateData(N), K[0]), K[1], K[2]))
+    assert(check(array::sortBy(generateData(N), K[0]), K[1], K[2]))
 }
 
 

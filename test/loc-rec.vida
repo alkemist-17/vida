@@ -5,12 +5,12 @@ var rec androidPhone = {
     series
     size
     price
-    new = fun -> clone(androidPhone)
+    new = fun -> androidPhone.clone()
 }
 
 
 for in 1000 {
-    var phone = androidPhone.new()
+    var phone = androidPhone::new()
     assert(phone.os == androidPhone.os)
 }
 

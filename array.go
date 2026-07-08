@@ -2,15 +2,178 @@ package vida
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
+	"math/rand/v2"
+	"reflect"
 	"slices"
+	"strings"
 	"unsafe"
 
+	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
 )
 
+type Array struct {
+	ReferenceSemanticsImpl
+	Value []Value
+}
+
+func (xs *Array) Boolean() Bool {
+	return True
+}
+
+func (xs *Array) Prefix(ctx *Context, op uint64) (Value, error) {
+	if op == uint64(token.NOT) {
+		return False, nil
+	}
+	return Nil, verror.ErrPrefixOpNotDefined
+}
+
+func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
+	switch r := rhs.(type) {
+	case *Array:
+		switch op {
+		case uint64(token.ADD):
+			rLen := len(r.Value)
+			if rLen == 0 {
+				return xs, nil
+			}
+			lLen := len(xs.Value)
+			if rLen+lLen >= verror.MaxMemSize {
+				return Nil, verror.ErrMaxMemSize
+			}
+			values := make([]Value, lLen+rLen)
+			copy(values[:lLen], xs.Value)
+			copy(values[lLen:], r.Value)
+			return &Array{Value: values}, nil
+		case uint64(token.IN):
+			return IsMemberOf(ctx, xs, rhs)
+		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return xs, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(ctx, xs, rhs)
+	}
+	return Nil, verror.ErrBinaryOpNotDefined
+}
+
+func (xs *Array) Get(ctx *Context, index Value) Value {
+	switch r := index.(type) {
+	case Integer:
+		l := Integer(len(xs.Value))
+		if r < 0 {
+			r += l
+		}
+		if 0 <= r && r < l {
+			return xs.Value[r]
+		}
+	}
+	return Nil
+}
+
+func (xs *Array) Set(index, val Value) error {
+	switch r := index.(type) {
+	case Integer:
+		l := Integer(len(xs.Value))
+		if r < 0 {
+			r += l
+		}
+		if 0 <= r && r < l {
+			xs.Value[r] = val
+			return nil
+		}
+	}
+	return verror.ErrValueNotIndexable
+}
+
+func (xs *Array) Equals(ctx *Context, other Value) Bool {
+	val, isArray := other.(*Array)
+	return Bool(isArray && xs == val)
+}
+
+func (xs *Array) IsIterable() Bool {
+	return true
+}
+
+func (xs *Array) IsCallable() Bool {
+	return false
+}
+
+func (xs *Array) Iterator() Value {
+	return &ArrayIterator{Array: xs.Value, Init: -1, End: len(xs.Value)}
+}
+
+func (xs *Array) String() string {
+	return xs.stringify(make(map[uintptr]bool))
+}
+
+func (xs *Array) stringify(visited map[uintptr]bool) string {
+	if len(xs.Value) == 0 {
+		return "[]"
+	}
+
+	ptr := reflect.ValueOf(xs).Pointer()
+
+	if visited[ptr] {
+		return "[...]"
+	}
+
+	visited[ptr] = true
+	defer delete(visited, ptr)
+
+	var r []string
+	for _, v := range xs.Value {
+		r = append(r, stringWithVisited(v, visited))
+	}
+	return fmt.Sprintf("[%v]", strings.Join(r, ",  "))
+}
+
+func (xs *Array) ObjectKey() string {
+	return fmt.Sprintf("array[%p]", xs)
+}
+
+func (xs *Array) Type() string {
+	return arrayT
+}
+
+func (xs *Array) Clone() Value {
+	c := make([]Value, len(xs.Value))
+	for i, v := range xs.Value {
+		c[i] = v.Clone()
+	}
+	return &Array{Value: c}
+}
+
+func (xs *Array) GetVTable(ctx *Context) Value {
+	if ctx.vtables[arrayT] == nil {
+		ctx.loadArrayVT()
+	}
+	return ctx.vtables[arrayT]
+}
+
+func (xs *Array) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[arrayT] == nil {
+		ctx.loadArrayVT()
+	}
+	if vtable, ok := ctx.vtables[arrayT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
+}
+
+func (xs *Array) MarshalJSON() ([]byte, error) {
+	return json.Marshal(xs.Value)
+}
+
 func loadFoundationArray() Value {
-	m := &Object{Value: make(map[string]Value, 24)}
+	m := &Object{Value: make(map[string]Value, 26)}
+	m.Value["shuffled"] = NativeFunction(randShuffled)
+	m.Value["randomElement"] = NativeFunction(arrayRandomElement)
 	m.Value["concat"] = NativeFunction(arrayConcat)
 	m.Value["clear"] = NativeFunction(arrayClear)
 	m.Value["index"] = NativeFunction(arrayIndex)
@@ -32,7 +195,7 @@ func loadFoundationArray() Value {
 	m.Value["clip"] = NativeFunction(arrayClip)
 	m.Value["replace"] = NativeFunction(arrayReplace)
 	m.Value["cap"] = NativeFunction(arrayCap)
-	m.Value["view"] = NativeFunction(arrayView)
+	m.Value["view"] = NativeFunction(collectionProcessView)
 	m.Value["grow"] = NativeFunction(arrayGrow)
 	m.Value["overlaps"] = NativeFunction(arrayOverlaps)
 	return m
@@ -56,6 +219,23 @@ func arrayConcat(ctx *Context, args ...Value) (Value, error) {
 			}
 		}
 		return &Array{Value: result}, nil
+	}
+	return Nil, nil
+}
+
+func arrayRandomElement(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		switch val := args[0].(type) {
+		case *Array:
+			return val.Value[rand.Int()%len(val.Value)], nil
+		case *String:
+			if val.Runes == nil {
+				val.Runes = []rune(val.Value)
+			}
+			return &String{Value: string(val.Runes[rand.Int()%len(val.Runes)])}, nil
+		case *Bytes:
+			return Integer(val.Value[rand.Int()%len(val.Value)]), nil
+		}
 	}
 	return Nil, nil
 }
@@ -90,20 +270,6 @@ func arrayOverlaps(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func arrayView(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
-		xs, ok := args[0].(*Array)
-		init, okI := args[1].(Integer)
-		length, okE := args[2].(Integer)
-		if ok && okI && okE {
-			srclen := len(xs.Value)
-			start, end, _ := sliceBounds(init, init+length, Integer(srclen))
-			return &Array{Value: xs.Value[start:end]}, nil
-		}
-	}
-	return Nil, nil
-}
-
 func arrayGrow(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		xs, ok := args[0].(*Array)
@@ -120,7 +286,7 @@ func arrayIndex(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
 			for i, v := range xs.Value {
-				if v.Equals(args[1]) {
+				if v.Equals(ctx, args[1]) {
 					return Integer(i), nil
 				}
 			}
@@ -133,8 +299,11 @@ func arrayInsert(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 2 {
 		if xs, ok := args[0].(*Array); ok {
 			if idx, ok := args[1].(Integer); ok {
+				if idx < 0 {
+					idx = idx + Integer(len(xs.Value))
+				}
 				if idx >= 0 && idx <= Integer(len(xs.Value)) {
-					xs.Value = slices.Insert(xs.Value, int(idx), args[2])
+					xs.Value = slices.Insert(xs.Value, int(idx), args[2:]...)
 					return xs, nil
 				}
 			}
@@ -148,6 +317,44 @@ func arrayReverse(ctx *Context, args ...Value) (Value, error) {
 		if xs, ok := args[0].(*Array); ok {
 			slices.Reverse(xs.Value)
 			return xs, nil
+		}
+	}
+	return Nil, nil
+}
+
+func arrayRemove(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 2:
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			if i, ok := args[1].(Integer); ok {
+				if i < 0 {
+					i = i + Integer(len(xs.Value))
+				}
+				if 0 <= i && i < Integer(len(xs.Value)) {
+					val := xs.Value[i]
+					xs.Value = slices.Delete(xs.Value, int(i), int(i+1))
+					return val, nil
+				}
+			}
+		}
+	case 3:
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			if i, ok := args[1].(Integer); ok {
+				if j, ok := args[2].(Integer); ok {
+					if i < 0 {
+						i = i + Integer(len(xs.Value))
+					}
+					if j < 0 {
+						j = j + Integer(len(xs.Value))
+					}
+					if 0 <= i && i < Integer(len(xs.Value)) && 0 <= j && j <= Integer(len(xs.Value)) && i < j {
+						val := make([]Value, len(xs.Value[i:j]))
+						copy(val, xs.Value[i:j])
+						xs.Value = slices.Delete(xs.Value, int(i), int(j))
+						return &Array{Value: val}, nil
+					}
+				}
+			}
 		}
 	}
 	return Nil, nil
@@ -173,31 +380,20 @@ func arrayPop(ctx *Context, args ...Value) (Value, error) {
 			xs.Value = xs.Value[:lastIndex]
 			return val, nil
 		}
-	} else if len(args) == 2 {
-		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
-			if i, ok := args[1].(Integer); ok {
-				if 0 <= i && i < Integer(len(xs.Value)) {
-					val := xs.Value[i]
-					xs.Value = slices.Delete(xs.Value, int(i), int(i+1))
-					return val, nil
-				}
-			}
-		}
-	} else if len(args) == 3 {
-		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
-			if i, ok := args[1].(Integer); ok {
-				if j, ok := args[2].(Integer); ok {
-					if 0 <= i && i < Integer(len(xs.Value)) && 0 <= j && j <= Integer(len(xs.Value)) && i < j {
-						val := make([]Value, len(xs.Value[i:j]))
-						copy(val, xs.Value[i:j])
-						xs.Value = slices.Delete(xs.Value, int(i), int(j))
-						return &Array{Value: val}, nil
-					}
-				}
-			}
-		}
 	}
 	return Nil, nil
+}
+
+func arrayContains(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 1 {
+		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
+			val := args[1]
+			return Bool(slices.ContainsFunc(xs.Value, func(v Value) bool {
+				return bool(v.Equals(ctx, val))
+			})), nil
+		}
+	}
+	return False, nil
 }
 
 func arrayToObject(ctx *Context, args ...Value) (Value, error) {
@@ -465,4 +661,70 @@ func arraySortWithCompareVidaFunction(ctx *Context, args ...Value) (Value, error
 		}
 	}
 	return Nil, nil
+}
+
+func collectionProcessView(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 1:
+		return args[0], nil
+	case 2:
+		val := args[0]
+		startIdx, okStartIdx := args[1].(Integer)
+		var endIdx Integer
+		if okStartIdx {
+			var hasStart, hasEnd = true, false
+			return processView(val, startIdx, endIdx, hasStart, hasEnd)
+		}
+	case 3:
+		val := args[0]
+		startIdx, okStartIdx := args[1].(Integer)
+		endIdx, okEndIdx := args[2].(Integer)
+		if okStartIdx && okEndIdx {
+			var hasStart, hasEnd = true, true
+			return processView(val, startIdx, endIdx, hasStart, hasEnd)
+		}
+	}
+	return Nil, verror.ErrView
+}
+
+func processView(val Value, startIdx, endIdx Integer, hasStart, hasEnd bool) (Value, error) {
+	resolve := func(length Integer) (Integer, Integer, bool) {
+		s := Integer(0)
+		if hasStart {
+			s = startIdx
+		}
+		e := length
+		if hasEnd {
+			e = endIdx
+		}
+		return sliceBounds(s, e, length)
+	}
+	switch v := val.(type) {
+	case *Array:
+		length := Integer(len(v.Value))
+		s, e, empty := resolve(length)
+		if empty {
+			return &Array{}, nil
+		}
+		return &Array{Value: v.Value[s:e]}, nil
+	case *String:
+		if v.Runes == nil {
+			v.Runes = []rune(v.Value)
+		}
+		length := Integer(len(v.Runes))
+		s, e, empty := resolve(length)
+		if empty {
+			return &String{}, nil
+		}
+		return &String{Value: string(v.Runes[s:e])}, nil
+
+	case *Bytes:
+		length := Integer(len(v.Value))
+		s, e, empty := resolve(length)
+		if empty {
+			return &Bytes{}, nil
+		}
+		return &Bytes{Value: v.Value[s:e]}, nil
+	}
+	return Nil, verror.ErrView
 }

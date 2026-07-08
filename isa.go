@@ -12,8 +12,8 @@ const (
 	binopQ
 	array
 	object
-	iGet
-	iSet
+	get
+	set
 	slice
 	forSet
 	forLoop
@@ -24,30 +24,32 @@ const (
 	fun
 	ret
 	call
+	lookup
 )
 
 var opcodes = [...]string{
-	end:      "End",
-	load:     "Load",
-	store:    "Store",
-	prefix:   "Prefix",
-	binop:    "Binop",
-	eq:       "Eq",
-	binopG:   "BinopG",
-	binopK:   "BinopK",
-	binopQ:   "BinopQ",
-	array:    "Array",
-	object:   "Object",
-	iGet:     "IGet",
-	iSet:     "ISet",
-	slice:    "Slice",
-	forSet:   "For",
-	forLoop:  "Loop",
-	jump:     "Jump",
-	iForSet:  "IFor",
-	iForLoop: "ILoop",
-	check:    "Check",
-	fun:      "Fun",
-	ret:      "Ret",
-	call:     "Call",
+	end:      "end",
+	load:     "load",
+	store:    "store",
+	prefix:   "prefix",
+	binop:    "binop",
+	eq:       "eq",
+	binopG:   "binopG",
+	binopK:   "binopK",
+	binopQ:   "binopQ",
+	array:    "array",
+	object:   "object",
+	get:      "get",
+	set:      "set",
+	slice:    "slice",
+	forSet:   "for",
+	forLoop:  "loop",
+	jump:     "jump",
+	iForSet:  "iFor",
+	iForLoop: "iLoop",
+	check:    "check",
+	fun:      "fun",
+	ret:      "ret",
+	call:     "call",
+	lookup:   "lookup",
 }

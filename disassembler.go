@@ -9,7 +9,7 @@ import (
 
 func PrintBytecode(script *Script, name string) string {
 	clear()
-	fmt.Println("Machine Code for", name)
+	fmt.Println("Compiled bytecode of", name)
 	var sb strings.Builder
 	sb.WriteString(printHeader())
 	var s string
@@ -41,7 +41,7 @@ func printHeader() string {
 	sb.WriteRune(10)
 	sb.WriteRune(10)
 	sb.WriteRune(10)
-	sb.WriteString("Main\n")
+	sb.WriteString("Main Script\n")
 	return sb.String()
 }
 
@@ -85,7 +85,7 @@ func printInstr(instr, ip uint64, isRunningDebug bool) string {
 		fmt.Fprintf(&sb, " %3v %3v %3v %3v", P>>shift16, P&clean16, A, B)
 	case object, jump:
 		fmt.Fprintf(&sb, " %3v", B)
-	case iSet, iGet:
+	case set, get, lookup:
 		fmt.Fprintf(&sb, " %3v %3v %3v %3v %3v", (P>>shift16)>>shift4, P>>shift16&clean8, P&clean16, A, B)
 	case eq:
 		var op token.Token

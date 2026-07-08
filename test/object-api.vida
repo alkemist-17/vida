@@ -1,0 +1,162 @@
+// =============================================================================
+// 1. Objects as keys — ObjectKey() is pointer-based ("object[%p]"), so
+//    distinct object values are always distinct keys, and an object can be
+//    used as a key in another object or as an array element compared by
+//    identity.
+// =============================================================================
+
+var keyHolder = {}
+var k1 = {}
+var k2 = {}
+keyHolder[k1] = "first"
+keyHolder[k2] = "second"
+assert(keyHolder[k1] == "first", "an object must work as a key, keyed by its own identity")
+assert(keyHolder[k2] == "second", "a different object must be a genuinely different key, even though both are empty `{}` literals")
+assert(keyHolder[{}] == nil, "a THIRD, unrelated empty object must not collide with either existing key")
+
+
+// =============================================================================
+// 2. set / get / has / del — single-key AND multi-key (variadic) forms.
+// =============================================================================
+
+var o = {}
+assert(o.isEmpty(), "a fresh object must start empty")
+
+o.set("hello", 42)
+assert(o.isEmpty() == false, "set must add a real property")
+assert(o.len() == 1, "one key after one set")
+assert(o.get("hello") == 42, "get must return what set stored")
+assert(o.has("hello"), "has must confirm the key exists")
+assert(o.has("world") == false, "has must correctly report a missing key")
+
+// Multi-pair set: (key, value, key, value, ...)
+o.set("world", 91, "alpha", 100)
+assert(o.len() == 3, "multi-pair set must add every pair given in one call")
+assert(o.get("world") == 91 and o.get("alpha") == 100, "each pair must land under its own key")
+
+// Multi-key has: true only if EVERY given key is present.
+assert(o.has("hello", "world", "alpha"), "multi-key has must be true when every key is present")
+assert(o.has("hello", "world", "nonexistent") == false, "multi-key has must be false if even ONE key is missing")
+
+// Multi-key del.
+o.del("world", "alpha")
+assert(o.len() == 1, "multi-key del must remove every listed key in one call")
+assert(o.has("hello") and o.has("world") == false and o.has("alpha") == false, "only the un-deleted key must remain")
+
+
+// =============================================================================
+// 3. getset — a three-way contract that's easy to get wrong:
+//      - key exists            -> returns the EXISTING value (ignores any
+//                                 newly-given value entirely)
+//      - key absent, val given -> SETS it, but returns SELF, not the value
+//      - key absent, no val    -> returns nil, nothing is set
+// =============================================================================
+
+var gs = {}
+assert(gs.getset("sheep", "cow") == gs, "getset on a MISSING key with a value given must return the object itself, not the value just set")
+assert(gs.get("sheep") == "cow", "...but the value must genuinely have been set")
+assert(gs.getset("sheep") == "cow", "getset on an EXISTING key must return its current value")
+assert(gs.getset("sheep", "goat") == "cow", "getset on an EXISTING key must return the OLD value even when a new one is supplied — it never overwrites")
+assert(gs.get("sheep") == "cow", "...confirmed: the value on the object is untouched, still 'cow'")
+assert(gs.getset("nonexistent") == nil, "getset on a missing key with NO value given must return nil, and must not create the key")
+assert(gs.has("nonexistent") == false, "...confirmed nothing was created")
+
+
+// =============================================================================
+// 4. keys / values — both return Arrays; membership-checked with `in`
+//    rather than assuming any particular order.
+// =============================================================================
+
+var kv = {}
+kv.set("hello", 42, "world", 91)
+var ks = kv.keys()
+var vs = kv.values()
+assert(ks.type() == "array" and vs.type() == "array", "keys() and values() must both return Arrays")
+assert(ks.len() == 2 and vs.len() == 2, "one entry per property, for both keys and values")
+assert("hello" in ks and "world" in ks, "keys() must contain every property name")
+assert(42 in vs and 91 in vs, "values() must contain every property value")
+
+
+// =============================================================================
+// 5. implements — checks whether an object has ALL the property NAMES that
+//    appear across one or more "interface" objects, regardless of their
+//    values (pure duck-typing by key, not a value/type check). IMPORTANT:
+//    despite its internal helper being named "recursive", it only checks
+//    the object's OWN fields — a name inherited through `=<` does NOT
+//    satisfy implements. Confirmed directly against the source, not just
+//    inferred, since the naming is actively misleading.
+// =============================================================================
+
+var iface = { start = nil, stop = nil }
+var fullImpl = { start = fun self -> 1, stop = fun self -> 2 }
+var partialImpl = { start = fun self -> 1 }
+
+assert(fullImpl.implements(iface), "an object with every name the interface requires must satisfy implements")
+assert(partialImpl.implements(iface) == false, "an object missing even one required name must fail implements")
+
+// implements can check against the union of MULTIPLE interface objects.
+var ifaceA = { start = nil }
+var ifaceB = { stop = nil }
+assert(fullImpl.implements(ifaceA, ifaceB), "implements against multiple interface objects checks the UNION of their keys — fullImpl has both `start` and `stop`, so it satisfies both at once")
+
+// The "own fields only" gotcha: a name reached ONLY via a vtable is not
+// enough, even though `.` property reads and `.` method calls can both
+// reach it fine.
+var chainVt = { stop = fun self -> 2 }
+var viaChain = { start = fun self -> 1 } =< chainVt
+assert(viaChain.stop() == 2, "sanity check: `.stop()` genuinely works, reaching `stop` through the vtable chain")
+assert(viaChain.implements(iface) == false, "...yet implements still reports false, because `stop` is not one of viaChain's OWN fields — implements does not walk the vtable chain, despite what its internal name suggests")
+
+
+// =============================================================================
+// 6. extract — the mirror of inject: instead of adding keys found in other
+//    objects, it removes from self every key that appears in ANY of the
+//    given other objects, regardless of value, mutating self directly and
+//    returning self.
+// =============================================================================
+
+var extractTarget = {}
+extractTarget.set("hello", 42, "world", 91, "alpha", 100)
+var removeThese1 = { world = "irrelevant value, only the KEY matters" }
+var removeThese2 = { alpha = 999 }
+var extractResult = extractTarget.extract(removeThese1, removeThese2)
+assert(extractResult == extractTarget, "extract must return self")
+assert(extractTarget.has("hello"), "a key not present in any of the given objects must survive")
+assert(extractTarget.has("world") == false, "a key present in the FIRST given object must be removed")
+assert(extractTarget.has("alpha") == false, "a key present in the SECOND given object must also be removed")
+
+
+// =============================================================================
+// 7. isEmpty / clear / len — the basics, but worth pinning down together
+//    since getset/inject/override/extract all mutate an object's own field
+//    count in different ways and it's easy to lose track.
+// =============================================================================
+
+var lifecycle = {}
+assert(lifecycle.isEmpty() and lifecycle.len() == 0, "a fresh object is empty")
+lifecycle.set("a", 1, "b", 2)
+assert(lifecycle.isEmpty() == false and lifecycle.len() == 2, "set must be reflected in both isEmpty and len")
+lifecycle.clear()
+assert(lifecycle.isEmpty() and lifecycle.len() == 0, "clear must empty the object completely")
+
+
+// =============================================================================
+// 8. Operator overloading with a SHARED vtable — two distinct objects
+//    delegating to the SAME override function, invoked with (self, other)
+//    swapped depending on which side is the receiver. This is how the old
+//    meta.vida demonstrated commutative vs. non-commutative operators; the
+//    pattern still works exactly the same way under `=<`.
+// =============================================================================
+
+var sharedOpsVt = {
+    add = fun self, other -> self.value + other.value,
+    sub = fun self, other -> self.value - other.value,
+}
+
+var left = { value = 100 } =< sharedOpsVt
+var right = { value = 30 } =< sharedOpsVt
+
+assert(left + right == right + left, "addition through a shared override is naturally commutative here, since both sides just sum their own `value`")
+assert(left + right == 130, "confirms the actual computed result, not just that both directions match each other")
+assert((left - right == right - left) == false, "subtraction is NOT commutative even with the exact same override function — the result depends on which object is `self` and which is `other`")
+assert(left - right == 70 and right - left == -70, "confirms the specific values: self.value - other.value from each side's own perspective")

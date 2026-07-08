@@ -81,25 +81,25 @@ func (vm *VM) run() error {
 		case jump:
 			ip = int(B)
 		case binopG:
-			val, err := (*vm.Script.GlobalStore)[A].Binop(P>>shift16, (*vm.Script.GlobalStore)[P&clean16])
+			val, err := (*vm.Script.GlobalStore)[A].Binop(vm.ctx, P>>shift16, (*vm.Script.GlobalStore)[P&clean16])
 			if err != nil {
 				return vm.createError(ip, err)
 			}
 			vm.Frame.stack[B] = val
 		case binop:
-			val, err := vm.Frame.stack[A].Binop(P>>shift16, vm.Frame.stack[P&clean16])
+			val, err := vm.Frame.stack[A].Binop(vm.ctx, P>>shift16, vm.Frame.stack[P&clean16])
 			if err != nil {
 				return vm.createError(ip, err)
 			}
 			vm.Frame.stack[B] = val
 		case binopK:
-			val, err := vm.Frame.stack[P&clean16].Binop(P>>shift16, (*vm.Script.Konstants)[A])
+			val, err := vm.Frame.stack[P&clean16].Binop(vm.ctx, P>>shift16, (*vm.Script.Konstants)[A])
 			if err != nil {
 				return vm.createError(ip, err)
 			}
 			vm.Frame.stack[B] = val
 		case binopQ:
-			val, err := (*vm.Script.Konstants)[A].Binop(P>>shift16, vm.Frame.stack[P&clean16])
+			val, err := (*vm.Script.Konstants)[A].Binop(vm.ctx, P>>shift16, vm.Frame.stack[P&clean16])
 			if err != nil {
 				return vm.createError(ip, err)
 			}
@@ -113,44 +113,44 @@ func (vm *VM) run() error {
 			case storeFromLocal:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.stack[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = vm.Frame.stack[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.stack[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromKonst:
 				switch r {
 				case storeFromLocal:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.stack[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromGlobal:
-					val = (*vm.Script.Konstants)[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.Konstants)[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			case storeFromGlobal:
 				switch r {
 				case storeFromLocal:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.Frame.stack[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			default:
 				switch r {
 				case storeFromLocal:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.stack[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, vm.Frame.stack[A])
 				case storeFromKonst:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.Konstants)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Equals(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
 			if s>>4 == 1 {
@@ -158,59 +158,63 @@ func (vm *VM) run() error {
 			}
 			vm.Frame.stack[B] = val
 		case prefix:
-			val, err := vm.Frame.stack[A].Prefix(P)
+			val, err := vm.Frame.stack[A].Prefix(vm.ctx, P)
 			if err != nil {
 				return vm.createError(ip, err)
 			}
 			vm.Frame.stack[B] = val
-		case iGet:
-			var val Value
-			var err error
+		case get:
+			var val Value = Nil
 			scopeIndex := P >> shift20
 			scopeIndexable := (P >> shift16) & clean8
 			switch scopeIndex {
 			case storeFromLocal:
 				switch scopeIndexable {
 				case storeFromLocal:
-					val, err = vm.Frame.stack[P&clean16].IGet(vm.Frame.stack[A])
+					val = vm.Frame.stack[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
 				case storeFromGlobal:
-					val, err = (*vm.Script.GlobalStore)[P&clean16].IGet(vm.Frame.stack[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
 				default:
-					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet(vm.Frame.stack[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, vm.Frame.stack[A])
 				}
 			case storeFromKonst:
 				switch scopeIndexable {
 				case storeFromLocal:
-					val, err = vm.Frame.stack[P&clean16].IGet((*vm.Script.Konstants)[A])
+					val = vm.Frame.stack[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
 				case storeFromGlobal:
-					val, err = (*vm.Script.GlobalStore)[P&clean16].IGet((*vm.Script.Konstants)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
 				default:
-					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet((*vm.Script.Konstants)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, (*vm.Script.Konstants)[A])
 				}
 			case storeFromGlobal:
 				switch scopeIndexable {
 				case storeFromLocal:
-					val, err = vm.Frame.stack[P&clean16].IGet((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.stack[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
 				case storeFromGlobal:
-					val, err = (*vm.Script.GlobalStore)[P&clean16].IGet((*vm.Script.GlobalStore)[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
 				default:
-					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet((*vm.Script.GlobalStore)[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, (*vm.Script.GlobalStore)[A])
 				}
 			default:
 				switch scopeIndexable {
 				case storeFromLocal:
-					val, err = vm.Frame.stack[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.stack[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				case storeFromGlobal:
-					val, err = (*vm.Script.GlobalStore)[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
+					val = (*vm.Script.GlobalStore)[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
+				case storeFromKonst:
+					val = (*vm.Script.Konstants)[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				default:
-					val, err = vm.Frame.lambda.FreeVarStore[P&clean16].IGet(vm.Frame.lambda.FreeVarStore[A])
+					val = vm.Frame.lambda.FreeVarStore[P&clean16].Get(vm.ctx, vm.Frame.lambda.FreeVarStore[A])
 				}
 			}
-			if err != nil {
-				return vm.createError(ip, err)
-			}
 			vm.Frame.stack[B] = val
-		case iSet:
+		case set:
 			var err error
 			scopeIdx := P >> shift20
 			scopeExp := (P >> shift16) & clean8
@@ -218,51 +222,53 @@ func (vm *VM) run() error {
 			case storeFromLocal:
 				switch scopeExp {
 				case storeFromLocal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], vm.Frame.stack[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.stack[A], vm.Frame.stack[B])
 				case storeFromKonst:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], (*vm.Script.Konstants)[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.stack[A], (*vm.Script.Konstants)[B])
 				case storeFromGlobal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], (*vm.Script.GlobalStore)[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.stack[A], (*vm.Script.GlobalStore)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.stack[A], vm.Frame.lambda.FreeVarStore[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.stack[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			case storeFromKonst:
 				switch scopeExp {
 				case storeFromLocal:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], vm.Frame.stack[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.Konstants)[A], vm.Frame.stack[B])
 				case storeFromKonst:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], (*vm.Script.Konstants)[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.Konstants)[A], (*vm.Script.Konstants)[B])
 				case storeFromGlobal:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], (*vm.Script.GlobalStore)[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.Konstants)[A], (*vm.Script.GlobalStore)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.Konstants)[A], vm.Frame.lambda.FreeVarStore[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.Konstants)[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			case storeFromGlobal:
 				switch scopeExp {
 				case storeFromLocal:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.GlobalStore)[A], vm.Frame.stack[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.GlobalStore)[A], vm.Frame.stack[B])
 				case storeFromKonst:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.GlobalStore)[A], (*vm.Script.Konstants)[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.GlobalStore)[A], (*vm.Script.Konstants)[B])
 				case storeFromGlobal:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.GlobalStore)[A], (*vm.Script.GlobalStore)[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.GlobalStore)[A], (*vm.Script.GlobalStore)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet((*vm.Script.GlobalStore)[A], vm.Frame.lambda.FreeVarStore[B])
+					err = vm.Frame.stack[P&clean16].Set((*vm.Script.GlobalStore)[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			default:
 				switch scopeExp {
 				case storeFromLocal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], vm.Frame.stack[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.lambda.FreeVarStore[A], vm.Frame.stack[B])
 				case storeFromKonst:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.Konstants)[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.Konstants)[B])
 				case storeFromGlobal:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.GlobalStore)[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.lambda.FreeVarStore[A], (*vm.Script.GlobalStore)[B])
 				default:
-					err = vm.Frame.stack[P&clean16].ISet(vm.Frame.lambda.FreeVarStore[A], vm.Frame.lambda.FreeVarStore[B])
+					err = vm.Frame.stack[P&clean16].Set(vm.Frame.lambda.FreeVarStore[A], vm.Frame.lambda.FreeVarStore[B])
 				}
 			}
 			if err != nil {
 				return vm.createError(ip, err)
 			}
+		case lookup:
+			vm.Frame.stack[B] = vm.Frame.stack[P&clean16].LookUp(vm.ctx, (*vm.Script.Konstants)[A])
 		case slice:
 			val, err := vm.processSlice(P, A)
 			if err != nil {
@@ -321,8 +327,8 @@ func (vm *VM) run() error {
 		case iForLoop:
 			i, _ := vm.Frame.stack[B].(Iterator)
 			if i.Next() {
-				vm.Frame.stack[B+1] = i.Key()
-				vm.Frame.stack[B+2] = i.Value()
+				vm.Frame.stack[B+1] = i.Key(vm.ctx)
+				vm.Frame.stack[B+2] = i.Value(vm.ctx)
 				ip = int(A)
 				continue
 			}
@@ -614,38 +620,40 @@ func (vm *VM) processSlice(mode, sliceable uint64) (Value, error) {
 
 func (vm *VM) printCallStack() {
 	fmt.Printf("\t[Call Stack]\n")
-	fmt.Printf("\t(Most recent call first)\n")
+	fmt.Printf("\t(Most recent call first)\n\n\n\n")
 	for i := vm.fp; i >= 0; i-- {
 		modName := vm.Frames[i].lambda.CoreFn.ScriptID
 		ip := vm.Frames[i].ip
+		fn := vm.Frames[i].lambda
 		var nearLine uint
-		if vm.Script.ErrorInfo[modName][ip] == 0 {
-			nearLine = getNonZeroLine(modName, ip, vm)
+		if fn.CoreFn.MapScriptIPLine[modName][ip] == 0 {
+			nearLine = getNonZeroLine(fn, modName, ip)
 		} else {
-			nearLine = vm.Script.ErrorInfo[modName][ip]
+			nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 		}
-		err := verror.NewStackFrameInfo(modName, nearLine)
-		fmt.Printf("%v\n", err)
+		err := verror.NewStackFrameInfo(modName, nearLine, uint(i))
+		fmt.Printf("%v\n\n\n", err)
 	}
 }
 
 func (vm *VM) createError(ip int, err error) error {
 	vm.Thread.State = Done
 	modName := vm.Frame.lambda.CoreFn.ScriptID
+	fn := vm.Frame.lambda
 	vm.Frame.ip = ip
 	var nearLine uint
-	if vm.Script.ErrorInfo[modName][ip] == 0 {
-		nearLine = getNonZeroLine(modName, ip, vm)
+	if fn.CoreFn.MapScriptIPLine[modName][ip] == 0 {
+		nearLine = getNonZeroLine(fn, modName, ip)
 	} else {
-		nearLine = vm.Script.ErrorInfo[modName][ip]
+		nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 	}
 	return verror.New(modName, err.Error(), verror.RunTimeErrType, nearLine)
 }
 
-func getNonZeroLine(modName string, ip int, vm *VM) uint {
+func getNonZeroLine(fn *Function, modName string, ip int) uint {
 	var nearLine uint
 	for i := ip; i >= 0; i-- {
-		nearLine = vm.Script.ErrorInfo[modName][i]
+		nearLine = fn.CoreFn.MapScriptIPLine[modName][i]
 		if nearLine != 0 {
 			break
 		}

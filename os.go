@@ -14,7 +14,7 @@ func loadFoundationOS() Value {
 	m.Value["getFromEnv"] = NativeFunction(osGetEnv)
 	m.Value["pwd"] = NativeFunction(osGetWD)
 	m.Value["hostname"] = NativeFunction(osHostname)
-	m.Value["pathSeparator"] = &String{Value: string(os.PathSeparator)}
+	m.Value["pathSeparator"] = NativeFunction(osGetPathSeparator)
 	m.Value["mkdir"] = NativeFunction(osMkdir)
 	m.Value["mkdirAll"] = NativeFunction(osMkdirAll)
 	m.Value["rm"] = NativeFunction(osRemove)
@@ -80,6 +80,10 @@ func osHostname(ctx *Context, args ...Value) (Value, error) {
 	} else {
 		return &VidaError{Message: &String{Value: e.Error()}}, nil
 	}
+}
+
+func osGetPathSeparator(ctx *Context, args ...Value) (Value, error) {
+	return &String{Value: string(os.PathSeparator)}, nil
 }
 
 func osMkdir(ctx *Context, args ...Value) (Value, error) {

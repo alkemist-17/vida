@@ -1,0 +1,137 @@
+var text = load("std.text")
+
+
+let bfvt = {}
+
+
+bfvt.validSymbols = "><+-.,[]"
+
+
+bfvt.filterCode = fun self, code {
+	var R = []
+	for _, c in code {
+		if c in self.validSymbols {
+			R.append(c)
+		}
+	}
+	ret R
+}
+
+
+bfvt.run = fun self, config {
+	// Filter code from comments
+	var code = self.filterCode(config.code)
+	
+	// Precompute bracket matching
+	var bracketMap = {}
+	var stack = []
+	for i, cmd in code {
+		if cmd == "[" {
+			stack.append(i)
+		}
+
+		else if cmd == "]" {
+			if stack.isEmpty() {
+				ret error(`Unmatched ']' at position %v`.format(i))
+			}
+			var openPos = stack.pop()
+			bracketMap[openPos] = i
+			bracketMap[i] = openPos
+		}
+	}
+
+	if not stack.isEmpty() {
+		ret error(`Unmatched '[' at position %v`.format(stack[-1]))
+	}
+
+	// Code execution
+	var tape = newArray(self.tapeSize, 0)
+	var dp = 0 // data pointer
+	var ip = 0 // instruction pointer
+	var inputPos = 0
+	var output = []
+	var limit = code.len()
+	var cmd = nil
+	var mod = 256
+
+	while ip < limit {
+		cmd = code[ip]
+
+		if cmd == ">" {
+			dp = dp + 1
+			if dp >= self.tapeSize {
+				ret error("Data pointer moved past end of tape")
+			}
+		}
+
+		else if cmd == "<" {
+			dp = dp - 1
+			if dp < 0 {
+				ret error("Data pointer moved before start of tape")
+			}
+		}
+
+		else if cmd == "+" {
+			tape[dp] = (tape[dp] + 1) % mod
+		}
+
+		else if cmd == "-" {
+			tape[dp] = (tape[dp] - 1) % mod
+		}
+
+		else if cmd == "." {
+			output.append(text::fromCodePoints(tape[dp]))
+		}
+
+		else if cmd == "," {
+			if inputPos < config.data.len() {
+				tape[dp] = text::codePoints(config.data[inputPos])[0]%mod
+				inputPos = inputPos + 1
+			} else {
+				tape[dp] = 0 // EOF
+			}
+		}
+
+		else if cmd == "[" {
+			if tape[dp] == 0 {
+				ip = bracketMap[ip] // Jump past matching ]
+			}
+		}
+
+		else if cmd == "]" {
+			if tape[dp] != 0 {
+				ip = bracketMap[ip] // Jump back to matching [
+			}
+		}
+
+		ip = ip + 1
+	}
+
+	ret "".join(output)
+}
+
+
+let BrainFuckInterpreter = fun tapeSize -> { tapeSize = tapeSize or 30000 } =< bfvt
+
+var bf = BrainFuckInterpreter(nil)
+
+var hello = `
+	++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.
+	>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+`
+
+var cat = `,[.,]`
+
+var add = `++>+++<[->+<]>.`
+
+var threeChars = 
+`
+>,[>,]<[<]>[.>]
+`
+
+
+
+assert(bf.run({ code = hello }) == "Hello World!\n")
+assert(bf.run({ code = cat, data = "Hello Brainfuck!" }) == "Hello Brainfuck!")
+assert("2 + 3 = %v".format(text::codePoints(bf.run({ code = add }))[0]) == "2 + 3 = 5")
+assert(bf.run({ code = threeChars, data = "ABC" }) == "ABC")

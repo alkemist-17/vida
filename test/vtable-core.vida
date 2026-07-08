@@ -1,0 +1,400 @@
+var ex = load("std.exception")
+
+// =============================================================================
+// Vida vtable / object-model core — regression test suite
+//
+// This suite pins down the foundational mechanics of the 0.5.0 object model:
+//   - `=<`            assign / clear an Object's own vtable (a genuine binary
+//                      expression operator — capture its result explicitly,
+//                      e.g. `x = x =< vt`, rather than using it as a bare
+//                      statement)
+//   - `.name(...)`     method-call syntax: looks up `name` on the vtable
+//                      CHAIN ONLY (never on the receiver's own fields) and
+//                      auto-inserts the receiver as the first ("self") arg
+//   - `::name(...)`    static-call syntax: looks up `name` via Get (receiver's
+//                      own fields first, then vtable chain) and does NOT
+//                      insert the receiver as an argument — the caller must
+//                      pass it explicitly if the function expects it.
+//                      Module objects returned by `load(...)` store their
+//                      exports as OWN fields with no vtable at all, so
+//                      calling them always requires `::`, e.g. `ex::protected(...)`
+//   - `.getvt()`       returns a value's current vtable (universal method)
+//   - `.extendvt(...)` adds to a vtable, either one message at a time
+//                      (3-arg form) or by merging a whole object of
+//                      messages (2-arg form). NEITHER form overwrites an
+//                      existing key — extendvt only ever extends, never
+//                      overrides (this was a real bug: the 3-arg form used
+//                      to overwrite unconditionally; fixed in coreExtendVTable)
+//
+// Convention: every assert carries a comment explaining the property it
+// tests. Risky calls that are EXPECTED to error are wrapped in
+// `ex::protected(fun -> ...)` and checked with `.isError()`, so a single
+// failing expectation doesn't take down the whole file.
+// =============================================================================
+
+
+// =============================================================================
+// 1. `=<` — assigning, replacing and clearing an Object's own vtable
+// =============================================================================
+
+var vt1 = { greeting = fun self -> "hello from vt1" }
+var vt2 = { greeting = fun self -> "hello from vt2" }
+var o = {}
+
+// A brand-new plain object has no custom vtable of its own: `.` lookup for a
+// name that isn't provided by the default global object vtable must fail.
+var beforeAssign = ex::protect(fun -> o.greeting())
+assert(beforeAssign.isError(), "`.greeting()` must fail before any vtable is attached")
+
+o = o =< vt1
+assert(o.greeting() == "hello from vt1", "`.` lookup must resolve through the newly-assigned vtable")
+
+// Reassigning `=<` REPLACES the vtable wholesale, it does not merge.
+o = o =< vt2
+assert(o.greeting() == "hello from vt2", "`=<` must replace, not merge, the previous vtable")
+
+// `obj =< nil` clears the custom vtable back to "none".
+o = o =< nil
+var afterClear = ex::protect(fun -> o.greeting())
+assert(afterClear.isError(), "`obj =< nil` must detach the vtable entirely")
+
+
+// =============================================================================
+// 2. `.` vs `::` — the central dispatch distinction
+//
+//    o = { hello = fun self -> ... }     // `hello` lives on o's OWN fields
+//
+//    o.hello()   -> vtable-chain lookup, SKIPS o's own fields, auto-passes o
+//    o::hello()  -> Get (checks o's own fields first), no auto-pass of o
+// =============================================================================
+
+var obj = { hello = fun self -> "hi, " + self.name, name = "Ada" }
+
+// `.hello()` looks the message up on obj's VTABLE CHAIN ONLY. obj has no
+// custom vtable at all, so this must fail even though `hello` exists as a
+// field directly on obj.
+var dotOnOwnField = ex::protect(fun -> obj.hello())
+assert(dotOnOwnField.isError(), "`.` method-call must not see the receiver's own fields, only its vtable chain")
+
+// `::hello(...)` uses Get, which DOES check the receiver's own fields first.
+// It does not auto-insert `obj` as an argument, so the caller must pass it.
+assert(obj::hello(obj) == "hi, Ada", "`::` finds the field directly but requires the receiver to be passed explicitly")
+
+// Proof that `::` performs no self-insertion: calling with zero args is an
+// arity error, since `hello`'s only parameter (`self`) never gets bound.
+var staticNoArgs = ex::protect(fun -> obj::hello())
+assert(staticNoArgs.isError(), "`::` must not auto-insert the receiver; omitting it is an arity error")
+
+// Now attach a vtable exposing the SAME message name. `.hello()` should now
+// succeed and auto-pass obj as self; `::hello` still reaches obj's OWN field
+// (Get checks own fields first, before ever consulting the vtable chain)
+// with an explicit receiver, same as before attaching a vtable at all.
+var vt = { hello = fun self -> "vtable says hi to " + self.name }
+obj = obj =< vt
+assert(obj.hello() == "vtable says hi to Ada", "`.` must dispatch through the vtable chain once one is attached, auto-passing self")
+assert(obj::hello(obj) == "hi, Ada", "`::` reaches obj's own `hello` field first via Get, still with an explicit receiver — the vtable's `hello` is never even reached")
+
+// Note: `.` dispatch (with a call) never looks at obj's own fields, only
+// its vtable chain — that shadowing is exactly what was just demonstrated.
+// A separate question — whether a *plain, non-call* property read (`.`
+// with no parens) prefers an object's own field over its vtable chain — is
+// answered explicitly in section 5c below, since it deserves its own
+// unambiguous example rather than reusing `hello` here.
+
+// Self's parameter name is just a convention, not special syntax: any name
+// works, as long as it's the first parameter.
+var vtCustomSelfName = { shout = fun receiver -> receiver.name + "!!!" }
+var obj2 = { name = "Grace" }
+obj2 = obj2 =< vtCustomSelfName
+assert(obj2.shout() == "Grace!!!", "the receiver-binding parameter can be named anything; `self` is only a convention")
+
+
+// =============================================================================
+// 3. `getvt` / `extendvt` — universal vtable introspection & extension
+// =============================================================================
+
+// -- 3a. Built-in types: methods only, added to the type's single GLOBAL
+//        vtable. There is no per-value vtable slot for built-ins.
+var _ = (42).extendvt("inc", fun self -> self + 1)
+var n = 42
+assert(n.inc() == 43, "extendvt on a built-in type adds a method reachable from ANY value of that type")
+
+var anotherInt = 7
+assert(anotherInt.inc() == 8, "the extension is global to the type, not tied to the specific instance it was defined through")
+
+// -- 3b. Objects: `.getvt()` returns the object's own vtable if it has one,
+//        otherwise the shared default object vtable.
+var freshObj = {}
+var defaultVt = freshObj.getvt()
+assert(defaultVt != nil, "getvt() must never return nil, even for an object with no custom vtable — it falls back to the default")
+
+var customVtObj = {}
+var myVt = { ping = fun self -> "pong" }
+customVtObj = customVtObj =< myVt
+assert(customVtObj.getvt() == myVt, "once `=<` is used, getvt() must return that exact vtable object (identity, not a copy)")
+
+// -- 3c. REGRESSION (fixed bug): extendvt's 3-arg form (single message) used
+//        to overwrite an existing entry unconditionally, inconsistent with
+//        the 2-arg form's non-destructive contract. Fixed in coreExtendVTable
+//        so BOTH forms only ever extend, never override.
+var vtOverwrite = { greet = fun self -> "v1" }
+var oo = {} =< vtOverwrite
+oo.extendvt("greet", fun self -> "v2")
+assert(oo.greet() == "v1", "the 3-arg extendvt form must NOT overwrite an existing message — extend never overrides, for either arity")
+
+// -- 3d. extendvt's 2-arg form (merge a whole object) does NOT overwrite
+//        keys that already exist in the target vtable.
+var vtMerge = { a = 1, b = 2 }
+var mergeTarget = {} =< vtMerge
+mergeTarget.extendvt({ b = 999, c = 3 })
+var mergedVt = mergeTarget.getvt()
+assert(mergedVt.get("a") == 1, "2-arg extendvt must preserve pre-existing keys untouched")
+assert(mergedVt.get("b") == 2, "2-arg extendvt must NOT overwrite a key that already exists (b stays 2, not 999)")
+assert(mergedVt.get("c") == 3, "2-arg extendvt must add brand-new keys that weren't present before")
+
+
+// =============================================================================
+// 4. Global vtable mutation hazard
+//
+// extendvt on a built-in, or on ANY object that has never had `=<` applied
+// to it, mutates the single SHARED vtable for that type / for "bare"
+// objects. This section documents that as current, intentional behavior —
+// it is easy to trip over accidentally, so it deserves an explicit,
+// permanent regression test rather than being discovered by surprise later.
+// =============================================================================
+
+var bareA = {}
+var bareB = {}
+// Neither bareA nor bareB has ever had `=<` applied, so both currently
+// resolve to the same shared default object vtable.
+bareA.extendvt("sharedPing", fun self -> "shared!")
+assert(bareB.sharedPing() == "shared!", "extendvt on an object with no custom vtable mutates the GLOBAL default object vtable, visible to every other 'bare' object")
+
+
+// =============================================================================
+// 5. Prototype-style chains: depth, shadowing, and the cycle guard
+// =============================================================================
+
+// -- 5a. Multi-level chain resolution.
+var grandparent = { level = fun self -> "grandparent" }
+var parent = {} =< grandparent
+var child = {} =< parent
+assert(child.level() == "grandparent", "a lookup miss must walk arbitrarily far up the vtable chain")
+
+// -- 5b. Shadowing: a nearer vtable in the chain wins over a farther one.
+parent.level = fun self -> "parent"
+assert(child.level() == "parent", "a message defined closer in the chain must shadow one defined farther away")
+
+// -- 5c. Get precedence: an object's OWN field beats its entire vtable
+//        chain, even a very deep one. This is a plain, non-call property
+//        read (`.` with no parentheses), which compiles to Get — the same
+//        access Get uses internally, just without a following call.
+var withOwnField = { level = "own field wins" } =< child
+assert(withOwnField.level == "own field wins", "a plain `.` property read must check the receiver's own fields before consulting the vtable chain at all")
+
+// -- 5d. Cycle guard regression (fixed bug: vtable chains had no cycle
+//        detection and would previously hang forever). A cyclic chain must
+//        now resolve a miss as "not found" rather than looping forever.
+var cycleA = {}
+var cycleB = {}
+cycleA = cycleA =< cycleB
+cycleB = cycleB =< cycleA
+var cycleLookup = ex::protect(fun -> cycleA::nonExistentMessage(cycleA))
+assert(cycleLookup.isError(), "a lookup miss on a cyclic vtable chain must terminate (as a miss), not hang forever")
+// This exercises the fix directly: before it, this file would never finish
+// running. If this suite hangs again, this section is almost certainly why.
+
+
+// =============================================================================
+// 6. Multi-inheritance BY COMPOSITION (there is no multi-parent vtable slot;
+//    `inject` / `override` merge one object's fields into another's OWN
+//    property map — they can be used to flatten several "trait" sources
+//    into one plain object, which is then attached as a vtable via `=<`)
+// =============================================================================
+
+var flyMixin = { fly = fun self -> self.name + " flies" }
+var swimMixin = { swim = fun self -> self.name + " swims" }
+
+var duckVt = {}
+duckVt.inject(flyMixin)
+duckVt.inject(swimMixin)
+
+var duck = { name = "Donald" } =< duckVt
+assert(duck.fly() == "Donald flies", "composed vtable must expose the first mixin's methods")
+assert(duck.swim() == "Donald swims", "composed vtable must expose the second mixin's methods")
+
+// IMPORTANT: `inject` / `override` write into the RECEIVER'S OWN property
+// map (self.Value) — not into its vtable. The duck example above only
+// worked because we called `.inject(...)` directly on the plain object
+// (duckVt) that we then installed as duck's vtable, so duckVt's own
+// property map — populated by inject — is exactly what vtable-chain
+// resolution consults. That's a subtle distinction worth pinning down
+// explicitly, since it's easy to assume `.inject(...)` reaches into an
+// already-attached vtable. It does not.
+var traitBase = { role = "base" }
+var traitOverride = { role = "overridden" }
+var composedObj = {}
+composedObj.inject(traitBase)
+composedObj.inject(traitOverride)
+assert(composedObj.get("role") == "base", "inject must not overwrite an already-present OWN key (traitOverride's `role` is ignored)")
+composedObj.override(traitOverride)
+assert(composedObj.get("role") == "overridden", "override must overwrite an already-present OWN key")
+
+// Corollary of the "own field" fact above: even though `.inject(...)`
+// genuinely adds `greet` as composedObj's own property, `.greet()` (dot
+// method-call) STILL fails, because `.` dispatch never looks at the
+// receiver's own fields at all (section 2). `::greet(...)` DOES see it,
+// because `::` resolves via Get, which checks own fields first.
+var traitGreet = { greet = fun self -> "hi from a trait" }
+composedObj.inject(traitGreet)
+assert(composedObj.has("greet"), "inject must add the message as composedObj's own property")
+var dotAfterInject = ex::protect(fun -> composedObj.greet())
+assert(dotAfterInject.isError(), "inject populates the object's OWN fields, which `.` method-call dispatch never consults — inject is not a substitute for `=<`")
+assert(composedObj::greet(composedObj) == "hi from a trait", "`::` (via Get) does see fields added by inject, since Get checks the object's own fields first")
+
+
+// =============================================================================
+// 7. Default operator fallback on plain Objects (no explicit override)
+//
+// `+`, `-`, `&`, `|` have built-in STRUCTURAL fallback behavior for Objects
+// when no operator override is defined on the vtable chain. Every other
+// binary operator (`*`, `/`, `%`, `**`, comparisons, bitwise shifts, `^`)
+// has no such fallback and must error.
+// =============================================================================
+
+var left  = { a = 1, b = 2 }
+var right = { b = 20, c = 3 }
+
+// `+` -> union of keys; on conflict, the RIGHT-HAND side wins.
+var sum = left + right
+assert(sum.get("a") == 1,  "`+` fallback must keep keys unique to the left operand")
+assert(sum.get("b") == 20, "`+` fallback must let the right operand win on key conflicts")
+assert(sum.get("c") == 3,  "`+` fallback must keep keys unique to the right operand")
+
+// `|` -> documented as behaving identically to the `+` fallback.
+var orResult = left | right
+assert(orResult.get("a") == 1 and orResult.get("b") == 20 and orResult.get("c") == 3, "`|` fallback must match `+` fallback exactly (right-biased union)")
+
+// `-` -> keys present in the left operand whose key does NOT appear in the
+// right operand at all (whole-key exclusion; the right value, if any, is
+// irrelevant to the decision).
+var diff = left - right
+assert(diff.get("a") == 1, "`-` fallback must keep a left-only key")
+assert(diff.has("b") == false, "`-` fallback must drop any key that exists on the right, regardless of its value")
+
+// `&` -> CORNER CASE: the key set comes from the LEFT operand, but for each
+// shared key, the VALUE comes from the RIGHT operand — not the left one.
+// This is easy to assume is symmetric; it is not.
+var intersection = left & right
+assert(intersection.has("a") == false, "`&` fallback must drop keys that don't exist on the right")
+assert(intersection.get("b") == 20, "`&` fallback must take the RIGHT operand's value for a shared key, not the left operand's")
+assert(intersection.has("c") == false, "`&` fallback must drop keys that only exist on the right, even though the key set starts from the left")
+
+// Operators with NO default fallback must error cleanly rather than silently
+// doing something unexpected.
+assert(ex::protect(fun -> left * right).isError(),  "`*` has no Object fallback and must error")
+assert(ex::protect(fun -> left / right).isError(),  "`/` has no Object fallback and must error")
+assert(ex::protect(fun -> left % right).isError(),  "`%` has no Object fallback and must error")
+assert(ex::protect(fun -> left ** right).isError(), "`**` has no Object fallback and must error")
+assert(ex::protect(fun -> left < right).isError(),  "`<` has no Object fallback and must error")
+assert(ex::protect(fun -> left > right).isError(),  "`>` has no Object fallback and must error")
+assert(ex::protect(fun -> left ^ right).isError(),  "`^` has no Object fallback and must error")
+
+
+// =============================================================================
+// 8. Operator overloading is an OBJECT-ONLY feature — built-ins keep their
+//    hard-coded operators no matter what a vtable says.
+// =============================================================================
+
+// Extending the integer vtable with a key that LOOKS like an operator name
+// must have zero effect on actual `+` evaluation for integers: arithmetic on
+// built-ins never consults a vtable.
+var _hijackAttempt = (1).extendvt("+", fun self, other -> "hijacked!")
+assert(1 + 1 == 2, "operator evaluation on built-in types must never be overridable through their vtable, only method-style `.` calls are")
+
+// Meanwhile, Objects genuinely can override `+`. The override key is the
+// operator's spelled-out name ("add"), not the symbol itself — object
+// literals only accept identifier keys, and the runtime looks up binary `+`
+// overrides under the message name "add" (see tokenBinopToString).
+var overriddenAdd = { x = 10 }
+var addVt = { add = fun self, other -> self.x + other }
+overriddenAdd = overriddenAdd =< addVt
+assert(overriddenAdd + 5 == 15, "Objects, and only Objects, may override binary operators via their vtable, keyed by the operator's name (add/sub/mul/div/rem/pow/eq/lt/le/gt/ge/bor/band/bxor/bshl/bshr)")
+
+
+// =============================================================================
+// 9. REGRESSION — two fixes to Object.Binop's operator-override dispatch:
+//
+//    (a) a `nil` right-hand side used to bypass override lookup entirely
+//        for every operator except `=<` (e.g. `obj + nil` could never
+//        reach a user-defined `add` override, no matter what). Fixed: nil
+//        now goes through the same override lookup as any other rhs type.
+//        `=<` stays the one deliberate exception — `obj =< nil` always
+//        clears the vtable, never a user override, regardless of rhs.
+//
+//    (b) a vtable entry found under an operator's message name but which
+//        isn't callable (e.g. a plain value assigned by mistake) used to
+//        be silently treated as "no override at all" — for `add`/`sub`/
+//        `band`/`bor` specifically, this meant it silently fell back to
+//        the structural default instead of surfacing the mistake. Fixed:
+//        a non-callable override now always produces a distinct,
+//        specific error, never confused with "no override was defined".
+// =============================================================================
+
+// -- 9a. `obj + nil` now reaches a real `add` override.
+var addsWithNil = { tally = 100 }
+var addNilVt = { add = fun self, other -> self.tally }
+addsWithNil = addsWithNil =< addNilVt
+assert(addsWithNil + nil == 100, "a `nil` right-hand side must still reach a defined `add` override (previously it never could)")
+
+// Also true for a comparison operator, not just `add` — this was a
+// blanket bypass for every operator, not an ADD-specific one.
+var ltWithNil = { }
+var ltNilVt = { lt = fun self, other -> true }
+ltWithNil = ltWithNil =< ltNilVt
+assert((ltWithNil < nil) == true, "a `nil` right-hand side must still reach a defined `lt` override")
+
+// `=<` remains the one hardcoded exception: `obj =< nil` always clears
+// the vtable, even though addNilVt / ltNilVt above have nothing to do
+// with `=<` — included here to make the exception explicit, not implied.
+addsWithNil = addsWithNil =< nil
+var afterNilVtableClear = ex::protect(fun -> addsWithNil.tally)
+assert(afterNilVtableClear.isError() == false, "`obj =< nil` must still just clear the vtable; addsWithNil's own `tally` field is untouched by any of this")
+
+// -- 9b. Baseline: with NO override defined at all, `+ nil` still fails,
+//        with the generic "operator not defined" message.
+var noOverrideAtAll = {}
+var noOverrideResult = ex::protect(fun -> noOverrideAtAll + nil)
+assert(noOverrideResult.isError(), "with no `add` override anywhere in the chain, `+ nil` must still error")
+assert(("not callable" in noOverrideResult.message) == false, "the generic 'no override defined' error must NOT be phrased as a callability problem — the two failure modes must stay textually distinguishable")
+
+// -- 9c. A vtable entry present under "add" but NOT a function must
+//        produce the new, distinct, specific error — not the generic one.
+var brokenVt = { add = 99 }
+var brokenObj = {}
+brokenObj = brokenObj =< brokenVt
+var brokenResult = ex::protect(fun -> brokenObj + nil)
+assert(brokenResult.isError(), "a non-callable value sitting under 'add' must still cause `+` to fail")
+assert("not callable" in brokenResult.message, "a non-callable override must produce the SPECIFIC not-callable error, not the generic 'operator not defined' one")
+assert(brokenResult.message != noOverrideResult.message, "the two failure modes ('no override' vs 'broken override') must produce genuinely different messages, not the same generic text")
+
+// -- 9d. The same non-callable-override check applies with an *Object*
+//        right-hand side too — this is the trickier regression. Before the
+//        fix, ADD/SUB/BAND/BOR had their own inline structural fallback
+//        that silently absorbed a non-callable override as if it were
+//        simply "not found", so `brokenObj + anotherObject` used to
+//        silently perform the structural merge instead of erroring.
+var anotherObject = { z = 1 }
+var brokenWithObjectRhs = ex::protect(fun -> brokenObj + anotherObject)
+assert(brokenWithObjectRhs.isError(), "a non-callable 'add' override must cause `+` to error even when the right-hand side is a plain Object (previously this silently fell back to a structural merge instead)")
+assert("not callable" in brokenWithObjectRhs.message, "...and it must be the specific not-callable error, not a silently-produced merged object nor the generic error")
+
+// -- 9e. Non-callable-override detection also applies to operators that
+//        have NO structural fallback at all (e.g. `lt`), confirming the
+//        fix is uniform across every dispatch site, not just add/sub/band/bor.
+var brokenLtVt = { lt = "not a function" }
+var brokenLtObj = {}
+brokenLtObj = brokenLtObj =< brokenLtVt
+var brokenLtResult = ex::protect(fun -> brokenLtObj < nil)
+assert(brokenLtResult.isError(), "a non-callable 'lt' override must cause `<` to error")
+assert("not callable" in brokenLtResult.message, "...with the same specific not-callable error, regardless of which operator or rhs type triggered it")

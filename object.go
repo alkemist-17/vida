@@ -1,21 +1,315 @@
 package vida
 
+import (
+	"encoding/json"
+	"fmt"
+	"maps"
+	"reflect"
+	"strings"
+
+	"github.com/alkemist-17/vida/token"
+	"github.com/alkemist-17/vida/verror"
+)
+
+type Object struct {
+	ReferenceSemanticsImpl
+	Value  map[string]Value
+	VTable *Object
+}
+
+func (o *Object) Boolean() Bool {
+	return true
+}
+
+func (o *Object) Prefix(ctx *Context, op uint64) (Value, error) {
+	switch op {
+	case uint64(token.NOT):
+		return False, nil
+	case uint64(token.SUB):
+		switch method := o.LookUp(ctx, tokenPrefixToString(token.SUB)).(type) {
+		case *Function:
+			return ctx.runFunctionInNewThread(method, o)
+		case NativeFunction:
+			return method.Call(ctx, o)
+		}
+	case uint64(token.ADD):
+		switch method := o.LookUp(ctx, tokenPrefixToString(token.ADD)).(type) {
+		case *Function:
+			return ctx.runFunctionInNewThread(method, o)
+		case NativeFunction:
+			return method.Call(ctx, o)
+		}
+	case uint64(token.TILDE):
+		switch method := o.LookUp(ctx, tokenPrefixToString(token.TILDE)).(type) {
+		case *Function:
+			return ctx.runFunctionInNewThread(method, o)
+		case NativeFunction:
+			return method.Call(ctx, o)
+		}
+	}
+	return Nil, verror.ErrPrefixOpNotDefined
+}
+
+// dispatchOperatorOverride looks up a user-defined override for a binary
+// operator on o's vtable chain (keyed by the operator's spelled-out message
+// name, e.g. "add", "lt" — see tokenBinopToString) and, if one is found and
+// callable, invokes it with (o, rhs).
+//
+// There are three possible outcomes, distinguished by the returned bool:
+//   - no override is defined at all: (Nil, nil, false) — the caller should
+//     fall back to whatever default behavior makes sense for that operator
+//     (a structural default for Objects, or "operator not defined").
+//   - an override is defined and callable: it is invoked and its result or
+//     error is returned as-is, with handled=true.
+//   - an override IS defined under that message name, but the value stored
+//     there is not callable (e.g. a plain value was assigned by mistake
+//     instead of a function): handled=true with a dedicated error, kept
+//     deliberately distinct from "no override was ever defined" so this
+//     class of mistake doesn't get silently masked as ErrBinaryOpNotDefined.
+func (o *Object) dispatchOperatorOverride(ctx *Context, op uint64, rhs Value) (Value, error, bool) {
+	messageKey := tokenBinopToString(token.Token(op))
+	switch method := o.LookUp(ctx, messageKey).(type) {
+	case *Function:
+		val, err := ctx.runFunctionInNewThread(method, o, rhs)
+		return val, err, true
+	case NativeFunction:
+		val, err := method.Call(ctx, o, rhs)
+		return val, err, true
+	case NilValue:
+		return Nil, nil, false
+	default:
+		return Nil, verror.ErrOperatorOverrideNotCallable(messageKey.Value), true
+	}
+}
+
+func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
+	switch r := rhs.(type) {
+	case *Object:
+		switch op {
+		case uint64(token.ADD):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
+		case uint64(token.SUB):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+			pairs := make(map[string]Value)
+			for k, v := range o.Value {
+				if _, contains := r.Value[k]; !contains {
+					pairs[k] = v
+				}
+			}
+			return &Object{Value: pairs}, nil
+		case uint64(token.MUL), uint64(token.DIV), uint64(token.REM), uint64(token.POW),
+			uint64(token.LT), uint64(token.LE), uint64(token.GT), uint64(token.GE),
+			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+		case uint64(token.BAND):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+			pairs := make(map[string]Value)
+			for k := range o.Value {
+				if x, contains := r.Value[k]; contains {
+					pairs[k] = x
+				}
+			}
+			return &Object{Value: pairs}, nil
+		case uint64(token.BOR):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
+			maps.Copy(pairs, o.Value)
+			maps.Copy(pairs, r.Value)
+			return &Object{Value: pairs}, nil
+		case uint64(token.VTABLE):
+			o.VTable = r
+			return o, nil
+		}
+	case NilValue:
+		switch op {
+		case uint64(token.ADD), uint64(token.SUB), uint64(token.MUL),
+			uint64(token.DIV), uint64(token.REM), uint64(token.POW),
+			uint64(token.LT), uint64(token.LE), uint64(token.GT),
+			uint64(token.GE), uint64(token.BAND), uint64(token.BOR),
+			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+		case uint64(token.VTABLE):
+			o.VTable = nil
+			return o, nil
+		}
+	default:
+		switch op {
+		case uint64(token.ADD), uint64(token.SUB), uint64(token.MUL),
+			uint64(token.DIV), uint64(token.REM), uint64(token.POW),
+			uint64(token.LT), uint64(token.LE), uint64(token.GT),
+			uint64(token.GE), uint64(token.BAND), uint64(token.BOR),
+			uint64(token.BXOR), uint64(token.BSHL), uint64(token.BSHR):
+			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
+				return val, err
+			}
+		}
+	}
+	switch op {
+	case uint64(token.OR):
+		return o, nil
+	case uint64(token.AND):
+		return rhs, nil
+	case uint64(token.IN):
+		return IsMemberOf(ctx, o, rhs)
+	}
+	return Nil, verror.ErrBinaryOpNotDefined
+}
+
+// maxVTableChainDepth bounds vtable-chain traversal in Get. A legitimate
+// prototype/inheritance chain will never come close to this depth, so
+// hitting it means the chain is cyclic (e.g. `a =< b; b =< a`, or `v =< v`).
+// Without this guard such a cycle makes Get loop forever.
+const maxVTableChainDepth = 1024
+
+func (o *Object) Get(ctx *Context, message Value) Value {
+	current := o
+	key := message.ObjectKey()
+	for depth := 0; current != nil; depth++ {
+		if depth >= maxVTableChainDepth {
+			return Nil
+		}
+		if val, ok := current.Value[key]; ok {
+			return val
+		}
+		current = current.VTable
+	}
+	return Nil
+}
+
+func (o *Object) Set(index, val Value) error {
+	o.Value[index.ObjectKey()] = val
+	return nil
+}
+
+func (o *Object) Equals(ctx *Context, other Value) Bool {
+	switch method := o.LookUp(ctx, tokenBinopToString(token.EQ)).(type) {
+	case *Function:
+		if val, err := ctx.runFunctionInNewThread(method, o, other); err == nil {
+			return val.Boolean()
+		}
+		return False
+	case NativeFunction:
+		if val, err := method.Call(ctx, o, other); err == nil {
+			return val.Boolean()
+		}
+		return False
+	default:
+		val, isObject := other.(*Object)
+		return Bool(isObject && o == val)
+	}
+}
+
+func (o *Object) IsIterable() Bool {
+	return true
+}
+
+func (o *Object) IsCallable() Bool {
+	return false
+}
+
+func (o *Object) Call(ctx *Context, args ...Value) (Value, error) {
+	return Nil, verror.ErrNotImplemented
+}
+
+func (o *Object) Iterator() Value {
+	return newObjectIterator(o)
+}
+
+func (o *Object) String() string {
+	return o.stringify(make(map[uintptr]bool))
+}
+
+func (o *Object) stringify(visited map[uintptr]bool) string {
+	if len(o.Value) == 0 {
+		return "{}"
+	}
+
+	ptr := reflect.ValueOf(o).Pointer()
+	if visited[ptr] {
+		return "{...}"
+	}
+
+	visited[ptr] = true
+	defer delete(visited, ptr)
+
+	var r []string
+	for k, v := range o.Value {
+		r = append(r, fmt.Sprintf("[%v: %v]", k, stringWithVisited(v, visited)))
+	}
+	return fmt.Sprintf("{%v}", strings.Join(r, ",  "))
+}
+
+func (o *Object) ObjectKey() string {
+	return fmt.Sprintf("object[%p]", o)
+}
+
+func (o *Object) GetVTable(ctx *Context) Value {
+	if o.VTable != nil {
+		return o.VTable
+	}
+	if ctx.vtables[objectT] == nil {
+		ctx.loadObjectVT()
+	}
+	return ctx.vtables[objectT]
+}
+
+func (o *Object) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[objectT] == nil {
+		ctx.loadObjectVT()
+	}
+	if o.VTable != nil {
+		if val := o.VTable.Get(ctx, message); !val.Equals(ctx, Nil) {
+			return val
+		}
+	}
+	return ctx.vtables[objectT].Get(ctx, message)
+}
+
+func (o *Object) Type() string {
+	return objectT
+}
+
+func (o *Object) Clone() Value {
+	m := make(map[string]Value, len(o.Value))
+	for k, v := range o.Value {
+		m[k] = v.Clone()
+	}
+	return &Object{Value: m, VTable: o.VTable}
+}
+
+func (o *Object) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.Value)
+}
+
 func loadObjectLib() Value {
-	m := &Object{Value: make(map[string]Value, 16)}
+	m := &Object{Value: make(map[string]Value, 13)}
 	m.Value["inject"] = NativeFunction(objectInjectProperties)
 	m.Value["override"] = NativeFunction(objectInjectAndOverrideProperties)
 	m.Value["extract"] = NativeFunction(objectExtractProperties)
-	m.Value["conforms"] = NativeFunction(objectCheckProperties)
 	m.Value["implements"] = NativeFunction(objectCheckProperties)
-	m.Value["set"] = NativeFunction(objectSetValue)
-	m.Value["get"] = NativeFunction(objectGetValue)
-	m.Value["has"] = NativeFunction(objectHasValue)
-	m.Value["del"] = NativeFunction(objectDeleteProperty)
+	m.Value["set"] = NativeFunction(objectCircumventSetValue)
+	m.Value["get"] = NativeFunction(objectCircumventGetValue)
+	m.Value["has"] = NativeFunction(objectCircumventHasValue)
+	m.Value["del"] = NativeFunction(objectCircumventDeleteProperty)
 	m.Value["keys"] = NativeFunction(objectGetKeys)
 	m.Value["values"] = NativeFunction(objectGetValues)
 	m.Value["isEmpty"] = NativeFunction(objectIsEmpty)
-	m.Value["isObject"] = NativeFunction(objectIsObject)
-	m.Value["isCallable"] = NativeFunction(objectIsCallable)
 	m.Value["clear"] = NativeFunction(objectClear)
 	m.Value["getset"] = NativeFunction(objectGetOrSet)
 	return m
@@ -94,7 +388,7 @@ func objectExtractProperties(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectDeleteProperty(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventDeleteProperty(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			for _, prop := range args[1:] {
@@ -106,7 +400,7 @@ func objectDeleteProperty(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectGetValue(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventGetValue(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			if val, ok := self.Value[args[1].ObjectKey()]; ok {
@@ -117,7 +411,7 @@ func objectGetValue(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectSetValue(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventSetValue(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
 	if l > 2 && (l-1)%2 == 0 {
 		if self, ok := args[0].(*Object); ok {
@@ -146,7 +440,7 @@ func objectGetOrSet(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectHasValue(ctx *Context, args ...Value) (Value, error) {
+func objectCircumventHasValue(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if self, ok := args[0].(*Object); ok {
 			for _, val := range args[1:] {
@@ -212,29 +506,13 @@ func objectIsEmpty(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func objectIsObject(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		_, ok := args[0].(*Object)
-		return Bool(ok), nil
-	}
-	return Nil, nil
-}
-
-func objectIsCallable(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if o, ok := args[0].(*Object); ok {
-			return o.IsCallable(), nil
-		}
-	}
-	return False, nil
-}
-
 func objectClear(ctx *Context, args ...Value) (Value, error) {
 	for _, val := range args {
 		if o, ok := val.(*Object); ok {
 			for k := range o.Value {
 				delete(o.Value, k)
 			}
+			return o, nil
 		}
 	}
 	return Nil, nil

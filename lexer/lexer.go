@@ -301,7 +301,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.EQ
 			case '<':
 				l.next()
-				tok = token.META
+				tok = token.VTABLE
 			default:
 				tok = token.ASSIGN
 			}
@@ -354,6 +354,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 				tok = token.NEQ
 			} else {
 				tok = token.UNEXPECTED
+				lit = string(ch)
 				l.LexicalError = verror.New(l.ScriptID, "found an exclamation mark '!' out of place", verror.LexicalErrType, l.line)
 			}
 		case '<':
@@ -391,7 +392,14 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 		case ']':
 			tok = token.RBRACKET
 		case ':':
-			tok = token.METHOD_CALL
+			if l.c == ':' {
+				l.next()
+				tok = token.STATIC_CALL
+			} else {
+				tok = token.UNEXPECTED
+				lit = string(ch)
+				l.LexicalError = verror.New(l.ScriptID, "found a colon ':' out of place", verror.LexicalErrType, l.line)
+			}
 		case '~':
 			tok = token.TILDE
 		case '|':
@@ -406,7 +414,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			tok = token.UNEXPECTED
 			lit = string(ch)
 			if l.LexicalError == nil {
-				l.LexicalError = verror.New(l.ScriptID, fmt.Sprintf("found some unexpected character '%v'", lit), verror.LexicalErrType, l.line)
+				l.LexicalError = verror.New(l.ScriptID, fmt.Sprintf("found some unexpected symbol '%v'", lit), verror.LexicalErrType, l.line)
 			}
 		}
 	}

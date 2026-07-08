@@ -76,27 +76,21 @@ func loadFoundationHttpClient() Value {
 }
 
 func httpNewClient(ctx *Context, args ...Value) (Value, error) {
-	return buildClientObject(newVidaHttpClient()), nil
+	return newVidaHttpClient(), nil
 }
 
-func buildClientObject(client *vidaHttpClient) *Object {
-	obj := &Object{Value: make(map[string]Value, 7)}
-	obj.Value["get"] = NativeFunction(makeRequestFn(client, httpGET))
-	obj.Value["post"] = NativeFunction(makeRequestFn(client, httpPOST))
-	obj.Value["put"] = NativeFunction(makeRequestFn(client, httpPUT))
-	obj.Value["delete"] = NativeFunction(makeRequestFn(client, httpDELETE))
-	obj.Value["patch"] = NativeFunction(makeRequestFn(client, httpPATCH))
-	obj.Value["head"] = NativeFunction(makeRequestFn(client, httpHEAD))
-	obj.Value["options"] = NativeFunction(makeRequestFn(client, httpOPTIONS))
-	return obj
-}
-
-func makeRequestFn(client *vidaHttpClient, fixedMethod string) func(*Context, ...Value) (Value, error) {
+func makeRequestFn(fixedMethod string) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 0 {
-			if _, isSelf := args[0].(*Object); isSelf {
+		var client *vidaHttpClient
+		if len(args) > 1 {
+			if c, isSelf := args[0].(*vidaHttpClient); isSelf {
+				client = c
 				args = args[1:]
+			} else {
+				return &VidaError{Message: &String{Value: "No http client provided on request method"}}, nil
 			}
+		} else {
+			return &VidaError{Message: &String{Value: "No args provided to http client request"}}, nil
 		}
 
 		config, err := resolveConfig(fixedMethod, args...)
@@ -473,7 +467,7 @@ func (client *vidaHttpClient) Boolean() Bool {
 	return True
 }
 
-func (client *vidaHttpClient) Prefix(op uint64) (Value, error) {
+func (client *vidaHttpClient) Prefix(ctx *Context, op uint64) (Value, error) {
 	switch op {
 	case uint64(token.NOT):
 		return False, nil
@@ -482,25 +476,57 @@ func (client *vidaHttpClient) Prefix(op uint64) (Value, error) {
 	}
 }
 
-func (client *vidaHttpClient) Equals(other Value) Bool {
+func (client *vidaHttpClient) Get(ctx *Context, message Value) Value {
+	current := client.GetVTable(ctx).(*Object)
+	key := message.ObjectKey()
+	for depth := 0; current != nil; depth++ {
+		if depth >= maxVTableChainDepth {
+			return Nil
+		}
+		if val, ok := current.Value[key]; ok {
+			return val
+		}
+		current = current.VTable
+	}
+	return Nil
+}
+
+func (client *vidaHttpClient) Equals(ctx *Context, other Value) Bool {
 	x, ok := other.(*vidaHttpClient)
 	return Bool(ok && x == client)
 }
 
 func (client *vidaHttpClient) String() string {
-	return fmt.Sprintf("HttpClient(%p)", client)
+	return fmt.Sprintf("httpClient[%p]", client)
 }
 
 func (client *vidaHttpClient) Type() string {
-	return "httpClient"
+	return httpClientT
 }
 
 func (client *vidaHttpClient) Clone() Value {
-	return Nil
+	return newVidaHttpClient()
 }
 
 func (client *vidaHttpClient) ObjectKey() string {
-	return fmt.Sprintf("HttpClient(%p)", client)
+	return client.String()
+}
+
+func (client *vidaHttpClient) GetVTable(ctx *Context) Value {
+	if ctx.vtables[httpClientT] == nil {
+		ctx.loadHttpClientVT()
+	}
+	return ctx.vtables[httpClientT]
+}
+
+func (client *vidaHttpClient) LookUp(ctx *Context, message Value) Value {
+	if ctx.vtables[httpClientT] == nil {
+		ctx.loadHttpClientVT()
+	}
+	if vtable, ok := ctx.vtables[httpClientT]; ok {
+		return vtable.Get(ctx, message)
+	}
+	return Nil
 }
 
 func (c *vidaHttpClient) executeRequest(ctx context.Context, cfg *requestConfig) (*http.Response, []byte, error) {

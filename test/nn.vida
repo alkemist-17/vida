@@ -1,0 +1,272 @@
+var rand = load("std.rand")
+
+
+rand.uniform = fun min, max -> min + rand::F()*(max-min)
+
+
+var _ = (0.0).extendvt(load("std.math"))
+
+
+var zeros = fun rows, cols {
+	var m = newArray(rows)
+	for i in rows {
+		m[i] = newArray(cols, 0.0)
+	}
+	ret m
+}
+
+
+var dot = fun A, B {
+	var rowsA = A.len()
+	var colsA = A[0].len()
+	var rowsB = B.len()
+	var colsB = B[0].len()
+	if colsA != rowsB {
+		ret error("inner dimensions must match in matrix multiplication")
+	}
+	var C = zeros(rowsA, colsB)
+	for i in rowsA {
+		for j in colsB {
+			for k in colsA {
+				C[i][j] = C[i][j] + A[i][k] * B[k][j]
+			}
+		}
+	}
+	ret C
+}
+
+
+var transpose = fun A {
+	var rows = A.len()
+	var cols = A[0].len()
+	var T = zeros(cols, rows)
+	for i in rows {
+		for j in cols {
+			T[j][i] = A[i][j]
+		}
+	}
+	ret T
+}
+
+
+
+var addBias = fun Z, B {
+	var rows = Z.len()
+	var cols = Z[0].len()
+	var R = zeros(rows, cols)
+	for i in rows {
+		for j in cols {
+			R[i][j] = Z[i][j] + B[0][j]
+		}
+	}
+	ret R
+}
+
+
+var elementWiseMultiply = fun A, B {
+	var rows = A.len()
+	var cols = A[0].len()
+	var R = zeros(rows, cols)
+	for i in rows {
+		for j in cols {
+			R[i][j] = A[i][j] * B[i][j]
+		}
+	}
+	ret R
+}
+
+
+var substract = fun A, B {
+	var rows = A.len()
+	var cols = A[0].len()
+	var R = zeros(rows, cols)
+	for i in rows {
+		for j in cols {
+			R[i][j] = A[i][j] - B[i][j]
+		}
+	}
+	ret R
+}
+
+
+var sumColumns = fun A {
+	var rows = A.len()
+	var cols = A[0].len()
+	var R = zeros(1, cols)
+	for i in rows {
+		for j in cols {
+			R[0][j] = R[0][j] + A[i][j]
+		}
+	}
+	ret R
+}
+
+
+var sigmoid = fun Z {
+	var rows = Z.len()
+	var cols = Z[0].len()
+	var R = zeros(rows, cols)
+	for i in rows {
+		for j in cols {
+			var val = Z[i][j]
+			val = (-500.0).max((500.0).min(val))
+			R[i][j] = 1.0 / (1.0 + (-val).exp())
+		}
+	}
+	ret R
+}
+
+
+var sigmoidDX = fun A {
+	var rows = A.len()
+	var cols = A[0].len()
+	var R = zeros(rows, cols)
+	for i in rows {
+		for j in cols {
+			R[i][j] = A[i][j] * (1.0 - A[i][j])
+		}
+	}
+	ret R
+}
+
+
+
+var genW = fun outerSize, innerSize {
+	var W = newArray(outerSize)
+	for i, _ in W {
+		W[i] = newArray(innerSize)
+		for j, _ in W[i] {
+			W[i][j] = rand::uniform(-0.5, 0.5)
+		}
+	}
+	ret W
+}
+
+
+var genB = fun size -> [newArray(size, 0.0)]
+
+
+
+var nnvt = {}
+
+
+nnvt.forward = fun self, X {
+	self.Z1 = addBias(dot(X, self.W1), self.b1)
+	self.A1 = sigmoid(self.Z1)
+	self.Z2 = addBias(dot(self.A1, self.W2), self.b2)
+	self.A2 = sigmoid(self.Z2)
+	ret self.A2
+}
+
+
+nnvt.calculateLoss = fun self, Y {
+	var m = Y.len()
+	var diff = substract(self.A2, Y)
+	var sqDiff = elementWiseMultiply(diff, diff)
+	var totalError = 0.0
+	for i in sqDiff.len() {
+		for j in sqDiff[0].len() {
+			totalError = totalError + sqDiff[i][j]
+		}
+	}
+	ret totalError / m
+}
+
+
+nnvt.backwards = fun self, X, Y, learningRate {
+	var m = X.len()
+	var dA2 = substract(self.A2, Y)
+	var dZ2 = elementWiseMultiply(dA2, sigmoidDX(self.A2))
+	var dW2 = dot(transpose(self.A1), dZ2)
+	var db2 = sumColumns(dZ2)
+	var dA1 = dot(dZ2, transpose(self.W2))
+
+	var dZ1 = elementWiseMultiply(dA1, sigmoidDX(self.A1))
+	var dW1 = dot(transpose(X), dZ1)
+	var db1 = sumColumns(dZ1)
+
+	for i in self.W1.len() {
+		for j in self.W1[0].len() {
+			self.W1[i][j] = self.W1[i][j] - learningRate * dW1[i][j] 
+		}
+	}
+
+	for j in self.b1[0].len() {
+		self.b1[0][j] = self.b1[0][j] - learningRate * db1[0][j] 
+	}
+
+	for i in self.W2.len() {
+		for j in self.W2[0].len() {
+			self.W2[i][j] = self.W2[i][j] - learningRate * dW2[i][j] 
+		}
+	}
+
+	for j in self.b2[0].len() {
+		self.b2[0][j] = self.b2[0][j] - learningRate * db2[0][j] 
+	}
+}
+
+
+
+var NN = fun inputSize, hiddenSize, outputSize {
+	var nn = { W1, b1, W2, b2 }
+	nn.W1 = genW(inputSize, hiddenSize)
+	nn.b1 = genB(hiddenSize)
+	nn.W2 = genW(hiddenSize, outputSize)
+	nn.b2 = genB(outputSize)
+	ret nn =< nnvt
+}
+
+
+
+
+
+// NN Testing
+var XDummy = [
+	[0.1, 0.2, 0.3],
+	[0.4, 0.5, 0.6],
+	[0.7, 0.8, 0.9],
+	[0.2, 0.4, 0.6]
+]
+
+
+// Target: just a simple pattern (e.g., 1 if sum > 1.0 else 0)
+var YDummy = [
+    [0.0],
+    [1.0],
+    [1.0],
+    [1.0]
+]
+
+
+
+var nn = NN(3, 4, 1)
+
+
+var epochs = 4000
+
+
+var lr = 0.5 // Learning Rate
+
+// NN Training
+print("\n\nTraining ...\n\n")
+for epoch in epochs {
+	var output = nn.forward(XDummy)
+	nn.backwards(XDummy, YDummy, lr)
+	if epoch % 200 == 0 {
+		var loss = nn.calculateLoss(YDummy)
+		print("Epoch:  %4v | Loss: %11.4f".format(epoch, loss))
+	}
+}
+
+
+var finalPredictions = nn.forward(XDummy)
+
+
+print("\n\nPredictions ... \n\n")
+for i in XDummy.len() {
+	print("Actual: %4.1f | Predicted: %.4f".format(YDummy[i][0], finalPredictions[i][0]))
+}
+
+
+print("\n")

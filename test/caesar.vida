@@ -1,9 +1,9 @@
 
-let rand = load("std/rand")
+let rand = load("std.rand")
 
 let alpha = "abcdefghijklmnopqrstuvwxyz"
 
-let mod = len(alpha)
+let mod = alpha.len()
 
 let indexOf = fun cp, s {
     for i, v in s {
@@ -13,7 +13,7 @@ let indexOf = fun cp, s {
     }
 }
 
-let getK = fun -> rand.I(mod)
+let getK = fun -> rand::I(mod)
 
 let encode = fun k, m, alpha {
     var r = ""
@@ -36,7 +36,7 @@ let m = "hellothisisthecaesarcipherwithlotsofsecurityinecryptedmessages"
 
 for in N {
     var k = getK()
-    var a = rand.shuffled(alpha)
+    var a = rand::shuffled(alpha)
     var c = encode(k, m, a)
     var r = decode(k, c, a)
     assert(m == r)

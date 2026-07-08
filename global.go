@@ -6,11 +6,11 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
-	"reflect"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/alkemist-17/vida/token"
 	"github.com/alkemist-17/vida/verror"
 )
 
@@ -22,13 +22,13 @@ const False = Bool(false)
 
 type ExtensionsLoader map[string]func() Value
 
-type ErrorInfo map[string]map[int]uint
+type MapScriptIPLine map[string]map[int]uint
 
 const (
 	VidaFileExtension       = ".vida"
 	errorMessageFieldName   = "message"
 	DefaultInputPrompt      = "Input > "
-	foundationInterfaceName = "std/"
+	foundationInterfaceName = "std."
 	EmptyString             = ""
 	DefaultValField         = "value"
 )
@@ -53,6 +53,17 @@ const (
 	foundationColor     = "color"
 )
 
+const (
+	assertionFailureDefaultMessage = "no assumption was given for the assertion"
+	exceptionDefaultMessage        = "no reason was given for the raised exception"
+)
+
+func createNewMapScriptIPLine(scriptID string) MapScriptIPLine {
+	mapScriptIPLine := make(MapScriptIPLine)
+	mapScriptIPLine[scriptID] = make(map[int]uint)
+	return mapScriptIPLine
+}
+
 func stringWithVisited(v Value, visited map[uintptr]bool) string {
 	switch c := v.(type) {
 	case *Array:
@@ -66,33 +77,23 @@ func stringWithVisited(v Value, visited map[uintptr]bool) string {
 
 var coreLibNames = []string{
 	"print",
-	"len",
-	"append",
 	"newArray",
 	"load",
-	"type",
 	"assert",
 	"format",
 	"input",
-	"clone",
 	"error",
-	"isError",
 }
 
 func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 	*store = append(*store,
 		NativeFunction(corePrint),
-		NativeFunction(coreLen),
-		NativeFunction(coreAppend),
 		NativeFunction(coreNewArray),
 		generateLoadFunction(extensionsLoader),
-		NativeFunction(coreType),
 		NativeFunction(coreAssert),
 		NativeFunction(coreFormat),
 		NativeFunction(coreReadLine),
-		NativeFunction(coreClone),
 		NativeFunction(coreError),
-		NativeFunction(coreIsError),
 	)
 	return store
 }
@@ -149,17 +150,17 @@ func coreAssert(ctx *Context, args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, assertionFailureDefaultMessage))
 		return Nil, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, args[1].String()))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, args[1].String()))
 		return Nil, err
 	}
-	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\t[%v]\n\tMessage : %v\n\n", verror.AssertionErrType, "Generic Assertion Failure Message"))
+	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, assertionFailureDefaultMessage))
 	return Nil, err
 }
 
@@ -335,7 +336,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 					for i := range size {
 						A[i] = Bool(rand.IntN(2) == 1)
 					}
-				case "byte":
+				case "bytes":
 					for i := range size {
 						A[i] = Integer(rand.IntN(256))
 					}
@@ -501,7 +502,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
 			for it.Next() {
-				A = append(A, it.Key())
+				A = append(A, it.Key(ctx))
 			}
 			return &Array{Value: A}, nil
 		}
@@ -510,7 +511,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
 			for it.Next() {
-				A = append(A, it.Value())
+				A = append(A, it.Value(ctx))
 			}
 			return &Array{Value: A}, nil
 		}
@@ -519,7 +520,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			it := obj.Iterator().(Iterator)
 			A := make([]Value, 0, len(obj.Value))
 			for it.Next() {
-				pair := &Array{Value: []Value{it.Key(), it.Value()}}
+				pair := &Array{Value: []Value{it.Key(ctx), it.Value(ctx)}}
 				A = append(A, pair)
 			}
 			return &Array{Value: A}, nil
@@ -541,7 +542,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 		it := v.Iterator().(Iterator)
 		A := make([]Value, utf8.RuneCountInString(v.Value))
 		for it.Next() {
-			A[i] = it.Value()
+			A[i] = it.Value(ctx)
 			i++
 		}
 		return &Array{Value: A}, nil
@@ -567,7 +568,7 @@ common:
 		it := obj.Iterator().(Iterator)
 		A := make([]Value, len(obj.Value))
 		for it.Next() {
-			B := []Value{it.Key(), it.Value()}
+			B := []Value{it.Key(ctx), it.Value(ctx)}
 			A[i] = &Array{Value: B}
 			i++
 		}
@@ -635,10 +636,10 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 		if len(args) > 0 {
 			if extensionName, ok := args[0].(*String); ok {
 				if strings.HasPrefix(extensionName.Value, foundationInterfaceName) {
-					if ctx.extensionCache == nil {
-						ctx.extensionCache = make(map[string]*Object, 10)
+					if ctx.extensionsCache == nil {
+						ctx.extensionsCache = make(map[string]*Object, 10)
 					}
-					if m, isPresent := ctx.extensionCache[extensionName.Value]; isPresent {
+					if m, isPresent := ctx.extensionsCache[extensionName.Value]; isPresent {
 						return m, nil
 					}
 					var module Value
@@ -681,18 +682,18 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = Nil
 						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil
 					}
-					ctx.extensionCache[extensionName.Value] = module.(*Object)
+					ctx.extensionsCache[extensionName.Value] = module.(*Object)
 					return module, nil
 				} else if extensionsLoader != nil {
-					if ctx.extensionCache == nil {
-						ctx.extensionCache = make(map[string]*Object, 10)
+					if ctx.extensionsCache == nil {
+						ctx.extensionsCache = make(map[string]*Object, 10)
 					}
-					if m, isPresent := ctx.extensionCache[extensionName.Value]; isPresent {
+					if m, isPresent := ctx.extensionsCache[extensionName.Value]; isPresent {
 						return m, nil
 					}
 					if l, isPresent := extensionsLoader[extensionName.Value]; isPresent {
 						module := l()
-						ctx.extensionCache[extensionName.Value] = module.(*Object)
+						ctx.extensionsCache[extensionName.Value] = module.(*Object)
 						return module, nil
 					}
 				}
@@ -718,11 +719,46 @@ func coreIsError(ctx *Context, args ...Value) (Value, error) {
 	return False, nil
 }
 
-func DeepEqual(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		return Bool(reflect.DeepEqual(args[0], args[1])), nil
+func coreIsNil(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		_, ok := args[0].(NilValue)
+		return Bool(ok), nil
+	}
+	return False, nil
+}
+
+func coreGetVTable(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		return args[0].GetVTable(ctx), nil
 	}
 	return Nil, nil
+}
+
+func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
+	switch len(args) {
+	case 2:
+		if extension, ok := args[1].(*Object); ok {
+			if vt, hasVTable := args[0].GetVTable(ctx).(*Object); hasVTable {
+				for k, x := range extension.Value {
+					if _, isPresent := vt.Value[k]; !isPresent {
+						vt.Value[k] = x
+					}
+				}
+				return args[0], nil
+			}
+		}
+	case 3:
+		messageName, okMessage := args[1].(*String)
+		if okMessage && bool(args[2].IsCallable()) {
+			if vt, hasVTable := args[0].GetVTable(ctx).(*Object); hasVTable {
+				if _, isPresent := vt.Value[messageName.Value]; !isPresent {
+					vt.Value[messageName.Value] = args[2]
+				}
+				return args[0], nil
+			}
+		}
+	}
+	return &VidaError{Message: &String{Value: "extendvt expected three args: value, string and function or two args: value, object"}}, nil
 }
 
 func StringLength(input *String) Integer {
@@ -732,13 +768,13 @@ func StringLength(input *String) Integer {
 	return Integer(len(input.Runes))
 }
 
-func IsMemberOf(args ...Value) (Bool, error) {
+func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {
 		case *Array:
 			item := args[0]
 			for _, v := range collection.Value {
-				if item.Equals(v) {
+				if item.Equals(ctx, v) {
 					return True, nil
 				}
 			}
@@ -746,7 +782,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *Object:
 			item := args[0]
 			for k := range collection.Value {
-				if item.Equals(&String{Value: k}) {
+				if item.Equals(ctx, &String{Value: k}) {
 					return True, nil
 				}
 			}
@@ -754,7 +790,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *String:
 			item := args[0]
 			for _, char := range collection.Runes {
-				if item.Equals(&String{Value: string(char)}) {
+				if item.Equals(ctx, &String{Value: string(char)}) {
 					return True, nil
 				}
 			}
@@ -762,7 +798,7 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		case *Bytes:
 			item := args[0]
 			for _, b := range collection.Value {
-				if item.Equals(Integer(b)) {
+				if item.Equals(ctx, Integer(b)) {
 					return True, nil
 				}
 			}
@@ -770,6 +806,58 @@ func IsMemberOf(args ...Value) (Bool, error) {
 		}
 	}
 	return False, nil
+}
+
+func tokenBinopToString(t token.Token) *String {
+	switch t {
+	case token.ADD:
+		return &String{Value: "add"}
+	case token.SUB:
+		return &String{Value: "sub"}
+	case token.MUL:
+		return &String{Value: "mul"}
+	case token.DIV:
+		return &String{Value: "div"}
+	case token.REM:
+		return &String{Value: "rem"}
+	case token.POW:
+		return &String{Value: "pow"}
+	case token.EQ:
+		return &String{Value: "eq"}
+	case token.LT:
+		return &String{Value: "lt"}
+	case token.LE:
+		return &String{Value: "le"}
+	case token.GT:
+		return &String{Value: "gt"}
+	case token.GE:
+		return &String{Value: "ge"}
+	case token.BOR:
+		return &String{Value: "bor"}
+	case token.BAND:
+		return &String{Value: "band"}
+	case token.BXOR:
+		return &String{Value: "bxor"}
+	case token.BSHL:
+		return &String{Value: "bshl"}
+	case token.BSHR:
+		return &String{Value: "bshr"}
+	default:
+		return &String{Value: EmptyString}
+	}
+}
+
+func tokenPrefixToString(t token.Token) *String {
+	switch t {
+	case token.ADD:
+		return &String{Value: "padd"}
+	case token.SUB:
+		return &String{Value: "psub"}
+	case token.TILDE:
+		return &String{Value: "ptilde"}
+	default:
+		return &String{Value: EmptyString}
+	}
 }
 
 func pressEnterToContinue() {

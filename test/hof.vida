@@ -1,7 +1,7 @@
 
 
 let map = fun xs, f {
-    var newXS = newArray(len(xs))
+    var newXS = newArray(xs.len())
     for i, v in xs {
         newXS[i] = f(v)
     }
@@ -12,7 +12,7 @@ let filter = fun xs, pred {
     var newXS = []
     for i, v in xs {
         if pred(v) {
-            append(newXS, v)
+            newXS.append(v)
         }
     }
     ret newXS

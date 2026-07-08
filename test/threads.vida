@@ -1,6 +1,6 @@
-var co = load("std/co")
-var ex = load("std/exception")
-var array = load("std/array")
+var co = load("std.co")
+var ex = load("std.exception")
+var array = load("std.array")
 
 // Stackful, cooperative, single-threaded coroutines.
 // Default internal values for default are stack: 64, frames: 8
@@ -25,40 +25,40 @@ var SUSPENDED = co.SUSPENDED
 var WAITING = co.WAITING
 var DONE = co.DONE
 
-var nativeFunctionType = type(load)
-var stringType = type("")
-var threadType = type(new(fun->nil))
-var errorType = type(error())
-var functionType = type(fun->nil)
-var arrayType = type([])
+var nativeFunctionType = load.type()
+var stringType = "".type()
+var threadType = new(fun->nil).type()
+var errorType = error().type()
+var functionType = (fun->nil).type()
+var arrayType = [].type()
 var Signal = enum { done }
 
 assert(
     co and
-    new and type(new) == nativeFunctionType and
-    run and type(run) == nativeFunctionType and
-    isActive and type(isActive) == nativeFunctionType and
-    state and type(state) == nativeFunctionType and
-    suspend and type(suspend) == nativeFunctionType and
-    complete and type(complete) == nativeFunctionType and
-    isDone and type(isDone) == nativeFunctionType and
-    recycle and type(recycle) == nativeFunctionType and
-    isMain and type(isMain) == nativeFunctionType and
-    getStackSize and type(getStackSize) == nativeFunctionType and
-    getFrameSize and type(getFrameSize) == nativeFunctionType and
-    value and type(value) == nativeFunctionType and
-    READY == "ready" and type(READY) == stringType and
-    RUNNING == "running" and type(RUNNING) == stringType and
-    SUSPENDED == "suspended" and type(SUSPENDED) == stringType and
-    WAITING == "waiting" and type(WAITING) == stringType and
-    DONE == "done" and type(DONE) == stringType
+    new and new.type() == nativeFunctionType and
+    run and run.type() == nativeFunctionType and
+    isActive and isActive.type() == nativeFunctionType and
+    state and state.type() == nativeFunctionType and
+    suspend and suspend.type() == nativeFunctionType and
+    complete and complete.type() == nativeFunctionType and
+    isDone and isDone.type() == nativeFunctionType and
+    recycle and recycle.type() == nativeFunctionType and
+    isMain and isMain.type() == nativeFunctionType and
+    getStackSize and getStackSize.type() == nativeFunctionType and
+    getFrameSize and getFrameSize.type() == nativeFunctionType and
+    value and value.type() == nativeFunctionType and
+    READY == "ready" and READY.type() == stringType and
+    RUNNING == "running" and RUNNING.type() == stringType and
+    SUSPENDED == "suspended" and SUSPENDED.type() == stringType and
+    WAITING == "waiting" and WAITING.type() == stringType and
+    DONE == "done" and DONE.type() == stringType
 )
 
-var wrap = fun f { 
-	var th = co.new(f)
+var wrap = fun f {
+	var th = new(f)
 	ret fun a... {
-		if co.isActive(th) {
-			ret co.run(th, ...a)
+		if isActive(th) {
+			ret run(th, ...a)
 		}
         ret error(Signal.done)
 	}
@@ -68,7 +68,7 @@ var send = fun val -> suspend(val)
 
 var iter = fun iterable {
     for i, v in iterable {
-        assert(type(running()) == threadType and state(running()) == RUNNING and not isMain(running()))
+        assert(running().type() == threadType and state(running()) == RUNNING and not isMain(running()))
         suspend([i, v])
     }
     ret error(Signal.done)
@@ -86,75 +86,75 @@ var gen = fun N {
 
 var main = running()
 
-assert(type(main) == threadType and isMain(main))
+assert(main.type() == threadType and isMain(main))
 
-assert(isError(ex.protected(run, main)))
+assert(ex::protect(run, main).isError())
 
-assert(isError(ex.protected(run, 42)))
+assert(ex::protect(run, 42).isError())
 
-assert((isError(ex.protected(new, main))))
+assert((ex::protect(new, main).isError()))
 
-assert(isError((ex.protected(new, 42))))
+assert(ex::protect(new, 42).isError())
 
-assert(isError((ex.protected(new, print))))
+assert(ex::protect(new, print).isError())
 
-assert(isError(ex.protected(state, 42)))
+assert(ex::protect(state, 42).isError())
 
 var t = new(iter)
 
-assert(type(t) == threadType and state(t) == READY)
+assert(t.type() == threadType and state(t) == READY)
 
-assert(type(running()) == threadType and isMain(running()) and state(running()) == RUNNING)
+assert(running().type() == threadType and isMain(running()) and state(running()) == RUNNING)
 
 var r = run(t, 3)
 
-assert(type(t) == threadType and state(t) == SUSPENDED)
+assert(t.type() == threadType and state(t) == SUSPENDED)
 
 assert(r[0] == 0 and r[1] == 0)
 
 r = run(t)
 
-assert(type(t) == threadType and state(t) == SUSPENDED)
+assert(t.type() == threadType and state(t) == SUSPENDED)
 
 assert(r[0] == 1 and r[1] == 1)
 
 r = run(t)
 
-assert(type(t) == threadType and state(t) == SUSPENDED)
+assert(t.type() == threadType and state(t) == SUSPENDED)
 
 assert(r[0] == 2 and r[1] == 2)
 
 r = run(t)
 
-assert(type(t) == threadType and state(t) == DONE)
+assert(t.type() == threadType and state(t) == DONE)
 
-assert(isError(r))
+assert(r.isError())
 
 var N = 20
 
 t = gen(N)
 
-assert(type(t) == functionType)
+assert(t.type() == functionType)
 
 for i in N*N {
     var r = t()
-    if isError(r) {
+    if r.isError() {
         assert(r.message == Signal.done)
         break
     }
     assert(i == r) 
 }
 
-assert(isError(t()) and (t()).message == Signal.done)
+assert(t().isError() and (t()).message == Signal.done)
 
 
 let f = nil
 
 let fn = fun args... {
     var r = running()
-    assert(type(r) == threadType and r == f and not isMain(r))
-    var e = ex.protected(run, f)
-    assert(isError(e))
+    assert(r.type() == threadType and r == f and not isMain(r))
+    var e = ex::protect(run, f)
+    assert(e.isError())
     assert(state(f) == RUNNING)
     for i, v in args {
         suspend(v)
@@ -164,38 +164,38 @@ let fn = fun args... {
 
 
 f = new(fn)
-assert(type(f) == threadType and state(f) == READY)
+assert(f.type() == threadType and state(f) == READY)
 
 r = run(f, [1,2,3,4,5], error(42), 42, ["hello", "world"])
-assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(f.type() == threadType and state(f) == SUSPENDED)
 assert(isDone(f) == false and isActive(f) == true)
-assert(type(r) == arrayType)
+assert(r.type() == arrayType)
 assert(r[0] == 1 and r[1] == 2 and r[2] == 3 and r[3] == 4 and r[4] == 5)
 
 r = run(f)
-assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(f.type() == threadType and state(f) == SUSPENDED)
 assert(isDone(f) == false and isActive(f) == true)
-assert(isError(r) and r.message == 42)
+assert(r.isError() and r.message == 42)
 
 r = run(f)
-assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(f.type() == threadType and state(f) == SUSPENDED)
 assert(isDone(f) == false and isActive(f) == true)
 assert(r == 42)
 
 r = run(f)
-assert(type(f) == threadType and state(f) == SUSPENDED)
+assert(f.type() == threadType and state(f) == SUSPENDED)
 assert(isDone(f) == false and isActive(f) == true)
-assert(type(r) == arrayType)
+assert(r.type() == arrayType)
 assert(r[0] == "hello" and r[1] == "world")
 
 r = run(f)
-assert(type(f) == threadType and state(f) == DONE)
-assert(type(r) == arrayType and len(r) == 4)
+assert(f.type() == threadType and state(f) == DONE)
+assert(r.type() == arrayType and r.len() == 4)
 assert(isDone(f) == true and isActive(f) == false)
 
 
-r = ex.protected(run, f)
-assert(isError(r) and state(f) == DONE and isDone(f) == true and isActive(f) == false)
+r = ex::protect(run, f)
+assert(r.isError() and state(f) == DONE and isDone(f) == true and isActive(f) == false)
 
 
 N = 5
@@ -260,12 +260,12 @@ var primes = []
 while true {
 	var n = g()
 	if not n { break }
-	append(primes, n)
+	primes.append(n)
 	g = sieve(n, g)
 }
 
 assert(
-    len(primes) == 25 and 
+    primes.len() == 25 and 
     primes[0] == 2 and 
     primes[-1] == 97 and 
     primes[5] == 13 and 
@@ -281,14 +281,14 @@ while true {
 	var n = g()
     var m = r()
 	if not n and not m { break }
-	append(primes.g, n)
-    append(primes.r, m)
+	primes.g.append(n)
+    primes.r.append(m)
 	g = sieve(n, g)
     r = sieve(m, r)
 }
 
 assert(
-    len(primes.g) == 25 and 
+    primes.g.len() == 25 and 
     primes.g[0] == 2 and 
     primes.g[-1] == 97 and 
     primes.g[5] == 13 and 
@@ -296,7 +296,7 @@ assert(
 )
 
 assert(
-    len(primes.r) == 25 and 
+    primes.r.len() == 25 and 
     primes.r[0] == 2 and 
     primes.r[-1] == 97 and 
     primes.r[5] == 13 and 
@@ -304,7 +304,7 @@ assert(
 )
 
 t = wrap(fun {
-	assert(ex.protected(array.sortBy, [1,2,3], suspend) == nil)
+	assert(ex::protect(array.sortBy, [1,2,3], suspend) == nil)
 	suspend(100)
 	ret 200
 })
@@ -330,7 +330,7 @@ t = wrap(fun {
 assert(t() == 10)
 assert(t(100) == 200)
 N = t(400)
-assert(isError(N) and N.message == 820)
+assert(N.isError() and N.message == 820)
 
 
 
@@ -347,7 +347,7 @@ t = wrap(fun {
 assert(t() == 10)
 assert(t(100) == 200)
 N = t(400)
-assert(isError(N) and N.message == 820)
+assert(N.isError() and N.message == 820)
 
 
 var rec oki = fun o, n, k {
@@ -373,10 +373,10 @@ assert(N and N == 5**4)
 
 f = fun th {
     assert(running() == th)
-    assert(isError(ex.protected(run, th)))
+    assert(ex::protect(run, th).isError())
     suspend(42)
     assert(running() == th)
-    assert(isError(ex.protected(run, th)))
+    assert(ex::protect(run, th).isError())
     suspend(43)
     ret 44
 }
@@ -392,9 +392,9 @@ assert(value(g) == 43)
 assert(run(g, g) == 44)
 assert(value(g) == 44)
 assert(isActive(g) == false and isDone(g) and state(g) == DONE)
-assert(isError(ex.protected(run, g)))
-assert(isError(ex.protected(run, g)))
-assert(isError(ex.protected(run, g)))
+assert(ex::protect(run, g).isError())
+assert(ex::protect(run, g).isError())
+assert(ex::protect(run, g).isError())
 
 assert(value(g) == 44)
 recycle(g, f)
@@ -408,9 +408,9 @@ assert(value(g) == 43)
 assert(run(g, g) == 44)
 assert(value(g) == 44)
 assert(isActive(g) == false and isDone(g) and state(g) == DONE)
-assert(isError(ex.protected(run, g)))
-assert(isError(ex.protected(run, g)))
-assert(isError(ex.protected(run, g)))
+assert(ex::protect(run, g).isError())
+assert(ex::protect(run, g).isError())
+assert(ex::protect(run, g).isError())
 
 assert(value(g) == 44)
 recycle(g, f)
@@ -422,24 +422,24 @@ assert(state(g) == DONE and value(g) == nil and isActive(g) == false and isDone(
 r = running()
 
 assert(value(r) == nil and isMain(r))
-assert(isError(ex.protected(run, r)))
-assert(isError(ex.protected(complete, r)))
-assert(isError(ex.protected(suspend, r)))
-assert(isError(ex.protected(recycle, r, f)))
-assert(isError(ex.protected(new, r)))
+assert(ex::protect(run, r).isError())
+assert(ex::protect(complete, r).isError())
+assert(ex::protect(suspend, r).isError())
+assert(ex::protect(recycle, r, f).isError())
+assert(ex::protect(new, r).isError())
 
 
 {
     var A = running()
     var B = new(fun -> run(A))
-    assert(isError(ex.protected(run, B)))
+    assert(ex::protect(run, B).isError())
 }
 
 
 P = nil
 N = 119
 
-t = co.new(fun {
+t = new(fun {
 	var x = N
 	P = fun {
 		x = x + 1
@@ -448,7 +448,7 @@ t = co.new(fun {
 })
 
 
-co.run(t)
+run(t)
 assert(isActive(t) == false and isDone(t) == true)
 
 
@@ -460,7 +460,7 @@ assert(P() == N + 3)
 
 t = wrap(fun x {
 	var r = send(x)
-	assert(type(r) == arrayType and len(r) == 0 and array.isArray(r))
+	assert(r.type() == arrayType and r.len() == 0 and array::isArray(r))
 })
 
 
@@ -472,7 +472,7 @@ t = new(fun { suspend(1) })
 
 assert(run(t) == 1)
 
-assert(isError(ex.protected(recycle, t, fun->nil)))
+assert(ex::protect(recycle, t, fun->nil).isError())
 
 
 t = new(fun { suspend(1) suspend(2) })
@@ -485,12 +485,12 @@ complete(t)
 
 assert(state(t) == DONE)
 
-assert(isError(ex.protected(run, t)))
+assert(ex::protect(run, t).isError())
 
 t = new(fun { ret 42 })
 assert(run(t) == 42)
 assert(isDone(t))
-assert(isError(ex.protected(run, t)))
+assert(ex::protect(run, t).isError())
 
 
 
@@ -511,7 +511,7 @@ assert(value(t) == 99)
 
 t = wrap(fun {
     var r = send(1)
-    assert(isError(r) and r.message == 42)
+    assert(r.isError() and r.message == 42)
 })
 assert(t() == 1)
 assert(t(error(42)) == nil)
@@ -521,7 +521,7 @@ t = wrap(fun a, b { suspend(a + b) })
 assert(t(10, 20) == 30)
 
 
-f = fun th -> suspend(co.run(th))
+f = fun th -> suspend(run(th))
 g = fun th -> run(running(), suspend(running()))
 
 t = new(f)
@@ -530,7 +530,7 @@ var x = new(g)
 assert(state(t), run(t, x), state(t))
 assert(state(t), run(t, x), state(t))
 
-assert(isError(ex.protected(run, x, x)))
+assert(ex::protect(run, x, x).isError())
 
 f = fun sender, val {
     var x = sender(val)
@@ -546,13 +546,13 @@ f = fun sender, val {
 g = fun th, f, sender, val {
     var r = f(sender, val)
     assert(r == val)
-    val = co.run(th, sender, val)
+    val = run(th, sender, val)
     var y = nil
     for i in val {
-        y = co.run(th, i)
+        y = run(th, i)
         assert(y == i)
     }
-    assert(co.run(th) == val)
+    assert(run(th) == val)
     ret val
 }
 
@@ -568,27 +568,27 @@ var h = fun sender, val {
 	ret val
 }
 
-r = co.run(t, co.new(h), f, send, N)
+r = run(t, new(h), f, send, N)
 assert(r == N)
 
-r = co.run(t, N)
+r = run(t, N)
 assert(r == 0)
 
 
 for i in 1, N {
-	r = co.run(t, r)
+	r = run(t, r)
 	assert(r == i)
 }
 
 
-r = co.run(t, r)
+r = run(t, r)
 assert(r == N)
 
 
 
 r = ""
 t = new(fun { var r = 1 + r })
-assert(isError(ex.protected(run, t)))
+assert(ex::protect(run, t).isError())
 assert(state(t) == DONE and isDone(t))
 
 
@@ -596,7 +596,7 @@ assert(state(t) == DONE and isDone(t))
 
 // Tracking (N, T) <= 0
 f = fun x, y, z, a... {
-    assert(x == nil and y == nil and z == nil and type(a) == arrayType and len(a) == 0)
+    assert(x == nil and y == nil and z == nil and a.type() == arrayType and a.len() == 0)
 	var r = suspend(x)
 	assert(r == nil)
 	r = suspend(y)
@@ -627,7 +627,7 @@ assert(r == nil)
 
 // L(0)
 r = run(t)
-assert(r and type(r) == arrayType and len(r) == 0)
+assert(r and r.type() == arrayType and r.len() == 0)
 
 
 // L(0)
@@ -641,7 +641,7 @@ assert(state(t) == DONE)
 
 // Tracking (N, T) <= N
 f = fun x, y, z, a... {
-    assert(x == 10 and y == 20 and z == nil and type(a) == arrayType and len(a) == 0)
+    assert(x == 10 and y == 20 and z == nil and a.type() == arrayType and a.len() == 0)
 	var r = suspend(x)
 	assert(r == 100)
 	r = suspend(y)
@@ -672,7 +672,7 @@ assert(r == nil)
 
 // L(N)
 r = run(t, 300, true, false, nil)
-assert(r and type(r) == arrayType and len(r) == 0)
+assert(r and r.type() == arrayType and r.len() == 0)
 
 
 // L(N)
@@ -687,7 +687,7 @@ assert(state(t) == DONE)
 
 // Tracking (N, T) <= N
 f = fun x, y, z, a... {
-    assert(x == 10 and y == 20 and z == 30 and type(a) == arrayType and len(a) == 3)
+    assert(x == 10 and y == 20 and z == 30 and a.type() == arrayType and a.len() == 3)
     assert(a[0] == 40 and a[1] == 50 and a[2] == 60)
 	var r = suspend(x)
 	assert(r == 100)
@@ -720,7 +720,7 @@ assert(r == 30)
 
 // L(N)
 r = run(t, 300, true, false, nil)
-assert(r and type(r) == arrayType and len(r) == 3)
+assert(r and r.type() == arrayType and r.len() == 3)
 assert(r[0] == 40 and r[1] == 50 and r[2] == 60)
 
 
@@ -736,7 +736,7 @@ assert(state(t) == DONE)
 
 // Tracking (0, T) <= 0
 f = fun a... {
-    assert(type(a) == arrayType and len(a) == 0)
+    assert(a.type() == arrayType and a.len() == 0)
 	ret a
 }
 
@@ -746,7 +746,7 @@ t = recycle(t, f)
 
 // L(0)
 r = run(t)
-assert(type(r) == arrayType and len(r) == 0)
+assert(r.type() == arrayType and r.len() == 0)
 
 // Thread exhaustion
 assert(state(t) == DONE)
@@ -757,7 +757,7 @@ N = 1000
 
 // Tracking (0, T) <= N
 f = fun a... {
-    assert(type(a) == arrayType and len(a) == 3)
+    assert(a.type() == arrayType and a.len() == 3)
     assert(a[0] == 100 and a[1] == 200 and a[2] == 300)
     var r = suspend(a[0] + N)
     assert(r == nil)
@@ -794,7 +794,7 @@ assert(state(t) == DONE)
 // Tracking (N, F) <= N
 f = fun x, y {
 	if not x or not y { ret nil }
-	var r = co.suspend(x + y, 100, 200)
+	var r = suspend(x + y, 100, 200)
 	assert(r == "hello")
 	ret 42
 }
@@ -804,10 +804,10 @@ t = recycle(t, f)
 
 
 // L(N)
-r = co.run(t, 19, 29)
+r = run(t, 19, 29)
 assert(r == 19 + 29)
 
-r = co.run(t, "hello")
+r = run(t, "hello")
 assert(r == 42)
 
 // Thread exhaustion
@@ -829,7 +829,7 @@ t = recycle(t, f)
 
 
 // L(0)
-r = co.run(t)
+r = run(t)
 assert(r == nil)
 
 // Thread exhaustion
@@ -841,7 +841,7 @@ t = recycle(t, f)
 
 
 // L(N)
-r = co.run(t, 10)
+r = run(t, 10)
 assert(r == nil)
 
 // Thread exhaustion
