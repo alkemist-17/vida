@@ -1,4 +1,4 @@
-var bytes = load("std/bytes")
+var bytes = load("std.bytes")
 
 var miniList = [1, 2, 3]
 
@@ -10,7 +10,7 @@ var e = error("hello world")
 
 var planet = { mercury venus earth mars }
 
-var b = bytes.new(100, 0xFF)
+var b = bytes::new(100, 0xFF)
 
 let xs = [
     1, 
@@ -24,7 +24,7 @@ let xs = [
     miniList,
     data,
     f,
-    len,
+    xs.len,
     e,
     planet,
     b,
@@ -40,7 +40,7 @@ assert(45.5 in xs)
 assert("example" in xs)
 assert(data in xs)
 assert(f in xs)
-assert(len in xs == false)
+assert(xs.len in xs == true)
 assert(e in xs)
 assert(planet in xs)
 assert(b in xs)
@@ -80,7 +80,7 @@ for k, v in data {
     assert(v in data)
 }
 
-data = bytes.new(10, 0xFF)
+data = bytes::new(10, 0xFF)
 
 for k, v in data {
     assert(v in data)

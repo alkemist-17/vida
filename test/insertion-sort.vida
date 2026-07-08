@@ -1,11 +1,11 @@
-/*
-* Insertion Sort
-*/
+//
+// Insertion Sort
+//
 
-let rand = load("std/rand")
+let rand = load("std.rand")
 
 let iComparable = {
-    comparedTo= fun self, r {
+    comparedTo = fun self, r {
         if self.val < r.val {
             ret -1
         }
@@ -17,7 +17,7 @@ let iComparable = {
 }
 
 let less = fun v, w {
-    if v:comparedTo(w) < 0 {
+    if v.comparedTo(w) < 0 {
         ret true
     }
     ret false
@@ -30,7 +30,7 @@ let swap = fun comparables, i, j {
 }
 
 let isSorted = fun comparables {
-    for i in 1, len(comparables) {
+    for i in 1, comparables.len() {
         if less(comparables[i], comparables[i-1]) {
             ret false
         }
@@ -39,7 +39,7 @@ let isSorted = fun comparables {
 }
 
 let insertionSort = fun comparables {
-    var N = len(comparables)
+    var N = comparables.len()
     for i in 0, N {
         for j in i, 0, -1 {
             if less(comparables[j], comparables[j-1]) {
@@ -52,23 +52,14 @@ let insertionSort = fun comparables {
     ret comparables
 }
 
-let number = {
-    val= 0,
-    comparedTo= iComparable.comparedTo
-}
-
-let newNumber = fun x {
-    var n = clone(number)
-    n.val = x
-    ret n
-}
+let newNumber = fun x -> { val = x } =< iComparable
 
 let N = 1_000
 let upperLimit = N
 let numbers = newArray(N)
 
 for i, _ in numbers {
-    numbers[i] = newNumber(rand.I(N))
+    numbers[i] = newNumber(rand::I(N))
 }
 
 let r = insertionSort(numbers)
@@ -76,7 +67,7 @@ let r = insertionSort(numbers)
 assert(isSorted(r))
 
 for i, _ in numbers {
-    numbers[i] = newNumber(rand.F()*N)
+    numbers[i] = newNumber(rand::F()*N)
 }
 
 r = insertionSort(numbers)

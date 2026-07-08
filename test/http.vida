@@ -1,9 +1,9 @@
-var http = load("std/http")
-var json = load("std/json")
-var text = load("std/text")
-var task = load("std/task")
-var cast = load("std/cast")
-var array = load("std/array")
+var http = load("std.http")
+var json = load("std.json")
+var text = load("std.text")
+var task = load("std.task")
+var cast = load("std.cast")
+var array = load("std.array")
 
 assert(
 	http and 
@@ -14,7 +14,7 @@ assert(
 	array
 )
 
-var client = http.newClient()
+var client = http::newClient()
 
 var res = client.get("https://restcountries.com/v3.1/name/china")
 
@@ -22,22 +22,21 @@ if res {
     assert(res.statusCode == 200)
     assert(res.headers)
     assert(res.body)
-	if text.contains(res.headers["Content-Type"], "application/json") {
-		if json.isValid(res.body) {
-			assert(json.isValid(res.body))
-			assert(json.parse(res.body))
+	if res.headers["Content-Type"].contains("application/json") {
+		if json::isValid(res.body) {
+			assert(json::isValid(res.body))
+			assert(json::parse(res.body))
 		} else {
-			assert(not json.isValid(res.body))
+			assert(not json::isValid(res.body))
 		}
 	}
 } else {
-	assert(not res and isError(res))
+	assert(not res and res.isError())
 }
 
 
 
-
-var R = task.parallel([
+var R = task::parallel([
 	[client.get, "https://restcountries.com/v3.1/name/france"],
 	[client.get, "https://restcountries.com/v3.1/name/russia"],
 	[client.get, "https://restcountries.com/v3.1/name/brasil"],
@@ -62,21 +61,21 @@ for _, res in R {
 			if json.isValid(res.body) {
 				assert(json.isValid(res.body))
 				var data = json.parse(res.body)
-				if type(data) == type([]) {
+				if data.type() == [].type() {
 					data = data[0]
 				}
 				assert(data)
 				if data.cioc and data.population {
 					assert(data.cioc)
 					assert(data.population)
-					append(A, {country = data.cioc, population = cast.toInt(data.population)})
+					A.append({country = data.cioc, population = cast.toInt(data.population)})
 				}
 			}
 		}
 	}
 }
 
-array.sortBy(A, fun a, b -> a.population > b.population)
+A.sortBy(fun a, b -> a.population > b.population)
 
 var total = 0
 
@@ -84,7 +83,7 @@ for k, v in A {
 	total = total + v.population
 }
 
-if len(A) == 0 {
+if A.len() == 0 {
 	assert(total == 0)
 } else {
 	assert(total > 0)
@@ -106,7 +105,7 @@ var check = fun res {
 		assert(res.body)
 		ret nil
 	}
-	assert(not res and isError(res))
+	assert(not res and res.isError())
 }
 
 
@@ -115,16 +114,16 @@ var checkMethod = fun res, method {
 		assert(res.statusCode)
 		assert(res.headers)
 		assert(res.body)
-		if json.isValid(res.body) {
-			var data = json.parse(res.body)
+		if json::isValid(res.body) {
+			var data = json::parse(res.body)
 			assert(data.method == text.toUpper(method))
 		}
 		ret nil
 	}
-	assert(not res and isError(res))
+	assert(not res and res.isError())
 }
 
-R = task.parallel(
+R = task::parallel(
 	[
 		[client.get, "https://httpbin.org/anything"],
 		[client.post, "https://httpbin.org/anything"],
@@ -134,7 +133,7 @@ R = task.parallel(
 	]
 )
 
-task.parallel(
+task::parallel(
 	[
 		[checkMethod, R[0], "get"],
 		[checkMethod, R[1], "post"],
@@ -144,7 +143,7 @@ task.parallel(
 	]
 )
 
-R = task.parallel(
+R = task::parallel(
 	[
 		[client.get, {url = "https://httpbin.org/anything"}],
 		[client.post, {url = "https://httpbin.org/anything"}],
@@ -154,7 +153,7 @@ R = task.parallel(
 	]
 )
 
-task.parallel(
+task::parallel(
 	[
 		[checkMethod, R[0], "get"],
 		[checkMethod, R[1], "post"],
@@ -164,7 +163,7 @@ task.parallel(
 	]
 )
 
-R = task.parallel(
+R = task::parallel(
 	[
 		[client.get, {base = "https://httpbin.org", url = "/anything"}],
 		[client.post, {base = "https://httpbin.org", url = "/anything"}],
@@ -174,7 +173,7 @@ R = task.parallel(
 	]
 )
 
-task.parallel(
+task::parallel(
 	[
 		[checkMethod, R[0], "get"],
 		[checkMethod, R[1], "post"],
@@ -205,7 +204,7 @@ A =
 ]
 
 
-R = task.parallel([
+R = task::parallel([
 	[client.get, format("/name/%v", A[0]), config],
 	[client.get, format("/name/%v", A[1]), config],
 	[client.get, format("/name/%v", A[2]), config],
@@ -219,7 +218,7 @@ R = task.parallel([
 )
 
 
-task.parallel(
+task::parallel(
 	[
 		[check, R[0]],
 		[check, R[1]],
@@ -241,6 +240,6 @@ check(res)
 
 config.timeout = 0
 res = client.get(config)
-assert(not res and isError(res))
+assert(not res and res.isError())
 
 

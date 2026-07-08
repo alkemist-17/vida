@@ -1,12 +1,12 @@
-/*
-* Merge Sort
-*/
+//
+// Merge Sort
+//
 
 
 var p = print
 
 
-var rand = load("std/rand")
+var rand = load("std.rand")
 
 
 var iComparable = {
@@ -29,13 +29,13 @@ var iPrinter = {
 }
 
 
-var data = {val = nil, comparedTo = iComparable.comparedTo, print = iPrinter.print}
+var data = { val = nil } =< iComparable + iPrinter
 
 
 var makeData = fun N, rnd, upperLimit {
     var xs = newArray(N)
     for i in 0, N {
-        var c = clone(data)
+        var c = data.clone()
         c.val = rnd(upperLimit)
         xs[i] = c
     }
@@ -45,13 +45,13 @@ var makeData = fun N, rnd, upperLimit {
 
 var printData = fun xs {
     for _, v in xs {
-        v:print()
+        v.print()
     }
 }
 
 
 var less = fun v, w {
-    if v:comparedTo(w) < 0 {
+    if v.comparedTo(w) < 0 {
         ret true
     }
     ret false
@@ -113,7 +113,7 @@ let sort = fun comparables, auxList, lo, hi {
 
 
 var mergeSort = fun comparables {
-    var N = len(comparables)
+    var N = comparables.len()
     var auxList = newArray(N)
     sort(comparables, auxList, 0, N-1)
 }

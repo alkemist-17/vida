@@ -1,31 +1,31 @@
-let objType = type({})
+let objType = {}.type()
 
-let assertModule = fun mod {
-    assert(mod and type(mod) == objType and len(mod) > 0)
+let assertModule = fun module {
+    assert(module and module.type() == objType and module.len() > 0)
 }
 
 let assertCache = fun dup, ext {
-    assert(dup == ext and type(dup) == objType and type(ext) == objType and len(dup) == len(ext))
+    assert(dup == ext and dup.type() == objType and ext.type() == objType and dup.len() == ext.len())
 }
 
 let currentFoundationExtensions = [
-    "std/bytes",
-    "std/time",
-    "std/cast",
-    "std/exception",
-    "std/text",
-    "std/math",
-    "std/object",
-    "std/array",
-    "std/rand",
-    "std/io",
-    "std/os",
-    "std/co",
-    "std/json",
-    "std/task",
-    "std/re",
-    "std/color",
-    "std/http",
+    "std.bytes",
+    "std.time",
+    "std.cast",
+    "std.exception",
+    "std.text",
+    "std.math",
+    "std.object",
+    "std.array",
+    "std.rand",
+    "std.io",
+    "std.os",
+    "std.co",
+    "std.json",
+    "std.task",
+    "std.re",
+    "std.color",
+    "std.http",
 ]
 
 for _, v in currentFoundationExtensions {
@@ -37,12 +37,13 @@ for _, v in currentFoundationExtensions {
 
 // Test when an extension does not exists
 var e = load("hello-world-42")
-assert(not e and isError(e))
+assert(not e and e.isError())
 
 
 
 // Check for protected on exception
-e = load("std/exception")
-var raised = e.protected(e.raise, "hello raised exception")
-assert(isError(raised) and load("std/text").contains(raised.message, "hello raised exception"))
+var message = "hello raised exception"
+e = load("std.exception")
+var raised = e::protect(e.raise, message)
+assert(raised.isError() and raised.message.contains(message))
 

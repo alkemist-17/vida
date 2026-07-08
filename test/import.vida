@@ -1,18 +1,18 @@
 
-var math = load("std/math")
+var math = load("std.math")
 var depA = import("dep-A")
 var depB = import("dep-B")
 
 assert(
-    depA:fourTimesTau() == math.tau * 4 or
-    depA:fourTimesTau() >= math.tau * 4 or
-    depA:fourTimesTau() <= math.tau * 4
+    depA::fourTimesTau(depA) == math.tau * 4 or
+    depA::fourTimesTau(depA) >= math.tau * 4 or
+    depA::fourTimesTau(depA) <= math.tau * 4
 )
 
 assert(
-    depA:fourTimesPi() == math.pi * 4 or
-    depA:fourTimesPi() >= math.pi * 4 or
-    depA:fourTimesPi() <= math.pi * 4
+    depA::fourTimesPi(depA) == math.pi * 4 or
+    depA::fourTimesPi(depA) >= math.pi * 4 or
+    depA::fourTimesPi(depA) <= math.pi * 4
 )
 
 assert(not depB)
