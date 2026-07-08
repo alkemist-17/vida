@@ -29,10 +29,10 @@ func loadFoundationRandom() Value {
 	m.Value["uuid"] = NativeFunction(bytesUUID)
 	m.Value["customNanoid"] = NativeFunction(randNanoIDCustomAlphabeth)
 	m.Value["nanoidDefaultSize"] = Integer(nanoIDDefaultSize)
-	m.Value["alphanumeric"] = NativeFunction(randGetAlphaNumeric)
-	m.Value["numeric"] = NativeFunction(randGetNumeric)
-	m.Value["alpha"] = NativeFunction(randGetAlpha)
-	m.Value["password"] = NativeFunction(randGetPasswordSymbols)
+	m.Value["alphanumeric"] = &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+	m.Value["numeric"] = &String{Value: "0123456789"}
+	m.Value["alpha"] = &String{Value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+	m.Value["password"] = &String{Value: " !#$%&'()*+,-./:;<=>?@[\\]^_`{|}~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}
 	return m
 }
 
@@ -233,22 +233,6 @@ func randNanoIDCustomAlphabeth(ctx *Context, args ...Value) (Value, error) {
 		}
 	}
 	return Nil, nil
-}
-
-func randGetAlphaNumeric(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}, nil
-}
-
-func randGetNumeric(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: "0123456789"}, nil
-}
-
-func randGetAlpha(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}, nil
-}
-
-func randGetPasswordSymbols(ctx *Context, args ...Value) (Value, error) {
-	return &String{Value: " !#$%&'()*+,-./:;<=>?@[\\]^_`{|}~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"}, nil
 }
 
 func generateMask(length int) Integer {
