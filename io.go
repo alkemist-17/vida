@@ -5,7 +5,7 @@ import (
 )
 
 func loadFoundationIO() Value {
-	m := &Object{Value: make(map[string]Value, 23)}
+	m := &Object{Value: make(map[string]Value, 24)}
 	// fmt
 	m.Value["write"] = NativeFunction(ioWrite)
 	m.Value["fwrite"] = NativeFunction(ioFWrite)
@@ -28,6 +28,7 @@ func loadFoundationIO() Value {
 	m.Value["A"] = Integer(os.O_APPEND)
 	m.Value["C"] = Integer(os.O_CREATE)
 	m.Value["T"] = Integer(os.O_TRUNC)
+	m.Value["readFile"] = NativeFunction(ioReadFile)
 	// Streams
 	m.Value["stdin"] = &FileHandler{Handler: os.Stdin}
 	m.Value["stdout"] = &FileHandler{Handler: os.Stdout}
@@ -131,6 +132,20 @@ func ioErrorf(ctx *Context, args ...Value) (Value, error) {
 			return Integer(n), nil
 		}
 		return &VidaError{Message: &String{Value: noStringFormat}}, nil
+	}
+	return Nil, nil
+}
+
+func ioReadFile(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if path, ok := args[0].(*String); ok {
+			if data, err := os.ReadFile(path.Value); err == nil {
+				return &String{Value: string(data)}, nil
+			} else {
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+		}
+		return &VidaError{Message: &String{Value: "first argument of io.readFile should be a string"}}, nil
 	}
 	return Nil, nil
 }
