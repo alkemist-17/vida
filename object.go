@@ -91,8 +91,8 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return val, err
 			}
 			pairs := make(map[string]Value, len(o.Value)+len(r.Value))
-			maps.Copy(pairs, o.Value)
 			maps.Copy(pairs, r.Value)
+			maps.Copy(pairs, o.Value)
 			return &Object{Value: pairs}, nil
 		case uint64(token.SUB):
 			if val, err, handled := o.dispatchOperatorOverride(ctx, op, rhs); handled {
@@ -338,9 +338,7 @@ func objectInjectAndOverrideProperties(ctx *Context, args ...Value) (Value, erro
 		if self, ok := args[0].(*Object); ok {
 			for _, v := range args[1:] {
 				if other, ok := v.(*Object); ok && other != self {
-					for k, x := range other.Value {
-						self.Value[k] = x
-					}
+					maps.Copy(self.Value, other.Value)
 				}
 			}
 			return self, nil
