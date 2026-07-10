@@ -80,7 +80,7 @@ var coreLibNames = []string{
 	"newArray",
 	"load",
 	"assert",
-	"format",
+	"fmt",
 	"input",
 	"error",
 }
