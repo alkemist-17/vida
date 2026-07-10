@@ -50,7 +50,7 @@ const (
 	foundationJSON      = "json"
 	foundationTask      = "task"
 	foundationRegex     = "re"
-	foundationColor     = "color"
+	foundationStyle     = "style"
 )
 
 const (
@@ -676,8 +676,8 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationTask()
 					case foundationRegex:
 						module = loadFoundationRegexp()
-					case foundationColor:
-						module = loadFoundationColor()
+					case foundationStyle:
+						module = loadFoundationStyle()
 					default:
 						module = Nil
 						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil

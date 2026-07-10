@@ -24,7 +24,7 @@ let currentFoundationExtensions = [
     "std.json",
     "std.task",
     "std.re",
-    "std.color",
+    "std.style",
     "std.http",
 ]
 

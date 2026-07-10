@@ -102,6 +102,11 @@ const (
 	ErrNonNegativeIntegerTimeout        = internalBasicError("timeout must be a non negative integer milliseconds")
 	ErrNonEmptyTaskArray                = internalBasicError("parallel tasks must be inside a non empty array")
 	ErrInvalidJSON                      = internalBasicError("invalid json")
+	ErrExpectedString                   = internalBasicError("expected argument of type string")
+	ErrExpectedIntegerArg               = internalBasicError("expected argument of type integer")
+	ErrExpectedBool                     = internalBasicError("expected argument of type bool")
+	ErrInvalidNumberOfArguments         = internalBasicError("invalid number of arguments")
+	ErrInvalidTypeOfArgument            = internalBasicError("invalid type of argument")
 )
 
 // ErrOperatorOverrideNotCallable reports that a vtable entry was found under

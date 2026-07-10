@@ -7,7 +7,7 @@ const (
 	objectT      = "object"
 	bytesT       = "bytes"
 	threadT      = "thread"
-	colorT       = "color"
+	styleT       = "style"
 	fileHandlerT = "file"
 	httpClientT  = "httpClient"
 	booleanT     = "bool"
@@ -117,16 +117,34 @@ func (ctx *Context) loadThreadVT() {
 	ctx.vtables[threadT] = vt
 }
 
-func (ctx *Context) loadColorVT() {
-	vt := &Object{Value: make(map[string]Value, 6)}
-	vt.Value["string"] = NativeFunction(colorString)
-	vt.Value["fmt"] = NativeFunction(colorFormat)
-	vt.Value["bg"] = NativeFunction(colorSetBG)
-	vt.Value["fg"] = NativeFunction(colorSetFG)
-	vt.Value["reset"] = NativeFunction(colorSetReset)
-	vt.Value["resets"] = NativeFunction(colorGetReset)
+func (ctx *Context) loadStyleVT() {
+	vt := &Object{Value: map[string]Value{
+		"fgRGB":     NativeFunction(styleFgRGB),
+		"bgRGB":     NativeFunction(styleBgRGB),
+		"fgHex":     NativeFunction(styleFgHex),
+		"bgHex":     NativeFunction(styleBgHex),
+		"fgName":    NativeFunction(styleFgName),
+		"bgName":    NativeFunction(styleBgName),
+		"fg256":     NativeFunction(styleFg256),
+		"bg256":     NativeFunction(styleBg256),
+		"fg16":      NativeFunction(styleFg16),
+		"bg16":      NativeFunction(styleBg16),
+		"bold":      NativeFunction(styleFlag(func(s *Style) *Style { return s.Bold() })),
+		"dim":       NativeFunction(styleFlag(func(s *Style) *Style { return s.Dim() })),
+		"italic":    NativeFunction(styleFlag(func(s *Style) *Style { return s.Italic() })),
+		"underline": NativeFunction(styleFlag(func(s *Style) *Style { return s.Underline() })),
+		"blink":     NativeFunction(styleFlag(func(s *Style) *Style { return s.Blink() })),
+		"reverse":   NativeFunction(styleFlag(func(s *Style) *Style { return s.Reverse() })),
+		"strike":    NativeFunction(styleFlag(func(s *Style) *Style { return s.Strike() })),
+		"noReset":   NativeFunction(styleFlag(func(s *Style) *Style { return s.NoReset() })),
+		"width":     NativeFunction(styleWidth),
+		"enabled":   NativeFunction(styleEnabled),
+		"sprint":    NativeFunction(styleSprint),
+		"sprintf":   NativeFunction(styleSprintf),
+		"fill":      NativeFunction(styleFill),
+	}}
 	vt.VTable = ctx.vtables[universalT].(*Object)
-	ctx.vtables[colorT] = vt
+	ctx.vtables[styleT] = vt
 }
 
 func (ctx *Context) loadFileHandlerVT() {

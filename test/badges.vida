@@ -1,0 +1,68 @@
+//
+// badges.vida
+// GitHub-style status badges: fixed-width, color-coded "pills". Doubles as
+// a reusable helper (badge()) rather than being purely a demo — this is
+// the kind of thing you'd actually keep around in a CI/logging tool.
+//
+
+
+let style = load("std.style")
+
+
+
+var badge = fun label, bgName, fgName {
+    var s = style::new().bgName(bgName).fgName(fgName).bold().width(label.len() + 2)
+    ret s.fill(" " + label + " ")
+}
+
+
+
+// A small palette of "semantic" badge colors, defined once and reused —
+// this is the payoff of copy-on-write Style: build a base, branch freely.
+let passing = badge("PASSING", "forestgreen", "white")
+let failing = badge("FAILING", "crimson", "white")
+let pending = badge("PENDING", "goldenrod", "black")
+let beta    = badge("BETA", "mediumpurple", "white")
+let stable  = badge("STABLE", "steelblue", "white")
+let deprecated = badge("DEPRECATED", "dimgray", "white")
+
+
+
+print(style::new().bold().sprint("CI Status\n"))
+print("  build/linux   " + passing)
+print("  build/macos   " + passing)
+print("  build/windows " + failing)
+print("  build/arm64   " + pending)
+print("")
+print(style::new().bold().sprint("Package tags\n"))
+print("  color-lib   " + stable + " " + beta)
+print("  legacy-lib  " + deprecated)
+
+
+
+// A tiny live example: derive PASS/FAIL badges from actual data instead
+// of hardcoding, showing the pattern for real usage in scripts.
+print("")
+print(style::new().bold().sprint("Test suite\n"))
+
+
+
+let tests = [
+    {"name" = "parse_hex_valid",   "ok" = true},
+    {"name" = "parse_hex_invalid", "ok" = true},
+    {"name" = "lerp_midpoint",     "ok" = true},
+    {"name" = "style_immutable",   "ok" = false},
+]
+
+
+
+for _, t in tests {
+    var result = passing
+    if t["ok"] == false {
+        result = failing
+    }
+    print("  " + result + "  " + t["name"])
+}
+
+
+print("Done.")

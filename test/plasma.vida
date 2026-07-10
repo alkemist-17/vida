@@ -1,0 +1,71 @@
+//
+// plasma.vida
+// Animated ANSI "plasma" effect — classic demoscene trick, driven entirely by RGB truecolor.
+//
+
+
+
+let style = load("std.style")
+let math = load("std.math")
+let time = load("std.time")
+let os = load("std.os")
+let sin = math.sin
+let sqrt = math.sqrt
+
+
+
+let width  = 60
+let height = 18
+let frames = 360
+
+
+
+let plasmaValue = fun x, y, t {
+    var v1 = sin(x * 0.15 + t)
+    var v2 = sin(y * 0.10 - t * 1.3)
+    var v3 = sin((x + y) * 0.08 + t * 0.7)
+    var v4 = sin(sqrt(x * x + y * y) * 0.12 - t)
+    ret (v1 + v2 + v3 + v4) / 4.0
+}
+
+
+
+let hueToStyle = fun hue {
+    // Reuse the module's lerp/rgb helpers rather than hand-rolling HSV:
+    // three-stop gradient (magenta -> cyan -> gold) driven by hue in [0,1)
+    if hue < 0.5 {
+        var t = hue / 0.5
+        var rgb = style::lerp(style::hex("#ff00aa"), style::hex("#00e5ff"), t)
+        ret style::new().fgRGB(rgb.r, rgb.g, rgb.b)
+    } else {
+        var t = (hue - 0.5) / 0.5
+        var rgb = style::lerp(style::hex("#00e5ff"), style::hex("#ffd500"), t)
+        ret style::new().fgRGB(rgb.r, rgb.g, rgb.b)
+    }
+}
+
+
+
+os::run("cmd", "/C", "cls")
+
+
+
+for f in frames {
+    var t = f * 0.15
+    var frame = ""
+    for y in height {
+        for x in width {
+            var v = plasmaValue(x, y, t)          // roughly -1..1
+            var hue = (v + 1.0) / 2.0             // normalize to 0..1
+            frame = frame + hueToStyle(hue).sprint("█")
+        }
+        frame = frame + "\n"
+    }
+    // \x1b[H moves cursor home so each frame overwrites the last in place
+    print("\x1b[H" + frame)
+    time::sleep(0.05)
+}
+
+
+
+print(style::new().dim().sprint("\nplasma.vida — done.\n"))

@@ -160,3 +160,53 @@ assert(left + right == right + left, "addition through a shared override is natu
 assert(left + right == 130, "confirms the actual computed result, not just that both directions match each other")
 assert((left - right == right - left) == false, "subtraction is NOT commutative even with the exact same override function — the result depends on which object is `self` and which is `other`")
 assert(left - right == 70 and right - left == -70, "confirms the specific values: self.value - other.value from each side's own perspective")
+
+// Set operations on object own properties
+
+let A = { hello = 555 world = false gamma = "script" }
+
+let B = { hello = 900 world = true  poppy = "poppy"}
+
+
+// Set Union with +
+var R = A + B // LEFT-WINS with +
+assert(R.hello == 555, "Set union with + is left win oriented")
+assert(R.world == false, "Set union with + is left win oriented")
+assert(R.gamma == "script", "Set union with + is left win oriented")
+assert(R.poppy == "poppy", "Set union with + is left win oriented")
+assert(R.len() == 4, "Set union with + is left win oriented")
+
+
+// Set Union with |
+R = A | B // RIGHT-WINS with |
+assert(R.hello == 900, "Set union with | is left win oriented")
+assert(R.world == true, "Set union with | is left win oriented")
+assert(R.gamma == "script", "Set union with | is left win oriented")
+assert(R.poppy == "poppy", "Set union with | is left win oriented")
+assert(R.len() == 4, "Set union with | is left win oriented")
+
+
+// Set Intersection is right oriented
+R = A & B // RIGHT-WINS
+assert(R.hello == 900, "set intersection is right oriented")
+assert(R.world == true, "set intersection is right oriented")
+assert(R.len() == 2, "set intersection is right oriented")
+
+
+R = B & A
+assert(R.hello == 555, "set intersection is right oriented")
+assert(R.world == false, "set intersection is right oriented")
+assert(R.len() == 2, "set intersection is right oriented")
+
+
+// Set Difference
+R = A - B
+
+assert(R.len() == 1, "set difference is defined as what lhs has that rhs does not")
+assert(R.gamma == "script", "set difference is defined as what lhs has that rhs does not")
+
+R = B - A
+assert(R.len() == 1, "set difference is defined as what lhs has that rhs does not")
+assert(R.poppy == "poppy", "set difference is defined as what lhs has that rhs does not")
+
+

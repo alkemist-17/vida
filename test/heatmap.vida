@@ -1,0 +1,53 @@
+// heatmap.vida
+// GitHub-contributions-style heatmap: each cell's background color is
+// interpolated between "cold" and "hot" based on its value. Practical
+// pattern for dashboards, monitoring output, calendar views, etc.
+
+let style = load("std.style")
+
+
+
+let cold = style::hex("#0d1117")   // near-black, "no activity"
+let hot  = style::hex("#39d353")   // GitHub's green
+
+// Fake data: 7 rows (days of week) x 26 weeks of "activity counts" 0-10
+let weeks = 26
+let days  = 7
+
+let fakeValue = fun week, day {
+    // deterministic pseudo-random-ish pattern so output is reproducible
+    var v = (week * 7 + day * 13) % 11
+    if (week + day) % 5 == 0 {
+        v = (v + 6) % 11   // occasional "hot streak"
+    }
+    ret v
+}
+
+let labels = ["Mon", "Wed", "Fri"]
+let labelRows = [1, 3, 5]
+
+print(style::new().bold().sprint("Contribution heatmap (fake data)\n"))
+
+for day in days {
+    var rowLabel = style::new().dim().width(3).fill("")
+    for i in labelRows.len() {
+        if labelRows[i] == day {
+            rowLabel = style::new().dim().width(3).fill(labels[i])
+        }
+    }
+    var line = rowLabel + " "
+    for week in weeks {
+        var v = fakeValue(week, day)
+        var t = v / 10.0
+        var c = style::lerp(cold, hot, t)
+        var cell = style::new().bgRGB(c.r, c.g, c.b).width(2)
+        line = line + cell.fill("")
+    }
+    print(line)
+}
+
+print("\n" + style::new().dim().sprint("less ") +
+    style::new().bgRGB(cold.r, cold.g, cold.b).fill("  ") + " " +
+    style::new().bgRGB(hot.r, hot.g, hot.b).fill("  ") +
+    style::new().dim().sprint(" more\n"))
+
