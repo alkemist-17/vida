@@ -265,13 +265,13 @@ assert(composedObj::greet(composedObj) == "hi from a trait", "`::` (via Get) doe
 var left  = { a = 1, b = 2 }
 var right = { b = 20, c = 3 }
 
-// `+` -> union of keys; on conflict, the RIGHT-HAND side wins.
+// `+` -> union of keys; on conflict, the LEFT-HAND side wins.
 var sum = left + right
 assert(sum.get("a") == 1,  "`+` fallback must keep keys unique to the left operand")
-assert(sum.get("b") == 20, "`+` fallback must let the right operand win on key conflicts")
+assert(sum.get("b") == 2,  "`+` fallback must let the left operand win on key conflicts")
 assert(sum.get("c") == 3,  "`+` fallback must keep keys unique to the right operand")
 
-// `|` -> documented as behaving identically to the `+` fallback.
+// `|` -> union of keys; on conflict, the RIGHT-HAND side wins.
 var orResult = left | right
 assert(orResult.get("a") == 1 and orResult.get("b") == 20 and orResult.get("c") == 3, "`|` fallback must match `+` fallback exactly (right-biased union)")
 

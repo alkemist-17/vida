@@ -9,20 +9,20 @@ var red = color::new({bg = bg, fg = fg})
 
 for in 10 {
     print(red.string("Hello, World!"))
-    print(red.format("This is the answer: %v", 42))
+    print(red.fmt("This is the answer: %v", 42))
 }
 
 
 var message = "     Quick Alert!     "
-var fmt = "     Here is the answer of everytyhing: %v     " 
+var fmtstr = "     Here is the answer of everytyhing: %v     " 
 
 print(color::string({fg = 196, bg = 236}, message))
 print(color::string({fg = nil, bg = 236}, message))
 print(color::string({bg = nil, fg = 226}, message))
 
-print(color::format({bg = 196, fg = 236}, fmt, 42))
-print(color::format({bg = 196, fg = 236}, fmt, 42))
-print(color::format({bg = 196, fg = 236}, fmt, 42))
+print(color::fmt({bg = 196, fg = 236}, fmtstr, 42))
+print(color::fmt({bg = 196, fg = 236}, fmtstr, 42))
+print(color::fmt({bg = 196, fg = 236}, fmtstr, 42))
 
 print(color::new().string("color object with no args"))
 

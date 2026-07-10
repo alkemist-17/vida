@@ -120,7 +120,7 @@ func (ctx *Context) loadThreadVT() {
 func (ctx *Context) loadColorVT() {
 	vt := &Object{Value: make(map[string]Value, 6)}
 	vt.Value["string"] = NativeFunction(colorString)
-	vt.Value["format"] = NativeFunction(colorFormat)
+	vt.Value["fmt"] = NativeFunction(colorFormat)
 	vt.Value["bg"] = NativeFunction(colorSetBG)
 	vt.Value["fg"] = NativeFunction(colorSetFG)
 	vt.Value["reset"] = NativeFunction(colorSetReset)

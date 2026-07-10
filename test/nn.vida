@@ -255,7 +255,7 @@ for epoch in epochs {
 	nn.backwards(XDummy, YDummy, lr)
 	if epoch % 200 == 0 {
 		var loss = nn.calculateLoss(YDummy)
-		print("Epoch:  %4v | Loss: %11.4f".format(epoch, loss))
+		print("Epoch:  %4v | Loss: %11.4f".fmt(epoch, loss))
 	}
 }
 
@@ -265,7 +265,7 @@ var finalPredictions = nn.forward(XDummy)
 
 print("\n\nPredictions ... \n\n")
 for i in XDummy.len() {
-	print("Actual: %4.1f | Predicted: %.4f".format(YDummy[i][0], finalPredictions[i][0]))
+	print("Actual: %4.1f | Predicted: %.4f".fmt(YDummy[i][0], finalPredictions[i][0]))
 }
 
 

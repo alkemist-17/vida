@@ -90,10 +90,10 @@ if A.len() == 0 {
 }
 
 for k, v in A {
-	print(format("%3v %5v %10v %6.2f %%", k + 1, v.country, v.population, (v.population * 100.0) / cast.toFloat(total)))
+	print(fmt("%3v %5v %10v %6.2f %%", k + 1, v.country, v.population, (v.population * 100.0) / cast.toFloat(total)))
 }
 
-print(format("%9v %10v", "SUM", total))
+print(fmt("%9v %10v", "SUM", total))
 
 print("\n\n\n")
 
@@ -205,16 +205,16 @@ A =
 
 
 R = task::parallel([
-	[client.get, format("/name/%v", A[0]), config],
-	[client.get, format("/name/%v", A[1]), config],
-	[client.get, format("/name/%v", A[2]), config],
-	[client.get, format("/name/%v", A[3]), config],
-	[client.get, format("/name/%v", A[4]), config],
-	[client.get, format("/name/%v", A[5]), config],
-	[client.get, format("/name/%v", A[6]), config],
-	[client.get, format("/name/%v", A[7]), config],
-	[client.get, format("/name/%v", A[8]), config],
-	[client.get, format("/name/%v", A[9]), config]]
+	[client.get, fmt("/name/%v", A[0]), config],
+	[client.get, fmt("/name/%v", A[1]), config],
+	[client.get, fmt("/name/%v", A[2]), config],
+	[client.get, fmt("/name/%v", A[3]), config],
+	[client.get, fmt("/name/%v", A[4]), config],
+	[client.get, fmt("/name/%v", A[5]), config],
+	[client.get, fmt("/name/%v", A[6]), config],
+	[client.get, fmt("/name/%v", A[7]), config],
+	[client.get, fmt("/name/%v", A[8]), config],
+	[client.get, fmt("/name/%v", A[9]), config]]
 )
 
 

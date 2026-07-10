@@ -12,7 +12,7 @@ const (
 const (
 	major     = 0
 	minor     = 5
-	patch     = 2
+	patch     = 3
 	inception = 25
 )
 

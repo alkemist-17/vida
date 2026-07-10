@@ -461,12 +461,12 @@ for _, t in T {
         assert(A[i].type() == expectedType, "expected random type")
         if t == "bytes".bytes().type() {
             for j in L {
-                assert(A[j] >= 0 and A[j] <= 255, "byte value in range at %v".format(i))
+                assert(A[j] >= 0 and A[j] <= 255, "byte value in range at %v".fmt(i))
             }
         }
         if t == true.type() {
             for k in L {
-                assert(A[k] == true or A[k] == false, "bool value is true/false at %V".format(i))
+                assert(A[k] == true or A[k] == false, "bool value is true/false at %V".fmt(i))
             }
         }
     }

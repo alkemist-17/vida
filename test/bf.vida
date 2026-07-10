@@ -32,7 +32,7 @@ bfvt.run = fun self, config {
 
 		else if cmd == "]" {
 			if stack.isEmpty() {
-				ret error(`Unmatched ']' at position %v`.format(i))
+				ret error(`Unmatched ']' at position %v`.fmt(i))
 			}
 			var openPos = stack.pop()
 			bracketMap[openPos] = i
@@ -41,7 +41,7 @@ bfvt.run = fun self, config {
 	}
 
 	if not stack.isEmpty() {
-		ret error(`Unmatched '[' at position %v`.format(stack[-1]))
+		ret error(`Unmatched '[' at position %v`.fmt(stack[-1]))
 	}
 
 	// Code execution
@@ -133,5 +133,5 @@ var threeChars =
 
 assert(bf.run({ code = hello }) == "Hello World!\n")
 assert(bf.run({ code = cat, data = "Hello Brainfuck!" }) == "Hello Brainfuck!")
-assert("2 + 3 = %v".format(text::codePoints(bf.run({ code = add }))[0]) == "2 + 3 = 5")
+assert("2 + 3 = %v".fmt(text::codePoints(bf.run({ code = add }))[0]) == "2 + 3 = 5")
 assert(bf.run({ code = threeChars, data = "ABC" }) == "ABC")

@@ -35,13 +35,13 @@ var vida = [
 
 var printThePhilosophyOf = fun xs {
     clear()
-    print(format("%v   %v%v", header, text.center(title, width), header))
+    print(fmt("%v   %v%v", header, text.center(title, width), header))
     for i, v in xs {
-        print(text.center(format("   %v %v", bullet, v), width))
+        print(text.center(fmt("   %v %v", bullet, v), width))
     }
     print(footer)
     for i, v in quote {
-        print(text.center(format("   %v", v), quoteWidth))
+        print(text.center(fmt("   %v", v), quoteWidth))
     }
     print(footer)
 }

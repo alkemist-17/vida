@@ -12,7 +12,7 @@ import (
 func loadFoundationColor() Value {
 	m := &Object{Value: make(map[string]Value, 5)}
 	m.Value["string"] = NativeFunction(colorQuickSprint)
-	m.Value["format"] = NativeFunction(colorFormatQuickSprint)
+	m.Value["fmt"] = NativeFunction(colorFormatQuickSprint)
 	m.Value["reset"] = NativeFunction(colorReset)
 	m.Value["new"] = NativeFunction(colorNew)
 	m.Value["printPaletteChart"] = NativeFunction(colorPaletteChart)

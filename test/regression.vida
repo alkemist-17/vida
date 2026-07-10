@@ -3,22 +3,22 @@
 
 var a = "hello"
 var b = nil
-var f = fun -> a + format("%v", b)
+var f = fun -> a + fmt("%v", b)
 
 var result = f()
-assert(result == "hellonil", "format should work as function alone and it should have + as rhs of addition op")
+assert(result == "hellonil", "fmt should work as function alone and it should have + as rhs of addition op")
 
-f = fun -> a + "%v".format(b)
+f = fun -> a + "%v".fmt(b)
 result = f()
-assert(result == "hellonil", "format should work as string method and it should have + as rhs of addition op")
+assert(result == "hellonil", "fmt should work as string method and it should have + as rhs of addition op")
 
-f = fun -> format("%v", b) + a
+f = fun -> fmt("%v", b) + a
 result = f()
-assert(result == "nilhello", "format should work as function alone and it should have + as lhs of addition op")
+assert(result == "nilhello", "fmt should work as function alone and it should have + as lhs of addition op")
 
-f = fun -> "%v".format(b) + a
+f = fun -> "%v".fmt(b) + a
 result = f()
-assert(result == "nilhello", "format should work as string method and it should have + as lhs of addition op")
+assert(result == "nilhello", "fmt should work as string method and it should have + as lhs of addition op")
 
 
 // An arbitrary object can in principle be a vtable of itself
