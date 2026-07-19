@@ -15,6 +15,7 @@ func loadFoundationStyle() Value {
 	m.Value["new"] = NativeFunction(styleNewFn)
 	m.Value["hex"] = NativeFunction(hexToRGBFn)
 	m.Value["rgb"] = NativeFunction(rgbToHexFn)
+	m.Value["name"] = NativeFunction(nameToRGBFn)
 	m.Value["lerp"] = NativeFunction(lerpFn)
 	m.Value["reset"] = NativeFunction(styleResetFn)
 	m.Value["showcase"] = NativeFunction(RunColorShowcase)
@@ -335,6 +336,23 @@ func rgbToHexFn(ctx *Context, args ...Value) (Value, error) {
 		return Nil, verror.ErrInvalidNumberOfArguments
 	}
 	return &String{Value: rgb.Hex()}, nil
+}
+
+// name(str) -> {r, g, b} object, or an error if the name isn't in the
+// namedColors table. Lets scripts resolve a named color to raw RGB
+func nameToRGBFn(ctx *Context, args ...Value) (Value, error) {
+	if len(args) < 1 {
+		return Nil, verror.ErrInvalidNumberOfArguments
+	}
+	str, ok := args[0].(*String)
+	if !ok {
+		return Nil, verror.ErrExpectedString
+	}
+	rgb, ok := namedColors[strings.ToLower(str.Value)]
+	if !ok {
+		return Nil, fmt.Errorf("vida.style: unknown color name %q", str.Value)
+	}
+	return rgbToObject(rgb), nil
 }
 
 // lerp(rgbA, rgbB, t) -> {r, g, b} object interpolated
