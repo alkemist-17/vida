@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -58,6 +59,7 @@ func loadFoundationText() Value {
 	m.Value["compare"] = NativeFunction(textCompare)
 	m.Value["urlEncode"] = NativeFunction(textUrlEncode)
 	m.Value["urlDecode"] = NativeFunction(textUrlDecode)
+	m.Value["toInterpreted"] = NativeFunction(textToInterpreted)
 	return m
 }
 
@@ -106,6 +108,42 @@ func textIsEmpty(ctx *Context, args ...Value) (Value, error) {
 	l, _ := coreLen(ctx, args...)
 	if v, ok := l.(Integer); ok {
 		return Bool(v == 0), nil
+	}
+	return Nil, nil
+}
+
+func textEscapeUnescapedQuotes(s string) string {
+	var sb strings.Builder
+	backslashes := 0
+	for _, r := range s {
+		if r == '"' {
+			if backslashes%2 == 0 {
+				sb.WriteByte('\\')
+			}
+			sb.WriteRune(r)
+			backslashes = 0
+			continue
+		}
+		if r == '\\' {
+			backslashes++
+		} else {
+			backslashes = 0
+		}
+		sb.WriteRune(r)
+	}
+	return sb.String()
+}
+
+func textToInterpreted(ctx *Context, args ...Value) (Value, error) {
+	if len(args) > 0 {
+		if val, ok := args[0].(*String); ok {
+			s := val.Value
+			res, err := strconv.Unquote(`"` + textEscapeUnescapedQuotes(s) + `"`)
+			if err != nil {
+				return &VidaError{Message: &String{Value: err.Error()}}, nil
+			}
+			return &String{Value: res}, nil
+		}
 	}
 	return Nil, nil
 }
