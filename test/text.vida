@@ -1001,3 +1001,17 @@ var run_new_text_url_encode_first_tests = fun {
 
 run_new_text_url_encode_first_tests()
 
+
+// Testing raw to interpreted strings
+R = [
+		`hello\nworld`,
+		`\xe6\x97\xa5\xe6\x9c\xac`,
+		`\u65E5\u672C`,
+		`already "quoted" text`,     // unescaped quotes
+		`already \"quoted\" text`,   // already escaped, don't double-escape
+		`ends in backslash-quote: \\"` // \\ then " -> " should be escaped
+]
+
+for _, s in R {
+	assert(text::toInterpreted(s))
+}
