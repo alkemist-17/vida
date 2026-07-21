@@ -250,7 +250,7 @@ func (o *Object) stringify(visited map[uintptr]bool) string {
 
 	var r []string
 	for k, v := range o.Value {
-		r = append(r, fmt.Sprintf("[%v: %v]", k, stringWithVisited(v, visited)))
+		r = append(r, fmt.Sprintf("%v:  %v", k, stringWithVisited(v, visited)))
 	}
 	return fmt.Sprintf("{%v}", strings.Join(r, ",  "))
 }

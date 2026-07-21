@@ -2,24 +2,26 @@ package vida
 
 // Vtables' names are data type ones.
 const (
-	stringT      = "string"
-	arrayT       = "array"
-	objectT      = "object"
-	bytesT       = "bytes"
-	threadT      = "thread"
-	styleT       = "style"
-	fileHandlerT = "file"
-	httpClientT  = "httpClient"
-	booleanT     = "bool"
-	enumT        = "enum"
-	errorT       = "error"
-	nativeFuncT  = "nativeFunction"
-	functionT    = "function"
-	nilT         = "nil"
-	integerT     = "int"
-	floatT       = "float"
-	timeT        = "time"
-	universalT   = "universal"
+	stringT        = "string"
+	arrayT         = "array"
+	objectT        = "object"
+	bytesT         = "bytes"
+	threadT        = "thread"
+	styleT         = "style"
+	fileHandlerT   = "file"
+	httpClientT    = "httpClient"
+	booleanT       = "bool"
+	enumT          = "enum"
+	errorT         = "error"
+	nativeFuncT    = "nativeFunction"
+	functionT      = "function"
+	nilT           = "nil"
+	integerT       = "int"
+	floatT         = "float"
+	timeT          = "time"
+	stringBuilderT = "stringBuilder"
+	bytesBuilderT  = "bytesBuilder"
+	universalT     = "universal"
 )
 
 func (ctx *Context) loadStringVT() {
@@ -182,6 +184,40 @@ func (ctx *Context) loadUniversalVT() {
 	vt.Value["extendvt"] = NativeFunction(coreExtendVTable)
 	vt.Value["toString"] = NativeFunction(castToString)
 	ctx.vtables[universalT] = vt
+}
+
+func (ctx *Context) loadStringBuilderVT() {
+	vt := &Object{Value: make(map[string]Value, 11)}
+	vt.Value["build"] = NativeFunction(stringBuilderBuildString)
+	vt.Value["len"] = NativeFunction(stringBuilderLen)
+	vt.Value["cap"] = NativeFunction(stringBuilderCap)
+	vt.Value["isEmpty"] = NativeFunction(stringBuilderIsEmpty)
+	vt.Value["grow"] = NativeFunction(stringBuilderGrow)
+	vt.Value["reset"] = NativeFunction(stringBuilderReset)
+	vt.Value["write"] = NativeFunction(stringBuilderWriteString)
+	vt.Value["writeLine"] = NativeFunction(stringBuilderWriteLine)
+	vt.Value["writeBytes"] = NativeFunction(stringBuilderWriteBytes)
+	vt.Value["writeByte"] = NativeFunction(stringBuilderWriteByte)
+	vt.Value["writeCodePoint"] = NativeFunction(stringBuilderWriteCodePoint)
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[stringBuilderT] = vt
+}
+
+func (ctx *Context) loadBytesBuilderVT() {
+	vt := &Object{Value: make(map[string]Value, 11)}
+	vt.Value["build"] = NativeFunction(bytesBuilderBuild)
+	vt.Value["len"] = NativeFunction(bytesBuilderLen)
+	vt.Value["cap"] = NativeFunction(bytesBuilderCap)
+	vt.Value["isEmpty"] = NativeFunction(bytesBuilderIsEmpty)
+	vt.Value["grow"] = NativeFunction(bytesBuilderGrow)
+	vt.Value["reset"] = NativeFunction(bytesBuilderReset)
+	vt.Value["write"] = NativeFunction(bytesBuilderWriteBytes)
+	vt.Value["writeString"] = NativeFunction(bytesBuilderWriteString)
+	vt.Value["writeLine"] = NativeFunction(bytesBuilderWriteLine)
+	vt.Value["writeByte"] = NativeFunction(bytesBuilderWriteByte)
+	vt.Value["writeCodePoint"] = NativeFunction(bytesBuilderWriteCodePoint)
+	vt.VTable = ctx.vtables[universalT].(*Object)
+	ctx.vtables[bytesBuilderT] = vt
 }
 
 func (ctx *Context) loadBooleanVT() {

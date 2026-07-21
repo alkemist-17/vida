@@ -34,6 +34,7 @@ const (
 )
 
 const (
+	foundationBuilders  = "builders"
 	foundationText      = "text"
 	foundationMath      = "math"
 	foundationObj       = "object"
@@ -678,6 +679,8 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationRegexp()
 					case foundationStyle:
 						module = loadFoundationStyle()
+					case foundationBuilders:
+						module = loadFoundationBuilders()
 					default:
 						module = Nil
 						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil
