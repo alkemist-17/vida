@@ -290,7 +290,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 				}
 			}
 		case check:
-			if P == 0 && !vm.Frame.stack[A].Boolean() {
+			if vm.Frame.stack[A].Boolean() == (P == 1) {
 				ip = int(B)
 			}
 		case jump:
@@ -802,7 +802,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 				}
 			}
 		case check:
-			if P == 0 && !vm.Frame.stack[A].Boolean() {
+			if vm.Frame.stack[A].Boolean() == (P == 1) {
 				ip = int(B)
 			}
 		case jump:

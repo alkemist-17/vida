@@ -1,0 +1,173 @@
+// ============================================================
+// Vida Short-Circuit Evaluation Test Suite (and / or)
+//
+// Guards against regressions in:
+//   - Python-style semantics (result is the operand value itself,
+//     never coerced to boolean)
+//   - Actual skipping of rhs evaluation (not just discarding it)
+//   - Compile-time constant folding + dead-code elimination
+//   - Nested logical expressions / register reuse
+//   - Interop with comparisons, arithmetic, calls, errors
+//   - Vida's truthiness rules (only false, nil, error are falsy)
+//   - Every syntactic position an expression can appear in
+//
+// A failing assert throws a runtime exception, so a plain run
+// with no output until the final line means everything passed.
+// ============================================================
+
+// ------------------------------------------------------------
+// 1. Basic semantics
+// ------------------------------------------------------------
+assert((1 and 2) == 2, "and: both truthy -> returns rhs")
+assert((0 and 2) == 2, "and: 0 is truthy in Vida -> returns rhs")
+assert((false and 2) == false, "and: falsy lhs -> returns lhs unchanged")
+assert((nil and 2) == nil, "and: nil lhs -> returns lhs unchanged")
+assert((1 or 2) == 1, "or: truthy lhs -> returns lhs, short-circuits")
+assert((false or 2) == 2, "or: falsy lhs -> returns rhs")
+assert((nil or false) == false, "or: nil lhs falls through -> returns rhs")
+assert((false or nil) == nil, "or: falsy lhs falls through -> returns rhs")
+
+// ------------------------------------------------------------
+// 2. Short-circuit must actually skip rhs evaluation
+// ------------------------------------------------------------
+let sc_calls = 0
+var sc_sideEffect = fun v {
+    sc_calls = sc_calls + 1
+    ret v
+}
+
+sc_calls = 0
+var _ = false and sc_sideEffect(true)
+assert(sc_calls == 0, "and: rhs must not evaluate when lhs is falsy")
+
+sc_calls = 0
+_ = true or sc_sideEffect(true)
+assert(sc_calls == 0, "or: rhs must not evaluate when lhs is truthy")
+
+sc_calls = 0
+_ = true and sc_sideEffect(true)
+assert(sc_calls == 1, "and: rhs must evaluate when lhs is truthy")
+
+sc_calls = 0
+_ = false or sc_sideEffect(true)
+assert(sc_calls == 1, "or: rhs must evaluate when lhs is falsy")
+
+// ------------------------------------------------------------
+// 3. Constant folding: both operands known at compile time
+// ------------------------------------------------------------
+assert((true and true) == true, "const fold: true and true")
+assert((true and false) == false, "const fold: true and false")
+assert((false and true) == false, "const fold: false and true, rhs is dead code")
+assert((false or true) == true, "const fold: false or true")
+assert((nil and true) == nil, "const fold: nil and true")
+assert((42 or 99) == 42, "const fold: truthy lhs short-circuits or")
+
+// ------------------------------------------------------------
+// 4. Mixed constant / non-constant operands
+// ------------------------------------------------------------
+var mx_x = 5
+assert((mx_x and 10) == 10, "mixed: local and const")
+assert((mx_x and false) == false, "mixed: local and const false")
+assert((10 and mx_x) == 5, "mixed: const and local")
+assert((false and mx_x) == false, "mixed: const false and local")
+
+var mx_calls = 0
+var mx_se = fun {
+    mx_calls = mx_calls + 1
+    ret 1
+}
+mx_calls = 0
+_ = false and mx_se()
+assert(mx_calls == 0, "mixed: const false lhs must skip rhs call entirely")
+
+// ------------------------------------------------------------
+// 5. Nested logical expressions
+// ------------------------------------------------------------
+var nst_a = true
+var nst_b = false
+var nst_c = 3
+assert(((nst_a and nst_b) or nst_c) == 3, "nested: (a and b) or c")
+assert((nst_a and (nst_b or nst_c)) == 3, "nested: a and (b or c)")
+assert(((nst_a or nst_b) and nst_c) == 3, "nested: (a or b) and c")
+assert((nst_a and nst_b and nst_c) == false, "nested: left-assoc a and b and c")
+assert((nst_a or nst_b or nst_c) == true, "nested: left-assoc a or b or c")
+
+// ------------------------------------------------------------
+// 6. Mixed with comparisons / arithmetic; errors and crashes
+//    in dead branches must never surface
+// ------------------------------------------------------------
+var crashesIfCalled = fun {
+    assert(false, "this function must never be called")
+    ret true
+}
+
+var cmp_x = 10
+var cmp_y = 20
+assert((cmp_x > 5 and cmp_y < 30) == true, "comparisons combined with and")
+assert((cmp_x > 50 and cmp_y / 0) == false, "and: rhs with div-by-zero must not evaluate")
+assert(((cmp_x + 1 == 11) or crashesIfCalled()) == true, "or: crashing rhs must not evaluate when lhs true")
+
+// ------------------------------------------------------------
+// 7. Truthiness edge cases specific to Vida's rules
+// ------------------------------------------------------------
+assert(("" and 1) == 1, "empty string is truthy")
+assert(([] and 1) == 1, "empty array is truthy")
+assert(({} and 1) == 1, "empty object is truthy")
+
+let err_calls = 0
+var err_trigger = fun {
+    err_calls = err_calls + 1
+    ret true
+}
+err_calls = 0
+_ = error(1) and err_trigger()
+assert(err_calls == 0, "error value is falsy: and must skip rhs")
+
+err_calls = 0
+_ = error(1) or err_trigger()
+assert(err_calls == 1, "error value is falsy: or must evaluate rhs")
+
+// ------------------------------------------------------------
+// 8. Usage across syntactic positions
+// ------------------------------------------------------------
+var pos_x = 1
+var pos_y = 2
+
+var pos_v = pos_x and pos_y
+assert(pos_v == 2, "position: var declaration")
+
+pos_v = pos_x or pos_y
+assert(pos_v == 1, "position: reassignment")
+
+var pos_arr = [pos_x and pos_y, pos_y or pos_x]
+assert(pos_arr[0] == 2, "position: inside array literal, first slot")
+assert(pos_arr[1] == 2, "position: inside array literal, second slot")
+
+var pos_obj = {"k" = pos_x and pos_y}
+assert(pos_obj["k"] == 2, "position: inside object literal value")
+
+var pos_branchTaken = false
+if pos_x and pos_y {
+    pos_branchTaken = true
+}
+assert(pos_branchTaken == true, "position: as if-condition")
+
+var pos_loopCount = 0
+while pos_loopCount < 3 and pos_x > 0 {
+    pos_loopCount = pos_loopCount + 1
+}
+assert(pos_loopCount == 3, "position: as while-condition across multiple iterations")
+
+// ------------------------------------------------------------
+// 9. Register / stack integrity: logical expr nested inside
+//    an outer arithmetic binary expression
+// ------------------------------------------------------------
+var reg_a = 1
+var reg_b = 2
+var reg_c = 3
+var reg_d = 4
+var reg_r = (reg_a and reg_b) + (reg_c or reg_d)
+assert(reg_r == 5, "register integrity: logical expr as operand of arithmetic binop")
+
+// ------------------------------------------------------------
+print("All short-circuit tests passed!")

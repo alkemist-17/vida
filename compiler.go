@@ -619,6 +619,8 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		switch n.Op {
 		case token.EQ, token.NEQ:
 			return c.compileBinaryEq(n, isRoot)
+		case token.AND, token.OR:
+			return c.compileLogical(n, isRoot)
 		default:
 			return c.compileBinaryExpr(n, isRoot)
 		}
@@ -1644,4 +1646,41 @@ func (c *compiler) compileBinaryEq(n *ast.BinaryExpr, isRoot bool) (int, int) {
 		}
 	}
 	return k, rLoc
+}
+
+func (c *compiler) compileLogical(n *ast.BinaryExpr, isRoot bool) (int, int) {
+	lidx, lscope := c.compileExpr(n.Lhs, false)
+
+	// Compile-time short-circuit when Lhs is a known constant.
+	if lscope == rKonst {
+		truthy := (*c.kb.Konstants)[lidx].Boolean()
+		if (n.Op == token.AND && !truthy) || (n.Op == token.OR && truthy) {
+			// Result is Lhs itself; Rhs is dead code, don't compile it.
+			return lidx, rKonst
+		}
+		// Lhs can't decide the result; it reduces to Rhs entirely.
+		return c.compileExpr(n.Rhs, isRoot)
+	}
+
+	lreg := c.rAlloc
+	c.exprToReg(lidx, lscope) // Lhs value now lives in lreg (== c.rAlloc)
+
+	against := 0 // and: jump over Rhs if Lhs is falsy
+	if n.Op == token.OR {
+		against = 1 // or: jump over Rhs if Lhs is truthy
+	}
+
+	addr := len(c.currentFn.Code)
+	c.emitCheck(against, lreg, 0)
+
+	ridx, rscope := c.compileExpr(n.Rhs, false)
+	c.exprToReg(ridx, rscope) // c.rAlloc is still lreg here, so Rhs lands in the same register
+
+	c.currentFn.Code[addr] |= uint64(len(c.currentFn.Code))
+
+	if c.mutLoc && isRoot {
+		c.emitLoad(lreg, c.rDest, loadFromLocal)
+		return c.rDest, rLoc
+	}
+	return lreg, rLoc
 }

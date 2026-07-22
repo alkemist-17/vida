@@ -75,7 +75,7 @@ func (vm *VM) run() error {
 				}
 			}
 		case check:
-			if P == 0 && !vm.Frame.stack[A].Boolean() {
+			if vm.Frame.stack[A].Boolean() == (P == 1) {
 				ip = int(B)
 			}
 		case jump:
