@@ -140,7 +140,7 @@ func ioReadFile(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
 		if path, ok := args[0].(*String); ok {
 			if data, err := os.ReadFile(path.Value); err == nil {
-				return &String{Value: string(data)}, nil
+				return &Bytes{Value: data}, nil
 			} else {
 				return &VidaError{Message: &String{Value: err.Error()}}, nil
 			}
