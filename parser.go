@@ -89,6 +89,9 @@ func (p *parser) mutationOrCall(statements *[]ast.Node) ast.Node {
 		p.next.Token == token.LPAREN {
 		return p.mutateDataStructureOrCallStmt(statements)
 	}
+	if p.next.Token == token.COMMA {
+		return p.multipleMutationStmt()
+	}
 	line := p.current.Line
 	i := p.current.Lit
 	p.advance()
@@ -119,11 +122,25 @@ func (p *parser) localVariableDecl() ast.Node {
 			identifiers = append(identifiers, p.current.Lit)
 			p.advance()
 		}
+		if dup, ok := firstDuplicate(identifiers); ok {
+			return p.declError(l, fmt.Sprintf("identifier '%v' repeated in declaration list", dup))
+		}
 		p.expect(token.ASSIGN)
 		p.advance()
+		exprs := make([]ast.Node, 0, len(identifiers))
 		e := p.expression(token.LowestPrec)
 		p.advance()
-		return &ast.MultipleVar{Identifiers: identifiers, Expr: e, IsRecursive: isRecursive, Line: l}
+		exprs = append(exprs, e)
+		for p.current.Token == token.COMMA {
+			p.advance()
+			e := p.expression(token.LowestPrec)
+			p.advance()
+			exprs = append(exprs, e)
+		}
+		if len(identifiers) != len(exprs) {
+			return p.declError(l, fmt.Sprintf("declaration has %d name(s) but %d expression(s)", len(identifiers), len(exprs)))
+		}
+		return &ast.MultipleVar{Identifiers: identifiers, Exprs: exprs, IsRecursive: isRecursive, Line: l}
 	}
 	p.expect(token.ASSIGN)
 	p.advance()
@@ -147,17 +164,63 @@ func (p *parser) moduleVariableDecl() ast.Node {
 			identifiers = append(identifiers, p.current.Lit)
 			p.advance()
 		}
+		if dup, ok := firstDuplicate(identifiers); ok {
+			return p.declError(l, fmt.Sprintf("identifier '%v' repeated in declaration list", dup))
+		}
 		p.expect(token.ASSIGN)
 		p.advance()
+		exprs := make([]ast.Node, 0, len(identifiers))
 		e := p.expression(token.LowestPrec)
 		p.advance()
-		return &ast.MultipleLet{Identifiers: identifiers, Expr: e, Line: l}
+		exprs = append(exprs, e)
+		for p.current.Token == token.COMMA {
+			p.advance()
+			e := p.expression(token.LowestPrec)
+			p.advance()
+			exprs = append(exprs, e)
+		}
+		if len(identifiers) != len(exprs) {
+			return p.declError(l, fmt.Sprintf("declaration has %d name(s) but %d expression(s)", len(identifiers), len(exprs)))
+		}
+		return &ast.MultipleLet{Identifiers: identifiers, Exprs: exprs, Line: l}
 	}
 	p.expect(token.ASSIGN)
 	p.advance()
 	e := p.expression(token.LowestPrec)
 	p.advance()
 	return &ast.Let{Identifier: i, Expr: e, Line: l}
+}
+
+func (p *parser) multipleMutationStmt() ast.Node {
+	l := p.current.Line
+	identifiers := make([]string, 0, 5)
+	identifiers = append(identifiers, p.current.Lit)
+	p.advance()
+	for p.current.Token == token.COMMA {
+		p.advance()
+		p.expect(token.IDENTIFIER)
+		identifiers = append(identifiers, p.current.Lit)
+		p.advance()
+	}
+	if dup, ok := firstDuplicate(identifiers); ok {
+		return p.declError(l, fmt.Sprintf("identifier '%v' repeated as an assignment target", dup))
+	}
+	p.expect(token.ASSIGN)
+	p.advance()
+	exprs := make([]ast.Node, 0, len(identifiers))
+	e := p.expression(token.LowestPrec)
+	p.advance()
+	exprs = append(exprs, e)
+	for p.current.Token == token.COMMA {
+		p.advance()
+		e := p.expression(token.LowestPrec)
+		p.advance()
+		exprs = append(exprs, e)
+	}
+	if len(identifiers) != len(exprs) {
+		return p.declError(l, fmt.Sprintf("assignment has %d target(s) but %d expression(s)", len(identifiers), len(exprs)))
+	}
+	return &ast.MultipleMut{Identifiers: identifiers, Exprs: exprs, Line: l}
 }
 
 func (p *parser) block(isInsideLoop bool) ast.Node {
@@ -871,4 +934,23 @@ func (p *parser) advance() token.Token {
 		p.next.Line, p.next.Token, p.next.Lit = p.lexer.Next()
 	}
 	return p.current.Token
+}
+
+func (p *parser) declError(line uint, msg string) ast.Node {
+	if p.ok {
+		p.ok = false
+		p.err = NewRuntimeError(p.lexer.ScriptID, msg, SyntaxErrType, line)
+	}
+	return &ast.Nil{}
+}
+
+func firstDuplicate(ids []string) (string, bool) {
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			return id, true
+		}
+		seen[id] = struct{}{}
+	}
+	return "", false
 }

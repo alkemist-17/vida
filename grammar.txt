@@ -2,7 +2,6 @@ script		:=	statement*
 statement	:= 	global
 			| 	local
 			|	mut
-			|	dsmut
 			|	call
 			|	block
 			|	for
@@ -10,11 +9,10 @@ statement	:= 	global
 			|	if
 			|	while
 			|	export
-global		:=	'let' ident (',' ident)* '=' expr
-local		:=	'var' 'rec'? ident (',' ident)* '=' expr
-mut			:=	iden '=' expr
-dsmut		:=	ident select select* '=' expr
-call		:=	iden select* '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')'
+global		:=	'let' ident (',' ident)* '=' expr (',' expr)*
+local		:=	'var' 'rec'? ident (',' ident)* '=' expr (',' expr)*
+mut			:=	ident select select* (',' ident select select*)* '=' expr (',' expr)*
+call		:=	ident select* '(' ...expr | expr (',' expr)* (',' ...expr)? | λ ')'
 block		:=	'{' statement* '}'
 loopBlock	:=	'{' statement* break* continue* '}'
 for			:=	'for' ident 'in' expr (',' expr (',' expr)?)? loopBlock

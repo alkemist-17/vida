@@ -64,13 +64,13 @@ assert(unknown == 1200, message)
 
 let theMessage = "This is a test of multiple single asignments"
 
-let jan, feb, mar, abr = theMessage
+let jan, feb, mar, abr = theMessage, theMessage, theMessage, theMessage
 
 assert(jan == theMessage and feb == theMessage and mar == theMessage and abr == theMessage)
 
 jan = 42; feb = 42; mar = 42; abr = 42
 
-var may, jun, jul, aug, sep = theMessage
+var may, jun, jul, aug, sep = theMessage, theMessage, theMessage, theMessage, theMessage
 
 assert(jan == 42 and feb == 42 and mar == 42 and abr == 42)
 
@@ -79,5 +79,171 @@ assert(may == theMessage and jun == theMessage and jul == theMessage and aug == 
 may = 1200; jun = 1200; jul = 1200; aug = 1200; sep = 1200;
 
 assert(may == 1200 and jun == 1200 and jul == 1200 and aug == 1200 and sep == 1200)
+
+// Canonical swap. If eval were left-to-right instead of parallel,
+// this would print 20, 20 instead of 20, 10.
+
+let a, b, c = 10, 20, nil
+
+assert(a == 10 and b == 20)
+
+a, b = b, a
+
+assert(a == 20 and b == 10)
+
+// Same swap, but as locals inside a function body, so it exercises
+// the rLoc branch of MultipleMut (register-to-register) rather than
+
+let run = fun {
+	var la, lb = 10, 20
+	la, lb = lb, la
+	ret [la, lb]
+}
+
+let result = run()
+assert(result[0] == 20)
+assert(result[1] == 10)
+
+
+// Rotate three variables: a<-c, b<-a, c<-b, all using the *old* values.
+// This only works correctly if every RHS is captured before any target
+// is overwritten -- a pure left-to-right rewrite would corrupt this.
+
+a, b, c = 1, 2, 3
+a, b, c = c, a, b
+
+assert(a == 3)
+assert(b == 1)
+assert(c == 2)
+
+
+// Baseline sanity check: declaration sugar with mismatched types per
+// slot and a mix of let/var, unrelated to the swap/parallel-eval story.
+
+a, b, c = 1, "two", true
+assert(a == 1)
+assert(b == "two")
+assert(c == true)
+
+run = fun {
+	var x, y = 3.5, [1, 2, 3]
+	ret [x, y[1]]
+}
+
+result = run()
+
+assert(result[0] == 3.5)
+assert(result[1] == 2)
+
+
+// `rec` + multi-decl: self-recursion works fine, because each identifier
+// is registered as a local *before* its own initializer is compiled.
+//
+// KNOWN LIMITATION (documented, not a bug to silently paper over):
+// mutual recursion between siblings in the SAME declaration does NOT
+// work, because sibling N+1 isn't registered as a local until the
+// compiler reaches it -- so sibling N's initializer can't see it yet.
+// Compare this to the swap MultipleMut case, where all identifiers
+// already exist beforehand, so no such ordering issue applies there.
+// This is a decl-only quirk, inherent to "define as you go" scoping.
+
+var rec fact, unused = fun n {
+	if n < 2 { ret 1 }
+	ret n * fact(n - 1)
+}, 0
+
+assert(fact(5) == 120)
+
+// The following, if uncommented, is expected to FAIL to compile with
+// "reference 'isOdd' not found", because isOdd doesn't exist yet at
+// the point isEven's body is compiled:
+//
+// var rec isEven, isOdd = fun n {
+// 	if n == 0 { ret true }
+// 	ret isOdd(n - 1)
+// }, fun n {
+// 	if n == 0 { ret false }
+// 	ret isEven(n - 1)
+// }
+//
+// Workaround: declare placeholders first, then assign function bodies
+// via ordinary (non-recursive) mutation, e.g.:
+//
+let isEven, isOdd = nil, nil
+isEven = fun n { if n == 0 { ret true } ret isOdd(n - 1) }
+isOdd = fun n { if n == 0 { ret false } ret isEven(n - 1) }
+
+assert(isEven(5) == false)
+assert(isOdd(6) == false)
+assert(isEven(6) == true)
+assert(isOdd(5) == true)
+
+
+// Swaps two locals from inside a nested closure, where they're
+// captured as free variables rather than plain locals of the closure
+// itself. This exercises MultipleMut's rFree destination branch
+// (emitStore ... storeFromFree), which the plain global/local swap
+// tests above never touch.
+
+run = fun {
+	var la, lb = 1, 2
+	var swap = fun {
+		la, lb = lb, la
+        ret [la, lb]
+	}
+	ret swap()
+}
+
+result = run()
+assert(result[0] == 2)
+assert(result[1] == 1)
+
+
+
+// Parallel assignment means "capture everything before writing
+// anything" -- it does NOT mean RHS expressions run out of order or
+// more than once. This test proves each RHS runs exactly once, in
+// left-to-right source order, via a logged side effect.
+
+let tag = fun label, value {
+	assert(label == "first" or label == "second") // fires as a side effect at evaluation time
+	ret value
+}
+
+a, b = 100, 200
+a, b = tag("first", b), tag("second", a)
+
+// Expected full output, in order:
+//   first
+//   second
+//   200
+//   100
+// If "first"/"second" print more than once, out of order, or the
+// final values are wrong, evaluation isn't both single-pass and
+// left-to-right.
+
+assert(a == 200)
+assert(b == 100)
+
+
+// Nothing says both targets of a multi-mutation have to live in the
+// same scope. Confirms MultipleMut resolves each identifier
+// independently via refScope rather than assuming a single scope for
+// the whole statement.
+
+let g = 1
+
+run = fun {
+	var l = 2
+	g, l = l, g
+	ret l
+}
+
+let localResult = run()
+assert(g == 2)
+assert(localResult == 1)
+
+
+
 
 

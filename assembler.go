@@ -318,7 +318,7 @@ func (c *compiler) generateReferenceError(ref string, line uint) {
 func (c *compiler) generateGlobalAlreadyDefinedError(ref string, line uint) {
 	c.hadError = true
 	c.lineErr = line
-	c.errMsg = fmt.Sprintf("global reference '%v' already defined", ref)
+	c.errMsg = fmt.Sprintf("module level reference '%v' already defined", ref)
 }
 
 func (c *compiler) generateLocalAlreadyDefinedError(ref string, line uint) {
@@ -330,5 +330,5 @@ func (c *compiler) generateLocalAlreadyDefinedError(ref string, line uint) {
 func (c *compiler) generateGlobalShadowedByLocalError(ref string, line uint) {
 	c.hadError = true
 	c.lineErr = line
-	c.errMsg = fmt.Sprintf("global reference '%v' is shadowed by local of the same name", ref)
+	c.errMsg = fmt.Sprintf("module level reference '%v' is shadowed by a local with the same name", ref)
 }

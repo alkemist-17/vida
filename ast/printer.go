@@ -46,7 +46,7 @@ const (
 
 func nodeColor(node Node) string {
 	switch node.(type) {
-	case *Var, *Let, *Mut, *MultipleLet:
+	case *Var, *Let, *Mut, *MultipleLet, *MultipleVar, *MultipleMut:
 		return colorDecl
 	case *Reference, *ReferenceStmt, *Identifier:
 		return colorRef
@@ -110,15 +110,19 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 
 	case *MultipleLet:
 		writeLine(sb, own, "Let "+multipleIdentifiers(n.Identifiers), col, color)
-		writeChild(sb, cont, n.Expr, color)
+		writeChildren(sb, cont, n.Exprs, color)
 
 	case *MultipleVar:
 		writeLine(sb, own, "Var "+multipleIdentifiers(n.Identifiers), col, color)
-		writeChild(sb, cont, n.Expr, color)
+		writeChildren(sb, cont, n.Exprs, color)
 
 	case *Mut:
 		writeLine(sb, own, "Mut "+n.Identifier, col, color)
 		writeChild(sb, cont, n.Expr, color)
+
+	case *MultipleMut:
+		writeLine(sb, own, "Mut "+multipleIdentifiers(n.Identifiers), col, color)
+		writeChildren(sb, cont, n.Exprs, color)
 
 	case *Reference:
 		writeLine(sb, own, "Ref "+n.Value, col, color)
@@ -331,8 +335,20 @@ func countNodes(node Node) int {
 		count += countNodes(n.Expr)
 	case *Let:
 		count += countNodes(n.Expr)
+	case *MultipleLet:
+		for _, e := range n.Exprs {
+			count += countNodes(e)
+		}
+	case *MultipleVar:
+		for _, e := range n.Exprs {
+			count += countNodes(e)
+		}
 	case *Mut:
 		count += countNodes(n.Expr)
+	case *MultipleMut:
+		for _, e := range n.Exprs {
+			count += countNodes(e)
+		}
 	case *PrefixExpr:
 		count += countNodes(n.Expr)
 	case *BinaryExpr:

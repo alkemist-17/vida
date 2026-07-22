@@ -180,7 +180,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 	case *ast.MultipleLet:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
-		for _, id := range n.Identifiers {
+		for i, id := range n.Identifiers {
 			to, isPresent := c.sb.addGlobal(id)
 			if isPresent {
 				c.generateGlobalAlreadyDefinedError(id, n.Line)
@@ -191,7 +191,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 				return
 			}
 			*c.script.GlobalStore = append(*c.script.GlobalStore, Nil)
-			from, scope := c.compileExpr(n.Expr, true)
+			from, scope := c.compileExpr(n.Exprs[i], true)
 			switch scope {
 			case rKonst:
 				c.emitStore(from, to, storeFromKonst, storeFromGlobal)
@@ -240,7 +240,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.rAlloc++
 	case *ast.MultipleVar:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
-		for _, id := range n.Identifiers {
+		for i, id := range n.Identifiers {
 			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
 				c.generateGlobalShadowedByLocalError(id, n.Line)
 				return
@@ -254,9 +254,9 @@ func (c *compiler) compileStmt(node ast.Node) {
 			if n.IsRecursive {
 				c.sb.addLocal(id, c.level, c.scope, to)
 				c.emitLoad(c.kb.NilIndex(), to, loadFromKonst)
-				from, scope = c.compileExpr(n.Expr, true)
+				from, scope = c.compileExpr(n.Exprs[i], true)
 			} else {
-				from, scope = c.compileExpr(n.Expr, true)
+				from, scope = c.compileExpr(n.Exprs[i], true)
 				c.sb.addLocal(id, c.level, c.scope, to)
 			}
 			switch scope {
@@ -272,6 +272,31 @@ func (c *compiler) compileStmt(node ast.Node) {
 				}
 			}
 			c.rAlloc++
+		}
+	case *ast.MultipleMut:
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		base := c.rAlloc
+		for _, expr := range n.Exprs {
+			idx, scope := c.compileExpr(expr, false)
+			c.exprToReg(idx, scope)
+			c.rAlloc++
+		}
+		c.rAlloc = base
+		for i, id := range n.Identifiers {
+			to, sIdent := c.refScope(id)
+			from := base + i
+			switch sIdent {
+			case rLoc:
+				if from != to {
+					c.emitLoad(from, to, loadFromLocal)
+				}
+			case rGlob:
+				c.emitStore(from, to, storeFromLocal, storeFromGlobal)
+			case rFree:
+				c.emitStore(from, to, storeFromLocal, storeFromFree)
+			case rNotDefined:
+				c.generateReferenceError(id, n.Line)
+			}
 		}
 	case *ast.Branch:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
