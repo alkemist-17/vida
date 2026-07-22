@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"sync"
 	"unicode/utf8"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 // Strings for use with fmtbuf.WriteString. This is less overhead than using
@@ -88,8 +86,8 @@ func (f *formatter) writePadding(n int) {
 	oldLen := len(buf)
 	newLen := oldLen + n
 
-	if newLen > verror.MaxMemSize {
-		panic(verror.ErrStringLimit)
+	if newLen > MaxMemSize {
+		panic(ErrStringLimit)
 	}
 
 	// Make enough room for padding.
@@ -623,8 +621,8 @@ func (f *formatter) fmtFloat(v float64, size int, verb rune, prec int) {
 type fmtbuf []byte
 
 func (b *fmtbuf) Write(p []byte) {
-	if len(*b)+len(p) > verror.MaxMemSize {
-		panic(verror.ErrStringLimit)
+	if len(*b)+len(p) > MaxMemSize {
+		panic(ErrStringLimit)
 	}
 
 	*b = append(*b, p...)
@@ -635,24 +633,24 @@ func (b *fmtbuf) writeByte(c byte) {
 }
 
 func (b *fmtbuf) WriteString(s string) {
-	if len(*b)+len(s) > verror.MaxMemSize {
-		panic(verror.ErrStringLimit)
+	if len(*b)+len(s) > MaxMemSize {
+		panic(ErrStringLimit)
 	}
 
 	*b = append(*b, s...)
 }
 
 func (b *fmtbuf) WriteSingleByte(c byte) {
-	if len(*b) >= verror.MaxMemSize {
-		panic(verror.ErrStringLimit)
+	if len(*b) >= MaxMemSize {
+		panic(ErrStringLimit)
 	}
 
 	*b = append(*b, c)
 }
 
 func (b *fmtbuf) WriteRune(r rune) {
-	if len(*b)+utf8.RuneLen(r) > verror.MaxMemSize {
-		panic(verror.ErrStringLimit)
+	if len(*b)+utf8.RuneLen(r) > MaxMemSize {
+		panic(ErrStringLimit)
 	}
 
 	if r < utf8.RuneSelf {
@@ -1053,7 +1051,7 @@ func (p *pp) missingArg(verb rune) {
 func (p *pp) doFormat(format string, a []Value) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if e, ok := r.(error); ok && e == verror.ErrStringLimit {
+			if e, ok := r.(error); ok && e == ErrStringLimit {
 				err = e
 				return
 			}

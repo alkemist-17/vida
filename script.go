@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Script struct {
@@ -41,8 +39,8 @@ func LoadScriptFromFile(path string) ([]byte, error) {
 		if data, err := os.ReadFile(path); err == nil {
 			return data, nil
 		} else {
-			return nil, verror.New(path, err.Error(), verror.FileErrType, 0)
+			return nil, NewRuntimeError(path, err.Error(), FileErrType, 0)
 		}
 	}
-	return nil, verror.New(path, "It is not a vida script", verror.FileErrType, 0)
+	return nil, NewRuntimeError(path, "It is not a vida script", FileErrType, 0)
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 const (
@@ -151,7 +150,7 @@ func (file *FileHandler) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return !file.Boolean(), nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -164,7 +163,7 @@ func (file *FileHandler) Binop(ctx *Context, op uint64, rhs Value) (Value, error
 	case uint64(token.IN):
 		return IsMemberOf(ctx, file, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 

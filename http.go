@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -472,7 +471,7 @@ func (client *vidaHttpClient) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 

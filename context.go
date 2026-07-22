@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/alkemist-17/vida/ast"
-	"github.com/alkemist-17/vida/lexer"
 	"github.com/alkemist-17/vida/token"
 )
 
@@ -73,7 +72,7 @@ func (ctx *Context) CompileAndRun() (err error) {
 }
 
 func (ctx *Context) PrintTokens() error {
-	l := lexer.New(ctx.src, ctx.contextID)
+	l := NewLexer(ctx.src, ctx.contextID)
 	hadError := false
 	fmt.Printf("%5v   %-15v   %-2v\n\n", "Line", "Token", "Value")
 	for {

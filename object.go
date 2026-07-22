@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Object struct {
@@ -47,7 +46,7 @@ func (o *Object) Prefix(ctx *Context, op uint64) (Value, error) {
 			return method.Call(ctx, o)
 		}
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 // dispatchOperatorOverride looks up a user-defined override for a binary
@@ -78,7 +77,7 @@ func (o *Object) dispatchOperatorOverride(ctx *Context, op uint64, rhs Value) (V
 	case NilValue:
 		return Nil, nil, false
 	default:
-		return Nil, verror.ErrOperatorOverrideNotCallable(messageKey.Value), true
+		return Nil, ErrOperatorOverrideNotCallable(messageKey.Value), true
 	}
 }
 
@@ -168,7 +167,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, o, rhs)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 // maxVTableChainDepth bounds vtable-chain traversal in Get. A legitimate
@@ -224,7 +223,7 @@ func (o *Object) IsCallable() Bool {
 }
 
 func (o *Object) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (o *Object) Iterator() Value {

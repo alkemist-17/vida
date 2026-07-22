@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type ThreadState int
@@ -86,7 +85,7 @@ func (th *Thread) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -99,7 +98,7 @@ func (th *Thread) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return False, nil
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (th *Thread) Equals(ctx *Context, other Value) Bool {
@@ -502,21 +501,21 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			vm.Frame.stack[B] = &Object{Value: make(map[string]Value)}
 		case forSet:
 			if _, isInteger := vm.Frame.stack[B].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
+				return vm.createError(ip, ErrExpectedInteger)
 			}
 			if _, isInteger := vm.Frame.stack[B+1].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
+				return vm.createError(ip, ErrExpectedInteger)
 			}
 			if v, isInteger := vm.Frame.stack[B+2].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
+				return vm.createError(ip, ErrExpectedInteger)
 			} else if v == 0 {
-				return vm.createError(ip, verror.ErrExpectedIntegerDifferentFromZero)
+				return vm.createError(ip, ErrExpectedIntegerDifferentFromZero)
 			}
 			ip = int(A)
 		case iForSet:
 			iterable := vm.Frame.stack[A]
 			if !iterable.IsIterable() {
-				return vm.createError(ip, verror.ErrValueNotIterable)
+				return vm.createError(ip, ErrValueNotIterable)
 			}
 			vm.Frame.stack[B] = iterable.Iterator()
 			ip = int(P)
@@ -568,11 +567,11 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				return vm.createError(ip, verror.ErrValueNotCallable)
+				return vm.createError(ip, ErrValueNotCallable)
 			}
 			if fn, ok := val.(*Function); ok {
 				if vm.fp >= len(vm.Frames) {
-					return vm.createError(ip, verror.ErrStackOverflow)
+					return vm.createError(ip, ErrStackOverflow)
 				}
 				if P != 0 {
 					switch P {
@@ -583,7 +582,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 								vm.Frame.stack[int(B)+int(F)+i] = v
 							}
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					case spreadLast:
 						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok && len(xs.Value) < len(vm.Frame.stack) {
@@ -592,13 +591,13 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 								vm.Frame.stack[int(B)+int(A)+i] = v
 							}
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					}
 				}
 				if fn.CoreFn.IsVarArg {
 					if fn.CoreFn.Arity > nargs {
-						return vm.createError(ip, verror.ErrNotEnoughArgs)
+						return vm.createError(ip, ErrNotEnoughArgs)
 					}
 					init := int(B) + 1 + fn.CoreFn.Arity
 					count := nargs - fn.CoreFn.Arity
@@ -608,7 +607,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 					}
 					vm.Frame.stack[init] = &Array{Value: xs}
 				} else if nargs != fn.CoreFn.Arity {
-					return vm.createError(ip, verror.ErrArity)
+					return vm.createError(ip, ErrArity)
 				}
 				if fn == vm.Frame.lambda && vm.Frame.code[ip]>>shift56 == ret {
 					for i := 0; i < nargs; i++ {
@@ -639,7 +638,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 							}
 							varargs = vm.Frame.stack[B+1 : int(B)+int(A)+len(arr.Value)]
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					case spreadLast:
 						if arr, ok := varargs[len(varargs)-1].(*Array); ok {
@@ -651,14 +650,14 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 							}
 							varargs = vm.Frame.stack[B+1 : B+A+uint64(len(arr.Value))]
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					}
 				}
 				v, err := val.Call(vm.ctx, varargs...)
 				if err != nil {
 					switch err {
-					case verror.ErrResumeThreadSignal:
+					case ErrResumeThreadSignal:
 						threadError := vm.runThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
@@ -672,7 +671,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
-					case verror.ErrStartThreadSignal:
+					case ErrStartThreadSignal:
 						threadError := vm.runThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
@@ -686,7 +685,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
-					case verror.ErrSuspendThreadSignal:
+					case ErrSuspendThreadSignal:
 						vm.Frame.ip = ip
 						vm.Reg = B
 						return nil
@@ -722,7 +721,7 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			return nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
+			return NewRuntimeError(vm.Frame.lambda.CoreFn.ScriptID, message, RunTimeErrType, 0)
 		}
 	}
 }
@@ -1014,21 +1013,21 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			vm.Frame.stack[B] = &Object{Value: make(map[string]Value)}
 		case forSet:
 			if _, isInteger := vm.Frame.stack[B].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
+				return vm.createError(ip, ErrExpectedInteger)
 			}
 			if _, isInteger := vm.Frame.stack[B+1].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
+				return vm.createError(ip, ErrExpectedInteger)
 			}
 			if v, isInteger := vm.Frame.stack[B+2].(Integer); !isInteger {
-				return vm.createError(ip, verror.ErrExpectedInteger)
+				return vm.createError(ip, ErrExpectedInteger)
 			} else if v == 0 {
-				return vm.createError(ip, verror.ErrExpectedIntegerDifferentFromZero)
+				return vm.createError(ip, ErrExpectedIntegerDifferentFromZero)
 			}
 			ip = int(A)
 		case iForSet:
 			iterable := vm.Frame.stack[A]
 			if !iterable.IsIterable() {
-				return vm.createError(ip, verror.ErrValueNotIterable)
+				return vm.createError(ip, ErrValueNotIterable)
 			}
 			vm.Frame.stack[B] = iterable.Iterator()
 			ip = int(P)
@@ -1080,11 +1079,11 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				return vm.createError(ip, verror.ErrValueNotCallable)
+				return vm.createError(ip, ErrValueNotCallable)
 			}
 			if fn, ok := val.(*Function); ok {
 				if vm.fp >= len(vm.Frames) {
-					return vm.createError(ip, verror.ErrStackOverflow)
+					return vm.createError(ip, ErrStackOverflow)
 				}
 				if P != 0 {
 					switch P {
@@ -1095,7 +1094,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 								vm.Frame.stack[int(B)+int(F)+i] = v
 							}
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					case spreadLast:
 						if xs, ok := vm.Frame.stack[int(B)+nargs].(*Array); ok && len(xs.Value) < len(vm.Frame.stack) {
@@ -1104,13 +1103,13 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 								vm.Frame.stack[int(B)+int(A)+i] = v
 							}
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					}
 				}
 				if fn.CoreFn.IsVarArg {
 					if fn.CoreFn.Arity > nargs {
-						return vm.createError(ip, verror.ErrNotEnoughArgs)
+						return vm.createError(ip, ErrNotEnoughArgs)
 					}
 					init := int(B) + 1 + fn.CoreFn.Arity
 					count := nargs - fn.CoreFn.Arity
@@ -1120,7 +1119,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 					}
 					vm.Frame.stack[init] = &Array{Value: xs}
 				} else if nargs != fn.CoreFn.Arity {
-					return vm.createError(ip, verror.ErrArity)
+					return vm.createError(ip, ErrArity)
 				}
 				if fn == vm.Frame.lambda && vm.Frame.code[ip]>>shift56 == ret {
 					for i := 0; i < nargs; i++ {
@@ -1151,7 +1150,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 							}
 							varargs = vm.Frame.stack[B+1 : int(B)+int(A)+len(arr.Value)]
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					case spreadLast:
 						if arr, ok := varargs[len(varargs)-1].(*Array); ok {
@@ -1163,14 +1162,14 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 							}
 							varargs = vm.Frame.stack[B+1 : B+A+uint64(len(arr.Value))]
 						} else {
-							return vm.createError(ip, verror.ErrVariadicArgs)
+							return vm.createError(ip, ErrVariadicArgs)
 						}
 					}
 				}
 				v, err := val.Call(vm.ctx, varargs...)
 				if err != nil {
 					switch err {
-					case verror.ErrResumeThreadSignal:
+					case ErrResumeThreadSignal:
 						threadError := vm.debugThread(vm.fp, vm.Frame.ip, false, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
@@ -1184,7 +1183,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
-					case verror.ErrStartThreadSignal:
+					case ErrStartThreadSignal:
 						threadError := vm.debugThread(vm.fp, 0, true, varargs[1:]...)
 						if threadError != nil {
 							return vm.createError(ip, threadError)
@@ -1198,7 +1197,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 							vm.ctx.currentThread = invoker
 							vm.Thread = invoker
 						}
-					case verror.ErrSuspendThreadSignal:
+					case ErrSuspendThreadSignal:
 						vm.Frame.ip = ip
 						vm.Reg = B
 						return nil
@@ -1234,7 +1233,7 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			return nil
 		default:
 			message := fmt.Sprintf("unknown opcode %v", op)
-			return verror.New(vm.Frame.lambda.CoreFn.ScriptID, message, verror.RunTimeErrType, 0)
+			return NewRuntimeError(vm.Frame.lambda.CoreFn.ScriptID, message, RunTimeErrType, 0)
 		}
 	}
 }

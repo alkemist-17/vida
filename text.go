@@ -10,8 +10,6 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationText() Value {
@@ -292,7 +290,7 @@ func textRepeat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if v, ok := args[0].(*String); ok {
 			if times, ok := args[1].(Integer); ok && times >= 0 {
-				if StringLength(v)*times > verror.MaxMemSize {
+				if StringLength(v)*times > MaxMemSize {
 					return Nil, nil
 				}
 				return &String{Value: strings.Repeat(v.Value, int(times))}, nil

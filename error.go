@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type VidaError struct {
@@ -21,7 +20,7 @@ func (e *VidaError) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return True, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -34,7 +33,7 @@ func (e *VidaError) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, e, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 
@@ -46,7 +45,7 @@ func (e *VidaError) Get(ctx *Context, index Value) Value {
 }
 
 func (e *VidaError) Set(index, val Value) error {
-	return verror.ErrValueIsConstant
+	return ErrValueIsConstant
 }
 
 func (e *VidaError) Equals(ctx *Context, other Value) Bool {

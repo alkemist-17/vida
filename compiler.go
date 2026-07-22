@@ -5,7 +5,6 @@ import (
 
 	"github.com/alkemist-17/vida/ast"
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type compiler struct {
@@ -82,7 +81,7 @@ func (c *compiler) compileScript() (*Script, error) {
 	for i = range len(c.ast.Statement) {
 		c.compileStmt(c.ast.Statement[i])
 		if c.hadError {
-			return nil, verror.New(c.script.MainFunction.CoreFn.ScriptID, c.errMsg, verror.BuildErrType, c.lineErr)
+			return nil, NewRuntimeError(c.script.MainFunction.CoreFn.ScriptID, c.errMsg, BuildErrType, c.lineErr)
 		}
 	}
 	c.script.Konstants = c.kb.Konstants
@@ -94,7 +93,7 @@ func (c *compiler) compileSubScript() (*Script, error) {
 	for i := range len(c.ast.Statement) {
 		c.compileStmt(c.ast.Statement[i])
 		if c.hadError {
-			return nil, verror.New(c.script.MainFunction.CoreFn.ScriptID, c.errMsg, verror.BuildErrType, c.lineErr)
+			return nil, NewRuntimeError(c.script.MainFunction.CoreFn.ScriptID, c.errMsg, BuildErrType, c.lineErr)
 		}
 	}
 	return c.script, nil

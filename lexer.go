@@ -1,4 +1,4 @@
-package lexer
+package vida
 
 import (
 	"fmt"
@@ -6,13 +6,12 @@ import (
 	"unicode/utf8"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Lexer struct {
 	src          []byte
 	ScriptID     string
-	LexicalError *verror.VidaError
+	LexicalError *VidaRunTimeError
 	pointer      int
 	leadPointer  int
 	srcLen       int
@@ -25,7 +24,7 @@ const eof = -1
 const unexpectedChar = -2
 const emptyString = ""
 
-func New(src []byte, scriptID string) *Lexer {
+func NewLexer(src []byte, scriptID string) *Lexer {
 	src = append(src, 10)
 	lexer := &Lexer{
 		src:         src,
@@ -55,10 +54,10 @@ func (l *Lexer) next() {
 			r, w = utf8.DecodeRune(l.src[l.leadPointer:])
 			if r == utf8.RuneError && w == 1 {
 				r = unexpectedChar
-				l.LexicalError = verror.New(l.ScriptID, "the script is not utf-8 encoded", verror.FileErrType, line)
+				l.LexicalError = NewRuntimeError(l.ScriptID, "the script is not utf-8 encoded", FileErrType, line)
 			} else if r == bom && l.pointer > 0 {
 				r = unexpectedChar
-				l.LexicalError = verror.New(l.ScriptID, "a bom was found in an unexpected place", verror.FileErrType, line)
+				l.LexicalError = NewRuntimeError(l.ScriptID, "a bom was found in an unexpected place", FileErrType, line)
 			}
 		}
 		l.c = r
@@ -133,7 +132,7 @@ func (l *Lexer) scanComment() token.Token {
 			return token.COMMENT
 		}
 	}
-	l.LexicalError = verror.New(l.ScriptID, "there is an unterminated comment of type /**/", verror.LexicalErrType, line)
+	l.LexicalError = NewRuntimeError(l.ScriptID, "there is an unterminated comment of type /**/", LexicalErrType, line)
 	return token.UNEXPECTED
 }
 
@@ -144,7 +143,7 @@ func (l *Lexer) scanString() (token.Token, string) {
 		ch := l.c
 		if ch == '\n' || ch < 0 {
 			l.c = unexpectedChar
-			l.LexicalError = verror.New(l.ScriptID, "there is an unterminated string literal", verror.LexicalErrType, line)
+			l.LexicalError = NewRuntimeError(l.ScriptID, "there is an unterminated string literal", LexicalErrType, line)
 			return token.STRING, emptyString
 		}
 		l.next()
@@ -166,7 +165,7 @@ func (l *Lexer) scanRawString() (token.Token, string) {
 		ch := l.c
 		if ch < 0 {
 			l.c = unexpectedChar
-			l.LexicalError = verror.New(l.ScriptID, "ther is an unterminated string literal", verror.LexicalErrType, line)
+			l.LexicalError = NewRuntimeError(l.ScriptID, "ther is an unterminated string literal", LexicalErrType, line)
 			return token.STRING, emptyString
 		}
 		l.next()
@@ -355,7 +354,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			} else {
 				tok = token.UNEXPECTED
 				lit = string(ch)
-				l.LexicalError = verror.New(l.ScriptID, "found an exclamation mark '!' out of place", verror.LexicalErrType, l.line)
+				l.LexicalError = NewRuntimeError(l.ScriptID, "found an exclamation mark '!' out of place", LexicalErrType, l.line)
 			}
 		case '<':
 			switch l.c {
@@ -398,7 +397,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			} else {
 				tok = token.UNEXPECTED
 				lit = string(ch)
-				l.LexicalError = verror.New(l.ScriptID, "found a colon ':' out of place", verror.LexicalErrType, l.line)
+				l.LexicalError = NewRuntimeError(l.ScriptID, "found a colon ':' out of place", LexicalErrType, l.line)
 			}
 		case '~':
 			tok = token.TILDE
@@ -414,7 +413,7 @@ func (l *Lexer) Next() (line uint, tok token.Token, lit string) {
 			tok = token.UNEXPECTED
 			lit = string(ch)
 			if l.LexicalError == nil {
-				l.LexicalError = verror.New(l.ScriptID, fmt.Sprintf("found some unexpected symbol '%v'", lit), verror.LexicalErrType, l.line)
+				l.LexicalError = NewRuntimeError(l.ScriptID, fmt.Sprintf("found some unexpected symbol '%v'", lit), LexicalErrType, l.line)
 			}
 		}
 	}

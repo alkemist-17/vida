@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Enum struct {
@@ -22,7 +21,7 @@ func (e *Enum) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -35,7 +34,7 @@ func (e *Enum) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, e, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 
@@ -47,7 +46,7 @@ func (e *Enum) Get(ctx *Context, index Value) Value {
 }
 
 func (e *Enum) Set(Value, Value) error {
-	return verror.ErrValueIsConstant
+	return ErrValueIsConstant
 }
 
 func (e *Enum) Equals(ctx *Context, other Value) Bool {
@@ -68,7 +67,7 @@ func (e *Enum) IsCallable() Bool {
 }
 
 func (e *Enum) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (e Enum) String() string {

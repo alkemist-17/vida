@@ -7,7 +7,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationBuilders() Value {
@@ -51,7 +50,7 @@ func (sb *VidaStringBuilder) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -64,7 +63,7 @@ func (sb *VidaStringBuilder) Binop(ctx *Context, op uint64, rhs Value) (Value, e
 	case uint64(token.IN):
 		return IsMemberOf(ctx, sb, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 
@@ -294,7 +293,7 @@ func (bb *VidaBytesBuilder) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -307,7 +306,7 @@ func (bb *VidaBytesBuilder) Binop(ctx *Context, op uint64, rhs Value) (Value, er
 	case uint64(token.IN):
 		return IsMemberOf(ctx, bb, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 

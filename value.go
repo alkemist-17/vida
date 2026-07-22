@@ -2,8 +2,6 @@ package vida
 
 import (
 	"encoding/json"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Value interface {
@@ -33,11 +31,11 @@ func (i ValueSemanticsImpl) Boolean() Bool {
 }
 
 func (i ValueSemanticsImpl) Prefix(*Context, uint64) (Value, error) {
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (i ValueSemanticsImpl) Binop(*Context, uint64, Value) (Value, error) {
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (i ValueSemanticsImpl) Get(*Context, Value) Value {
@@ -45,7 +43,7 @@ func (i ValueSemanticsImpl) Get(*Context, Value) Value {
 }
 
 func (i ValueSemanticsImpl) Set(Value, Value) error {
-	return verror.ErrValueIsConstant
+	return ErrValueIsConstant
 }
 
 func (i ValueSemanticsImpl) Equals(*Context, Value) Bool {
@@ -65,7 +63,7 @@ func (i ValueSemanticsImpl) IsCallable() Bool {
 }
 
 func (i ValueSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (i ValueSemanticsImpl) String() string {
@@ -104,11 +102,11 @@ func (i *ReferenceSemanticsImpl) Boolean() Bool {
 }
 
 func (i *ReferenceSemanticsImpl) Prefix(*Context, uint64) (Value, error) {
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (i *ReferenceSemanticsImpl) Binop(*Context, uint64, Value) (Value, error) {
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (i *ReferenceSemanticsImpl) Get(*Context, Value) Value {
@@ -116,7 +114,7 @@ func (i *ReferenceSemanticsImpl) Get(*Context, Value) Value {
 }
 
 func (i *ReferenceSemanticsImpl) Set(Value, Value) error {
-	return verror.ErrValueIsConstant
+	return ErrValueIsConstant
 }
 
 func (i *ReferenceSemanticsImpl) Equals(*Context, Value) Bool {
@@ -136,7 +134,7 @@ func (i *ReferenceSemanticsImpl) IsCallable() Bool {
 }
 
 func (i *ReferenceSemanticsImpl) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (i ReferenceSemanticsImpl) String() string {

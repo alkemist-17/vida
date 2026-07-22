@@ -2,8 +2,6 @@ package vida
 
 import (
 	"fmt"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationException() Value {
@@ -15,10 +13,10 @@ func loadFoundationException() Value {
 
 func exceptionRaise(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 0 {
-		err := fmt.Errorf("\n\n\n\n\t[%v]\n\tReason    : %v", verror.ExceptionErrType, args[0].String())
+		err := fmt.Errorf("\n\n\n\n\t[%v]\n\tReason    : %v", ExceptionErrType, args[0].String())
 		return Nil, err
 	}
-	err := fmt.Errorf("\n\n\n\n\t[%v]\n\tReason    : %v", verror.ExceptionErrType, exceptionDefaultMessage)
+	err := fmt.Errorf("\n\n\n\n\t[%v]\n\tReason    : %v", ExceptionErrType, exceptionDefaultMessage)
 	return Nil, err
 }
 
@@ -30,7 +28,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 			vm := ctx.vm
 			if err != nil {
 				switch err {
-				case verror.ErrResumeThreadSignal:
+				case ErrResumeThreadSignal:
 					threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[1:]...)
 					ctx.releaseInternalThread()
 					if threadError != nil {
@@ -41,7 +39,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
-						case *verror.VidaError:
+						case *VidaRunTimeError:
 							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
 							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
@@ -56,7 +54,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						ctx.currentThread = invoker
 						vm.Thread = invoker
 					}
-				case verror.ErrStartThreadSignal:
+				case ErrStartThreadSignal:
 					threadError := vm.runThread(vm.fp, 0, true, args[1:]...)
 					ctx.releaseInternalThread()
 					if threadError != nil {
@@ -67,7 +65,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
-						case *verror.VidaError:
+						case *VidaRunTimeError:
 							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
 							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
@@ -84,7 +82,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 					}
 				default:
 					switch e := err.(type) {
-					case *verror.VidaError:
+					case *VidaRunTimeError:
 						return &VidaError{Message: &String{Value: e.Message}}, nil
 					default:
 						return &VidaError{Message: &String{Value: e.Error()}}, nil
@@ -97,7 +95,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 			vm := ctx.vm
 			if err != nil {
 				switch err {
-				case verror.ErrResumeThreadSignal:
+				case ErrResumeThreadSignal:
 					threadError := vm.runThread(vm.fp, vm.Frame.ip, false, args[2:]...)
 					if threadError != nil {
 						v = vm.Channel
@@ -107,7 +105,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
-						case *verror.VidaError:
+						case *VidaRunTimeError:
 							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
 							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
@@ -122,7 +120,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						ctx.currentThread = invoker
 						vm.Thread = invoker
 					}
-				case verror.ErrStartThreadSignal:
+				case ErrStartThreadSignal:
 					threadError := vm.runThread(vm.fp, 0, true, args[2:]...)
 					if threadError != nil {
 						v = vm.Channel
@@ -132,7 +130,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 						ctx.currentThread = invoker
 						vm.Thread = invoker
 						switch e := threadError.(type) {
-						case *verror.VidaError:
+						case *VidaRunTimeError:
 							return &VidaError{Message: &String{Value: e.Message}}, nil
 						default:
 							return &VidaError{Message: &String{Value: threadError.Error()}}, nil
@@ -149,7 +147,7 @@ func exceptionProtectedCall(ctx *Context, args ...Value) (Value, error) {
 					}
 				default:
 					switch e := err.(type) {
-					case *verror.VidaError:
+					case *VidaRunTimeError:
 						return &VidaError{Message: &String{Value: e.Message}}, nil
 					default:
 						return &VidaError{Message: &String{Value: e.Error()}}, nil

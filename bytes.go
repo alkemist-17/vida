@@ -21,7 +21,6 @@ import (
 	"unsafe"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type encodingType int
@@ -77,7 +76,7 @@ func (b *Bytes) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -91,8 +90,8 @@ func (b *Bytes) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return b, nil
 			}
 			lLen := len(b.Value)
-			if rLen+lLen >= verror.MaxMemSize {
-				return Nil, verror.ErrMaxMemSize
+			if rLen+lLen >= MaxMemSize {
+				return Nil, ErrMaxMemSize
 			}
 			values := make([]byte, lLen+rLen)
 			copy(values[:lLen], b.Value)
@@ -108,7 +107,7 @@ func (b *Bytes) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, b, rhs)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (b *Bytes) Get(ctx *Context, index Value) Value {
@@ -126,7 +125,7 @@ func (b *Bytes) Get(ctx *Context, index Value) Value {
 }
 
 func (b *Bytes) Set(index, val Value) error {
-	return verror.ErrValueIsConstant
+	return ErrValueIsConstant
 }
 
 func (b *Bytes) Equals(ctx *Context, other Value) Bool {
@@ -234,7 +233,7 @@ func bytesCreateNewBytesValue(ctx *Context, args ...Value) (Value, error) {
 					init = byte(val)
 				}
 			}
-			if v > 0 && v < verror.MaxMemSize {
+			if v > 0 && v < MaxMemSize {
 				b := make([]byte, v)
 				for i := range b {
 					b[i] = init

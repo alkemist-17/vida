@@ -2,8 +2,6 @@ package vida
 
 import (
 	"errors"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationCoroutine() Value {
@@ -64,7 +62,7 @@ func coGetThreadState(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return &String{Value: th.State.String()}, nil
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }
@@ -74,9 +72,9 @@ func coRunThread(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok && (th.State == Suspended || th.State == Ready) {
 			var signal error
 			if th.State == Ready {
-				signal = verror.ErrStartThreadSignal
+				signal = ErrStartThreadSignal
 			} else {
-				signal = verror.ErrResumeThreadSignal
+				signal = ErrResumeThreadSignal
 			}
 			th.Invoker = ctx.currentThread
 			ctx.currentThread = th
@@ -85,9 +83,9 @@ func coRunThread(ctx *Context, args ...Value) (Value, error) {
 			ctx.vm.Thread = th
 			return Nil, signal
 		} else if !ok {
-			return Nil, verror.ErrNotThread
+			return Nil, ErrNotThread
 		} else if th.State == Running || th.State == Done || th.State == Waiting {
-			return Nil, verror.ErrResumingNotSuspendedThread
+			return Nil, ErrResumingNotSuspendedThread
 		}
 	}
 	return Nil, nil
@@ -95,7 +93,7 @@ func coRunThread(ctx *Context, args ...Value) (Value, error) {
 
 func coSuspendThread(ctx *Context, args ...Value) (Value, error) {
 	if ctx.IsMainThreadRunning() {
-		return Nil, verror.ErrSuspendingMainThread
+		return Nil, ErrSuspendingMainThread
 	}
 	th := ctx.currentThread
 	th.State = Suspended
@@ -104,7 +102,7 @@ func coSuspendThread(ctx *Context, args ...Value) (Value, error) {
 	} else {
 		th.Channel = Nil
 	}
-	return Nil, verror.ErrSuspendThreadSignal
+	return Nil, ErrSuspendThreadSignal
 }
 
 func coGetCurrentRunningThread(ctx *Context, args ...Value) (Value, error) {
@@ -121,9 +119,9 @@ func coRecycleThread(ctx *Context, args ...Value) (Value, error) {
 				return th, nil
 			}
 		} else if !ok {
-			return Nil, verror.ErrNotThread
+			return Nil, ErrNotThread
 		} else if th.State != Done {
-			return Nil, verror.ErrRecyclingThread
+			return Nil, ErrRecyclingThread
 		}
 	}
 	return Nil, nil
@@ -137,10 +135,10 @@ func coCompleteThread(ctx *Context, args ...Value) (Value, error) {
 				th.Channel = Nil
 				return th, nil
 			} else {
-				return Nil, verror.ErrClosingAThread
+				return Nil, ErrClosingAThread
 			}
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }
@@ -150,7 +148,7 @@ func coIsActive(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State != Done), nil
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }
@@ -160,7 +158,7 @@ func coIsDone(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return Bool(th.State == Done), nil
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }
@@ -174,7 +172,7 @@ func coGetStackSize(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return Integer(len(th.Stack)), nil
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }
@@ -184,7 +182,7 @@ func coGetFrameSize(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return Integer(len(th.Frames)), nil
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }
@@ -194,7 +192,7 @@ func coValue(ctx *Context, args ...Value) (Value, error) {
 		if th, ok := args[0].(*Thread); ok {
 			return th.Channel, nil
 		}
-		return Nil, verror.ErrNotThread
+		return Nil, ErrNotThread
 	}
 	return Nil, nil
 }

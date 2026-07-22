@@ -2,8 +2,6 @@ package vida
 
 import (
 	"sync"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationTask() Value {
@@ -34,6 +32,10 @@ func taksConcepts(ctx *Context, args ...Value) (Value, error) {
 	Furthermore, the results are deterministic;
 	there is no possibility that a parallel program will give one result in one run 
 	and a different result in a different run.
+
+	However, Vida has not immutable data structures, so parallelism should be done carefully.
+	Changes of state should not be done at the same memory slost for different tasks.
+	Vida parallelism should be done, you know, truly parallel.
 
 	In contrast, concurrent program has concurrency as part of its specification.
 	The program must run concurrent threads, each of which can independently perform input/output.
@@ -83,18 +85,18 @@ func taskRunInParallel(ctx *Context, args ...Value) (Value, error) {
 					default:
 						wg.Wait()
 						result = nil
-						return Nil, verror.ErrParallelFn
+						return Nil, ErrParallelFn
 					}
 				} else {
 					wg.Wait()
 					result = nil
-					return Nil, verror.ErrParallelArgs
+					return Nil, ErrParallelArgs
 				}
 			}
 			wg.Wait()
 			return result, nil
 		} else {
-			return Nil, verror.ErrNonEmptyTaskArray
+			return Nil, ErrNonEmptyTaskArray
 		}
 	}
 	return Nil, nil

@@ -1,4 +1,4 @@
-package verror
+package vida
 
 import (
 	"fmt"
@@ -15,14 +15,14 @@ const (
 	MaxMemSize       = 0x7FFF_FFFF
 )
 
-type VidaError struct {
+type VidaRunTimeError struct {
 	ScriptID string
 	Message  string
 	ErrType  string
 	Line     uint
 }
 
-func (e *VidaError) Error() string {
+func (e *VidaRunTimeError) Error() string {
 	switch e.ErrType {
 	case ExceptionErrType:
 		return fmt.Sprintf("\n\n\n\tScript    : [%v]\n\t%v\n\t≈ at line : %v\n\tReason    : %v\n\n\n", e.ErrType, e.ScriptID, e.Line, e.Message)
@@ -33,8 +33,8 @@ func (e *VidaError) Error() string {
 	}
 }
 
-func New(scriptID string, message string, errorType string, line uint) *VidaError {
-	return &VidaError{
+func NewRuntimeError(scriptID string, message string, errorType string, line uint) *VidaRunTimeError {
+	return &VidaRunTimeError{
 		ScriptID: scriptID,
 		Line:     line,
 		Message:  message,

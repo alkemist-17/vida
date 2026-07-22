@@ -11,7 +11,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 var Nil = NilValue{}
@@ -151,17 +150,17 @@ func coreAssert(ctx *Context, args ...Value) (Value, error) {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, assertionFailureDefaultMessage))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, assertionFailureDefaultMessage))
 		return Nil, err
 	}
 	if argsLength > 1 {
 		if args[0].Boolean() {
 			return True, nil
 		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, args[1].String()))
+		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, args[1].String()))
 		return Nil, err
 	}
-	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", verror.AssertionErrType, assertionFailureDefaultMessage))
+	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, assertionFailureDefaultMessage))
 	return Nil, err
 }
 
@@ -195,7 +194,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 		if l > 1 {
 			init = args[1]
 		}
-		if v >= 0 && v < verror.MaxMemSize {
+		if v >= 0 && v < MaxMemSize {
 			arr := make([]Value, v)
 			for i := range v {
 				arr[i] = init
@@ -269,7 +268,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 		if ls, ok := v.Value["linspace"].(*Object); ok {
 			if fromF, ok := ls.Value["from"].(Float); ok {
 				if toF, ok := ls.Value["to"].(Float); ok {
-					if n, ok := ls.Value["n"].(Integer); ok && n > 1 && n < verror.MaxMemSize {
+					if n, ok := ls.Value["n"].(Integer); ok && n > 1 && n < MaxMemSize {
 						open := false
 						if o, ok := ls.Value["open"].(Bool); ok {
 							open = bool(o)
@@ -291,12 +290,12 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 				}
 			}
 		}
-		if size, ok := v.Value["len"].(Integer); ok && size >= 0 && size < verror.MaxMemSize {
+		if size, ok := v.Value["len"].(Integer); ok && size >= 0 && size < MaxMemSize {
 			capSize := size
 			if c, ok := v.Value["cap"].(Integer); ok && c > size {
 				capSize = c
 			}
-			if capSize >= verror.MaxMemSize {
+			if capSize >= MaxMemSize {
 				return &Array{}, nil
 			}
 
@@ -360,7 +359,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			return &Array{Value: A}, nil
 		}
 		if seqName, ok := v.Value["seq"].(*String); ok {
-			if n, ok := v.Value["n"].(Integer); ok && n > 0 && n < verror.MaxMemSize {
+			if n, ok := v.Value["n"].(Integer); ok && n > 0 && n < MaxMemSize {
 				switch seqName.Value {
 				case "fibonacci":
 					A := make([]Value, n)
@@ -438,7 +437,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 		if src, ok := v.Value["repeat"].(*Array); ok {
 			if times, ok := v.Value["times"].(Integer); ok && times > 0 {
 				total := Integer(len(src.Value)) * times
-				if total >= verror.MaxMemSize {
+				if total >= MaxMemSize {
 					return &Array{}, nil
 				}
 				A := make([]Value, 0, total)
@@ -463,7 +462,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 					if padMode {
 						resultLen = maxLen
 					}
-					if resultLen >= verror.MaxMemSize {
+					if resultLen >= MaxMemSize {
 						return &Array{}, nil
 					}
 					A := make([]Value, resultLen)
@@ -493,7 +492,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 				} else {
 					A = append(A, item)
 				}
-				if Integer(len(A)) >= verror.MaxMemSize {
+				if Integer(len(A)) >= MaxMemSize {
 					return &Array{}, nil
 				}
 			}
@@ -527,7 +526,7 @@ func coreNewArray(ctx *Context, args ...Value) (Value, error) {
 			return &Array{Value: A}, nil
 		}
 		if arr, ok := v.Value["grow"].(*Array); ok {
-			if by, ok := v.Value["by"].(Integer); ok && 0 < by && by < verror.MaxMemSize {
+			if by, ok := v.Value["by"].(Integer); ok && 0 < by && by < MaxMemSize {
 				clone := arr.Clone().(*Array)
 				clone.Value = slices.Grow(clone.Value, int(by))
 				return clone, nil

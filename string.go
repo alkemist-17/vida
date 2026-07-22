@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type String struct {
@@ -23,8 +22,8 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case *String:
 		switch op {
 		case uint64(token.ADD):
-			if len(s.Value)+len(r.Value) >= verror.MaxMemSize {
-				return Nil, verror.ErrMaxMemSize
+			if len(s.Value)+len(r.Value) >= MaxMemSize {
+				return Nil, ErrMaxMemSize
 			}
 			str := &String{Value: s.Value + r.Value}
 			return str, nil
@@ -48,7 +47,7 @@ func (s *String) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, s, rhs)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (s *String) Get(ctx *Context, index Value) Value {
@@ -70,14 +69,14 @@ func (s *String) Get(ctx *Context, index Value) Value {
 }
 
 func (s *String) Set(index, val Value) error {
-	return verror.ErrValueIsConstant
+	return ErrValueIsConstant
 }
 
 func (s *String) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return False, nil
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (s *String) Equals(ctx *Context, other Value) Bool {

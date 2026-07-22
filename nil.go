@@ -2,7 +2,6 @@ package vida
 
 import (
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type NilValue struct {
@@ -17,7 +16,7 @@ func (n NilValue) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return True, nil
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (n NilValue) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
@@ -29,7 +28,7 @@ func (n NilValue) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, n, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 

@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Integer int64
@@ -26,7 +25,7 @@ func (i Integer) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.TILDE):
 		return Integer(^uint32(i)), nil
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
@@ -41,12 +40,12 @@ func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			return l * r, nil
 		case uint64(token.DIV):
 			if r == 0 {
-				return Nil, verror.ErrDivisionByZero
+				return Nil, ErrDivisionByZero
 			}
 			return l / r, nil
 		case uint64(token.REM):
 			if r == 0 {
-				return Nil, verror.ErrDivisionByZero
+				return Nil, ErrDivisionByZero
 			}
 			return l % r, nil
 		case uint64(token.LT):
@@ -102,7 +101,7 @@ func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, l, rhs)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (i Integer) Get(ctx *Context, index Value) Value {
@@ -110,7 +109,7 @@ func (i Integer) Get(ctx *Context, index Value) Value {
 }
 
 func (i Integer) Set(index, val Value) error {
-	return verror.ErrValueNotIndexable
+	return ErrValueNotIndexable
 }
 
 func (i Integer) Equals(ctx *Context, other Value) Bool {
@@ -132,7 +131,7 @@ func (i Integer) IsCallable() Bool {
 }
 
 func (i Integer) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (i Integer) Iterator() Value {
@@ -190,7 +189,7 @@ func (f Float) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.ADD):
 		return f, nil
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (f Float) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
@@ -250,7 +249,7 @@ func (f Float) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, f, rhs)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (f Float) Get(ctx *Context, index Value) Value {
@@ -258,7 +257,7 @@ func (f Float) Get(ctx *Context, index Value) Value {
 }
 
 func (f Float) Set(index, val Value) error {
-	return verror.ErrValueNotIndexable
+	return ErrValueNotIndexable
 }
 
 func (f Float) Equals(ctx *Context, other Value) Bool {
@@ -280,7 +279,7 @@ func (f Float) IsCallable() Bool {
 }
 
 func (f Float) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (f Float) Iterator() Value {

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Time time.Time
@@ -19,7 +18,7 @@ func (t Time) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -32,7 +31,7 @@ func (t Time) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, t, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 
@@ -41,7 +40,7 @@ func (t Time) Get(ctx *Context, index Value) Value {
 }
 
 func (t Time) Set(index, val Value) error {
-	return verror.ErrValueNotIndexable
+	return ErrValueNotIndexable
 }
 
 func (t Time) Equals(ctx *Context, other Value) Bool {
@@ -60,7 +59,7 @@ func (t Time) IsCallable() Bool {
 }
 
 func (t Time) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (t Time) Iterator() Value {

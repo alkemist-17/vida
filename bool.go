@@ -2,7 +2,6 @@ package vida
 
 import (
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Bool bool
@@ -15,7 +14,7 @@ func (b Bool) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return !b, nil
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (b Bool) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
@@ -33,7 +32,7 @@ func (b Bool) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, b, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 
@@ -42,7 +41,7 @@ func (b Bool) Get(ctx *Context, index Value) Value {
 }
 
 func (b Bool) Set(index, val Value) error {
-	return verror.ErrValueNotIndexable
+	return ErrValueNotIndexable
 }
 
 func (b Bool) Equals(ctx *Context, other Value) Bool {
@@ -59,7 +58,7 @@ func (b Bool) IsCallable() Bool {
 }
 
 func (b Bool) Call(ctx *Context, args ...Value) (Value, error) {
-	return Nil, verror.ErrNotImplemented
+	return Nil, ErrNotImplemented
 }
 
 func (b Bool) Iterator() Value {

@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type freeVarsInfo struct {
@@ -86,7 +85,7 @@ func (f *Function) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -99,7 +98,7 @@ func (f *Function) Binop(ctx *Context, op uint64, r Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, f, r)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (f *Function) Equals(ctx *Context, other Value) Bool {
@@ -155,7 +154,7 @@ func (nativeFn NativeFunction) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -168,7 +167,7 @@ func (nativeFn NativeFunction) Binop(ctx *Context, op uint64, r Value) (Value, e
 	case uint64(token.IN):
 		return IsMemberOf(ctx, nativeFn, r)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (nativeFn NativeFunction) Get(ctx *Context, index Value) Value {
@@ -176,7 +175,7 @@ func (nativeFn NativeFunction) Get(ctx *Context, index Value) Value {
 }
 
 func (nativeFn NativeFunction) Set(index, val Value) error {
-	return verror.ErrValueNotIndexable
+	return ErrValueNotIndexable
 }
 
 func (nativeFn NativeFunction) nativeFunctionIdentity() uintptr {

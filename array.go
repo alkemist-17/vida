@@ -11,7 +11,6 @@ import (
 	"unsafe"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 type Array struct {
@@ -27,7 +26,7 @@ func (xs *Array) Prefix(ctx *Context, op uint64) (Value, error) {
 	if op == uint64(token.NOT) {
 		return False, nil
 	}
-	return Nil, verror.ErrPrefixOpNotDefined
+	return Nil, ErrPrefixOpNotDefined
 }
 
 func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
@@ -40,8 +39,8 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 				return xs, nil
 			}
 			lLen := len(xs.Value)
-			if rLen+lLen >= verror.MaxMemSize {
-				return Nil, verror.ErrMaxMemSize
+			if rLen+lLen >= MaxMemSize {
+				return Nil, ErrMaxMemSize
 			}
 			values := make([]Value, lLen+rLen)
 			copy(values[:lLen], xs.Value)
@@ -59,7 +58,7 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, xs, rhs)
 	}
-	return Nil, verror.ErrBinaryOpNotDefined
+	return Nil, ErrBinaryOpNotDefined
 }
 
 func (xs *Array) Get(ctx *Context, index Value) Value {
@@ -88,7 +87,7 @@ func (xs *Array) Set(index, val Value) error {
 			return nil
 		}
 	}
-	return verror.ErrValueNotIndexable
+	return ErrValueNotIndexable
 }
 
 func (xs *Array) Equals(ctx *Context, other Value) Bool {
@@ -209,8 +208,8 @@ func arrayConcat(ctx *Context, args ...Value) (Value, error) {
 				size += len(xs.Value)
 			}
 		}
-		if size < 0 || size >= verror.MaxMemSize {
-			return Nil, verror.ErrMaxMemSize
+		if size < 0 || size >= MaxMemSize {
+			return Nil, ErrMaxMemSize
 		}
 		result := make([]Value, 0, size)
 		for _, v := range args {
@@ -274,7 +273,7 @@ func arrayGrow(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		xs, ok := args[0].(*Array)
 		size, oksize := args[1].(Integer)
-		if ok && oksize && 0 <= size && size < verror.MaxMemSize {
+		if ok && oksize && 0 <= size && size < MaxMemSize {
 			xs.Value = slices.Grow(xs.Value, int(size))
 			return xs, nil
 		}
@@ -622,7 +621,7 @@ func arraySort(ctx *Context, args ...Value) (Value, error) {
 func arrayRepeat(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		if xs, ok := args[0].(*Array); ok {
-			if t, ok := args[1].(Integer); ok && t >= 0 && t < verror.MaxMemSize {
+			if t, ok := args[1].(Integer); ok && t >= 0 && t < MaxMemSize {
 				return &Array{Value: slices.Repeat(xs.Value, int(t))}, nil
 			}
 		}
@@ -684,7 +683,7 @@ func collectionProcessView(ctx *Context, args ...Value) (Value, error) {
 			return processView(val, startIdx, endIdx, hasStart, hasEnd)
 		}
 	}
-	return Nil, verror.ErrView
+	return Nil, ErrView
 }
 
 func processView(val Value, startIdx, endIdx Integer, hasStart, hasEnd bool) (Value, error) {
@@ -726,5 +725,5 @@ func processView(val Value, startIdx, endIdx Integer, hasStart, hasEnd bool) (Va
 		}
 		return &Bytes{Value: v.Value[s:e]}, nil
 	}
-	return Nil, verror.ErrView
+	return Nil, ErrView
 }

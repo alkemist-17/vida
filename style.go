@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationStyle() Value {
@@ -256,7 +255,7 @@ func (s *Style) Prefix(ctx *Context, op uint64) (Value, error) {
 	case uint64(token.NOT):
 		return False, nil
 	default:
-		return Nil, verror.ErrPrefixOpNotDefined
+		return Nil, ErrPrefixOpNotDefined
 	}
 }
 
@@ -269,7 +268,7 @@ func (s *Style) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.IN):
 		return IsMemberOf(ctx, s, rhs)
 	default:
-		return Nil, verror.ErrBinaryOpNotDefined
+		return Nil, ErrBinaryOpNotDefined
 	}
 }
 
@@ -316,11 +315,11 @@ func styleResetFn(ctx *Context, args ...Value) (Value, error) {
 // hex(str) -> {r, g, b} object, or an error if malformed
 func hexToRGBFn(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 1 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	str, ok := args[0].(*String)
 	if !ok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	rgb, err := ParseHex(str.Value)
 	if err != nil {
@@ -333,7 +332,7 @@ func hexToRGBFn(ctx *Context, args ...Value) (Value, error) {
 func rgbToHexFn(ctx *Context, args ...Value) (Value, error) {
 	rgb, ok := objectFromArgs(args)
 	if !ok {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	return &String{Value: rgb.Hex()}, nil
 }
@@ -342,11 +341,11 @@ func rgbToHexFn(ctx *Context, args ...Value) (Value, error) {
 // namedColors table. Lets scripts resolve a named color to raw RGB
 func nameToRGBFn(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 1 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	str, ok := args[0].(*String)
 	if !ok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	rgb, ok := namedColors[strings.ToLower(str.Value)]
 	if !ok {
@@ -358,13 +357,13 @@ func nameToRGBFn(ctx *Context, args ...Value) (Value, error) {
 // lerp(rgbA, rgbB, t) -> {r, g, b} object interpolated
 func lerpFn(ctx *Context, args ...Value) (Value, error) {
 	if len(args) < 3 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	a, aok := objectToRGB(args[0])
 	b, bok := objectToRGB(args[1])
 	t, tok := toFloat(args[2])
 	if !aok || !bok || !tok {
-		return Nil, verror.ErrInvalidTypeOfArgument
+		return Nil, ErrInvalidTypeOfArgument
 	}
 	return rgbToObject(Lerp(a, b, t)), nil
 }
@@ -431,7 +430,7 @@ func styleFgRGB(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	rgb, rok := objectFromArgs(args[1:])
 	if !ok || !rok {
-		return Nil, verror.ErrInvalidTypeOfArgument
+		return Nil, ErrInvalidTypeOfArgument
 	}
 	return s.FgRGB(rgb.R, rgb.G, rgb.B), nil
 }
@@ -440,7 +439,7 @@ func styleBgRGB(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	rgb, rok := objectFromArgs(args[1:])
 	if !ok || !rok {
-		return Nil, verror.ErrInvalidTypeOfArgument
+		return Nil, ErrInvalidTypeOfArgument
 	}
 	return s.BgRGB(rgb.R, rgb.G, rgb.B), nil
 }
@@ -448,11 +447,11 @@ func styleBgRGB(ctx *Context, args ...Value) (Value, error) {
 func styleFgHex(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	str, sok := args[1].(*String)
 	if !sok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	return s.FgHex(str.Value)
 }
@@ -460,11 +459,11 @@ func styleFgHex(ctx *Context, args ...Value) (Value, error) {
 func styleBgHex(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	str, sok := args[1].(*String)
 	if !sok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	return s.BgHex(str.Value)
 }
@@ -472,11 +471,11 @@ func styleBgHex(ctx *Context, args ...Value) (Value, error) {
 func styleFgName(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	str, sok := args[1].(*String)
 	if !sok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	return s.FgName(str.Value)
 }
@@ -484,11 +483,11 @@ func styleFgName(ctx *Context, args ...Value) (Value, error) {
 func styleBgName(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	str, sok := args[1].(*String)
 	if !sok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	return s.BgName(str.Value)
 }
@@ -496,11 +495,11 @@ func styleBgName(ctx *Context, args ...Value) (Value, error) {
 func styleFg256(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	idx, iok := args[1].(Integer)
 	if !iok {
-		return Nil, verror.ErrExpectedInteger
+		return Nil, ErrExpectedInteger
 	}
 	return s.Fg256(uint8(idx)), nil
 }
@@ -508,11 +507,11 @@ func styleFg256(ctx *Context, args ...Value) (Value, error) {
 func styleBg256(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	idx, iok := args[1].(Integer)
 	if !iok {
-		return Nil, verror.ErrExpectedInteger
+		return Nil, ErrExpectedInteger
 	}
 	return s.Bg256(uint8(idx)), nil
 }
@@ -520,11 +519,11 @@ func styleBg256(ctx *Context, args ...Value) (Value, error) {
 func styleFg16(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	idx, iok := args[1].(Integer)
 	if !iok {
-		return Nil, verror.ErrExpectedInteger
+		return Nil, ErrExpectedInteger
 	}
 	return s.Fg16(uint8(idx)), nil
 }
@@ -532,11 +531,11 @@ func styleFg16(ctx *Context, args ...Value) (Value, error) {
 func styleBg16(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	idx, iok := args[1].(Integer)
 	if !iok {
-		return Nil, verror.ErrExpectedInteger
+		return Nil, ErrExpectedInteger
 	}
 	return s.Bg16(uint8(idx)), nil
 }
@@ -547,7 +546,7 @@ func styleFlag(f func(*Style) *Style) func(*Context, ...Value) (Value, error) {
 	return func(ctx *Context, args ...Value) (Value, error) {
 		s, ok := styleSelf(args)
 		if !ok {
-			return Nil, verror.ErrInvalidNumberOfArguments
+			return Nil, ErrInvalidNumberOfArguments
 		}
 		return f(s), nil
 	}
@@ -556,11 +555,11 @@ func styleFlag(f func(*Style) *Style) func(*Context, ...Value) (Value, error) {
 func styleWidth(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	w, wok := args[1].(Integer)
 	if !wok {
-		return Nil, verror.ErrExpectedInteger
+		return Nil, ErrExpectedInteger
 	}
 	return s.Width(int(w)), nil
 }
@@ -568,11 +567,11 @@ func styleWidth(ctx *Context, args ...Value) (Value, error) {
 func styleEnabled(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	on, bok := args[1].(Bool)
 	if !bok {
-		return Nil, verror.ErrExpectedBool
+		return Nil, ErrExpectedBool
 	}
 	return s.Enabled(bool(on)), nil
 }
@@ -580,11 +579,11 @@ func styleEnabled(ctx *Context, args ...Value) (Value, error) {
 func styleSprint(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	msg, mok := args[1].(*String)
 	if !mok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	return &String{Value: s.Sprint(msg.Value)}, nil
 }
@@ -592,11 +591,11 @@ func styleSprint(ctx *Context, args ...Value) (Value, error) {
 func styleSprintf(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	format, fok := args[1].(*String)
 	if !fok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	msg, err := VSprintf(format.Value, args[2:]...)
 	if err != nil {
@@ -611,11 +610,11 @@ func styleSprintf(ctx *Context, args ...Value) (Value, error) {
 func styleFill(ctx *Context, args ...Value) (Value, error) {
 	s, ok := styleSelf(args)
 	if !ok || len(args) < 2 {
-		return Nil, verror.ErrInvalidNumberOfArguments
+		return Nil, ErrInvalidNumberOfArguments
 	}
 	msg, mok := args[1].(*String)
 	if !mok {
-		return Nil, verror.ErrExpectedString
+		return Nil, ErrExpectedString
 	}
 	return &String{Value: s.Fill(msg.Value)}, nil
 }

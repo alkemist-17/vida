@@ -2,8 +2,6 @@ package vida
 
 import (
 	"encoding/json"
-
-	"github.com/alkemist-17/vida/verror"
 )
 
 func loadFoundationJSON() Value {
@@ -46,10 +44,10 @@ func jsonParse(ctx *Context, args ...Value) (Value, error) {
 		valid, _ := jsonIsValid(ctx, args[0])
 		switch t := valid.(type) {
 		case NilValue:
-			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+			return &VidaError{Message: &String{Value: ErrInvalidJSON.Error()}}, nil
 		case Bool:
 			if !t {
-				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+				return &VidaError{Message: &String{Value: ErrInvalidJSON.Error()}}, nil
 			}
 		}
 		switch t := args[0].(type) {
@@ -103,10 +101,10 @@ func jsonDecode(ctx *Context, args ...Value) (Value, error) {
 		valid, _ := jsonIsValid(ctx, args[0])
 		switch t := valid.(type) {
 		case NilValue:
-			return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+			return &VidaError{Message: &String{Value: ErrInvalidJSON.Error()}}, nil
 		case Bool:
 			if !t {
-				return &VidaError{Message: &String{Value: verror.ErrInvalidJSON.Error()}}, nil
+				return &VidaError{Message: &String{Value: ErrInvalidJSON.Error()}}, nil
 			}
 		}
 		switch t := args[0].(type) {

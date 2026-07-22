@@ -5,9 +5,7 @@ import (
 	"strconv"
 
 	"github.com/alkemist-17/vida/ast"
-	"github.com/alkemist-17/vida/lexer"
 	"github.com/alkemist-17/vida/token"
-	"github.com/alkemist-17/vida/verror"
 )
 
 const (
@@ -24,15 +22,15 @@ const (
 type parser struct {
 	current token.TokenInfo
 	next    token.TokenInfo
-	lexer   *lexer.Lexer
+	lexer   *Lexer
 	ast     *ast.Ast
-	err     *verror.VidaError
+	err     *VidaRunTimeError
 	ok      bool
 }
 
 func newParser(src []byte, scriptID string) *parser {
 	p := &parser{
-		lexer: lexer.New(src, scriptID),
+		lexer: NewLexer(src, scriptID),
 		ok:    true,
 		ast:   &ast.Ast{},
 	}
@@ -76,7 +74,7 @@ func (p *parser) parse() (*ast.Ast, error) {
 			if p.current.Token == token.UNEXPECTED {
 				p.err = p.lexer.LexicalError
 			} else {
-				p.err = verror.New(p.lexer.ScriptID, "it was expected a high level statement", verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a high level statement", SyntaxErrType, p.current.Line)
 			}
 			return nil, p.err
 		}
@@ -186,7 +184,7 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 				block.Statement = append(block.Statement, p.breakStmt())
 			} else {
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was found a break outside of a loop", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was found a break outside of a loop", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return block
@@ -196,7 +194,7 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 				block.Statement = append(block.Statement, p.continueStmt())
 			} else {
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was found a continue outside of a loop", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was found a continue outside of a loop", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return block
@@ -210,7 +208,7 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 			}
 		default:
 			if p.ok {
-				p.err = verror.New(p.lexer.ScriptID, "it was expected a block statement", verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a block statement", SyntaxErrType, p.current.Line)
 				p.ok = false
 			}
 			return block
@@ -333,7 +331,7 @@ Loop:
 			idx = &ast.Property{Value: p.current.Lit}
 			if p.next.Token != token.LPAREN {
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was expected a function call after selector '::'", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a function call after selector '::'", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return &ast.Nil{}
@@ -511,7 +509,7 @@ Loop:
 				e = p.selector(e)
 			default:
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was expected an identifier after selector", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected an identifier after selector", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return &ast.Nil{}
@@ -524,7 +522,7 @@ Loop:
 			prop := &ast.Property{Value: p.current.Lit}
 			if p.next.Token != token.LPAREN {
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was expected a function call after selector '::'", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a function call after selector '::'", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return &ast.Nil{}
@@ -544,7 +542,7 @@ func (p *parser) operand() ast.Node {
 			return &ast.Integer{Value: int64(i)}
 		} else {
 			if p.ok {
-				p.err = verror.New(p.lexer.ScriptID, "an integer literal could not be processed", verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "an integer literal could not be processed", SyntaxErrType, p.current.Line)
 				p.ok = false
 			}
 			return &ast.Nil{}
@@ -554,7 +552,7 @@ func (p *parser) operand() ast.Node {
 			return &ast.Float{Value: f}
 		}
 		if p.ok {
-			p.err = verror.New(p.lexer.ScriptID, "a float literal could not be processed", verror.SyntaxErrType, p.current.Line)
+			p.err = NewRuntimeError(p.lexer.ScriptID, "a float literal could not be processed", SyntaxErrType, p.current.Line)
 			p.ok = false
 		}
 		return &ast.Nil{}
@@ -562,7 +560,7 @@ func (p *parser) operand() ast.Node {
 		s, e := strconv.Unquote(p.current.Lit)
 		if e != nil {
 			if p.ok {
-				p.err = verror.New(p.lexer.ScriptID, "a string literal could not be processed", verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "a string literal could not be processed", SyntaxErrType, p.current.Line)
 				p.ok = false
 			}
 			return &ast.Nil{}
@@ -614,7 +612,7 @@ func (p *parser) operand() ast.Node {
 				k = &ast.Property{Value: p.current.Lit}
 			default:
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was expected an identifier or string as object property", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected an identifier or string as object property", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return &ast.Nil{}
@@ -640,7 +638,7 @@ func (p *parser) operand() ast.Node {
 				break loop
 			default:
 				if p.ok {
-					p.err = verror.New(p.lexer.ScriptID, "it was expected an identifier, comma or an equals symbol after object property", verror.SyntaxErrType, p.current.Line)
+					p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected an identifier, comma or an equals symbol after object property", SyntaxErrType, p.current.Line)
 					p.ok = false
 				}
 				return &ast.Nil{}
@@ -652,7 +650,7 @@ func (p *parser) operand() ast.Node {
 		p.advance()
 		if p.current.Token == token.RPAREN {
 			if p.ok {
-				p.err = verror.New(p.lexer.ScriptID, "it was expected an expression after left parenthesis", verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected an expression after left parenthesis", SyntaxErrType, p.current.Line)
 				p.ok = false
 			}
 			return &ast.Nil{}
@@ -725,9 +723,9 @@ func (p *parser) operand() ast.Node {
 	default:
 		if p.ok {
 			if p.lexer.LexicalError == nil {
-				p.err = verror.New(p.lexer.ScriptID, "it was expected a valid expression", verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a valid expression", SyntaxErrType, p.current.Line)
 			} else {
-				p.err = verror.New(p.lexer.ScriptID, p.lexer.LexicalError.Error(), verror.SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, p.lexer.LexicalError.Error(), SyntaxErrType, p.current.Line)
 			}
 			p.ok = false
 		}
@@ -862,7 +860,7 @@ func (p *parser) expect(tok token.Token) {
 	if p.current.Token != tok && p.ok {
 		p.ok = false
 		message := fmt.Sprintf("expected symbol '%v', but got '%v'", tok, p.current.Lit)
-		p.err = verror.New(p.lexer.ScriptID, message, verror.SyntaxErrType, p.current.Line)
+		p.err = NewRuntimeError(p.lexer.ScriptID, message, SyntaxErrType, p.current.Line)
 	}
 }
 
