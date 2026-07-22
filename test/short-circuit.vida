@@ -171,3 +171,200 @@ assert(reg_r == 5, "register integrity: logical expr as operand of arithmetic bi
 
 // ------------------------------------------------------------
 print("All short-circuit tests passed!")
+
+// ============================================================
+// Vida Short-Circuit Evaluation Test Suite - Extended Coverage
+//
+// Complements short_circuit_test.vida with cases that stress
+// different register scopes (global / free / local), deeper
+// nesting, mixed value types, indexing as an operand, and
+// heavy sequential reuse of the same code path (to catch
+// register-allocation drift across many compilations).
+// ============================================================
+
+// ------------------------------------------------------------
+// 1. Global-scope operands (let-declared, rGlob path)
+// ------------------------------------------------------------
+let g_a = 7
+let g_b = 0
+
+assert((g_a and g_b) == 0, "globals: and with truthy lhs -> rhs (0 is truthy value but result)")
+assert((g_b or g_a) == 0, "globals: or with truthy lhs (0 is truthy) -> lhs itself")
+assert((g_a or g_b) == 7, "globals: or with truthy lhs -> lhs, short-circuits")
+
+let g_calls = 0
+var g_bump = fun {
+    g_calls = g_calls + 1
+    ret true
+}
+g_calls = 0
+_ = false and g_bump()
+assert(g_calls == 0, "globals: and lhs false must skip rhs even when rhs touches a global")
+
+// ------------------------------------------------------------
+// 2. Free variables via closures (rFree path)
+//
+// Vida captures locals by value for primitives (int, float,
+// bool, string, nil) and by reference for arrays/objects.
+// Each closure below gets its OWN copy of a captured primitive,
+// so 'and'/'or' must read whatever that closure's own copy
+// holds - not some shared state. This is closure-capture
+// semantics, not a short-circuit concern, but it's worth
+// pinning down explicitly since it's easy to assume the wrong
+// one when writing tests that use and/or on a free variable.
+// ------------------------------------------------------------
+let makeCounter = fun {
+    var count = 0
+    var bump = fun {
+        count = count + 1
+        ret count
+    }
+    var getAndCheck = fun flag {
+        // 'count' here is a free variable captured BY VALUE:
+        // this closure's own copy, independent of bump's copy.
+        ret flag and count
+    }
+    ret [bump, getAndCheck]
+}
+
+var fc_pair = makeCounter()
+var fc_bump = fc_pair[0]
+var fc_check = fc_pair[1]
+fc_bump()
+fc_bump()
+fc_bump()
+assert(fc_check(true) == 0, "closures: primitive captured by value -> getAndCheck's own copy of count stays 0")
+assert(fc_check(false) == false, "closures: falsy lhs short-circuits regardless of the free variable's value")
+
+// Contrast: capture a shared mutable array instead (by reference),
+// so both closures observe the same underlying state.
+let makeSharedCounter = fun {
+    var box = [0]
+    var bump = fun {
+        box[0] = box[0] + 1
+        ret box[0]
+    }
+    var getAndCheck = fun flag {
+        ret flag and box[0]
+    }
+    ret [bump, getAndCheck]
+}
+
+var sc_pair = makeSharedCounter()
+var sc_bump = sc_pair[0]
+var sc_check = sc_pair[1]
+sc_bump()
+sc_bump()
+sc_bump()
+assert(sc_check(true) == 3, "closures: array captured by reference -> shared state visible as and's rhs")
+assert(sc_check(false) == false, "closures: falsy lhs still short-circuits despite shared reference state")
+
+// ------------------------------------------------------------
+// 3. Deep chains (4+ terms, left-associative)
+// ------------------------------------------------------------
+var dc_a = true
+var dc_b = true
+var dc_c = true
+var dc_d = 42
+assert((dc_a and dc_b and dc_c and dc_d) == 42, "deep chain: all truthy and -> last value")
+assert((false or false or false or dc_d) == 42, "deep chain: all falsy or -> last value")
+assert((dc_a and dc_b and false and dc_d) == false, "deep chain: falsy in the middle stops the chain")
+
+var dc_calls = 0
+var dc_probe = fun {
+    dc_calls = dc_calls + 1
+    ret true
+}
+dc_calls = 0
+_ = dc_a and dc_b and false and dc_probe()
+assert(dc_calls == 0, "deep chain: term after a falsy short-circuit must never evaluate")
+
+// ------------------------------------------------------------
+// 4. Mixed value types (int / float / string as operands)
+// ------------------------------------------------------------
+assert((3.14 and "hello") == "hello", "mixed types: float and string, both truthy")
+assert(("done" or 3.14) == "done", "mixed types: string short-circuits or")
+assert((0.0 and "x") == "x", "mixed types: 0.0 is truthy -> returns rhs")
+
+// ------------------------------------------------------------
+// 5. Indexing (array/object get) as operands
+// ------------------------------------------------------------
+var ix_arr = [false, 10, 20]
+var ix_obj = {"flag" = true, "val" = 99}
+
+assert((ix_arr[0] and ix_arr[1]) == false, "indexing: array element as falsy lhs")
+assert((ix_arr[1] and ix_arr[2]) == 20, "indexing: array elements, both truthy")
+assert((ix_obj["flag"] and ix_obj["val"]) == 99, "indexing: object field as lhs, another as rhs")
+
+var ix_calls = 0
+var ix_probe = fun {
+    ix_calls = ix_calls + 1
+    ret 1
+}
+ix_calls = 0
+_ = ix_arr[0] and ix_probe()
+assert(ix_calls == 0, "indexing: falsy array element short-circuits rhs call")
+
+// ------------------------------------------------------------
+// 6. and/or as a function argument and as a return expression
+// ------------------------------------------------------------
+var fa_identity = fun v {
+    ret v
+}
+assert(fa_identity(true and 5) == 5, "as call argument: and evaluated before call")
+assert(fa_identity(false or "fallback") == "fallback", "as call argument: or evaluated before call")
+
+var fa_pickOr = fun a, b {
+    ret a or b
+}
+assert(fa_pickOr(false, 9) == 9, "as return expression: or")
+assert(fa_pickOr(3, 9) == 3, "as return expression: or, lhs wins")
+
+// ------------------------------------------------------------
+// 7. Register-reuse stress test: same code path compiled once,
+//    executed many times, across a loop that also allocates
+//    other locals around it - catches any accumulated register
+//    drift from the short-circuit register-sharing trick.
+// ------------------------------------------------------------
+var st_i = 0
+var st_sum = 0
+while st_i < 50 {
+    var st_left = st_i
+    var st_right = st_i * 2
+    var st_pick = (st_left > 25 and st_right) or st_left
+    st_sum = st_sum + st_pick
+    st_i = st_i + 1
+}
+// For i in [0,25]: left <= 25 -> falsy branch of 'and' at i=0 only matters when
+// left > 25 is false, picks st_left. For i in [26,49]: picks st_right (2*i).
+// Compute expected sum to match the same rule the loop applies.
+var st_expected = 0
+var st_j = 0
+while st_j < 50 {
+    if st_j > 25 {
+        st_expected = st_expected + (st_j * 2)
+    } else {
+        st_expected = st_expected + st_j
+    }
+    st_j = st_j + 1
+}
+assert(st_sum == st_expected, "register stress: repeated and/or compilation across loop iterations")
+
+// ------------------------------------------------------------
+// 8. Only rhs is a compile-time constant (lhs is not)
+// ------------------------------------------------------------
+var rc_x = 8
+assert((rc_x and true) == true, "only-rhs-const: non-const lhs, const true rhs")
+assert((rc_x or false) == 8, "only-rhs-const: non-const truthy lhs short-circuits before reaching const rhs")
+
+var rc_calls = 0
+var rc_probe = fun {
+    rc_calls = rc_calls + 1
+    ret false
+}
+rc_calls = 0
+_ = rc_x or rc_probe()
+assert(rc_calls == 0, "only-rhs-const path does not affect short-circuit of a non-const call rhs elsewhere")
+
+// ------------------------------------------------------------
+print("All extended short-circuit tests passed!")
