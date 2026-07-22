@@ -127,3 +127,56 @@ const (
 func ErrOperatorOverrideNotCallable(operator string) error {
 	return fmt.Errorf("operator override '%v' is defined on the vtable but is not callable: expected a function or native function", operator)
 }
+
+// Error helper functions
+
+func runtimeErrorf(fn, format string, a ...any) error {
+	return fmt.Errorf("%s: "+format, append([]any{fn}, a...)...)
+}
+
+func requireArgCount(fn string, args []Value, n int) error {
+	if len(args) < n {
+		return runtimeErrorf(fn, "expected %d argument(s), got %d", n, len(args))
+	}
+	return nil
+}
+
+func asStringBuilder(fn string, args []Value, pos int) (*VidaStringBuilder, error) {
+	sb, ok := args[pos].(*VidaStringBuilder)
+	if !ok {
+		return nil, runtimeErrorf(fn, "argument %d: expected StringBuilder, got %s", pos+1, args[pos].Type())
+	}
+	return sb, nil
+}
+
+func asBytesBuilder(fn string, args []Value, pos int) (*VidaBytesBuilder, error) {
+	bb, ok := args[pos].(*VidaBytesBuilder)
+	if !ok {
+		return nil, runtimeErrorf(fn, "argument %d: expected BytesBuilder, got %s", pos+1, args[pos].Type())
+	}
+	return bb, nil
+}
+
+func asString(fn string, args []Value, pos int) (*String, error) {
+	s, ok := args[pos].(*String)
+	if !ok {
+		return nil, runtimeErrorf(fn, "argument %d: expected String, got %s", pos+1, args[pos].Type())
+	}
+	return s, nil
+}
+
+func asBytesValue(fn string, args []Value, pos int) (*Bytes, error) {
+	b, ok := args[pos].(*Bytes)
+	if !ok {
+		return nil, runtimeErrorf(fn, "argument %d: expected Bytes, got %s", pos+1, args[pos].Type())
+	}
+	return b, nil
+}
+
+func asInteger(fn string, args []Value, pos int) (Integer, error) {
+	i, ok := args[pos].(Integer)
+	if !ok {
+		return 0, runtimeErrorf(fn, "argument %d: expected Integer, got %s", pos+1, args[pos].Type())
+	}
+	return i, nil
+}
