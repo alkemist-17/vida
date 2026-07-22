@@ -1,6 +1,7 @@
 package vida
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/alkemist-17/vida/token"
@@ -97,6 +98,10 @@ func (t Time) Type() string {
 
 func (t Time) Clone() Value {
 	return t
+}
+
+func (t Time) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.String())
 }
 
 func loadFoundationTime() Value {
