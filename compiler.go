@@ -275,29 +275,72 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 	case *ast.MultipleMut:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
-		base := c.rAlloc
+		// Phase 1: capture every RHS value into a contiguous block of
+		// scratch registers, in source order, before any writes happen.
+		rhsBase := c.rAlloc
 		for _, expr := range n.Exprs {
 			idx, scope := c.compileExpr(expr, false)
 			c.exprToReg(idx, scope)
 			c.rAlloc++
 		}
-		c.rAlloc = base
-		for i, id := range n.Identifiers {
-			to, sIdent := c.refScope(id)
-			from := base + i
-			switch sIdent {
-			case rLoc:
-				if from != to {
-					c.emitLoad(from, to, loadFromLocal)
-				}
-			case rGlob:
-				c.emitStore(from, to, storeFromLocal, storeFromGlobal)
-			case rFree:
-				c.emitStore(from, to, storeFromLocal, storeFromFree)
-			case rNotDefined:
-				c.generateReferenceError(id, n.Line)
-			}
+
+		// Phase 2: for every indexed/property target, resolve its container
+		// reference and its index/selector key into their own scratch
+		// registers too -- before any writes. This is what guarantees
+		// A[i], i = 1, 2 and i, A[i] = 2, 1 both resolve A[i] against the
+		// OLD i, regardless of target order.
+		type targetAddr struct {
+			containerReg, keyReg int
 		}
+
+		addrs := make([]targetAddr, len(n.Targets))
+
+		for i, t := range n.Targets {
+			if t.Identifier != "" {
+				continue
+			}
+			base, key := t.Indexable, t.Index
+			if t.Selectable != nil {
+				base, key = t.Selectable, t.Selector
+			}
+			bIdx, bScope := c.compileExpr(base, false)
+			c.exprToReg(bIdx, bScope)
+			containerReg := c.rAlloc
+			c.rAlloc++
+			kIdx, kScope := c.compileExpr(key, false)
+			c.exprToReg(kIdx, kScope)
+			keyReg := c.rAlloc
+			c.rAlloc++
+			addrs[i] = targetAddr{containerReg: containerReg, keyReg: keyReg}
+		}
+
+		// Phase 3: every value and every address is now frozen in a
+		// scratch register, so the actual writes can happen in any order
+		// without risk of one write corrupting another target's address.
+		for i, t := range n.Targets {
+			from := rhsBase + i
+			if t.Identifier != "" {
+				to, sIdent := c.refScope(t.Identifier)
+				switch sIdent {
+				case rLoc:
+					if from != to {
+						c.emitLoad(from, to, loadFromLocal)
+					}
+				case rGlob:
+					c.emitStore(from, to, storeFromLocal, storeFromGlobal)
+				case rFree:
+					c.emitStore(from, to, storeFromLocal, storeFromFree)
+				case rNotDefined:
+					c.generateReferenceError(t.Identifier, n.Line)
+				}
+				continue
+			}
+			a := addrs[i]
+			c.emitSet(a.containerReg, a.keyReg, from, storeFromLocal, storeFromLocal)
+		}
+
+		// Release every scratch register this statement claimed.
+		c.rAlloc = rhsBase
 	case *ast.Branch:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		elifCount := len(n.Elifs)

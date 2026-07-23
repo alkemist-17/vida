@@ -247,3 +247,219 @@ assert(localResult == 1)
 
 
 
+
+
+// Baseline for indexed targets: swap two elements of the same array.
+// Exercises the fresh compiler path (container+key captured into
+// scratch registers) for the first time against a real reference type.
+
+let A = [10, 20, 30]
+A[0], A[1] = A[1], A[0]
+
+assert(A[0] == 20)
+assert(A[1] == 10)
+assert(A[2] == 30)
+
+
+
+
+// Same idea, but for object properties -- exercises the
+// Selectable/Selector branch of target address resolution rather than
+// Indexable/Index.
+
+let o = { x = 1, y = 2 }
+o.x, o.y = o.y, o.x
+
+assert(o.x == 2)
+assert(o.y == 1)
+
+
+
+// The exact case that drove the current design decision: `i` is
+// both an index INTO a target and a target itself in the same
+// statement. A[i]'s address must be resolved using the OLD i,
+// regardless of where `i` sits in the target list.
+
+A = [100, 200, 300]
+var i = 0
+
+A[i], i = 999, 2
+
+assert(A[0] == 999) // expect: 999  (old i=0 was the write location)
+assert(A[1] == 200) // expect: 200  (untouched)
+assert(i == 2)      // expect: 2 after assignment
+
+
+
+
+
+
+// Same logical statement, but with
+// the target list REORDERED (i first, then A[i]). Under true parallel
+// semantics this must produce IDENTICAL results to 11 -- this is
+// exactly the guarantee Python/JS/Ruby do NOT provide (their behavior
+// would differ here based on order), and the reason the design decision was
+// chosen for Vida.
+
+A = [100, 200, 300]
+i = 0
+
+i, A[i] = 2, 999
+
+assert(A[0] == 999) // expect: 999  (same as the past test, despite reordering)
+assert(A[1] == 200) // expect: 200
+assert(i == 2)      // expect: 2
+
+
+
+
+
+// A[0][1] as a target: Indexable itself is a nested IGet (A[0]), not
+// a bare Reference. Confirms compileExpr's existing nested-IGet
+// handling works correctly when reused for address resolution rather
+// than value resolution.
+
+A = [[1, 2], [3, 4]]
+let x = 999
+
+A[0][1], x = x, A[0][1]
+
+assert(A[0][0] == 1)   // expect: 1   (untouched)
+assert(A[0][1] == 999) // expect: 999
+assert(A[1][0] == 3)   // expect: 3   (untouched)
+assert(A[1][1] == 4)   // expect: 4   (untouched)
+assert(x == 2)         // expect: 2   (old A[0][1] value)
+
+
+
+
+
+
+// A, B = B, A on variables holding arrays swaps which NAME points to
+// which array -- it does not copy array contents. Mutating through
+// one name after the swap must be visible through whichever name now
+// points at the same underlying array (reference semantics).
+
+A = [1, 2, 3]
+let B = [9, 8, 7]
+
+A, B = B, A
+
+assert(A[0] == 9) // expect: 9  (A now refers to the old B array)
+assert(B[0] == 1) // expect: 1  (B now refers to the old A array)
+
+// Mutate through A -- since A now points at the array [9, 8, 7],
+// and nothing else aliases that specific array object, this should
+// NOT affect B.
+A[0] = 111
+
+assert(A[0] == 111) // expect: 111
+assert(B[0] == 1)   // expect: 1 (unaffected -- confirms A and B point at
+                   //            genuinely distinct array objects post-swap,
+                   //            the swap moved references, it didn't merge them)
+
+
+
+
+
+
+
+
+// Sharper version of the past test: C aliases the SAME array as A before the
+// swap. After A, B = B, A, the swap only rebinds what A and B point
+// to -- it can't have "followed" C, since C was never a target. C
+// should still point at whatever array it always pointed at,
+// regardless of what A now refers to.
+
+A, B = [1, 2, 3], [9, 8, 7]
+let C = A // C aliases the SAME array object as A, not a copy
+
+A, B = B, A
+
+assert(A[0] == 9) // expect: 9   (A now refers to the old B array)
+assert(C[0] == 1) // expect: 1   (C still refers to the original array,
+                  //              unaffected by A's rebinding)
+
+C[0] = 555
+assert(A[0] == 9)   // expect: 9   (A's rebinding is untouched by mutating C)
+assert(C[0] == 555) // expect: 555
+
+
+
+
+
+
+
+// If target-address capture accidentally re-evaluated the index
+// expression (once during "capture" and again during "write"), this
+// would fire twice. It must fire exactly once, since Phase 2 captures
+// the key into a scratch register and Phase 3 only ever reads that
+// register back.
+
+A = [10, 20, 30]
+
+let calls = 0
+let idx = fun {
+	calls = calls + 1
+	ret 1
+}
+
+x = 0
+A[idx()], x = 999, 111
+
+assert(A[1] == 999)  // expect: 999
+assert(x == 111)     // expect: 111
+assert(calls == 1)   // expect: 1 (not 2 -- proves Phase 2 captures the key
+                     //             once into a scratch register, and Phase 3
+                     //             only ever reads that register back)
+
+
+
+
+
+
+
+// KNOWN, DOCUMENTED BEHAVIOR:
+// firstDuplicateIdentTarget only catches duplicate PLAIN IDENTIFIERS
+// (e.g. `a, a = 1, 2`). It can't prove A[0] and A[0] alias the same
+// slot at compile time in general -- that would require full alias
+// analysis, which Vida doesn't do. So this is accepted at parse time,
+// and at runtime it's simply "last write wins" among targets that
+// happen to collide, same as Go's spec for the analogous case.
+
+A = [1, 2, 3]
+A[0], A[0] = 111, 222
+
+assert(A[0] == 222) // expect: 222 -- whichever target is LAST in the list
+                    // wins, since Phase 3 writes execute in target order and
+                    // both targets' addresses already point at the same slot
+
+
+
+
+
+
+// Regression check specifically against the reference-type examples.
+// None of this touches MultipleMut at all -- it's here purely to
+// confirm the parser surgery in mutateDataStructureOrCallStmt didn't
+// disturb the pre-existing single-target statement path.
+
+A = [{ hello = fun -> "hi" }]
+assert(A[0]::hello() == "hi")
+
+B = [[1, 2], [2, 3]]
+B[0][1] = nil
+assert(B[0][1] == nil) // expect: nil
+assert(B[0][0] == 1)   // expect: 1 (untouched)
+
+o = { hello = 42, world = 55 }
+o[90] = "fourteen"
+o.alpha = "alpha"
+assert(o.alpha == "alpha")  // expect: alpha
+assert(o[90] == "fourteen") // expect: fourteen
+assert(o.hello == 42)       // expect: 42
+
+
+
+
+

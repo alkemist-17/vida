@@ -58,7 +58,7 @@ func nodeColor(node Node) string {
 		return colorExpr
 	case *CallExpr, *CallStmt, *MethodCallExpr, *MethodCallStmt:
 		return colorCall
-	case syntheticArgs:
+	case syntheticArgs, syntheticAssign:
 		return colorArgs
 	case *Block, *Branch, *If, *Else, *While, *For, *IFor, *ForState, *Break, *Continue:
 		return colorFlow
@@ -121,8 +121,16 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeChild(sb, cont, n.Expr, color)
 
 	case *MultipleMut:
-		writeLine(sb, own, "Mut "+multipleIdentifiers(n.Identifiers), col, color)
-		writeChildren(sb, cont, n.Exprs, color)
+		writeLine(sb, own, "Mut (multi)", col, color)
+		pairs := make([]Node, len(n.Targets))
+		for i, t := range n.Targets {
+			pairs[i] = syntheticAssign{Target: targetToNode(t), Expr: n.Exprs[i]}
+		}
+		writeChildren(sb, cont, pairs, color)
+
+	case syntheticAssign:
+		writeLine(sb, own, "Assign", col, color)
+		writeChildren(sb, cont, []Node{n.Target, n.Expr}, color)
 
 	case *Reference:
 		writeLine(sb, own, "Ref "+n.Value, col, color)
@@ -346,6 +354,15 @@ func countNodes(node Node) int {
 	case *Mut:
 		count += countNodes(n.Expr)
 	case *MultipleMut:
+		for _, t := range n.Targets {
+			if t.Identifier == "" {
+				if t.Indexable != nil {
+					count += countNodes(t.Indexable) + countNodes(t.Index)
+				} else {
+					count += countNodes(t.Selectable) + countNodes(t.Selector)
+				}
+			}
+		}
 		for _, e := range n.Exprs {
 			count += countNodes(e)
 		}
@@ -427,6 +444,29 @@ func countNodes(node Node) int {
 type syntheticArgs []Node
 
 func (sa syntheticArgs) _node() {}
+
+// syntheticAssign pairs one MultipleMut target with its corresponding
+// RHS expression for display purposes only -- it never appears in a
+// real AST, just in the printed tree.
+type syntheticAssign struct {
+	Target Node
+	Expr   Node
+}
+
+func (sa syntheticAssign) _node() {}
+
+// targetToNode renders a MutTarget by reusing the existing Reference,
+// IGet, and Select printers rather than inventing new display logic --
+// a target prints exactly like it would if it appeared as an expression.
+func targetToNode(t *MutTarget) Node {
+	if t.Identifier != "" {
+		return &Reference{Value: t.Identifier, Line: t.Line}
+	}
+	if t.Indexable != nil {
+		return &IGet{Indexable: t.Indexable, Index: t.Index, Line: t.Line}
+	}
+	return &Select{Selectable: t.Selectable, Selector: t.Selector}
+}
 
 func nodeSlice[T Node](in []T) []Node {
 	out := make([]Node, len(in))

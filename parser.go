@@ -90,7 +90,10 @@ func (p *parser) mutationOrCall(statements *[]ast.Node) ast.Node {
 		return p.mutateDataStructureOrCallStmt(statements)
 	}
 	if p.next.Token == token.COMMA {
-		return p.multipleMutationStmt()
+		l := p.current.Line
+		first := &ast.MutTarget{Identifier: p.current.Lit, Line: l}
+		p.advance()
+		return p.multiTargetMutation(first, l)
 	}
 	line := p.current.Line
 	i := p.current.Lit
@@ -191,38 +194,6 @@ func (p *parser) moduleVariableDecl() ast.Node {
 	return &ast.Let{Identifier: i, Expr: e, Line: l}
 }
 
-func (p *parser) multipleMutationStmt() ast.Node {
-	l := p.current.Line
-	identifiers := make([]string, 0, 5)
-	identifiers = append(identifiers, p.current.Lit)
-	p.advance()
-	for p.current.Token == token.COMMA {
-		p.advance()
-		p.expect(token.IDENTIFIER)
-		identifiers = append(identifiers, p.current.Lit)
-		p.advance()
-	}
-	if dup, ok := firstDuplicate(identifiers); ok {
-		return p.declError(l, fmt.Sprintf("identifier '%v' repeated as an assignment target", dup))
-	}
-	p.expect(token.ASSIGN)
-	p.advance()
-	exprs := make([]ast.Node, 0, len(identifiers))
-	e := p.expression(token.LowestPrec)
-	p.advance()
-	exprs = append(exprs, e)
-	for p.current.Token == token.COMMA {
-		p.advance()
-		e := p.expression(token.LowestPrec)
-		p.advance()
-		exprs = append(exprs, e)
-	}
-	if len(identifiers) != len(exprs) {
-		return p.declError(l, fmt.Sprintf("assignment has %d target(s) but %d expression(s)", len(identifiers), len(exprs)))
-	}
-	return &ast.MultipleMut{Identifiers: identifiers, Exprs: exprs, Line: l}
-}
-
 func (p *parser) block(isInsideLoop bool) ast.Node {
 	block := &ast.Block{}
 	p.advance()
@@ -281,31 +252,54 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 }
 
 func (p *parser) mutateDataStructureOrCallStmt(statements *[]ast.Node) ast.Node {
+	stmtMark := len(*statements)
 	*statements = append(*statements, &ast.ReferenceStmt{Value: p.current.Lit, Line: p.current.Line})
+	target := ast.Node(&ast.Reference{Value: p.current.Lit, Line: p.current.Line})
 	var idx ast.Node
+	var idxIsProperty bool
 	l := p.current.Line
 Loop:
 	for p.next.Token == token.LBRACKET ||
 		p.next.Token == token.DOT ||
 		p.next.Token == token.STATIC_CALL ||
 		p.next.Token == token.LPAREN {
+		// Fold the PREVIOUS hop into the tree now, one hop behind --
+		// this keeps `target` always excluding whatever hop we're
+		// about to process, so at any decision point below, `target`
+		// is exactly "everything but the final hop" for free.
+		if idx != nil {
+			if idxIsProperty {
+				target = &ast.Select{Selectable: target, Selector: idx}
+			} else {
+				target = &ast.IGet{Indexable: target, Index: idx, Line: l}
+			}
+			idx = nil
+		}
 		p.advance()
 		switch p.current.Token {
 		case token.LBRACKET:
 			p.advance()
 			idx = p.expression(token.LowestPrec)
+			idxIsProperty = false
 			p.advance()
 			p.expect(token.RBRACKET)
 			if p.next.Token == token.ASSIGN {
 				goto assignment
+			}
+			if p.next.Token == token.COMMA {
+				return p.finishMultiTargetMutation(statements, stmtMark, target, idx, idxIsProperty, l)
 			}
 			*statements = append(*statements, &ast.IGetStmt{Index: idx, Line: l})
 		case token.DOT:
 			p.advance()
 			p.expect(token.IDENTIFIER)
 			idx = &ast.Property{Value: p.current.Lit}
+			idxIsProperty = true
 			if p.next.Token == token.ASSIGN {
 				goto assignment
+			}
+			if p.next.Token == token.COMMA {
+				return p.finishMultiTargetMutation(statements, stmtMark, target, idx, idxIsProperty, l)
 			}
 			if p.next.Token == token.LPAREN {
 				p.advance()
@@ -347,6 +341,7 @@ Loop:
 					return &ast.MethodCallStmt{Args: args, Prop: idx, Ellipsis: ellipsis, Line: l}
 				}
 				*statements = append(*statements, &ast.MethodCallStmt{Args: args, Prop: idx, Ellipsis: ellipsis, Line: l})
+				idx = nil
 				continue
 			}
 			*statements = append(*statements, &ast.SelectStmt{Selector: idx, Line: l})
@@ -400,6 +395,7 @@ Loop:
 				return &ast.Nil{}
 			}
 			*statements = append(*statements, &ast.SelectStmt{Selector: idx})
+			idx = nil
 		default:
 			break Loop
 		}
@@ -411,6 +407,93 @@ assignment:
 	e := p.expression(token.LowestPrec)
 	p.advance()
 	return &ast.ISet{Index: idx, Expr: e, Line: l}
+}
+
+func (p *parser) multiTargetMutation(first *ast.MutTarget, line uint) ast.Node {
+	targets := []*ast.MutTarget{first}
+	for p.current.Token == token.COMMA {
+		p.advance()
+		targets = append(targets, p.parseMutTarget())
+	}
+	if dup, ok := firstDuplicateIdentTarget(targets); ok {
+		return p.declError(line, fmt.Sprintf("identifier '%v' repeated as an assignment target", dup))
+	}
+	p.expect(token.ASSIGN)
+	p.advance()
+	exprs := make([]ast.Node, 0, len(targets))
+	e := p.expression(token.LowestPrec)
+	p.advance()
+	exprs = append(exprs, e)
+	for p.current.Token == token.COMMA {
+		p.advance()
+		e := p.expression(token.LowestPrec)
+		p.advance()
+		exprs = append(exprs, e)
+	}
+	if len(targets) != len(exprs) {
+		return p.declError(line, fmt.Sprintf("assignment has %d target(s) but %d expression(s)", len(targets), len(exprs)))
+	}
+	return &ast.MultipleMut{Targets: targets, Exprs: exprs, Line: line}
+}
+
+func (p *parser) parseMutTarget() *ast.MutTarget {
+	l := p.current.Line
+	p.expect(token.IDENTIFIER)
+	name := p.current.Lit
+	if p.next.Token != token.DOT && p.next.Token != token.LBRACKET {
+		p.advance()
+		return &ast.MutTarget{Identifier: name, Line: l}
+	}
+	var target ast.Node = &ast.Reference{Value: name, Line: l}
+	for p.next.Token == token.DOT || p.next.Token == token.LBRACKET {
+		p.advance()
+		switch p.current.Token {
+		case token.LBRACKET:
+			p.advance()
+			e := p.expression(token.LowestPrec)
+			p.advance()
+			p.expect(token.RBRACKET)
+			target = &ast.IGet{Indexable: target, Index: e, Line: l}
+		case token.DOT:
+			p.advance()
+			p.expect(token.IDENTIFIER)
+			target = &ast.Select{Selectable: target, Selector: &ast.Property{Value: p.current.Lit}}
+		}
+	}
+	p.advance()
+	switch t := target.(type) {
+	case *ast.IGet:
+		return &ast.MutTarget{Indexable: t.Indexable, Index: t.Index, Line: l}
+	case *ast.Select:
+		return &ast.MutTarget{Selectable: t.Selectable, Selector: t.Selector, Line: l}
+	}
+	return &ast.MutTarget{Identifier: name, Line: l} // unreachable
+}
+
+func firstDuplicateIdentTarget(targets []*ast.MutTarget) (string, bool) {
+	seen := make(map[string]struct{}, len(targets))
+	for _, t := range targets {
+		if t.Identifier == "" {
+			continue // can't statically prove A[i] vs A[j] alias, so skip
+		}
+		if _, ok := seen[t.Identifier]; ok {
+			return t.Identifier, true
+		}
+		seen[t.Identifier] = struct{}{}
+	}
+	return "", false
+}
+
+func (p *parser) finishMultiTargetMutation(statements *[]ast.Node, stmtMark int, target, idx ast.Node, idxIsProperty bool, l uint) ast.Node {
+	*statements = (*statements)[:stmtMark]
+	var first *ast.MutTarget
+	if idxIsProperty {
+		first = &ast.MutTarget{Selectable: target, Selector: idx, Line: l}
+	} else {
+		first = &ast.MutTarget{Indexable: target, Index: idx, Line: l}
+	}
+	p.advance()
+	return p.multiTargetMutation(first, l)
 }
 
 func (p *parser) forLoop() ast.Node {

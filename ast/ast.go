@@ -30,10 +30,19 @@ type Mut struct {
 	Line       uint
 }
 
+type MutTarget struct {
+	Identifier string
+	Indexable  Node
+	Index      Node
+	Selectable Node
+	Selector   Node
+	Line       uint
+}
+
 type MultipleMut struct {
-	Identifiers []string
-	Exprs       []Node
-	Line        uint
+	Targets []*MutTarget
+	Exprs   []Node
+	Line    uint
 }
 
 type Let struct {
