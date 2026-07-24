@@ -60,7 +60,7 @@ func nodeColor(node Node) string {
 		return colorCall
 	case syntheticArgs, syntheticAssign:
 		return colorArgs
-	case *Block, *Branch, *If, *Else, *While, *For, *IFor, *ForState, *Break, *Continue:
+	case *Block, *Branch, *If, *Else, *While, *For, *IFor, *ForState, *Break, *Continue, *With:
 		return colorFlow
 	case *Fun, *Ret, *Export, *Import, *Enum:
 		return colorFun
@@ -252,6 +252,11 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeLine(sb, own, "While", col, color)
 		writeChildren(sb, cont, []Node{n.Condition, n.Block}, color)
 
+	case *With:
+		writeLine(sb, own, "With "+multipleIdentifiers(n.Identifiers), col, color)
+		kids := append(append([]Node{}, n.Exprs...), n.Block)
+		writeChildren(sb, cont, kids, color)
+
 	case *For:
 		writeLine(sb, own, "For "+n.Id, col, color)
 		writeChildren(sb, cont, []Node{n.Init, n.End, n.Step, n.Block}, color)
@@ -427,6 +432,11 @@ func countNodes(node Node) int {
 		count += countNodes(n.Block)
 	case *While:
 		count += countNodes(n.Condition) + countNodes(n.Block)
+	case *With:
+		for _, e := range n.Exprs {
+			count += countNodes(e)
+		}
+		count += countNodes(n.Block)
 	case *For:
 		count += countNodes(n.Init) + countNodes(n.End) + countNodes(n.Step) + countNodes(n.Block)
 	case *IFor:

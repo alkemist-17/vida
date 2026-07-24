@@ -254,6 +254,13 @@ type MethodCallExpr struct {
 	Ellipsis int
 }
 
+type With struct {
+	Identifiers []string
+	Exprs       []Node
+	Block       Node
+	Line        uint
+}
+
 type Enum struct {
 	Variants []string
 }
@@ -303,4 +310,5 @@ func (n *CallExpr) _node()       {}
 func (n *CallStmt) _node()       {}
 func (n *MethodCallStmt) _node() {}
 func (n *MethodCallExpr) _node() {}
+func (n *With) _node()           {}
 func (n *Enum) _node()           {}

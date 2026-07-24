@@ -30,6 +30,7 @@ const (
 	foundationInterfaceName = "std."
 	EmptyString             = ""
 	DefaultValField         = "value"
+	DefaultCloseMethodName  = "close"
 )
 
 const (

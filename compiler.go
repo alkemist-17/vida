@@ -2,38 +2,46 @@ package vida
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/alkemist-17/vida/ast"
 	"github.com/alkemist-17/vida/token"
 )
 
 type compiler struct {
-	jumps            []int
-	breakJumps       []int
-	breakCount       []int
-	continueJumps    []int
-	continueCount    []int
-	fn               []*CoreFunction
-	errMsg           string
-	mainScriptID     string
-	currentFn        *CoreFunction
-	ast              *ast.Ast
-	script           *Script
-	kb               *konstBuilder
-	sb               *symbolBuilder
-	ctx              *Context
-	scriptMap        map[string]int
-	depMap           map[string]struct{}
-	extensionsLoader ExtensionsLoader
-	lineErr          uint
-	scope            int
-	level            int
-	rAlloc           int
-	rDest            int
-	fromRefStmt      bool
-	mutLoc           bool
-	hadError         bool
-	isSubcompiler    bool
+	jumps              []int
+	breakJumps         []int
+	breakCount         []int
+	continueJumps      []int
+	continueCount      []int
+	withLoopWatermarks []int
+	withStack          []withScope
+	fn                 []*CoreFunction
+	errMsg             string
+	mainScriptID       string
+	currentFn          *CoreFunction
+	ast                *ast.Ast
+	script             *Script
+	kb                 *konstBuilder
+	sb                 *symbolBuilder
+	ctx                *Context
+	scriptMap          map[string]int
+	depMap             map[string]struct{}
+	extensionsLoader   ExtensionsLoader
+	lineErr            uint
+	scope              int
+	level              int
+	rAlloc             int
+	rDest              int
+	fromRefStmt        bool
+	mutLoc             bool
+	hadError           bool
+	isSubcompiler      bool
+}
+
+type withScope struct {
+	resourceReg int
+	level       int
 }
 
 var dummy = struct{}{}
@@ -461,11 +469,55 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.currentFn.Code[addr] |= uint64(len(c.currentFn.Code))
 			c.cleanUpLoopScope(init, true)
 		}
+	case *ast.With:
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		c.scope++
+		resourceRegs := make([]int, len(n.Identifiers))
+		for i, id := range n.Identifiers {
+			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
+				c.generateGlobalShadowedByLocalError(id, n.Line)
+				return
+			}
+			if _, isLocal, k := c.sb.isLocal(id); isLocal && c.scope == k.scope {
+				c.generateLocalAlreadyDefinedError(id, n.Line)
+				return
+			}
+			reg := c.rAlloc
+			from, scope := c.compileExpr(n.Exprs[i], true)
+			switch scope {
+			case rKonst:
+				c.emitLoad(from, reg, loadFromKonst)
+			case rGlob:
+				c.emitLoad(from, reg, loadFromGlobal)
+			case rFree:
+				c.emitLoad(from, reg, loadFromFree)
+			case rLoc:
+				if from != reg {
+					c.emitLoad(from, reg, loadFromLocal)
+				}
+			}
+			c.sb.addLocal(id, c.level, c.scope, reg)
+			c.rAlloc++
+			resourceRegs[i] = reg
+			c.withStack = append(c.withStack, withScope{resourceReg: reg, level: c.level})
+		}
+
+		c.compileStmt(n.Block)
+
+		c.withStack = c.withStack[:len(c.withStack)-len(resourceRegs)]
+		for i := len(resourceRegs) - 1; i >= 0; i-- {
+			c.emitCloseCall(resourceRegs[i])
+		}
+
+		c.rAlloc -= c.sb.clearLocals(c.level, c.scope)
+		c.scope--
 	case *ast.Break:
+		c.closeWithResourcesForLoopExit()
 		c.breakJumps = append(c.breakJumps, len(c.currentFn.Code))
 		c.breakCount[len(c.breakCount)-1]++
 		c.emitJump(0)
 	case *ast.Continue:
+		c.closeWithResourcesForLoopExit()
 		c.continueJumps = append(c.continueJumps, len(c.currentFn.Code))
 		c.continueCount[len(c.continueCount)-1]++
 		c.emitJump(0)
@@ -609,6 +661,12 @@ func (c *compiler) compileStmt(node ast.Node) {
 		if c.level != 0 || c.isSubcompiler {
 			c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 			i, s := c.compileExpr(n.Expr, true)
+			savedAlloc := c.rAlloc
+			if s == rLoc && i >= c.rAlloc {
+				c.rAlloc = i + 1
+			}
+			c.closeWithResourcesForRet()
+			c.rAlloc = savedAlloc
 			switch s {
 			case rLoc:
 				c.emitRet(storeFromLocal, i)
@@ -1344,11 +1402,13 @@ func (c *compiler) cleanUpLoopScope(init int, isWhileLoop bool) {
 		c.continueJumps = c.continueJumps[:hasContinues-count]
 	}
 	c.continueCount = c.continueCount[:lastElem]
+	c.withLoopWatermarks = c.withLoopWatermarks[:len(c.withLoopWatermarks)-1]
 }
 
 func (c *compiler) startLoopScope() {
 	c.breakCount = append(c.breakCount, 0)
 	c.continueCount = append(c.continueCount, 0)
+	c.withLoopWatermarks = append(c.withLoopWatermarks, len(c.withStack))
 }
 
 func (c *compiler) startFuncScope() int {
@@ -1750,4 +1810,35 @@ func (c *compiler) compileLogical(n *ast.BinaryExpr, isRoot bool) (int, int) {
 		return c.rDest, rLoc
 	}
 	return lreg, rLoc
+}
+
+func (c *compiler) emitCloseCall(resourceReg int) {
+	o := c.rAlloc
+	c.emitLoad(resourceReg, o, loadFromLocal)
+	c.rAlloc++
+	c.emitLoad(o, c.rAlloc, loadFromLocal)
+	c.rAlloc++
+	closeIdx := c.kb.StringIndex(DefaultCloseMethodName)
+	c.emitSend(o, closeIdx, o, storeFromKonst, storeFromLocal)
+	c.emitCall(o, 1, 0, 2) // 1 total arg (self), no ellipsis, method-call convention
+	c.rAlloc = o
+}
+
+func (c *compiler) closeWithResourcesForRet() {
+	for _, v := range slices.Backward(c.withStack) {
+		if v.level != c.level {
+			break
+		}
+		c.emitCloseCall(v.resourceReg)
+	}
+}
+
+func (c *compiler) closeWithResourcesForLoopExit() {
+	watermark := 0
+	if n := len(c.withLoopWatermarks); n > 0 {
+		watermark = c.withLoopWatermarks[n-1]
+	}
+	for i := len(c.withStack) - 1; i >= watermark; i-- {
+		c.emitCloseCall(c.withStack[i].resourceReg)
+	}
 }

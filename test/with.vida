@@ -1,0 +1,203 @@
+let makeResource = fun tag {
+	var res = { closed = false }
+	res.close = fun self {
+		self.closed = true
+		print(tag) // proves close() ran, and identifies WHICH resource
+	}
+	ret res =< res // res is its own vtable, so with can call the close method
+}
+
+with r = makeResource("R") {
+	print(r.closed) // expect: false (still open inside the block)
+}
+// expect "R" printed here -- natural fallthrough close
+print("done")
+
+// Expected full output, in order:
+//   false
+//   R
+//   done
+
+
+let run = fun {
+	with r = makeResource("EarlyRet") {
+		ret r.closed // captures FALSE -- evaluated before close() runs
+	}
+}
+
+let result = run()
+assert(result == false)
+
+// Expected full output, in order:
+//   EarlyRet   (printed by close(), which runs after the ret expression
+//               is captured but before run() actually returns)
+//   false      (the pre-close value that was captured)
+
+
+
+
+for i in 0, 3 {
+	with r = makeResource(i) {
+		if i == 1 { break }
+	}
+}
+print("after loop")
+
+// i=0: opens, no break, natural close prints 0
+// i=1: opens, breaks -- close still fires (prints 1) before the loop exits
+// i=2: never runs, since break exits the FOR entirely
+//
+// Expected full output, in order:
+//   0
+//   1
+//   after loop
+
+
+for i in 0, 3 {
+	with r = makeResource(i) {
+		if i == 1 { continue }
+		print("processed")
+	}
+}
+print("after loop")
+
+// i=0: opens, "processed" printed, natural close prints 0
+// i=1: opens, continue fires -- close still fires (prints 1), loop CONTINUES
+// i=2: opens fresh (proving continue didn't corrupt subsequent iterations),
+//      "processed" printed, natural close prints 2
+//
+// Expected full output, in order:
+//   processed
+//   0
+//   1
+//   processed
+//   2
+//   after loop
+
+
+
+
+with r = makeResource("outer") {
+	print(r.closed) // expect: false
+	with r = makeResource("inner") {
+		print(r.closed) // expect: false -- this r is the INNER resource
+	}
+	// expect "inner" printed here (inner's natural close)
+	print(r.closed) // expect: false again -- back to the OUTER r, unaffected
+	                 // by the inner resource closing (different object)
+}
+// expect "outer" printed here
+
+print("done")
+
+// Expected full output, in order:
+//   false
+//   false
+//   inner
+//   false
+//   outer
+//   done
+
+
+
+with Outer = makeResource("Outer") {
+	for i in 0, 3 {
+		with Inner = makeResource(i) {
+			if i == 1 { break }
+		}
+	}
+	print(Outer.closed) // expect: false -- break must NOT have touched Outer
+}
+// expect "Outer" printed here -- Outer's own natural close, AFTER the
+// entire loop (and everything else in its block) has finished
+print("done")
+
+// i=0: Inner opens, no break, natural close prints 0
+// i=1: Inner opens, breaks -- close fires (prints 1), ONLY for Inner
+// loop exits
+//
+// Expected full output, in order:
+//   0
+//   1
+//   false
+//   Outer
+//   done
+//
+// If Outer incorrectly closed during the break, you'd instead see
+// "true" instead of "false", and "Outer" would print out of order
+// (before "false" rather than after it).
+
+
+
+run = fun {
+	with r = makeResource("Returned") {
+		ret r
+	}
+}
+
+result = run()
+print(result.closed)
+
+// Expected full output, in order:
+//   Returned   (printed by close(), before run() returns)
+//   true       (result IS the closed object -- reference semantics)
+
+
+
+with i, o = makeResource("input"), makeResource("output") {
+	assert(i.closed == false)  // expect: false
+	assert(o.closed == false) // expect: false
+}
+// expect "output" then "input" -- LIFO, reverse of declaration order
+print("done")
+
+// Expected full output, in order:
+//   false
+//   false
+//   output
+//   input
+//   done
+
+
+run = fun {
+	with a, b, c = makeResource("a"), makeResource("b"), makeResource("c") {
+		ret nil
+	}
+}
+run()
+print("done")
+
+// Expected full output, in order (c, b, a -- reverse of a, b, c):
+//   c
+//   b
+//   a
+//   done
+
+
+
+with Outer = makeResource("Outer") {
+	for i in 0, 3 {
+		with X, Y = makeResource("X"), makeResource("Y") {
+			if i == 1 { break }
+		}
+	}
+	print(Outer.closed) // expect: false
+}
+print("done")
+
+// i=0: X, Y open; no break; natural close is LIFO -- Y then X
+// i=1: X, Y open; breaks -- close fires for X and Y ONLY (LIFO: Y, X),
+//      Outer untouched; loop exits
+//
+// Expected full output, in order:
+//   Y
+//   X
+//   Y
+//   X
+//   false
+//   Outer
+//   done
+
+
+
+

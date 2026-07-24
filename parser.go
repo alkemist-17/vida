@@ -54,6 +54,8 @@ func (p *parser) parse() (*ast.Ast, error) {
 			p.ast.Statement = append(p.ast.Statement, p.forLoop())
 		case token.WHILE:
 			p.ast.Statement = append(p.ast.Statement, p.whileLoop())
+		case token.WITH:
+			p.ast.Statement = append(p.ast.Statement, p.withStmt(false))
 		case token.LCURLY:
 			p.ast.Statement = append(p.ast.Statement, p.block(false))
 			p.advance()
@@ -211,6 +213,8 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 			block.Statement = append(block.Statement, p.forLoop())
 		case token.WHILE:
 			block.Statement = append(block.Statement, p.whileLoop())
+		case token.WITH:
+			block.Statement = append(block.Statement, p.withStmt(isInsideLoop))
 		case token.RET:
 			block.Statement = append(block.Statement, p.ret())
 		case token.BREAK:
@@ -597,6 +601,43 @@ func (p *parser) whileLoop() ast.Node {
 	b := p.block(true)
 	p.advance()
 	return &ast.While{Condition: c, Block: b, Line: l}
+}
+
+func (p *parser) withStmt(isInsideLoop bool) ast.Node {
+	l := p.current.Line
+	p.advance()
+	p.expect(token.IDENTIFIER)
+	identifiers := make([]string, 0, 3)
+	identifiers = append(identifiers, p.current.Lit)
+	p.advance()
+	for p.current.Token == token.COMMA {
+		p.advance()
+		p.expect(token.IDENTIFIER)
+		identifiers = append(identifiers, p.current.Lit)
+		p.advance()
+	}
+	if dup, ok := firstDuplicate(identifiers); ok {
+		return p.declError(l, fmt.Sprintf("identifier '%v' repeated in with declaration", dup))
+	}
+	p.expect(token.ASSIGN)
+	p.advance()
+	exprs := make([]ast.Node, 0, len(identifiers))
+	e := p.expression(token.LowestPrec)
+	p.advance()
+	exprs = append(exprs, e)
+	for p.current.Token == token.COMMA {
+		p.advance()
+		e := p.expression(token.LowestPrec)
+		p.advance()
+		exprs = append(exprs, e)
+	}
+	if len(identifiers) != len(exprs) {
+		return p.declError(l, fmt.Sprintf("with declaration has %d name(s) but %d expression(s)", len(identifiers), len(exprs)))
+	}
+	p.expect(token.LCURLY)
+	b := p.block(isInsideLoop)
+	p.advance()
+	return &ast.With{Identifiers: identifiers, Exprs: exprs, Block: b, Line: l}
 }
 
 func (p *parser) breakStmt() ast.Node {
