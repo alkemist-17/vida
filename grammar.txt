@@ -8,6 +8,7 @@ statement	:= 	global
 			|	ifor
 			|	if
 			|	while
+			|	with
 			|	export
 global		:=	'let' ident (',' ident)* '=' expr (',' expr)*
 local		:=	'var' 'rec'? ident (',' ident)* '=' expr (',' expr)*
@@ -22,6 +23,7 @@ if			:=	'if' expr block | loopBlock elif* else?
 elif		:=	'else' 'if' expr block | loopBlock
 else		:=	'else' block | loopBlock
 while		:=	'while' expr loopBlock
+with		:=	'with' ident (',' ident)* '=' expr (',' expr)* block
 export		:=	'export' expr
 ident		:=	['_' | letter]+ ['_' | letter | number]*
 expr		:=	prefix
