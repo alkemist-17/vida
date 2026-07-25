@@ -643,7 +643,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			case rGlob:
 				c.emitSet(i, j, k, storeFromFree, storeFromGlobal)
 			case rFree:
-				c.emitSet(i, j, k, storeFromFree, storeFromGlobal)
+				c.emitSet(i, j, k, storeFromFree, storeFromFree)
 			}
 			c.rAlloc--
 		}
@@ -986,6 +986,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 				if c.mutLoc && isRoot {
 					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
+					return c.rDest, rLoc
 				} else {
 					c.emitGet(i, j, dest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
@@ -1155,6 +1156,7 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 				if c.mutLoc && isRoot {
 					c.emitGet(i, j, c.rDest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
+					return c.rDest, rLoc
 				} else {
 					c.emitGet(i, j, dest, storeFromGlobal, storeFromFree)
 					c.rAlloc--
