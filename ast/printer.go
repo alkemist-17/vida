@@ -52,11 +52,11 @@ func nodeColor(node Node) string {
 		return colorRef
 	case *Boolean, *Nil, *Integer, *Float, *String:
 		return colorLiteral
-	case *Array, *Object, *Pair, *Property:
+	case *Array, *Object, *Pair, *Property, syntheticVT:
 		return colorColl
 	case *BinaryExpr, *PrefixExpr, *IGet, *IGetStmt, *ISet, *Slice, *Select, *SelectStmt:
 		return colorExpr
-	case *CallExpr, *CallStmt, *MethodCallExpr, *MethodCallStmt:
+	case *CallExpr, *CallStmt, *MethodCallExpr, *MethodCallStmt, *SuperCallStmt:
 		return colorCall
 	case syntheticArgs, syntheticAssign:
 		return colorArgs
@@ -227,6 +227,10 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeLine(sb, own, "MethodCallStmt", col, color)
 		writeChildren(sb, cont, []Node{n.Prop, syntheticArgs(n.Args)}, color)
 
+	case *SuperCallStmt:
+		writeLine(sb, own, "SuperCallStmt", col, color)
+		writeChildren(sb, cont, []Node{n.Prop, syntheticArgs(n.Args)}, color)
+
 	case *Block:
 		writeLine(sb, own, "Block", col, color)
 		writeChildren(sb, cont, nodeSlice(n.Statement), color)
@@ -261,18 +265,14 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 		writeLine(sb, own, "Super", col, color)
 
 	case *ObjectDecl:
-		if n.Parent == nil {
-			writeLine(sb, own, "Declare Object "+n.Name+"("+strings.Join(n.Params, ", ")+")", col, color)
-		} else {
-			writeLine(sb, own, "Declare Object "+n.Name+"("+strings.Join(n.Params, ", ")+")", col, color)
-			printNode(n.Parent, sb, own, cont, color)
+		header := "Declare Object " + n.Name + "(" + strings.Join(n.Params, ", ") + ")"
+		writeLine(sb, own, header, col, color)
+		kids := []Node{}
+		if n.Parent != nil {
+			kids = append(kids, n.Parent)
 		}
-		if len(n.Body) == 0 {
-			writeLine(sb, own, "VT {}", col, color)
-		} else {
-			writeLine(sb, own, "VT", col, color)
-			writeChildren(sb, cont, nodeSlice(n.Body), color)
-		}
+		kids = append(kids, syntheticVT(n.Body))
+		writeChildren(sb, cont, kids, color)
 
 	case *For:
 		writeLine(sb, own, "For "+n.Id, col, color)
@@ -319,6 +319,14 @@ func printNode(node Node, sb *strings.Builder, own, cont string, color bool) {
 			}
 			writeLine(sb, cont+branch, v, col, color)
 		}
+
+	case syntheticVT:
+		if len(n) == 0 {
+			writeLine(sb, own, "VT {}", col, color)
+			return
+		}
+		writeLine(sb, own, "VT", col, color)
+		writeChildren(sb, cont, nodeSlice(n), color)
 
 	default:
 		writeLine(sb, own, fmt.Sprintf("·unknown(%T)·", node), "", color)
@@ -433,6 +441,11 @@ func countNodes(node Node) int {
 		for _, a := range n.Args {
 			count += countNodes(a)
 		}
+	case *SuperCallStmt:
+		count += countNodes(n.Prop)
+		for _, a := range n.Args {
+			count += countNodes(a)
+		}
 	case *Block:
 		for _, s := range n.Statement {
 			count += countNodes(s)
@@ -459,8 +472,6 @@ func countNodes(node Node) int {
 		for _, p := range n.Body {
 			count += countNodes(p)
 		}
-	case *Super:
-		count += 1
 	case *For:
 		count += countNodes(n.Init) + countNodes(n.End) + countNodes(n.Step) + countNodes(n.Block)
 	case *IFor:
@@ -488,6 +499,13 @@ type syntheticAssign struct {
 }
 
 func (sa syntheticAssign) _node() {}
+
+// syntheticVT wraps an ObjectDecl's body pairs so they print as a
+// single nested "VT" child, consistent with how syntheticArgs wraps
+// call arguments, instead of at a mismatched indent level.
+type syntheticVT []*Pair
+
+func (sv syntheticVT) _node() {}
 
 // targetToNode renders a MutTarget by reusing the existing Reference,
 // IGet, and Select printers rather than inventing new display logic --
