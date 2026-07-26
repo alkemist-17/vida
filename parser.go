@@ -248,9 +248,11 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 			for p.current.Token == token.COMMENT || p.current.Token == token.NOOP {
 				p.advance()
 			}
+		case token.SUPER:
+			block.Statement = append(block.Statement, p.superCallStmt())
 		default:
 			if p.ok {
-				p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a block statement", SyntaxErrType, p.current.Line)
+				p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a block statement, got token"+p.current.Token.String(), SyntaxErrType, p.current.Line)
 				p.ok = false
 			}
 			return block
@@ -1051,14 +1053,12 @@ func (p *parser) selector(e ast.Node) ast.Node {
 
 func (p *parser) objectDecl() ast.Node {
 	l := p.current.Line
-	p.advance() // consume 'object'
+	p.advance()
 
-	// Name
 	p.expect(token.IDENTIFIER)
 	name := p.current.Lit
 	p.advance()
 
-	// Parameters: ( x, y, ... )
 	p.expect(token.LPAREN)
 	p.advance()
 	var params []string
@@ -1088,7 +1088,7 @@ func (p *parser) objectDecl() ast.Node {
 		p.advance()
 	}
 
-	// Body: { ... }
+	// Declaration Body: { ... }
 	p.expect(token.LCURLY)
 	p.advance()
 
@@ -1114,12 +1114,10 @@ func (p *parser) objectDecl() ast.Node {
 		}
 		p.advance()
 
-		// Optional comma after key (before =)
 		if p.current.Token == token.COMMA {
 			p.advance()
 		}
 
-		// = value
 		switch p.current.Token {
 		case token.ASSIGN:
 			p.advance()
@@ -1151,6 +1149,55 @@ func (p *parser) objectDecl() ast.Node {
 		Body:   body,
 		Line:   l,
 	}
+}
+
+func (p *parser) superCallStmt() ast.Node {
+	l := p.current.Line
+	p.advance() // consume 'super', current = '::'
+	p.expect(token.STATIC_CALL)
+	p.advance() // current = identifier
+	p.expect(token.IDENTIFIER)
+	prop := &ast.Property{Value: p.current.Lit}
+	if p.next.Token != token.LPAREN {
+		if p.ok {
+			p.err = NewRuntimeError(p.lexer.ScriptID, "it was expected a function call after selector '::'", SyntaxErrType, p.current.Line)
+			p.ok = false
+		}
+		return &ast.Nil{}
+	}
+	p.advance()
+	p.expect(token.LPAREN)
+	p.advance()
+	var args []ast.Node
+	var ellipsis int
+	if p.current.Token != token.RPAREN && p.current.Token != token.EOF {
+		if p.current.Token == token.ELLIPSIS {
+			p.advance()
+			ellipsis = spreadFirst
+			args = append(args, p.expression(token.LowestPrec))
+			p.advance()
+			goto afterParen
+		}
+		args = append(args, p.expression(token.LowestPrec))
+		p.advance()
+		for p.current.Token != token.RPAREN && p.current.Token != token.EOF {
+			p.expect(token.COMMA)
+			p.advance()
+			if p.current.Token == token.ELLIPSIS {
+				p.advance()
+				ellipsis = spreadLast
+				args = append(args, p.expression(token.LowestPrec))
+				p.advance()
+				goto afterParen
+			}
+			args = append(args, p.expression(token.LowestPrec))
+			p.advance()
+		}
+	}
+afterParen:
+	p.expect(token.RPAREN)
+	p.advance()
+	return &ast.SuperCallStmt{Args: args, Prop: prop, Ellipsis: ellipsis, Line: l}
 }
 
 func (p *parser) expect(tok token.Token) {

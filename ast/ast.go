@@ -273,6 +273,13 @@ type Super struct {
 	Line uint
 }
 
+type SuperCallStmt struct {
+	Args     []Node
+	Prop     Node
+	Ellipsis int
+	Line     uint
+}
+
 type Enum struct {
 	Variants []string
 }
@@ -325,4 +332,5 @@ func (n *MethodCallExpr) _node() {}
 func (n *With) _node()           {}
 func (n *ObjectDecl) _node()     {}
 func (n *Super) _node()          {}
+func (n *SuperCallStmt) _node()  {}
 func (n *Enum) _node()           {}

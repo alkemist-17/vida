@@ -17,7 +17,7 @@ type compiler struct {
 	withLoopWatermarks []int
 	withStack          []withScope
 	fn                 []*CoreFunction
-	superParent        ast.Node
+	superParentStack   []ast.Node
 	errMsg             string
 	mainScriptID       string
 	currentFn          *CoreFunction
@@ -735,6 +735,26 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 	case *ast.ObjectDecl:
 		c.compileObjectDecl(n)
+	case *ast.SuperCallStmt:
+		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
+		parent := c.currentSuperParent()
+		if parent == nil {
+			c.hadError = true
+			c.errMsg = "'super' can only be used inside an object declaration that has a parent"
+			c.lineErr = n.Line
+			return
+		}
+		reg := c.rAlloc
+		sel := &ast.Select{Selectable: parent, Selector: n.Prop}
+		idx, scope := c.compileExpr(sel, false)
+		c.exprToReg(idx, scope)
+		for _, v := range n.Args {
+			c.rAlloc++
+			i, s := c.compileExpr(v, false)
+			c.exprToReg(i, s)
+		}
+		c.rAlloc = reg
+		c.emitCall(reg, len(n.Args), n.Ellipsis, 1)
 	}
 }
 
@@ -1343,13 +1363,14 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		}
 		return c.kb.EnumIndex(e), rKonst
 	case *ast.Super:
-		if c.superParent == nil {
+		parent := c.currentSuperParent()
+		if parent == nil {
 			c.hadError = true
 			c.errMsg = "'super' can only be used inside an object declaration that has a parent"
 			c.lineErr = n.Line
 			return 0, rKonst
 		}
-		return c.compileExpr(c.superParent, isRoot)
+		return c.compileExpr(parent, isRoot)
 	default:
 		return 0, rGlob
 	}
@@ -1439,6 +1460,21 @@ func (c *compiler) leaveFuncScope() {
 	c.fn = c.fn[:c.level]
 	c.level--
 	c.currentFn = c.fn[c.level]
+}
+
+func (c *compiler) pushSuperParent(n ast.Node) {
+	c.superParentStack = append(c.superParentStack, n)
+}
+
+func (c *compiler) popSuperParent() {
+	c.superParentStack = c.superParentStack[:len(c.superParentStack)-1]
+}
+
+func (c *compiler) currentSuperParent() ast.Node {
+	if len(c.superParentStack) == 0 {
+		return nil
+	}
+	return c.superParentStack[len(c.superParentStack)-1]
 }
 
 func (c *compiler) integrateKonst(val Value) (int, int) {
@@ -1874,11 +1910,10 @@ func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
 	}
 
 	// ── 2. Set super context for method bodies ──
-	savedSuperParent := c.superParent
 	if n.Parent != nil {
-		c.superParent = c.resolveVTableRefs(n.Parent)
+		c.pushSuperParent(c.resolveVTableRefs(n.Parent))
 	} else {
-		c.superParent = nil
+		c.pushSuperParent(nil)
 	}
 
 	// ── 3. Build the vtable expression ──
@@ -1914,7 +1949,7 @@ func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
 	})
 
 	// ── 6. Restore super context ──
-	c.superParent = savedSuperParent
+	c.popSuperParent()
 
 	// ── 7. Register this object for future =< resolution ──
 	if c.objectVTables == nil {

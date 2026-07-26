@@ -203,3 +203,1163 @@ assert(p * p == 42)
 
 
 
+// ═══════════════════════════════════════════════════════════════
+// Comprehensive test suite for the `object` declaration feature
+// ═══════════════════════════════════════════════════════════════
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 1: Basic Declarations
+// ───────────────────────────────────────────────────────────────
+
+// 1.1 Empty object (no params, no methods)
+object Empty() {}
+
+let e = Empty()
+assert(e.type() == "object", "1.1 empty object type")
+
+// 1.2 Object with params only (no methods)
+object Pair(a, b) {}
+
+let pr = Pair(1, 2)
+assert(pr.a == 1, "1.2 pair.a")
+assert(pr.b == 2, "1.2 pair.b")
+
+// 1.3 Object with single method
+object Greeter(name) {
+    hello = fun self -> "Hello, " + self.name
+}
+
+let g = Greeter("World")
+assert(g.hello() == "Hello, World", "1.3 greeter")
+
+// 1.4 Object with many params
+object Rect(x, y, w, h, color, label) {
+    area = fun self -> self.w * self.h
+}
+
+r = Rect(0, 0, 10, 5, "red", "main")
+assert(r.area() == 50, "1.4 rect area")
+assert(r.color == "red", "1.4 rect color")
+assert(r.label == "main", "1.4 rect label")
+
+// 1.5 Multiple instances are independent
+object Counter(start) {
+    get = fun self -> self.start
+}
+
+let c1 = Counter(10)
+let c2 = Counter(20)
+assert(c1.get() == 10, "1.5 c1 independent")
+assert(c2.get() == 20, "1.5 c2 independent")
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 2: Methods and Dispatch
+// ───────────────────────────────────────────────────────────────
+
+// 2.1 Method calling another method on self
+object MathBox(x) {
+    double = fun self -> self.x * 2
+    quadruple = fun self -> self.double() * 2
+}
+
+let mb = MathBox(5)
+assert(mb.double() == 10, "2.1 double")
+assert(mb.quadruple() == 20, "2.1 quadruple calls double")
+
+// 2.2 Method with multiple args
+object Calculator(init) {
+    add = fun self, a, b -> self.init + a + b
+    sub = fun self, a, b -> self.init - a - b
+}
+
+let calc = Calculator(100)
+assert(calc.add(10, 20) == 130, "2.2 add")
+assert(calc.sub(10, 20) == 70, "2.2 sub")
+
+// 2.3 Method with conditional logic
+object Abs(x) {
+    value = fun self {
+        if self.x < 0 {
+            ret -self.x
+        }
+        ret self.x
+    }
+}
+
+assert(Abs(-5).value() == 5, "2.3 abs negative")
+assert(Abs(5).value() == 5, "2.3 abs positive")
+assert(Abs(0).value() == 0, "2.3 abs zero")
+
+// 2.4 Method with loop
+object SumTo(n) {
+    total = fun self {
+        var acc = 0
+        for i in 1, self.n + 1 {
+            acc = acc + i
+        }
+        ret acc
+    }
+}
+
+assert(SumTo(10).total() == 55, "2.4 sum to 10")
+assert(SumTo(0).total() == 0, "2.4 sum to 0")
+assert(SumTo(100).total() == 5050, "2.4 sum to 100")
+
+// 2.5 Method with and/or short-circuit
+object Validator(x) {
+    isPositive = fun self -> self.x > 0
+    isEven = fun self -> self.x % 2 == 0
+    isPositiveEven = fun self -> self.isPositive() and self.isEven()
+    isNegativeOrOdd = fun self -> (self.x < 0) or (self.x % 2 != 0)
+}
+
+assert(Validator(4).isPositiveEven() == true, "2.5 positive even")
+assert(Validator(3).isPositiveEven() == false, "2.5 positive odd")
+assert(Validator(-3).isNegativeOrOdd() == true, "2.5 negative odd")
+
+// 2.6 :: static dispatch on object instances
+object StaticTest(x) {
+    getX = fun self -> self.x
+}
+
+let st = StaticTest(42)
+assert(st::getX(st) == 42, "2.6 static dispatch")
+
+// 2.7 Method returning nil
+object NilReturner(x) {
+    nothing = fun self -> nil
+}
+
+assert(NilReturner(1).nothing() == nil, "2.7 nil return")
+
+// 2.8 Method with string operations
+object Text(content) {
+    upper_len = fun self -> self.content.len()
+    repeat = fun self, n {
+        var result = ""
+        for i in n {
+            result = result + self.content
+        }
+        ret result
+    }
+}
+
+assert(Text("hi").repeat(3) == "hihihi", "2.8 repeat")
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 3: Inheritance
+// ───────────────────────────────────────────────────────────────
+
+// 3.1 Single-level inheritance
+object Shape(name) {
+    type = fun self -> "Shape"
+    describe = fun self -> self.type() + ": " + self.name
+}
+
+object Circle(name, radius) =< Shape {
+    type = fun self -> "Circle"
+    area = fun self -> 3 * self.radius * self.radius
+}
+
+let circ = Circle("unit", 1)
+assert(circ.type() == "Circle", "3.1 override type")
+assert(circ.describe() == "Circle: unit", "3.1 inherited describe")
+assert(circ.area() == 3, "3.1 own method")
+assert(circ.name == "unit", "3.1 inherited field access")
+assert(circ.radius == 1, "3.1 own field")
+
+// 3.2 Three-level inheritance chain
+object A(x) {
+    level = fun self -> "A"
+    chain = fun self -> self.level()
+}
+
+object B(x) =< A {
+    level = fun self -> "B"
+    chain = fun self -> super::chain(self) + ">" + self.level()
+}
+
+object C(x) =< B {
+    level = fun self -> "C"
+    chain = fun self -> super::chain(self) + ">" + self.level()
+}
+
+let cObj = C(1)
+assert(cObj.level() == "C", "3.2 level override")
+assert(cObj.chain() == "C>C>C", "3.2 chained super calls")
+
+// 3.3 Inherited method accessing subclass fields
+object Base2(x) {
+    sum = fun self -> self.x + self.y
+}
+
+object Derived2(x, y) =< Base2 {}
+
+let d2 = Derived2(3, 7)
+assert(d2.sum() == 10, "3.3 inherited method accesses subclass fields")
+
+// 3.4 Deep inheritance (5 levels)
+object L0(v) {
+    depth = fun self -> 0
+    accumulate = fun self -> self.v
+}
+object L1(v) =< L0 { depth = fun self -> 1 }
+object L2(v) =< L1 { depth = fun self -> 2 }
+object L3(v) =< L2 { depth = fun self -> 3 }
+object L4(v) =< L3 {
+    depth = fun self -> 4
+    accumulate = fun self -> super::accumulate(self) + self.depth()
+}
+
+let deep = L4(10)
+assert(deep.depth() == 4, "3.4 deep depth")
+assert(deep.accumulate() == 14, "3.4 deep accumulate")
+
+// 3.5 Sibling objects sharing parent
+object Animal2(name) {
+    speak = fun self -> "..."
+    info = fun self -> self.name + " says " + self.speak()
+}
+
+object Cat2(name) =< Animal2 { speak = fun self -> "Meow" }
+object Dog2(name) =< Animal2 { speak = fun self -> "Woof" }
+
+assert(Cat2("Kitty").info() == "Kitty says Meow", "3.5 cat")
+assert(Dog2("Rex").info() == "Rex says Woof", "3.5 dog")
+
+// 3.6 Override with super call modifying result
+object Formatter(prefix) {
+    format = fun self, msg -> self.prefix + msg
+}
+
+object UpperFormatter(prefix) =< Formatter {
+    format = fun self, msg -> super::format(self, msg) + "!"
+}
+
+let uf = UpperFormatter(">> ")
+assert(uf.format("hello") == ">> hello!", "3.6 super modifies result")
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 4: Super Calls
+// ───────────────────────────────────────────────────────────────
+
+// 4.1 Basic super
+object SBase(x) {
+    val = fun self -> self.x
+}
+
+object SChild(x) =< SBase {
+    val = fun self -> super::val(self) * 2
+}
+
+assert(SChild(5).val() == 10, "4.1 basic super")
+
+// 4.2 Super with additional args
+object SBase2(x) {
+    combine = fun self, a -> self.x + a
+}
+
+object SChild2(x) =< SBase2 {
+    combine = fun self, a -> super::combine(self, a) * 10
+}
+
+assert(SChild2(3).combine(2) == 50, "4.2 super with args")
+
+// 4.3 Super in init
+object SBase3(x) {
+    init = fun self {
+        self.base_init = true
+    }
+}
+
+object SChild3(x) =< SBase3 {
+    init = fun self {
+        super::init(self)
+        self.child_init = true
+    }
+}
+
+let sc3 = SChild3(1)
+assert(sc3.base_init == true, "4.3 super in init - base ran")
+assert(sc3.child_init == true, "4.3 super in init - child ran")
+
+// 4.4 Triple chained super
+object T0(x) { greet = fun self -> "T0" }
+object T1(x) =< T0 { greet = fun self -> super::greet(self) + "+T1" }
+object T2(x) =< T1 { greet = fun self -> super::greet(self) + "+T2" }
+object T3(x) =< T2 { greet = fun self -> super::greet(self) + "+T3" }
+
+assert(T3(0).greet() == "T0+T1+T2+T3", "4.4 triple chained super")
+
+// 4.5 Super calling a method not overridden in child
+object SBase5(x) {
+    alpha = fun self -> "alpha"
+    beta = fun self -> "beta"
+}
+
+object SChild5(x) =< SBase5 {
+    beta = fun self -> super::beta(self) + "_overridden"
+}
+
+let sc5 = SChild5(1)
+assert(sc5.alpha() == "alpha", "4.5 non-overridden inherited")
+assert(sc5.beta() == "beta_overridden", "4.5 overridden with super")
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 5: Composition
+// ───────────────────────────────────────────────────────────────
+
+// 5.1 Left-wins merge (+)
+let mixinA = { shared = fun self -> "from A", onlyA = fun self -> "A" }
+let mixinB = { shared = fun self -> "from B", onlyB = fun self -> "B" }
+
+object CompAB(x) =< mixinA + mixinB {}
+
+let cab = CompAB(1)
+assert(cab.shared() == "from A", "5.1 left-wins: A's shared")
+assert(cab.onlyA() == "A", "5.1 onlyA present")
+assert(cab.onlyB() == "B", "5.1 onlyB present")
+
+// 5.2 Right-wins merge (|)
+object CompBA(x) =< mixinA | mixinB {}
+
+let cba = CompBA(1)
+assert(cba.shared() == "from B", "5.2 right-wins: B's shared")
+assert(cba.onlyA() == "A", "5.2 onlyA present")
+assert(cba.onlyB() == "B", "5.2 onlyB present")
+
+// 5.3 Intersection (&)
+let mixinC = { x_method = fun self -> "x", shared = fun self -> "C" }
+let mixinD = { y_method = fun self -> "y", shared = fun self -> "D" }
+
+object CompIntersect(x) =< mixinC & mixinD {}
+
+let ci = CompIntersect(1)
+assert(ci.shared() == "D", "5.3 intersection keeps shared from right")
+
+// 5.4 Difference (-)
+let mixinE = { keep = fun self -> "kept", remove = fun self -> "removed" }
+let mixinF = { remove = fun self -> "removed" }
+
+object CompDiff(x) =< mixinE - mixinF {
+    own = fun self -> "own"
+}
+
+let cd = CompDiff(1)
+assert(cd.keep() == "kept", "5.4 difference keeps non-overlapping")
+assert(cd.own() == "own", "5.4 own method")
+
+// 5.5 Composition with own methods overriding
+let loggable = {
+    log = fun self -> "LOG: " + self.type()
+    type = fun self -> "unknown"
+}
+
+object Logger(name) =< loggable {
+    type = fun self -> self.name
+}
+
+let lg = Logger("MyApp")
+assert(lg.log() == "LOG: MyApp", "5.5 own method overrides mixin")
+assert(lg.type() == "MyApp", "5.5 type override")
+
+// 5.6 Three-way composition
+let mA = { fa = fun self -> "a" }
+let mB = { fb = fun self -> "b" }
+let mC = { fc = fun self -> "c" }
+
+object Triple(x) =< (mA + mB) + mC {}
+
+let tr = Triple(1)
+assert(tr.fa() == "a", "5.6 triple fa")
+assert(tr.fb() == "b", "5.6 triple fb")
+assert(tr.fc() == "c", "5.6 triple fc")
+
+// 5.7 Composition with inheritance combined
+let timestamped = {
+    createdAt = fun self -> "2026-01-01"
+}
+
+object BaseEntity(id) {
+    getId = fun self -> self.id
+}
+
+object UserEntity(id, name) =< BaseEntity + timestamped {
+    displayName = fun self -> "%v (#%v)".fmt(self.name, self.getId())
+}
+
+let ue = UserEntity(42, "Alice")
+assert(ue.getId() == 42, "5.7 inherited method")
+assert(ue.createdAt() == "2026-01-01", "5.7 composed mixin")
+assert(ue.displayName() == "Alice (#42)", "5.7 own method")
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 6: Init Hook
+// ───────────────────────────────────────────────────────────────
+
+// 6.1 Basic init computing derived field
+object Point6(x, y) {
+    init = fun self {
+        self.mag2 = self.x * self.x + self.y * self.y
+    }
+}
+
+let p6 = Point6(3, 4)
+assert(p6.mag2 == 25, "6.1 init computed field")
+assert(p6.x == 3, "6.1 original field preserved")
+
+// 6.2 Init creating array field
+object Registry(name) {
+    init = fun self {
+        self.items = newArray()
+        self.count = 0
+    }
+    add = fun self, item {
+        self.items.append(item)
+        self.count = self.count + 1
+    }
+}
+
+let reg = Registry("test")
+reg.add("first")
+reg.add("second")
+assert(reg.count == 2, "6.2 registry count")
+
+// 6.3 Init with conditional logic
+object Clamped(value, lo, hi) {
+    init = fun self {
+        if self.value < self.lo {
+            self.value = self.lo
+        }
+        if self.value > self.hi {
+            self.value = self.hi
+        }
+    }
+}
+
+assert(Clamped(5, 0, 10).value == 5, "6.3 in range")
+assert(Clamped(-5, 0, 10).value == 0, "6.3 clamped low")
+assert(Clamped(15, 0, 10).value == 10, "6.3 clamped high")
+
+// 6.4 Init calling own method
+object SelfInit(x) {
+    init = fun self {
+        self.doubled = self.computeDouble()
+    }
+    computeDouble = fun self -> self.x * 2
+}
+
+assert(SelfInit(7).doubled == 14, "6.4 init calls own method")
+
+// 6.5 No init — constructor is pure field assignment
+object NoInit(a, b, c) {
+    sum = fun self -> self.a + self.b + self.c
+}
+
+let ni = NoInit(1, 2, 3)
+assert(ni.sum() == 6, "6.5 no init works")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 7: Operator Overloading
+// ───────────────────────────────────────────────────────────────
+
+// 7.1 Arithmetic operators
+object Vec(x, y) {
+    add = fun self, o -> Vec(self.x + o.x, self.y + o.y)
+    sub = fun self, o -> Vec(self.x - o.x, self.y - o.y)
+    mul = fun self, s -> Vec(self.x * s, self.y * s)
+    div = fun self, s -> Vec(self.x / s, self.y / s)
+    neg = fun self -> Vec(-self.x, -self.y)
+    toString = fun self -> "(%v,%v)".fmt(self.x, self.y)
+}
+
+let v1 = Vec(6, 8)
+v2 = Vec(1, 2)
+
+let vadd = v1 + v2
+assert(vadd.x == 7 and vadd.y == 10, "7.1 add")
+
+let vsub = v1 - v2
+assert(vsub.x == 5 and vsub.y == 6, "7.1 sub")
+
+let vmul = v1 * 3
+assert(vmul.x == 18 and vmul.y == 24, "7.1 mul")
+
+let vdiv = v1 / 2
+assert(vdiv.x == 3 and vdiv.y == 4, "7.1 div")
+
+let vneg = -v1
+assert(vneg.x == -6 and vneg.y == -8, "7.1 neg")
+
+// 7.2 Comparison operators
+object Temp(celsius) {
+    lt = fun self, o -> self.celsius < o.celsius
+    eq = fun self, o -> self.celsius == o.celsius
+}
+
+let t1 = Temp(100)
+let t2 = Temp(50)
+assert(t2 < t1, "7.2 lt")
+assert(t1 == Temp(100), "7.2 eq")
+
+// 7.3 Chained operations
+v3 = Vec(1, 1) + Vec(2, 2) + Vec(3, 3)
+assert(v3.x == 6 and v3.y == 6, "7.3 chained add")
+
+let v4 = Vec(10, 10) - Vec(1, 1) - Vec(2, 2)
+assert(v4.x == 7 and v4.y == 7, "7.3 chained sub")
+
+// 7.4 Mixed operations
+let v5 = (Vec(2, 3) + Vec(4, 5)) * 2
+assert(v5.x == 12 and v5.y == 16, "7.4 mixed ops")
+
+// 7.5 Operator returning different type
+object StrList(items) {
+    add = fun self, item -> self.items + ", " + item
+}
+
+let sl = StrList("a")
+let result = sl + "b"
+assert(result == "a, b", "7.5 operator returns string")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 8: Interop with Existing Object System
+// ───────────────────────────────────────────────────────────────
+
+// 8.1 getvt() on object declaration
+object GvtTest(x) {
+    hello = fun self -> "hi"
+}
+
+let gt = GvtTest(1)
+vt = gt.getvt()
+assert(vt.type() == "object", "8.1 getvt returns object")
+
+// 8.2 extendvt() on object declaration
+object ExtTest(x) {
+    original = fun self -> "original"
+}
+
+let et = ExtTest(1)
+let extended = et.extendvt({ extra = fun self -> "extra" })
+assert(extended.extra() == "extra", "8.2 extendvt adds method")
+assert(extended.original() == "original", "8.2 extendvt preserves original")
+assert(extended.x == 1, "8.2 extendvt preserves fields")
+
+// 8.3 implements() on object declaration
+let hasHello = { hello = fun self -> nil }
+let hasNope = { nope = fun self -> nil }
+
+assert(gt.getvt().implements(hasHello), "8.3 implements positive")
+assert(gt.getvt().implements(hasNope) == false, "8.3 implements negative")
+
+// 8.4 inject() on object declaration's vtable
+object InjectTest(x) {
+    base = fun self -> "base"
+}
+
+let it = InjectTest(1)
+it.getvt().inject({ bonus = fun self -> "bonus" })
+assert(it.bonus() == "bonus", "8.4 inject adds method")
+assert(it.base() == "base", "8.4 inject preserves base")
+
+// 8.5 override() on object declaration's vtable
+object OverrideTest(x) {
+    val = fun self -> "old"
+}
+
+let ot = OverrideTest(1)
+ot.getvt().override({ val = fun self -> "new" })
+assert(ot.val() == "new", "8.5 override replaces method")
+
+// 8.6 =< vtable swap at runtime (escape hatch)
+object SwapA(x) { greet = fun self -> "A" }
+object SwapB(x) { greet = fun self -> "B" }
+
+let sw = SwapA(1)
+assert(sw.greet() == "A", "8.6 before swap")
+sw = sw =< SwapB(1).getvt()
+assert(sw.greet() == "B", "8.6 after swap")
+
+// 8.7 Object declaration instances work with object set operations
+object SetA(x) { fa = fun self -> "a" }
+let objA = SetA(1)
+let objB = { fb = fun self -> "b" }
+let merged = {} =< objA.getvt() + objB
+assert(merged.fa() == "a", "8.7 set op preserves methods")
+assert(merged.fb() == "b", "8.7 set op adds fields")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 9: Higher-Order Patterns
+// ───────────────────────────────────────────────────────────────
+
+// 9.1 Object method as higher-order function argument
+object Multiplier(factor) {
+    apply = fun self, x -> x * self.factor
+}
+
+let doubler = Multiplier(2)
+let tripler = Multiplier(3)
+
+let applyDoublerTwice = fun f, x -> f(doubler, f(doubler, x))
+assert(applyDoublerTwice(doubler.apply, 5) == 20, "9.1 method as HOF arg")
+
+// 9.2 Object in array
+object Item(name, price) {
+    toString = fun self -> "%v:$%v".fmt(self.name, self.price)
+}
+
+let cart = newArray()
+cart.append(Item("Apple", 2))
+cart.append(Item("Bread", 5))
+cart.append(Item("Milk", 3))
+
+var total = 0
+for i, item in cart {
+    total = total + item.price
+}
+assert(total == 10, "9.2 objects in array")
+
+// 9.3 Object returned from function
+let makePoint = fun x, y -> Vec(x, y)
+let fp = makePoint(7, 8)
+assert(fp.x == 7 and fp.y == 8, "9.3 object from function")
+
+// 9.4 Object passed to object method
+object Container(items) {
+    addAll = fun self, other -> Container(self.items + other.items)
+}
+
+// 9.5 Closure capturing object
+object ClosureObj(x) {
+    makeAdder = fun self {
+        let base = self.x
+        ret fun n -> base + n
+    }
+}
+
+let adder = ClosureObj(100).makeAdder()
+assert(adder(5) == 105, "9.5 closure captures object field")
+assert(adder(10) == 110, "9.5 closure stable")
+
+// 9.6 Object method returning a function
+object Strategy(name) {
+    getComparator = fun self {
+        if self.name == "asc" {
+            ret fun a, b -> a < b
+        }
+        ret fun a, b -> a > b
+    }
+}
+
+let asc = Strategy("asc").getComparator()
+let desc = Strategy("desc").getComparator()
+assert(asc(1, 2) == true, "9.6 asc comparator")
+assert(desc(1, 2) == false, "9.6 desc comparator")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 10: State and Mutation
+// ───────────────────────────────────────────────────────────────
+
+// 10.1 Mutable state via self field assignment
+object BankAccount(owner, balance) {
+    deposit = fun self, amount {
+        self.balance = self.balance + amount
+    }
+    withdraw = fun self, amount {
+        if amount <= self.balance {
+            self.balance = self.balance - amount
+            ret true
+        }
+        ret false
+    }
+}
+
+let acct = BankAccount("Alice", 100)
+acct.deposit(50)
+assert(acct.balance == 150, "10.1 deposit")
+assert(acct.withdraw(30) == true, "10.1 withdraw success")
+assert(acct.balance == 120, "10.1 balance after withdraw")
+assert(acct.withdraw(200) == false, "10.1 withdraw insufficient")
+assert(acct.balance == 120, "10.1 balance unchanged")
+
+// 10.2 Counter with increment/decrement
+object Toggle(state) {
+    flip = fun self {
+        self.state = self.state == false
+    }
+    get = fun self -> self.state
+}
+
+let tog = Toggle(false)
+assert(tog.get() == false, "10.2 initial false")
+tog.flip()
+assert(tog.get() == true, "10.2 after flip")
+tog.flip()
+assert(tog.get() == false, "10.2 after double flip")
+
+// 10.3 Accumulator pattern
+object Accumulator(init) {
+    add = fun self, n {
+        self.init = self.init + n
+        ret self
+    }
+}
+
+let acc = Accumulator(0)
+acc.add(1).add(2).add(3)
+assert(acc.init == 6, "10.3 chained accumulator")
+
+// 10.4 Object modifying array field
+object Stack() {
+    init = fun self {
+        self.data = newArray()
+    }
+    push = fun self, v {
+        self.data.append(v)
+    }
+    peek = fun self -> self.data[-1]
+    size = fun self -> self.data.len()
+}
+
+let stk = Stack()
+stk.push(10)
+stk.push(20)
+stk.push(30)
+assert(stk.size() == 3, "10.4 stack size")
+assert(stk.peek() == 30, "10.4 stack peek")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 11: Nested and Composite Objects
+// ───────────────────────────────────────────────────────────────
+
+// 11.1 Object containing objects
+object Point11(x, y) {
+    add = fun self, o -> Point11(self.x + o.x, self.y + o.y)
+}
+
+object Line(start, end) {
+    midpoint = fun self {
+        ret Point11(
+            (self.start.x + self.end.x) / 2,
+            (self.start.y + self.end.y) / 2
+        )
+    }
+    length2 = fun self {
+        let dx = self.end.x - self.start.x
+        let dy = self.end.y - self.start.y
+        ret dx * dx + dy * dy
+    }
+}
+
+let line = Line(Point11(0, 0), Point11(6, 8))
+let mid = line.midpoint()
+assert(mid.x == 3 and mid.y == 4, "11.1 midpoint")
+assert(line.length2() == 100, "11.1 length squared")
+
+// 11.2 Object creating instances of another object
+object Factory(prefix) {
+    create = fun self, id -> self.prefix + "-" + id
+}
+
+let fact = Factory("ITEM")
+assert(fact.create("001") == "ITEM-001", "11.2 factory creates")
+assert(fact.create("002") == "ITEM-002", "11.2 factory creates again")
+
+// 11.3 Object with object-valued field
+object Config11(name) {
+    init = fun self {
+        self.settings = { debug = false, verbose = true }
+    }
+}
+
+let cfg11 = Config11("app")
+assert(cfg11.settings.debug == false, "11.3 nested object field")
+assert(cfg11.settings.verbose == true, "11.3 nested object field 2")
+
+// 11.4 Recursive data structure (linked list)
+object Node11(value, next) {
+    sum = fun self {
+        if self.next == nil {
+            ret self.value
+        }
+        ret self.value + self.next.sum()
+    }
+    len = fun self {
+        if self.next == nil {
+            ret 1
+        }
+        ret 1 + self.next.len()
+    }
+}
+
+let list = Node11(1, Node11(2, Node11(3, nil)))
+assert(list.sum() == 6, "11.4 linked list sum")
+assert(list.len() == 3, "11.4 linked list len")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 12: Edge Cases
+// ───────────────────────────────────────────────────────────────
+
+// 12.1 Object with nil field value
+object NilField(x) {
+    nothing = fun self -> nil
+}
+let nf = NilField(nil)
+assert(nf.x == nil, "12.1 nil param")
+assert(nf.nothing() == nil, "12.1 nil return")
+
+// 12.2 Object with boolean fields
+object Flags(a, b, c) {
+    allTrue = fun self -> self.a and self.b and self.c
+    anyTrue = fun self -> self.a or self.b or self.c
+}
+
+assert(Flags(true, true, true).allTrue() == true, "12.2 all true")
+assert(Flags(true, false, true).allTrue() == false, "12.2 not all")
+assert(Flags(false, false, true).anyTrue() == true, "12.2 any true")
+assert(Flags(false, false, false).anyTrue() == false, "12.2 none true")
+
+// 12.3 Object with array param
+object ArrayHolder(items) {
+    first = fun self -> self.items[0]
+    last = fun self -> self.items[-1]
+    count = fun self -> self.items.len()
+}
+
+let arr = newArray()
+arr.append(10)
+arr.append(20)
+arr.append(30)
+let ah = ArrayHolder(arr)
+assert(ah.first() == 10, "12.3 array first")
+assert(ah.last() == 30, "12.3 array last")
+assert(ah.count() == 3, "12.3 array count")
+
+// 12.4 Object with string keys in body
+object StrKeys(x) {
+    "my-method" = fun self -> self.x * 2
+}
+
+let sk = StrKeys(5)
+assert(sk["my-method"](sk) == 10, "12.4 string key method")
+
+// 12.5 Object method with no body expression (block only)
+object BlockOnly(x) {
+    compute = fun self {
+        var _a = self.x
+        var _b = _a * 2
+        var _c = _b + 1
+        ret _c
+    }
+}
+
+assert(BlockOnly(5).compute() == 11, "12.5 block body")
+
+// 12.6 Object used in while loop
+object WhileObj(limit) {
+    countDown = fun self {
+        var n = self.limit
+        var _acc = 0
+        while n > 0 {
+            _acc = _acc + n
+            n = n - 1
+        }
+        ret _acc
+    }
+}
+
+assert(WhileObj(5).countDown() == 15, "12.6 while loop in method")
+
+// 12.7 Object with nested if/else
+object Classifier(x) {
+    classify = fun self {
+        if self.x < 0 {
+            ret "negative"
+        } else if self.x == 0 {
+            ret "zero"
+        } else if self.x < 10 {
+            ret "small"
+        } else {
+            ret "large"
+        }
+    }
+}
+
+assert(Classifier(-1).classify() == "negative", "12.7 negative")
+assert(Classifier(0).classify() == "zero", "12.7 zero")
+assert(Classifier(5).classify() == "small", "12.7 small")
+assert(Classifier(100).classify() == "large", "12.7 large")
+
+// 12.8 Object with for-in iterator
+object Range12(start, stop) {
+    collect = fun self {
+        var _result = newArray()
+        for i in self.start, self.stop {
+            _result.append(i)
+        }
+        ret _result
+    }
+}
+
+let collected = Range12(3, 7).collect()
+assert(collected.len() == 4, "12.8 range collect len")
+assert(collected[0] == 3, "12.8 range first")
+assert(collected[3] == 6, "12.8 range last")
+
+// 12.9 Object method with early return
+object EarlyReturn(x) {
+    check = fun self {
+        if self.x > 100 {
+            ret "big"
+        }
+        if self.x > 50 {
+            ret "medium"
+        }
+        ret "small"
+    }
+}
+
+assert(EarlyReturn(200).check() == "big", "12.9 early return big")
+assert(EarlyReturn(75).check() == "medium", "12.9 early return medium")
+assert(EarlyReturn(10).check() == "small", "12.9 early return small")
+
+// 12.10 Object equality via eq operator
+object ID(code) {
+    eq = fun self, other -> self.code == other.code
+}
+
+assert(ID(42) == ID(42), "12.10 eq positive")
+assert((ID(1) == ID(2)) == false, "12.10 eq negative")
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 13: Stress and Integration
+// ───────────────────────────────────────────────────────────────
+
+// 13.1 Fibonacci via object method (recursive)
+object Fib() {
+    calc = fun self, n {
+        if n <= 1 {
+            ret n
+        }
+        ret self.calc(n - 1) + self.calc(n - 2)
+    }
+}
+
+let fib = Fib()
+assert(fib.calc(10) == 55, "13.1 fib(10)")
+assert(fib.calc(15) == 610, "13.1 fib(15)")
+
+// 13.2 Object with mutual recursion
+object EvenOdd() {
+    isEven = fun self, n {
+        if n == 0 { ret true }
+        ret self.isOdd(n - 1)
+    }
+    isOdd = fun self, n {
+        if n == 0 { ret false }
+        ret self.isEven(n - 1)
+    }
+}
+
+let eo = EvenOdd()
+assert(eo.isEven(10) == true, "13.2 10 is even")
+assert(eo.isOdd(7) == true, "13.2 7 is odd")
+
+// 13.3 Sorting objects by field
+object Person13(name, age) {
+    toStr = fun self -> self.name + "(" + self.age + ")"
+}
+
+let people = newArray()
+people.append(Person13("Charlie", 30))
+people.append(Person13("Alice", 25))
+people.append(Person13("Bob", 35))
+
+let Arr = load("std.array")
+Arr::sortBy(people, fun p, q -> p.age < q.age)
+assert(people[0].name == "Alice", "13.3 sorted first")
+assert(people[1].name == "Charlie", "13.3 sorted second")
+assert(people[2].name == "Bob", "13.3 sorted third")
+
+// 13.4 Object with error handling
+object Divisor(x) {
+    safeDiv = fun self, d {
+        if d == 0 {
+            ret error("division by zero")
+        }
+        ret self.x / d
+    }
+}
+
+let div = Divisor(100)
+assert(div.safeDiv(5) == 20, "13.4 safe div ok")
+let errResult = div.safeDiv(0)
+assert(errResult.isError(), "13.4 safe div error")
+assert(errResult.message == "division by zero", "13.4 error message")
+
+// 13.5 Object in object method creating chain
+object Builder13(parts) {
+    init = fun self {
+        self.parts = newArray()
+    }
+    addPart = fun self, p {
+        self.parts.append(p)
+        ret self
+    }
+    build = fun self -> self.parts.len()
+}
+
+let built = Builder13(nil).addPart("a").addPart("b").addPart("c").build()
+assert(built == 3, "13.5 builder chain")
+
+// 13.6 Object with modulo and bitwise ops
+object BitOps(x) {
+    isEven = fun self -> self.x % 2 == 0
+    shiftLeft = fun self, n -> self.x << n
+    bitAnd = fun self, mask -> self.x & mask
+}
+
+assert(BitOps(8).isEven() == true, "13.6 modulo")
+assert(BitOps(1).shiftLeft(4) == 16, "13.6 shift")
+assert(BitOps(255).bitAnd(15) == 15, "13.6 bitwise and")
+
+// 13.7 Object with nested object method calls
+object Inner13(v) {
+    get = fun self -> self.v
+}
+
+object Outer13(inner) {
+    doubled = fun self -> self.inner.get() * 2
+}
+
+assert(Outer13(Inner13(21)).doubled() == 42, "13.7 nested object calls")
+
+// 13.8 Object used with for-in over array of objects
+object Score13(name, value) {
+}
+
+let scores = newArray()
+scores.append(Score13("a", 10))
+scores.append(Score13("b", 20))
+scores.append(Score13("c", 30))
+
+var sumScores = 0
+for i, s in scores {
+    sumScores = sumScores + s.value
+}
+assert(sumScores == 60, "13.8 for-in over objects")
+
+// 13.9 Object with string concatenation in loop
+object Repeater13(word) {
+    repeat = fun self, n, sep {
+        var rl = ""
+        for i in n {
+            if i > 0 {
+                rl = rl + sep
+            }
+            rl = rl + self.word
+        }
+        ret rl
+    }
+}
+
+assert(Repeater13("ab").repeat(3, "-") == "ab-ab-ab", "13.9 repeat with sep")
+
+// 13.10 Large inheritance + composition combined
+let printable13 = { toStr = fun self -> "[" + self.type() + "]" }
+let comparable13 = { lt = fun self, o -> self.value() < o.value() }
+
+object Metric13(name, val) =< printable13 + comparable13 {
+    type = fun self -> "Metric"
+    value = fun self -> self.val
+}
+
+object RateMetric13(name, val, unit) =< Metric13 {
+    type = fun self -> "Rate"
+    toStr = fun self -> super::toStr(self) + " " + self.unit
+}
+
+let rm = RateMetric13("cpu", 75, "%")
+assert(rm.value() == 75, "13.10 inherited method")
+assert(rm.type() == "Rate", "13.10 overridden type")
+assert(rm.toStr() == "[Rate] %", "13.10 super + composition")
+assert(rm < RateMetric13("mem", 90, "%"), "13.10 composed comparison")
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 14: Object Declaration Scoping
+// ───────────────────────────────────────────────────────────────
+
+// 14.1 Object declared inside a function
+let makeAdderObj = fun base {
+    object AdderObj(x) {
+        add = fun self -> self.x + base
+    }
+    ret AdderObj
+}
+
+let Adder10 = makeAdderObj(10)
+let a10 = Adder10(5)
+assert(a10.add() == 15, "14.1 object in function scope")
+
+// 14.2 Object used in conditional branch
+let result14 = nil
+if true {
+    object TempObj(x) { val = fun self -> self.x * 2 }
+    result14 = TempObj(21).val()
+} else {
+    result14 = 0
+}
+
+assert(result14 == 42, "14.2 object in conditional")
