@@ -25,6 +25,13 @@ const (
 	TEST         = "test"
 )
 
+type TestResult struct {
+	File     string
+	Passed   bool
+	Duration time.Duration
+	Error    error
+}
+
 func main() {
 	// f, err := os.Create("vida.prof")
 	// handleError(err)
@@ -183,65 +190,112 @@ func test(args []string) {
 		info, err := os.Stat(dir)
 		handleTestError(err)
 		if info.IsDir() {
-			scripts, err := os.ReadDir(dir)
-			handleTestError(err)
-			runScripts(dir, scripts, &testCount)
-			goto stats
+			scripts := collectScripts(dir)
+			if len(scripts) == 0 {
+				fmt.Printf("\t❌\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
+				os.Exit(1)
+			}
+			printTestResults(runScripts(scripts, &testCount), testCount)
+			return
 		}
 		for _, v := range args[2:] {
 			if strings.HasSuffix(v, vida.VidaFileExtension) {
 				testCount++
 				p, err := filepath.Abs(v)
 				handleError(err)
-				fmt.Printf("\t🧪 Running '%v'\n\n\n", p)
-				executeScript(p)
+				fmt.Printf("\n\n\n\n\n🧪 Testing '%v'\n\n\n\n\n", p)
+				r := executeScript(p)
+				if r.Passed {
+					fmt.Printf("\tSuccess ✅\n\n\n\n")
+				} else {
+					fmt.Printf("\tFailure ❌\n\n\n\n")
+					fmt.Printf("\t%v\n", r.Error)
+				}
 				fmt.Printf("\n\n\n\n")
 			}
 		}
 	} else {
 		dir, err := os.Getwd()
-		scripts, err := os.ReadDir(dir)
-		handleTestError(err)
-		runScripts(dir, scripts, &testCount)
-	}
-stats:
-	if testCount > 0 {
-		fmt.Printf("\t🧪\tAll tests were ok!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
-	} else {
-		fmt.Printf("\t❌\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
-	}
-}
-
-func runScripts(dir string, scripts []os.DirEntry, textCount *int) {
-	for _, v := range scripts {
-		if !v.IsDir() && strings.HasSuffix(v.Name(), vida.VidaFileExtension) {
-			(*textCount)++
-			fmt.Printf("\t🧪 Running '%v'\n\n\n", v.Name())
-			executeScript(filepath.Join(dir, v.Name()))
-			fmt.Printf("\n\n\n\n")
+		handleError(err)
+		scripts := collectScripts(dir)
+		if len(scripts) == 0 {
+			fmt.Printf("\t❌\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
+			os.Exit(1)
 		}
+		printTestResults(runScripts(scripts, &testCount), testCount)
 	}
 }
 
-func executeScript(path string) {
+func runScripts(scripts []string, textCount *int) []TestResult {
+	results := make([]TestResult, len(scripts))
+	for _, v := range scripts {
+		softclear()
+		(*textCount)++
+		fmt.Printf("\n\n\n\n\n🧪 Testing '%v'\n\n\n\n\n", v)
+		r := executeScript(v)
+		results = append(results, r)
+		if r.Passed {
+			fmt.Printf("\tSuccess ✅\n\n\n\n")
+		} else {
+			fmt.Printf("\tFailure ❌\n\n\n\n")
+			fmt.Printf("\t%v\n", r.Error)
+		}
+		fmt.Printf("\n\n\n\n")
+	}
+	return results
+}
+
+func executeScript(path string) TestResult {
 	src, err := vida.LoadScriptFromFile(path)
 	handleError(err)
 	ctx := vida.NewContext(src, path, extensions.GetLoader())
 	handleError(ctx.Compile())
 	dur, err := ctx.MeasureRunTime()
 	printDuration(dur)
-	handleTestError(err)
-	handleTestFailure(err)
-	fmt.Printf("\tSuccess ✅\n\n\n\n")
+	return TestResult{
+		File:     path,
+		Passed:   err == nil,
+		Duration: dur,
+		Error:    err,
+	}
 }
 
-func handleTestFailure(err error) {
-	if err != nil {
-		fmt.Printf("\tFailure ❌\n\n")
-		fmt.Println(err)
-		fmt.Printf("\n\n")
-		os.Exit(1)
+func collectScripts(root string) []string {
+	var scripts []string
+	filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if !d.IsDir() && strings.HasSuffix(d.Name(), vida.VidaFileExtension) {
+			scripts = append(scripts, path)
+		}
+		return nil
+	})
+	return scripts
+}
+
+func printTestResults(results []TestResult, testCount int) {
+	passed, failed := 0, 0
+	var totalDuration time.Duration
+
+	softclear()
+	fmt.Printf("\n\n\n\n\nSummary\n\n\n\n\n")
+
+	for _, r := range results {
+		totalDuration += r.Duration
+		if len(r.File) > 0 {
+			if r.Passed {
+				passed++
+				fmt.Printf("PASSED   %23v %11v\n", strings.TrimSuffix(filepath.Base(r.File), vida.VidaFileExtension), r.Duration.Round(time.Millisecond))
+			} else {
+				failed++
+				fmt.Printf("FAILED * %23v %11v\n", strings.TrimSuffix(filepath.Base(r.File), vida.VidaFileExtension), r.Duration.Round(time.Millisecond))
+			}
+		}
 	}
+
+	fmt.Printf("\n\n\n───────────────────────────────────────────────────────\n")
+	fmt.Printf("  Total: %d  |  Passed: %d  |  Failed: %d  |  %v\n",
+		testCount, passed, failed, totalDuration.Round(time.Millisecond))
+	fmt.Printf("───────────────────────────────────────────────────────\n\n\n\n")
+
 }
 
 func handleTestError(err error) {
@@ -253,7 +307,6 @@ func handleTestError(err error) {
 
 func handleError(err error) {
 	if err != nil {
-		//clear()
 		printVersion()
 		fmt.Printf("\t❌ %v\n\n\n\n", err.Error())
 		os.Exit(1)
@@ -316,6 +369,11 @@ func clear() {
 	fmt.Printf("\u001B[H")
 	fmt.Printf("\u001B[2J")
 	fmt.Printf("\u001B[3J")
+}
+
+func softclear() {
+	fmt.Printf("\u001B[H")
+	fmt.Printf("\u001B[2J")
 }
 
 func printDuration(duration time.Duration) {
