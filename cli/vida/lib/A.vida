@@ -8,12 +8,13 @@
 
 // Library object
 var lib = {}
+var arrayType = [].type()
 
 
 
 // Map 
 lib.map = fun A, f {
-    var R = newArray(len(A))
+    var R = newArray(A.len())
     for i, v in A {
         R[i] = f(v)
     }
@@ -27,7 +28,7 @@ lib.filter = fun A, pred {
     var R = []
     for _, v in A {
         if pred(v) {
-            append(R, v)
+            R.append(v)
         }
     }
     ret R
@@ -40,7 +41,7 @@ lib.exclude = fun A, pred {
     var R = []
     for _, v in A {
         if not pred(v) {
-            append(R, v)
+            R.append(v)
         }
     }
     ret R
@@ -89,7 +90,7 @@ lib.takeWhile = fun A, pred {
         if not pred(v) {
             ret R
         }
-        append(R, v)
+        R.append(v)
     }
     ret R
 }
@@ -99,8 +100,8 @@ lib.takeWhile = fun A, pred {
 // Zip
 lib.zip = fun l, r {
     var length = nil
-    var ll = len(l)
-    var lr = len(r)
+    var ll = l.len()
+    var lr = r.len()
     if ll < lr {
         length = ll
     } else {
@@ -117,7 +118,7 @@ lib.zip = fun l, r {
 
 // UnZip
 lib.unzip = fun zipped {
-    var l = len(zipped)
+    var l = zipped.len()
     var A = newArray(l)
     var B = newArray(l)
     for i, v in zipped {
@@ -143,16 +144,16 @@ lib.drop = fun A, n {
 lib.chunk = fun A, size {
 	var R = []
 	var N = []
-	for i in len(A) {
+	for i in A.len() {
 		if (i + 1) % size == 0 {
-			append(R, append(N, A[i]))
+			R.append(N.append(A[i]))
 			N = []
 			continue
 		}
-		append(N, A[i])
+		N.append(A[i])
 	}
-	if len(N) > 0 {
-		append(R, N)
+	if N.len() > 0 {
+		R.append(N)
 	}
 	ret R
 }
@@ -161,7 +162,7 @@ lib.chunk = fun A, size {
 
 // First
 lib.first = fun A {
-    if len(A) == 0 {
+    if A.len() == 0 {
         ret nil
     }
     ret A[0]
@@ -171,7 +172,7 @@ lib.first = fun A {
 
 // First N
 lib.firstN = fun A, n {
-    if len(A) == 0 {
+    if A.len() == 0 {
         ret nil
     }
     if n <= 0 {
@@ -184,7 +185,7 @@ lib.firstN = fun A, n {
 
 // Last
 lib.last = fun A {
-    if len(A) == 0 {
+    if A.len() == 0 {
         ret nil
     }
     ret A[-1]
@@ -194,7 +195,7 @@ lib.last = fun A {
 
 // Tail
 lib.tail = fun A {
-    if len(A) == 0 {
+    if A.len() == 0 {
         ret nil
     }
     ret A[1..]
@@ -209,7 +210,7 @@ lib.head = lib.first
 
 // Init
 lib.init = fun A {
-    if len(A) == 0 {
+    if A.len() == 0 {
         ret nil
     }
     ret A[0..-1]
@@ -222,7 +223,7 @@ lib.excludeNil = fun A {
 	var R = []
 	for _, v in A {
 		if v != nil {
-			append(R, v)
+			R.append(v)
 		}
 	}
 	ret R
@@ -235,7 +236,7 @@ lib.excludeNil = fun A {
 	var R = []
 	for _, v in A {
 		if v {
-			append(R, v)
+			R.append(v)
 		}
 	}
 	ret R
@@ -247,7 +248,7 @@ lib.compact = fun A {
 	var R = []
 	for _, v in A {
 		if v {
-			append(R, v)
+			R.append(v)
 		}
 	}
 	ret R
@@ -256,12 +257,12 @@ lib.compact = fun A {
 
 
 // IsArray
-lib.isArray = fun A -> type(A) == "array"
+lib.isArray = fun A -> A.type() == arrayType
 
 
 
 // IsEmpty
-lib.isEmpty = fun A -> len(A) == 0
+lib.isEmpty = fun A -> A.isEmpty()
 
 
 
