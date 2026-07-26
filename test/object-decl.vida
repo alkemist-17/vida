@@ -1,6 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════════
-// test/object.vida — tests for the `object` declaration syntactic sugar
-// ═══════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// test/object-decl.vida — tests for the `object` declaration syntactic sugar
+// ══════════════════════════════════════════════════════════════════════════
 
 // ── 1. Basic object declaration ──
 object Point(x, y) {
@@ -1363,3 +1363,393 @@ if true {
 }
 
 assert(result14 == 42, "14.2 object in conditional")
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 15: Super Statement in Control-Flow Contexts
+// ───────────────────────────────────────────────────────────────
+
+// 15.1 super:: statement inside an if block
+object CF1Base(x) {
+    init = fun self {
+        self.log = "base"
+    }
+}
+object CF1Child(x) =< CF1Base {
+    init = fun self {
+        if self.x > 0 {
+            super::init(self)
+        }
+        self.child_ran = true
+    }
+}
+let cf1a = CF1Child(1)
+assert(cf1a.log == "base", "15.1 super inside true branch of if")
+assert(cf1a.child_ran == true, "15.1 child ran after if")
+
+object CF1Child2(x) =< CF1Base {
+    init = fun self {
+        if self.x > 0 {
+            super::init(self)
+        } else {
+            self.log = "skipped"
+        }
+    }
+}
+let cf1b = CF1Child2(-1)
+assert(cf1b.log == "skipped", "15.1 super not called in false branch")
+
+// 15.2 super:: statement inside a while loop
+object CF2Base(x) {
+    step = fun self, acc -> acc + self.x
+}
+object CF2Child(x) =< CF2Base {
+    accumulate = fun self, n {
+        var _acc = 0
+        var i = 0
+        while i < n {
+            _acc = super::step(self, _acc)
+            i = i + 1
+        }
+        ret _acc
+    }
+}
+assert(CF2Child(3).accumulate(4) == 12, "15.2 super called repeatedly inside while")
+
+// 15.3 super:: statement inside a for loop
+object CF3Base(x) {
+    unit = fun self -> self.x
+}
+object CF3Child(x) =< CF3Base {
+    sumUnits = fun self, n {
+        var total = 0
+        for i in n {
+            total = total + super::unit(self)
+        }
+        ret total
+    }
+}
+assert(CF3Child(2).sumUnits(5) == 10, "15.3 super called inside for loop")
+
+// 15.4 Multiple, non-chained super calls in sequence
+object CF4Base(x) {
+    incBy = fun self, n -> self.x + n
+}
+object CF4Child(x) =< CF4Base {
+    combo = fun self {
+        var al = super::incBy(self, 1)
+        var bl = super::incBy(self, 2)
+        var cl = super::incBy(self, 3)
+        ret al + bl + cl
+    }
+}
+assert(CF4Child(10).combo() == 36, "15.4 multiple independent super calls")
+
+// 15.5 super:: statement followed by other statements (not last in block)
+object CF5Base(x) {
+    init = fun self {
+        self.a = 1
+    }
+}
+object CF5Child(x) =< CF5Base {
+    init = fun self {
+        super::init(self)
+        self.b = 2
+        self.c = self.a + self.b
+    }
+}
+let cf5 = CF5Child(0)
+assert(cf5.a == 1, "15.5 base field set")
+assert(cf5.b == 2, "15.5 child field set after super")
+assert(cf5.c == 3, "15.5 field computed using both")
+
+// 15.6 super:: statement inside a with block
+object CF6Base(x) {
+    init = fun self {
+        self.opened = true
+    }
+}
+object Resource6(tag) {
+    close = fun self -> self.tag
+}
+object CF6Child(x) =< CF6Base {
+    init = fun self {
+        with __r = Resource6("r6") {
+            super::init(self)
+            self.tag = __r.tag
+        }
+    }
+}
+let cf6 = CF6Child(0)
+assert(cf6.opened == true, "15.6 super inside with block")
+assert(cf6.tag == "r6", "15.6 with-scoped variable usable alongside super")
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 16: Mixing Super Expression and Super Statement
+// ───────────────────────────────────────────────────────────────
+
+// 16.1 Same method uses super:: as a statement AND as an expression
+object MixBase(x) {
+    setup = fun self {
+        self.ready = true
+    }
+    label = fun self -> "base"
+}
+object MixChild(x) =< MixBase {
+    run = fun self {
+        super::setup(self)
+        ret super::label(self) + "->child"
+    }
+}
+let mx = MixChild(0)
+assert(mx.run() == "base->child", "16.1 mixed super statement then super expression")
+assert(mx.ready == true, "16.1 statement-form super had its side effect")
+
+// 16.2 super:: expression result stored, then super:: statement called after
+object MixBase2(x) {
+    tag = fun self -> "T"
+    finalize = fun self {
+        self.done = true
+    }
+}
+object MixChild2(x) =< MixBase2 {
+    run = fun self {
+        var t = super::tag(self)
+        super::finalize(self)
+        ret "%v-%v".fmt(t, self.done)
+    }
+}
+assert(MixChild2(0).run() == "T-true", "16.2 expression before statement form")
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 17: Deep Chains and Stack Integrity
+// ───────────────────────────────────────────────────────────────
+
+// 17.1 Five-level chain, every level calling super:: as a statement for
+// a side effect, then returning its own contribution
+object N0(x) {
+    build = fun self {
+        self.trail = "0"
+    }
+}
+object N1(x) =< N0 {
+    build = fun self {
+        super::build(self)
+        self.trail = self.trail + "1"
+    }
+}
+object N2(x) =< N1 {
+    build = fun self {
+        super::build(self)
+        self.trail = self.trail + "2"
+    }
+}
+object N3(x) =< N2 {
+    build = fun self {
+        super::build(self)
+        self.trail = self.trail + "3"
+    }
+}
+object N4(x) =< N3 {
+    build = fun self {
+        super::build(self)
+        self.trail = self.trail + "4"
+    }
+}
+let n4 = N4(0)
+n4.build()
+assert(n4.trail == "01234", "17.1 five level super chain builds trail in order")
+
+// 17.2 Object declared *inside* a method body, whose own inheritance uses
+// super, nested inside a method that itself calls super -- checks that
+// the super-parent stack unwinds correctly across nested object decls
+object OuterBase(x) {
+    tag = fun self -> "outer-base"
+}
+object OuterChild(x) =< OuterBase {
+    build = fun self {
+        super::tag(self)
+
+        object InnerBase(y) {
+            val = fun self -> self.y
+        }
+        object InnerChild(y) =< InnerBase {
+            val = fun self -> super::val(self) * 100
+        }
+
+        let inner = InnerChild(3)
+        self.innerVal = inner.val()
+        self.outerTag = super::tag(self)
+    }
+}
+let oc = OuterChild(0)
+oc.build()
+assert(oc.innerVal == 300, "17.2 nested object decl's own super resolves independently")
+assert(oc.outerTag == "outer-base", "7.2 outer super still resolves correctly after nested object decl")
+
+// 17.3 Two sibling subclasses each calling super in their own methods --
+// ensures one object's super-parent doesn't leak into the sibling's
+object SibBase(x) {
+    kind = fun self -> "sib-base"
+}
+object SibA(x) =< SibBase {
+    kind = fun self -> super::kind(self) + "-A"
+}
+object SibB(x) =< SibBase {
+    kind = fun self -> super::kind(self) + "-B"
+}
+assert(SibA(0).kind() == "sib-base-A", "17.3 sibling A resolves its own super")
+assert(SibB(0).kind() == "sib-base-B", "17.3 sibling B resolves its own super")
+
+// 17.4 Interleaved construction: build a SibA and a SibB back-to-back,
+// re-verify after both exist that neither's vtable/super got corrupted
+let sa = SibA(1)
+let sb = SibB(1)
+assert(sa.kind() == "sib-base-A", "17.4 SibA still correct after SibB construction")
+assert(sb.kind() == "sib-base-B", "17.4 SibB still correct after SibA construction")
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 18: Super with Arguments and Edge Cases
+// ───────────────────────────────────────────────────────────────
+
+// 18.1 super:: statement call with zero extra args (only self)
+object ArgBase1(x) {
+    touch = fun self {
+        self.touched = true
+    }
+}
+object ArgChild1(x) =< ArgBase1 {
+    touch = fun self {
+        super::touch(self)
+    }
+}
+assert(ArgChild1(0).touch() == nil, "18.1 statement-form super call as last stmt returns nil implicitly")
+let ac1 = ArgChild1(0)
+ac1.touch()
+assert(ac1.touched == true, "18.1 zero-arg super statement still runs side effect")
+
+// 18.2 super:: statement with several args
+object ArgBase2(x) {
+    record = fun self, a, b, c {
+        self.sum = a + b + c
+    }
+}
+object ArgChild2(x) =< ArgBase2 {
+    record = fun self, a, b, c {
+        super::record(self, a, b, c)
+        self.sum = self.sum * 2
+    }
+}
+let ac2 = ArgChild2(0)
+ac2.record(1, 2, 3)
+assert(ac2.sum == 12, "18.2 super statement forwards multiple args")
+
+// 18.3 super:: statement with spread/ellipsis args
+object ArgBase3(x) {
+    total = fun self, nums... {
+        var __s = 0
+        for i in nums.len() {
+            __s = __s + nums[i]
+        }
+        self.total = __s
+    }
+}
+object ArgChild3(x) =< ArgBase3 {
+    total = fun self, nums... {
+        super::total(self, ...nums)
+        self.total = self.total + 1000
+    }
+}
+let ac3 = ArgChild3(0)
+ac3.total(1, 2, 3, 4)
+assert(ac3.total == 1010, "18.3 super statement forwards spread args")
+
+// 18.4 super:: statement called conditionally in a loop, accumulating
+// only under a condition -- checks register/scope handling across
+// repeated conditional statement-form calls
+object ArgBase4(x) {
+    bump = fun self {
+        self.count = self.count + 1
+    }
+}
+object ArgChild4(x) =< ArgBase4 {
+    init = fun self {
+        self.count = 0
+    }
+    run = fun self, n {
+        var i = 0
+        while i < n {
+            if i % 2 == 0 {
+                super::bump(self)
+            }
+            i = i + 1
+        }
+    }
+}
+let ac4 = ArgChild4(0)
+ac4.init()
+ac4.run(10)
+assert(ac4.count == 5, "18.4 conditional super statement calls inside while loop")
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 19: Deep Chain Combined With Branching and Loops
+// ───────────────────────────────────────────────────────────────
+
+// 19.1 Four-level chain where each level's method has its own internal
+// branch/loop before reaching the super:: statement call
+object DeepA(x) {
+    work = fun self {
+        self.hits = 1
+    }
+}
+object DeepB(x) =< DeepA {
+    work = fun self {
+        var i = 0
+        for i in 3 {
+            self.hits = self.hits + 0
+        }
+        super::work(self)
+        self.hits = self.hits + 10
+    }
+}
+object DeepC(x) =< DeepB {
+    work = fun self {
+        if self.x > 0 {
+            super::work(self)
+        } else {
+            super::work(self)
+        }
+        self.hits = self.hits + 100
+    }
+}
+object DeepD(x) =< DeepC {
+    work = fun self {
+        super::work(self)
+        self.hits = self.hits + 1000
+    }
+}
+let dd = DeepD(5)
+dd.hits = 0
+dd.work()
+assert(dd.hits == 1111, "19.1 four level chain with branch and loop before each super call")
+
+// 19.2 Recursive-style method that uses self for recursion and super
+// for a one-time base contribution, mixed in the same method body
+object RecBase(x) {
+    seed = fun self -> 1
+}
+object RecChild(x) =< RecBase {
+    factorialLike = fun self, n {
+        if n <= 1 {
+            ret super::seed(self)
+        }
+        ret n * self.factorialLike(n - 1)
+    }
+}
+assert(RecChild(0).factorialLike(5) == 120, "19.2 super expression as recursion base case")
+
