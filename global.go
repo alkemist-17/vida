@@ -853,11 +853,11 @@ func tokenBinopToString(t token.Token) *String {
 func tokenPrefixToString(t token.Token) *String {
 	switch t {
 	case token.ADD:
-		return &String{Value: "padd"}
+		return &String{Value: "pos"}
 	case token.SUB:
-		return &String{Value: "psub"}
+		return &String{Value: "neg"}
 	case token.TILDE:
-		return &String{Value: "ptilde"}
+		return &String{Value: "tilde"}
 	default:
 		return &String{Value: EmptyString}
 	}
