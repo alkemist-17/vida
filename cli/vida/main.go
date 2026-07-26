@@ -183,7 +183,6 @@ func printMachineCode(args []string) {
 
 func test(args []string) {
 	clear()
-	printVersion()
 	testCount := 0
 	if len(args) > 2 {
 		dir := args[2]
