@@ -8,7 +8,7 @@
 let style = load("std.style")
 let math = load("std.math")
 let time = load("std.time")
-let os = load("std.os")
+let io = load("std.io")
 let sin = math.sin
 let sqrt = math.sqrt
 
@@ -46,7 +46,8 @@ let hueToStyle = fun hue {
 
 
 
-os::run("cmd", "/C", "cls")
+io::printf("\u001B[H")
+io::printf("\u001B[2J")
 
 
 
