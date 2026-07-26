@@ -3,9 +3,13 @@ package vida
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"math"
 	"math/rand/v2"
+	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -53,6 +57,13 @@ const (
 	foundationTask      = "task"
 	foundationRegex     = "re"
 	foundationStyle     = "style"
+)
+
+const (
+	VIDAPATH         = "VIDAPATH"
+	ModulesDirName   = "modules"
+	RemoteModulesDir = "remote"
+	downloadTimeout  = 15 * time.Second
 )
 
 const (
@@ -950,4 +961,45 @@ func tokenPrefixToString(t token.Token) *String {
 func pressEnterToContinue() {
 	fmt.Print("\n\nPress 'Enter' to continue  ")
 	fmt.Scanf(" ")
+}
+
+// DownloadModuleTo fetches rawURL and writes it verbatim to destPath,
+// creating any needed directories. It does not check for an existing
+// cached file — callers decide caching policy.
+func DownloadModuleTo(rawURL, destPath string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid module url %q: %v", rawURL, err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("unsupported module scheme %q in %q", u.Scheme, rawURL)
+	}
+
+	client := http.Client{Timeout: downloadTimeout}
+	resp, err := client.Get(rawURL)
+	if err != nil {
+		return fmt.Errorf("could not download module %q: %v", rawURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("could not download module %q: server responded %v", rawURL, resp.Status)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		return fmt.Errorf("could not create directory for %q: %v", rawURL, err)
+	}
+
+	f, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("could not save module %q: %v", rawURL, err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		os.Remove(destPath)
+		return fmt.Errorf("could not save module %q: %v", rawURL, err)
+	}
+
+	return nil
 }

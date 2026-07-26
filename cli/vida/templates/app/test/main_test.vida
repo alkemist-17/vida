@@ -1,0 +1,7 @@
+// A minimal sanity test. 'vida test' runs every .vida file it finds and
+// reports pass/fail based on whether the script errors — assert() halts
+// the script (and therefore fails the test) if the condition is false.
+// A custom handler can be added as well.
+
+let sum = 2 + 2
+assert(sum == 4)

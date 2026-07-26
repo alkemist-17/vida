@@ -1,8 +1,12 @@
 package vida
 
 import (
+	"fmt"
+	"net/url"
+	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/alkemist-17/vida/ast"
 	"github.com/alkemist-17/vida/token"
@@ -1306,11 +1310,12 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 		c.emitCall(o, len(n.Args)+1, n.Ellipsis, 2)
 		return o, rLoc
 	case *ast.Import:
-		var importFilePath string
-		if filepath.IsAbs(n.Path) {
-			importFilePath = n.Path
-		} else {
-			importFilePath = filepath.Join(filepath.Dir(c.mainScriptID), n.Path)
+		importFilePath, resolveErr := c.resolveImportPath(n.Path)
+		if resolveErr != nil {
+			c.hadError = true
+			c.errMsg = resolveErr.Error()
+			c.lineErr = n.Line
+			return 0, rGlob
 		}
 		if _, isCycle := c.depMap[importFilePath]; isCycle {
 			c.hadError = true
@@ -2038,4 +2043,70 @@ func (c *compiler) resolveVTableRefs(node ast.Node) ast.Node {
 	default:
 		return node
 	}
+}
+
+func (c *compiler) resolveImportPath(path string) (string, error) {
+	if isRemoteImport(path) {
+		return c.downloadModule(path)
+	}
+
+	if filepath.IsAbs(path) {
+		return path, nil
+	}
+
+	candidate := filepath.Join(filepath.Dir(c.mainScriptID), path)
+	if fileExistsOnDisk(candidate) {
+		return candidate, nil
+	}
+
+	modulesCandidate := filepath.Join(filepath.Dir(c.mainScriptID), ModulesDirName, path)
+	if fileExistsOnDisk(modulesCandidate) {
+		return modulesCandidate, nil
+	}
+
+	if vidaPath := os.Getenv("VIDAPATH"); vidaPath != "" {
+		for _, dir := range filepath.SplitList(vidaPath) {
+			c2 := filepath.Join(dir, path)
+			if fileExistsOnDisk(c2) {
+				return c2, nil
+			}
+		}
+	}
+
+	return candidate, nil
+}
+
+func isRemoteImport(path string) bool {
+	return strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://")
+}
+
+func fileExistsOnDisk(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
+}
+
+// downloadModule fetches a remote .vida file and caches it under
+// modules/remote/<host>/<path>, mirroring the URL structure.
+func (c *compiler) downloadModule(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid import url %q: %v", rawURL, err)
+	}
+
+	localPath := filepath.Join(
+		filepath.Dir(c.mainScriptID),
+		ModulesDirName,
+		RemoteModulesDir,
+		filepath.FromSlash(u.Host+u.Path),
+	)
+
+	if fileExistsOnDisk(localPath) {
+		return localPath, nil
+	}
+
+	if err := DownloadModuleTo(rawURL, localPath); err != nil {
+		return "", err
+	}
+
+	return localPath, nil
 }

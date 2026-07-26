@@ -1,0 +1,9 @@
+let greet = fun name {
+	ret "Hello, " + name + "! 🌿🌻"
+}
+
+let main = fun {
+	print(greet("Vida"))
+}
+
+main()

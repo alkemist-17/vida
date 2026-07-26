@@ -23,6 +23,9 @@ const (
 	ABOUT        = "about"
 	CODE         = "code"
 	TEST         = "test"
+	INIT         = "init"
+	INSTALL      = "install"
+	FLAG_I       = "-I"
 )
 
 type TestResult struct {
@@ -39,6 +42,8 @@ func main() {
 	// defer pprof.StopCPUProfile()
 	args := os.Args
 	if len(args) > 1 {
+		args, includePaths := extractIncludePaths(os.Args)
+		applyIncludePaths(includePaths)
 		switch parseCMD(args[1]) {
 		case RUN:
 			run(args)
@@ -63,6 +68,10 @@ func main() {
 			printMachineCode(args)
 		case TEST:
 			test(args)
+		case INIT:
+			scaffold(args)
+		case INSTALL:
+			install(args)
 		default:
 			handleError(fmt.Errorf("unknown command '%v'.\n\tType 'vida help' for assistance.", parseCMD(args[1])))
 		}
@@ -88,19 +97,25 @@ func runDebug(args []string) {
 }
 
 func run(args []string) {
+	var p string
+	var err error
+
 	if len(args) > 2 {
-		p, err := filepath.Abs(args[2])
+		p, err = filepath.Abs(args[2])
 		handleError(err)
-		src, err := vida.LoadScriptFromFile(p)
-		handleError(err)
-		ctx := vida.NewContext(src, p, extensions.GetLoader())
-		err = ctx.CompileAndRun()
-		if err != nil {
-			printError(err)
-			ctx.PrintCallStack()
-		}
 	} else {
-		handleError(errorNoArgsGivenTo(RUN))
+		entry, err2 := resolveEntryScript()
+		handleError(err2)
+		p = entry
+	}
+
+	src, err := vida.LoadScriptFromFile(p)
+	handleError(err)
+	ctx := vida.NewContext(src, p, extensions.GetLoader())
+	err = ctx.CompileAndRun()
+	if err != nil {
+		printError(err)
+		ctx.PrintCallStack()
 	}
 }
 
@@ -216,6 +231,7 @@ func test(args []string) {
 	} else {
 		dir, err := os.Getwd()
 		handleError(err)
+		dir = resolveTestDir(dir)
 		scripts := collectScripts(dir)
 		if len(scripts) == 0 {
 			fmt.Printf("\t❌\tNo vida files were found!\n\t\tTotal files run: %v\n\n\n\n\n\n\n", testCount)
@@ -321,7 +337,7 @@ func printError(err error) {
 func parseCMD(cmd string) string {
 	cmd = strings.ToLower(cmd)
 	switch cmd {
-	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME:
+	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, INIT, INSTALL:
 		return cmd
 	default:
 		return cmd
@@ -343,7 +359,9 @@ func printHelp() {
 	fmt.Println("\tUsage:  vida  [command]  [script]")
 	fmt.Printf("\n\n")
 	fmt.Printf("\t%-11v compile and run a script\n", RUN)
-	fmt.Printf("\t%-11v run focused or all scripts in path\n", TEST)
+	fmt.Printf("\t%-11v scaffold a new project (--template=app|lib)\n", INIT)
+	fmt.Printf("\t%-11v run focused or all scripts in path|project\n", TEST)
+	fmt.Printf("\t%-11v download dependencies listed in vida.toml\n", INSTALL)
 	fmt.Printf("\t%-11v compile and run a script step by step\n", DEGUG)
 	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("\t%-11v show the token list\n", TOKENS)
@@ -353,11 +371,15 @@ func printHelp() {
 	fmt.Printf("\t%-11v show the language version\n", VERSION)
 	fmt.Printf("\t%-11v compile and show the compiled code\n", CODE)
 	fmt.Printf("\t%-11v show the description of Vida\n", ABOUT)
+	fmt.Printf("\t%-11v add a directory to the module search path\n", FLAG_I)
+	fmt.Printf("\t%-11v %v", "", flagIExample)
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
 }
+
+const flagIExample = "vida run -I ~/vida-scripts -I ~/shared-libs [script].vida"
 
 func printAbout() {
 	clear()
@@ -380,4 +402,52 @@ func printDuration(duration time.Duration) {
 	fmt.Printf("\tDuration in Seconds : %vs\n", duration.Seconds())
 	fmt.Printf("\tDuration            : %v", duration)
 	fmt.Printf("\n\n\n\n")
+}
+
+func extractIncludePaths(args []string) (filtered []string, includes []string) {
+	filtered = make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		switch {
+		case args[i] == "-I" && i+1 < len(args):
+			includes = append(includes, args[i+1])
+			i++
+		case strings.HasPrefix(args[i], "-I="):
+			includes = append(includes, strings.TrimPrefix(args[i], "-I="))
+		default:
+			filtered = append(filtered, args[i])
+		}
+	}
+	return filtered, includes
+}
+
+func applyIncludePaths(paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+	joined := strings.Join(paths, string(os.PathListSeparator))
+	if existing := os.Getenv(vida.VIDAPATH); existing != "" {
+		joined = joined + string(os.PathListSeparator) + existing
+	}
+	os.Setenv(vida.VIDAPATH, joined)
+}
+
+// resolveTestDir checks for a vida.toml in cwd; if present and it names a
+// test directory, that subdirectory is used instead of cwd itself. This
+// keeps 'vida test' from also re-running main.vida or src/ files that
+// happen to live in the same project. Falls back to cwd unchanged for
+// non-project directories or manifests without a 'test' field.
+func resolveTestDir(cwd string) string {
+	manifestPath := filepath.Join(cwd, manifestFileName)
+	if !fileExistsOnDiskCLI(manifestPath) {
+		return cwd
+	}
+	m, err := readManifest(manifestPath)
+	if err != nil || m.Test == "" {
+		return cwd
+	}
+	testDir := filepath.Join(cwd, m.Test)
+	if info, err := os.Stat(testDir); err != nil || !info.IsDir() {
+		return cwd
+	}
+	return testDir
 }
