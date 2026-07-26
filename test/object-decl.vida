@@ -1,0 +1,205 @@
+// ═══════════════════════════════════════════════════════════════════════
+// test/object.vida — tests for the `object` declaration syntactic sugar
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── 1. Basic object declaration ──
+object Point(x, y) {
+    type  = fun self -> "Point"
+    add   = fun self, other -> Point(self.x + other.x, self.y + other.y)
+    sub   = fun self, other -> Point(self.x - other.x, self.y - other.y)
+    toString = fun self -> "Point(%v, %v)".fmt(self.x, self.y)
+}
+
+
+
+// Constructor function and vtable assignment
+let p = Point(10, 20)
+assert(p.type() == "Point")
+assert(p.x == 10 and p.y == 20)
+let q = Point(3, 7)
+assert(q.type() == "Point")
+assert(q.x == 3 and q.y == 7)
+assert(p.x == 10, "p.x should be 10")
+assert(p.y == 20, "p.y should be 20")
+assert(p.type() == "Point", "p.type() should be Point")
+
+
+
+// Object vtables
+let vt = p.getvt()
+assert(vt.has("type") and vt.has("add") and vt.has("sub") and vt.has("toString"))
+assert(p.getvt() == q.getvt(), "vtables are shared between objects")
+assert(p.toString().contains(q.type()))
+
+
+
+// Operator overloading
+let r = p + q
+assert(r.x == 13, "p+q x should be 13")
+assert(r.y == 27, "p+q y should be 27")
+assert(r.type() == "Point", "p.type() should be Point")
+
+
+let s = p - q
+assert(s.x == 7, "p-q x should be 7")
+assert(s.y == 13, "p-q y should be 13")
+assert(s.type() == "Point", "p.type() should be Point")
+
+
+
+
+
+// ── 2. Inheritance using '=<' ──
+object Animal(name) {
+    type  = fun self -> "Animal"
+    speak = fun self -> "..."
+    toString = fun self -> self.type() + ": " + self.speak()
+}
+
+object Dog(name) =< Animal {
+    type  = fun self -> "Dog"
+    speak = fun self -> "Woof!"
+}
+
+object Chihuahua(name) =< Dog {
+    type  = fun self -> "Chihuahua"
+    speak = fun self -> "yip yip!"
+}
+
+let rex = Dog("Rex")
+assert(rex.name == "Rex", "rex.name should be Rex")
+assert(rex.type() == "Dog", "rex.type() should be Dog")
+assert(rex.speak() == "Woof!", "rex.speak() should be Woof!")
+
+let tiny = Chihuahua("Tiny")
+assert(tiny.type() == "Chihuahua", "tiny.type() should be Chihuahua")
+assert(tiny.speak() == "yip yip!", "tiny.speak() should be yip yip!")
+// Inherited from Animal via Dog:
+assert(tiny.toString() == "Chihuahua: yip yip!", "tiny.toString() prototype chain")
+
+
+
+
+
+// ── 3. Composition with + and | ──
+let printable = {
+    toString = fun self -> "printing: " + self.type()
+}
+
+let serializable = {
+    serialize = fun self -> "serialized:" + self.type()
+}
+
+object Widget(id) =< serializable + printable {
+    type = fun self -> "Widget"
+}
+
+let w = Widget(42)
+assert(w.id == 42, "w.id should be 42")
+assert(w.serialize() == "serialized:Widget", "w.serialize()")
+assert(w.toString() == "printing: Widget")
+
+
+
+
+
+// ── 4. init hook ──
+object Vec2(x, y) {
+    init = fun self {
+        self.magnitude = self.x * self.x + self.y * self.y
+    }
+    add = fun self, other -> Vec2(self.x + other.x, self.y + other.y)
+    eq = fun self, other -> self.x == other.x and self.y == other.y
+}
+
+let v = Vec2(3, 4)
+assert(v.x == 3, "v.x should be 3")
+assert(v.y == 4, "v.y should be 4")
+assert(v.magnitude == 25, "v.magnitude should be 25 (3*3+4*4)")
+
+let v2 = v + Vec2(1, 1)
+assert(v2.x == 4, "v2.x should be 4")
+let v3 = Vec2(1, 1) + v
+assert(v3.x == 4, "v3.x should be 4")
+assert(v2 == v3)
+
+
+
+
+
+// ── 5. Operator overloading ──
+object Money(amount, currency) {
+    add = fun self, other -> Money(self.amount + other.amount, self.currency)
+    sub = fun self, other -> Money(self.amount - other.amount, self.currency)
+    mul = fun self, factor -> Money(self.amount * factor, self.currency)
+    lt  = fun self, other -> self.amount < other.amount
+    eq  = fun self, other -> self.amount == other.amount and self.currency == other.currency
+    toString = fun self -> self.currency + " " + self.amount
+}
+
+let a = Money(100, "USD")
+let b = Money(50, "USD")
+
+assert((a + b).amount == 150, "100+50 should be 150")
+assert((a - b).amount == 50, "100-50 should be 50")
+assert((a * 3).amount == 300, "100*3 should be 300")
+assert(b < a, "50 < 100")
+assert(a == Money(100, "USD"), "equality")
+
+
+
+
+
+// ── 6. No params in Constructor (singleton-like but not singleton at all) ──
+object Config() {
+    version = fun self -> "1.0.0"
+    debug   = fun self -> false
+}
+
+let cfg = Config()
+assert(cfg.version() == "1.0.0", "cfg.version()")
+assert(cfg.debug() == false, "cfg.debug()")
+
+
+
+
+
+// ── 7. super ──
+object Base(x) {
+    greet = fun self -> "Hello from Base, x=%v".fmt(self.x)
+}
+
+object Child(x) =< Base {
+    greet = fun self -> super::greet(self) + " and Child"
+}
+
+let c = Child(99)
+assert(c.greet() == "Hello from Base, x=99 and Child", "super::greet(self)")
+
+object GrandChild(x) =< Child {
+    greet = fun self -> super::greet(self) + " and GrandChild"
+}
+
+let gc = GrandChild(42)
+assert(gc.greet() == "Hello from Base, x=42 and Child and GrandChild", "chained super")
+
+
+
+
+
+// ── 8. implements() works ──
+let hasAdd = { add = fun self, other -> nil }
+assert(p.getvt().implements(hasAdd), "Point should implement add")
+
+
+
+
+
+// ── 9. getvt / extendvt still work ──
+vt = p.getvt()
+assert(vt.type() == "object", "getvt returns an object")
+vt.mul = fun self, other -> 42
+assert(p * p == 42)
+
+
+

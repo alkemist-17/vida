@@ -81,6 +81,8 @@ const (
 	ENUM
 	REC
 	WITH
+	OBJECT
+	SUPER
 	keyword_end
 )
 
@@ -148,6 +150,8 @@ var Tokens = [...]string{
 	ENUM:        "enum",
 	REC:         "rec",
 	WITH:        "with",
+	OBJECT:      "object",
+	SUPER:       "super",
 }
 
 type TokenInfo struct {

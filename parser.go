@@ -56,6 +56,8 @@ func (p *parser) parse() (*ast.Ast, error) {
 			p.ast.Statement = append(p.ast.Statement, p.whileLoop())
 		case token.WITH:
 			p.ast.Statement = append(p.ast.Statement, p.withStmt(false))
+		case token.OBJECT:
+			p.ast.Statement = append(p.ast.Statement, p.objectDecl())
 		case token.LCURLY:
 			p.ast.Statement = append(p.ast.Statement, p.block(false))
 			p.advance()
@@ -215,6 +217,8 @@ func (p *parser) block(isInsideLoop bool) ast.Node {
 			block.Statement = append(block.Statement, p.whileLoop())
 		case token.WITH:
 			block.Statement = append(block.Statement, p.withStmt(isInsideLoop))
+		case token.OBJECT:
+			block.Statement = append(block.Statement, p.objectDecl())
 		case token.RET:
 			block.Statement = append(block.Statement, p.ret())
 		case token.BREAK:
@@ -907,6 +911,8 @@ func (p *parser) operand() ast.Node {
 		}
 		p.expect(token.RCURLY)
 		return e
+	case token.SUPER:
+		return &ast.Super{Line: p.current.Line}
 	default:
 		if p.ok {
 			if p.lexer.LexicalError == nil {
@@ -1041,6 +1047,110 @@ func (p *parser) selector(e ast.Node) ast.Node {
 		return &ast.MethodCallExpr{Args: args, Obj: e, Prop: prop, Ellipsis: ellipsis}
 	}
 	return &ast.Select{Selectable: e, Selector: &ast.Property{Value: p.current.Lit}}
+}
+
+func (p *parser) objectDecl() ast.Node {
+	l := p.current.Line
+	p.advance() // consume 'object'
+
+	// Name
+	p.expect(token.IDENTIFIER)
+	name := p.current.Lit
+	p.advance()
+
+	// Parameters: ( x, y, ... )
+	p.expect(token.LPAREN)
+	p.advance()
+	var params []string
+	if p.current.Token != token.RPAREN && p.current.Token != token.EOF {
+		p.expect(token.IDENTIFIER)
+		params = append(params, p.current.Lit)
+		p.advance()
+		for p.current.Token == token.COMMA {
+			p.advance()
+			p.expect(token.IDENTIFIER)
+			params = append(params, p.current.Lit)
+			p.advance()
+		}
+	}
+	p.expect(token.RPAREN)
+	p.advance()
+
+	if dup, ok := firstDuplicate(params); ok {
+		return p.declError(l, fmt.Sprintf("parameter '%v' repeated in object declaration", dup))
+	}
+
+	// Optional parent: =< expr
+	var parent ast.Node
+	if p.current.Token == token.VTABLE {
+		p.advance()
+		parent = p.expression(token.LowestPrec)
+		p.advance()
+	}
+
+	// Body: { ... }
+	p.expect(token.LCURLY)
+	p.advance()
+
+	var body []*ast.Pair
+	for p.current.Token != token.RCURLY && p.current.Token != token.EOF {
+		// Key: identifier or string
+		var k ast.Node
+		switch p.current.Token {
+		case token.STRING:
+			p.current.Token = token.IDENTIFIER
+			p.current.Lit = p.current.Lit[1 : len(p.current.Lit)-1]
+			fallthrough
+		case token.IDENTIFIER:
+			k = &ast.Property{Value: p.current.Lit}
+		default:
+			if p.ok {
+				p.err = NewRuntimeError(p.lexer.ScriptID,
+					"it was expected an identifier or string as object member name",
+					SyntaxErrType, p.current.Line)
+				p.ok = false
+			}
+			return &ast.Nil{}
+		}
+		p.advance()
+
+		// Optional comma after key (before =)
+		if p.current.Token == token.COMMA {
+			p.advance()
+		}
+
+		// = value
+		switch p.current.Token {
+		case token.ASSIGN:
+			p.advance()
+			v := p.expression(token.LowestPrec)
+			p.advance()
+			body = append(body, &ast.Pair{Key: k, Value: v})
+			if p.current.Token == token.COMMA {
+				p.advance()
+			}
+		case token.RCURLY:
+			body = append(body, &ast.Pair{Key: k, Value: &ast.Nil{}})
+		default:
+			if p.ok {
+				p.err = NewRuntimeError(p.lexer.ScriptID,
+					"it was expected '=' after object member name",
+					SyntaxErrType, p.current.Line)
+				p.ok = false
+			}
+			return &ast.Nil{}
+		}
+	}
+	p.expect(token.RCURLY)
+	p.advance()
+
+	return &ast.ObjectDecl{
+		Name:   name,
+		Params: params,
+		Parent: parent,
+		Body:   body,
+		Line:   l,
+	}
 }
 
 func (p *parser) expect(tok token.Token) {

@@ -261,6 +261,18 @@ type With struct {
 	Line        uint
 }
 
+type ObjectDecl struct {
+	Name   string
+	Params []string
+	Parent Node
+	Body   []*Pair
+	Line   uint
+}
+
+type Super struct {
+	Line uint
+}
+
 type Enum struct {
 	Variants []string
 }
@@ -311,4 +323,6 @@ func (n *CallStmt) _node()       {}
 func (n *MethodCallStmt) _node() {}
 func (n *MethodCallExpr) _node() {}
 func (n *With) _node()           {}
+func (n *ObjectDecl) _node()     {}
+func (n *Super) _node()          {}
 func (n *Enum) _node()           {}

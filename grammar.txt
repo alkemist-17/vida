@@ -10,6 +10,7 @@ statement	:= 	global
 			|	while
 			|	with
 			|	export
+			|	objectDecl
 global		:=	'let' ident (',' ident)* '=' expr (',' expr)*
 local		:=	'var' 'rec'? ident (',' ident)* '=' expr (',' expr)*
 mut			:=	ident select select* (',' ident select select*)* '=' expr (',' expr)*
@@ -24,6 +25,10 @@ elif		:=	'else' 'if' expr block | loopBlock
 else		:=	'else' block | loopBlock
 while		:=	'while' expr loopBlock
 with		:=	'with' ident (',' ident)* '=' expr (',' expr)* block
+objectDecl	:=	"object" ident ( '(' ')' | '(' ident (',' ident)* ')' ) ('=<' Expr)? '{' objectBody '}'
+objectBody	:=	entry*
+entry		:=	ident '=' Function
+            |	ident "=" Expr
 export		:=	'export' expr
 ident		:=	['_' | letter]+ ['_' | letter | number]*
 expr		:=	prefix

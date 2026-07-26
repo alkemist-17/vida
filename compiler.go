@@ -17,6 +17,7 @@ type compiler struct {
 	withLoopWatermarks []int
 	withStack          []withScope
 	fn                 []*CoreFunction
+	superParent        ast.Node
 	errMsg             string
 	mainScriptID       string
 	currentFn          *CoreFunction
@@ -27,6 +28,7 @@ type compiler struct {
 	ctx                *Context
 	scriptMap          map[string]int
 	depMap             map[string]struct{}
+	objectVTables      map[string]bool
 	extensionsLoader   ExtensionsLoader
 	lineErr            uint
 	scope              int
@@ -56,6 +58,7 @@ func newCompiler(ast *ast.Ast, scriptID string, ctx *Context, extensionsLoader E
 		kb:               newKonstBuilder(),
 		sb:               newSymbolBuilder(0),
 		scriptMap:        make(map[string]int),
+		objectVTables:    make(map[string]bool),
 		depMap:           dm,
 		mainScriptID:     scriptID,
 		extensionsLoader: extensionsLoader,
@@ -77,6 +80,7 @@ func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Va
 		scriptMap:     scriptMap,
 		depMap:        depMap,
 		mainScriptID:  scriptID,
+		objectVTables: make(map[string]bool),
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -729,6 +733,8 @@ func (c *compiler) compileStmt(node ast.Node) {
 				c.emitRet(storeFromFree, i)
 			}
 		}
+	case *ast.ObjectDecl:
+		c.compileObjectDecl(n)
 	}
 }
 
@@ -1336,6 +1342,14 @@ func (c *compiler) compileExpr(node ast.Node, isRoot bool) (int, int) {
 			e.Pairs[v] = Integer(i)
 		}
 		return c.kb.EnumIndex(e), rKonst
+	case *ast.Super:
+		if c.superParent == nil {
+			c.hadError = true
+			c.errMsg = "'super' can only be used inside an object declaration that has a parent"
+			c.lineErr = n.Line
+			return 0, rKonst
+		}
+		return c.compileExpr(c.superParent, isRoot)
 	default:
 		return 0, rGlob
 	}
@@ -1842,5 +1856,151 @@ func (c *compiler) closeWithResourcesForLoopExit() {
 	}
 	for i := len(c.withStack) - 1; i >= watermark; i-- {
 		c.emitCloseCall(c.withStack[i].resourceReg)
+	}
+}
+
+const vtPrefix = "__vt__"
+
+func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
+	vtName := vtPrefix + n.Name
+
+	// ── 1. Detect `init` hook ──
+	hasInit := false
+	for _, pair := range n.Body {
+		if prop, ok := pair.Key.(*ast.Property); ok && prop.Value == "init" {
+			hasInit = true
+			break
+		}
+	}
+
+	// ── 2. Set super context for method bodies ──
+	savedSuperParent := c.superParent
+	if n.Parent != nil {
+		c.superParent = c.resolveVTableRefs(n.Parent)
+	} else {
+		c.superParent = nil
+	}
+
+	// ── 3. Build the vtable expression ──
+	vtObj := &ast.Object{Pairs: n.Body, Line: n.Line}
+	var vtExpr ast.Node = vtObj
+	if n.Parent != nil {
+		vtExpr = &ast.BinaryExpr{
+			Op:   token.VTABLE,
+			Lhs:  vtObj,
+			Rhs:  c.resolveVTableRefs(n.Parent),
+			Line: n.Line,
+		}
+	}
+
+	// ── 4. Forward-declare the constructor name ──
+	// Mirrors the `var rec` pattern: register the name with a nil
+	// placeholder BEFORE compiling any body that might reference it.
+	// Skip if the user already forward-declared it manually.
+	if _, isGlobal := c.sb.isGlobal(n.Name); !isGlobal {
+		c.compileStmt(&ast.Let{
+			Identifier: n.Name,
+			Expr:       &ast.Nil{},
+			Line:       n.Line,
+		})
+	}
+
+	// ── 5. Declare the vtable ──
+	// Method bodies can now reference n.Name (it's in the global table).
+	c.compileStmt(&ast.Let{
+		Identifier: vtName,
+		Expr:       vtExpr,
+		Line:       n.Line,
+	})
+
+	// ── 6. Restore super context ──
+	c.superParent = savedSuperParent
+
+	// ── 7. Register this object for future =< resolution ──
+	if c.objectVTables == nil {
+		c.objectVTables = make(map[string]bool)
+	}
+	c.objectVTables[n.Name] = true
+
+	// ── 8. Build the constructor ──
+	fieldPairs := make([]*ast.Pair, len(n.Params))
+	for i, p := range n.Params {
+		fieldPairs[i] = &ast.Pair{
+			Key:   &ast.Property{Value: p},
+			Value: &ast.Reference{Value: p, Line: n.Line},
+		}
+	}
+	fieldObj := &ast.Object{Pairs: fieldPairs, Line: n.Line}
+	vtableAssign := &ast.BinaryExpr{
+		Op:   token.VTABLE,
+		Lhs:  fieldObj,
+		Rhs:  &ast.Reference{Value: vtName, Line: n.Line},
+		Line: n.Line,
+	}
+
+	var constructor *ast.Fun
+	if !hasInit {
+		// fun x, y -> {x = x, y = y} =< __vt__Point
+		constructor = &ast.Fun{
+			Args: n.Params,
+			Body: &ast.Block{Statement: []ast.Node{
+				&ast.Ret{Expr: vtableAssign, Line: n.Line},
+			}},
+		}
+	} else {
+		// fun x, y {
+		//     var obj = {x = x, y = y} =< __vt__Point
+		//     obj.init()
+		//     ret obj
+		// }
+		constructor = &ast.Fun{
+			Args: n.Params,
+			Body: &ast.Block{Statement: []ast.Node{
+				&ast.Var{Identifier: "obj", Expr: vtableAssign, Line: n.Line},
+				&ast.ReferenceStmt{Value: "obj", Line: n.Line},
+				&ast.MethodCallStmt{
+					Prop: &ast.Property{Value: "init"},
+					Args: []ast.Node{},
+					Line: n.Line,
+				},
+				&ast.Ret{Expr: &ast.Reference{Value: "obj", Line: n.Line}, Line: n.Line},
+			}},
+		}
+	}
+
+	// ── 9. Reassign the constructor over the nil placeholder ──
+	// Uses ast.Mut (the same node the parser produces for `x = expr`).
+	c.compileStmt(&ast.Mut{
+		Identifier: n.Name,
+		Expr:       constructor,
+		Line:       n.Line,
+	})
+}
+
+// resolveVTableRefs walks an expression AST and replaces any Reference
+// whose name is a known object declaration with a reference to its
+// hidden vtable global (__vt__Name).
+func (c *compiler) resolveVTableRefs(node ast.Node) ast.Node {
+	switch n := node.(type) {
+	case *ast.Reference:
+		if c.objectVTables != nil && c.objectVTables[n.Value] {
+			return &ast.Reference{Value: vtPrefix + n.Value, Line: n.Line}
+		}
+		return n
+	case *ast.BinaryExpr:
+		return &ast.BinaryExpr{
+			Op:   n.Op,
+			Lhs:  c.resolveVTableRefs(n.Lhs),
+			Rhs:  c.resolveVTableRefs(n.Rhs),
+			Line: n.Line,
+		}
+	case *ast.PrefixExpr:
+		return &ast.PrefixExpr{
+			Op:   n.Op,
+			Expr: c.resolveVTableRefs(n.Expr),
+			Line: n.Line,
+		}
+	default:
+		return node
 	}
 }
