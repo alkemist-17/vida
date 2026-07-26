@@ -8,6 +8,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/alkemist-17/vida/token"
@@ -145,24 +146,107 @@ func coreFormat(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
+// coreAssert checks an assumption that must be true.
+//
+// Signatures:
+//
+//	assert(condition)                    — halt on failure with default message
+//	assert(condition, "message")         — halt on failure with custom message
+//	assert(condition, handler)           — call handler on failure; handler decides
+//	assert(condition, "message", handler) — call handler on failure; handler decides
+//
+// The handler receives a structured info object with the following fields:
+//
+//	{
+//	    passed    = false,
+//	    message   = "<assertion message>",
+//	    file      = "<script path / context ID>",
+//	    timestamp = "<RFC-3339 timestamp>"
+//	}
+//
+// Handler return-value semantics ("handler decides"):
+//
+//	handler returns truthy  → assertion failure is handled; execution continues;
+//	                          assert returns False.
+//	handler returns falsy   → VM halts with the assertion error (same as no handler).
+//	handler raises an error → the handler error is reported to stderr and the VM
+//	                          halts with the ORIGINAL assertion error.
+//	no handler provided     → VM halts (fully backward-compatible).
 func coreAssert(ctx *Context, args ...Value) (Value, error) {
 	argsLength := len(args)
-	if argsLength == 1 {
-		if args[0].Boolean() {
-			return True, nil
-		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, assertionFailureDefaultMessage))
-		return Nil, err
+	if argsLength == 0 {
+		return Nil, fmt.Errorf("\n\n\t[%v]\n\tAssumption: %v",
+			AssertionErrType, assertionFailureDefaultMessage)
 	}
-	if argsLength > 1 {
-		if args[0].Boolean() {
-			return True, nil
-		}
-		err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, args[1].String()))
-		return Nil, err
+
+	assumption := args[0]
+
+	// Fast path: assumption holds
+	if assumption.Boolean() {
+		return True, nil
 	}
-	err := fmt.Errorf("%s", fmt.Sprintf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, assertionFailureDefaultMessage))
-	return Nil, err
+
+	// Parse optional message and handler
+	message := assertionFailureDefaultMessage
+	var handler Value
+
+	switch {
+	case argsLength == 2:
+		// assert(cond, handler)  OR  assert(cond, "message")
+		if args[1].IsCallable() {
+			handler = args[1]
+		} else {
+			message = args[1].String()
+		}
+	case argsLength >= 3:
+		// assert(cond, "message", handler)
+		message = args[1].String()
+		if args[2].IsCallable() {
+			handler = args[2]
+		}
+	}
+
+	// Build the assertion error (used if we halt)
+	assertErr := fmt.Errorf("\n\n\n\n\t[%v]\n\tAssumption: %v", AssertionErrType, message)
+
+	// No handler → original behaviour: halt immediately
+	if handler == nil {
+		return Nil, assertErr
+	}
+
+	// Build structured info object for the handler
+	info := &Object{Value: map[string]Value{
+		"passed":    False,
+		"message":   &String{Value: message},
+		"file":      &String{Value: ctx.contextID},
+		"timestamp": &String{Value: time.Now().Format(time.RFC3339)},
+	}}
+
+	// ── Invoke the handler ──────────────────────────────────────────
+	result, handlerErr := callAssertHandler(ctx, handler, info)
+
+	if handlerErr != nil {
+		// The handler itself failed. Report it, but do NOT let it
+		// swallow the original assertion failure.
+		fmt.Fprintf(os.Stderr, "\n\t⚠ Assertion handler error: %v\n", handlerErr)
+		return Nil, assertErr
+	}
+
+	// Handler decides: truthy → continue; falsy → halt.
+	if result != nil && result.Boolean() {
+		return False, nil
+	}
+
+	return Nil, assertErr
+}
+
+func callAssertHandler(ctx *Context, handler Value, info *Object) (Value, error) {
+	switch fn := handler.(type) {
+	case *Function:
+		return ctx.runFunctionInNewThread(fn, info)
+	default:
+		return handler.Call(ctx, info)
+	}
 }
 
 func coreAppend(ctx *Context, args ...Value) (Value, error) {
