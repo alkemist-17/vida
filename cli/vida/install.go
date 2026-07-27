@@ -66,7 +66,7 @@ func installOne(cwd, manifestPath string, m *manifest, args []string) {
 	handleError(os.MkdirAll(cellsDir, 0o755))
 
 	destPath := filepath.Join(cellsDir, name+vida.VidaFileExtension)
-	fmt.Printf("\t⬇  %-20v %v\n", name, depURL)
+	fmt.Printf("\t⬇  %-17v %v\n", name, depURL)
 
 	if err := vida.DownloadCellTo(depURL, destPath); err != nil {
 		handleError(err)

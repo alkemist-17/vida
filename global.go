@@ -60,11 +60,10 @@ const (
 )
 
 const (
-	VIDAPATH         = "VIDAPATH"
-	ProjectCellsDir  = "cells"
-	VidaPathDirName  = "vida-cells"
-	RemoteModulesDir = "remote"
-	downloadTimeout  = 15 * time.Second
+	VIDAPATH        = "VIDAPATH"
+	ProjectCellsDir = "cells"
+	VidaPathDirName = "vida-cells"
+	downloadTimeout = 15 * time.Second
 )
 
 const (

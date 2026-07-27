@@ -84,8 +84,7 @@ func scaffold(args []string) {
 		return os.WriteFile(dest, content, 0o644)
 	}))
 
-	handleError(os.MkdirAll(filepath.Join(targetDir, vida.ProjectCellsDir, vida.RemoteModulesDir), 0o755))
-	handleError(os.WriteFile(filepath.Join(targetDir, ".gitignore"), []byte(vida.ProjectCellsDir+"/"+vida.RemoteModulesDir+"/\n"), 0o644))
+	handleError(os.MkdirAll(filepath.Join(targetDir, vida.ProjectCellsDir), 0o755))
 
 	entry := "main.vida"
 	if template == "lib" {

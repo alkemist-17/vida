@@ -2,7 +2,6 @@ package vida
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -2047,7 +2046,15 @@ func (c *compiler) resolveVTableRefs(node ast.Node) ast.Node {
 
 func (c *compiler) resolveImportPath(path string) (string, error) {
 	if isRemoteImport(path) {
-		return c.downloadModule(path)
+		return EmptyString, fmt.Errorf(
+			"remote imports are not allowed directly in code:\n"+
+				"\t%q\n"+
+				"\tadd it to vida.toml instead, e.g.:\n"+
+				"\t\tvida install <name> %q\n"+
+				"\tthen import it locally with:\n"+
+				"\t\timport(\"cells/<name>\")",
+			path, path,
+		)
 	}
 
 	if filepath.IsAbs(path) {
@@ -2083,30 +2090,4 @@ func isRemoteImport(path string) bool {
 func fileExistsOnDisk(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
-}
-
-// downloadModule fetches a remote .vida file and caches it under
-// modules/remote/<host>/<path>, mirroring the URL structure.
-func (c *compiler) downloadModule(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return EmptyString, fmt.Errorf("invalid import url %q: %v", rawURL, err)
-	}
-
-	localPath := filepath.Join(
-		filepath.Dir(c.mainScriptID),
-		ProjectCellsDir,
-		RemoteModulesDir,
-		filepath.FromSlash(u.Host+u.Path),
-	)
-
-	if fileExistsOnDisk(localPath) {
-		return localPath, nil
-	}
-
-	if err := DownloadCellTo(rawURL, localPath); err != nil {
-		return EmptyString, err
-	}
-
-	return localPath, nil
 }
