@@ -22,7 +22,6 @@ type Lexer struct {
 const bom = 0xFEFF
 const eof = -1
 const unexpectedChar = -2
-const emptyString = ""
 
 func NewLexer(src []byte, scriptID string) *Lexer {
 	src = append(src, 10)
@@ -144,7 +143,7 @@ func (l *Lexer) scanString() (token.Token, string) {
 		if ch == '\n' || ch < 0 {
 			l.c = unexpectedChar
 			l.LexicalError = NewRuntimeError(l.ScriptID, "there is an unterminated string literal", LexicalErrType, line)
-			return token.STRING, emptyString
+			return token.STRING, EmptyString
 		}
 		l.next()
 		if ch == '"' {
@@ -166,7 +165,7 @@ func (l *Lexer) scanRawString() (token.Token, string) {
 		if ch < 0 {
 			l.c = unexpectedChar
 			l.LexicalError = NewRuntimeError(l.ScriptID, "ther is an unterminated string literal", LexicalErrType, line)
-			return token.STRING, emptyString
+			return token.STRING, EmptyString
 		}
 		l.next()
 		if ch == '`' {

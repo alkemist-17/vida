@@ -786,7 +786,7 @@ func textSlugify(ctx *Context, args ...Value) (Value, error) {
 				if sepArg, ok := args[1].(*String); ok {
 					sep = sepArg.Value
 				}
-				if sep == "" {
+				if sep == EmptyString {
 					sep = "-"
 				}
 			}

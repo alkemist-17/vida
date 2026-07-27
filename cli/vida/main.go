@@ -25,6 +25,7 @@ const (
 	TEST         = "test"
 	INIT         = "init"
 	INSTALL      = "install"
+	PATH         = "path"
 	FLAG_I       = "-I"
 )
 
@@ -72,6 +73,8 @@ func main() {
 			scaffold(args)
 		case INSTALL:
 			install(args)
+		case PATH:
+			path()
 		default:
 			handleError(fmt.Errorf("unknown command '%v'.\n\tType 'vida help' for assistance.", parseCMD(args[1])))
 		}
@@ -370,9 +373,10 @@ func printHelp() {
 	fmt.Printf("\t%-11v show this message\n", HELP)
 	fmt.Printf("\t%-11v show the language version\n", VERSION)
 	fmt.Printf("\t%-11v compile and show the compiled code\n", CODE)
+	fmt.Printf("\t%-11v gets or sets vidapath in the env vars of the host system\n", PATH)
 	fmt.Printf("\t%-11v show the description of Vida\n", ABOUT)
 	fmt.Printf("\t%-11v add a directory to the module search path\n", FLAG_I)
-	fmt.Printf("\t%-11v %v", "", flagIExample)
+	fmt.Printf("\t%-11v %v", vida.EmptyString, flagIExample)
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
@@ -425,7 +429,7 @@ func applyIncludePaths(paths []string) {
 		return
 	}
 	joined := strings.Join(paths, string(os.PathListSeparator))
-	if existing := os.Getenv(vida.VIDAPATH); existing != "" {
+	if existing := os.Getenv(vida.VIDAPATH); existing != vida.EmptyString {
 		joined = joined + string(os.PathListSeparator) + existing
 	}
 	os.Setenv(vida.VIDAPATH, joined)
@@ -442,7 +446,7 @@ func resolveTestDir(cwd string) string {
 		return cwd
 	}
 	m, err := readManifest(manifestPath)
-	if err != nil || m.Test == "" {
+	if err != nil || m.Test == vida.EmptyString {
 		return cwd
 	}
 	testDir := filepath.Join(cwd, m.Test)
@@ -450,4 +454,27 @@ func resolveTestDir(cwd string) string {
 		return cwd
 	}
 	return testDir
+}
+
+// path checks whether VIDAPATH has set and notify about that.
+// otherwise it creates VIDAPATH at ~/vida-cells
+func path() {
+	clear()
+	printVersion()
+	if path, exists := os.LookupEnv(vida.VIDAPATH); exists {
+		fmt.Printf("\tVIDAPATH has already been set at\n")
+		fmt.Printf("\t%v\n\n\n", path)
+	} else {
+		home, err := os.UserHomeDir()
+		handleError(err)
+		globalVidaCellsPath := filepath.Join(home, vida.VidaPathDirName)
+		handleError(os.Setenv(vida.VIDAPATH, globalVidaCellsPath))
+		if path, exists := os.LookupEnv(vida.VIDAPATH); exists {
+			fmt.Printf("\tVIDAPATH has been successfully set at\n")
+			fmt.Printf("\t%v\n\n\n", path)
+		} else {
+			fmt.Printf("\tVIDAPATH could not be set in your system\n")
+			fmt.Printf("\tPlease look for more info online\n\n\n")
+		}
+	}
 }

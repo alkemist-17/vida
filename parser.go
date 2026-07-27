@@ -483,7 +483,7 @@ func (p *parser) parseMutTarget() *ast.MutTarget {
 func firstDuplicateIdentTarget(targets []*ast.MutTarget) (string, bool) {
 	seen := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
-		if t.Identifier == "" {
+		if t.Identifier == EmptyString {
 			continue // can't statically prove A[i] vs A[j] alias, so skip
 		}
 		if _, ok := seen[t.Identifier]; ok {
@@ -491,7 +491,7 @@ func firstDuplicateIdentTarget(targets []*ast.MutTarget) (string, bool) {
 		}
 		seen[t.Identifier] = struct{}{}
 	}
-	return "", false
+	return EmptyString, false
 }
 
 func (p *parser) finishMultiTargetMutation(statements *[]ast.Node, stmtMark int, target, idx ast.Node, idxIsProperty bool, l uint) ast.Node {
@@ -1237,5 +1237,5 @@ func firstDuplicate(ids []string) (string, bool) {
 		}
 		seen[id] = struct{}{}
 	}
-	return "", false
+	return EmptyString, false
 }

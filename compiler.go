@@ -312,7 +312,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		addrs := make([]targetAddr, len(n.Targets))
 
 		for i, t := range n.Targets {
-			if t.Identifier != "" {
+			if t.Identifier != EmptyString {
 				continue
 			}
 			base, key := t.Indexable, t.Index
@@ -335,7 +335,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		// without risk of one write corrupting another target's address.
 		for i, t := range n.Targets {
 			from := rhsBase + i
-			if t.Identifier != "" {
+			if t.Identifier != EmptyString {
 				to, sIdent := c.refScope(t.Identifier)
 				switch sIdent {
 				case rLoc:
@@ -2059,21 +2059,21 @@ func (c *compiler) resolveImportPath(path string) (string, error) {
 		return candidate, nil
 	}
 
-	modulesCandidate := filepath.Join(filepath.Dir(c.mainScriptID), CellsDirName, path)
-	if fileExistsOnDisk(modulesCandidate) {
-		return modulesCandidate, nil
+	cellsCandidate := filepath.Join(filepath.Dir(c.mainScriptID), ProjectCellsDir, path)
+	if fileExistsOnDisk(cellsCandidate) {
+		return cellsCandidate, nil
 	}
 
-	if vidaPath := os.Getenv("VIDAPATH"); vidaPath != "" {
+	if vidaPath := os.Getenv(VIDAPATH); vidaPath != EmptyString {
 		for _, dir := range filepath.SplitList(vidaPath) {
-			c2 := filepath.Join(dir, path)
-			if fileExistsOnDisk(c2) {
-				return c2, nil
+			globalRepoCandidate := filepath.Join(dir, path)
+			if fileExistsOnDisk(globalRepoCandidate) {
+				return globalRepoCandidate, nil
 			}
 		}
 	}
 
-	return candidate, nil
+	return EmptyString, fmt.Errorf("file '%v' cannot be found in your system", path)
 }
 
 func isRemoteImport(path string) bool {
@@ -2090,12 +2090,12 @@ func fileExistsOnDisk(path string) bool {
 func (c *compiler) downloadModule(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return "", fmt.Errorf("invalid import url %q: %v", rawURL, err)
+		return EmptyString, fmt.Errorf("invalid import url %q: %v", rawURL, err)
 	}
 
 	localPath := filepath.Join(
 		filepath.Dir(c.mainScriptID),
-		CellsDirName,
+		ProjectCellsDir,
 		RemoteModulesDir,
 		filepath.FromSlash(u.Host+u.Path),
 	)
@@ -2105,7 +2105,7 @@ func (c *compiler) downloadModule(rawURL string) (string, error) {
 	}
 
 	if err := DownloadCellTo(rawURL, localPath); err != nil {
-		return "", err
+		return EmptyString, err
 	}
 
 	return localPath, nil

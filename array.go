@@ -577,7 +577,7 @@ func extractFloat(v Value) (float64, error) {
 func extractString(v Value) (string, error) {
 	s, ok := v.(*String)
 	if !ok {
-		return "", fmt.Errorf("expected *String, got %T", v)
+		return EmptyString, fmt.Errorf("expected *String, got %T", v)
 	}
 	return s.Value, nil
 }

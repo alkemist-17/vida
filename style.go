@@ -153,7 +153,7 @@ func (s *Style) prefix() string {
 	}
 
 	if len(codes) == 0 {
-		return ""
+		return EmptyString
 	}
 	return "\x1b[" + strings.Join(codes, ";") + "m"
 }
@@ -823,7 +823,7 @@ func namedColorShowcase() {
 		sw, _ = sw.BgName(name)
 		sw = sw.Width(3)
 		sw, _ = sw.FgName("black")
-		row.WriteString(sw.Fill(""))
+		row.WriteString(sw.Fill(EmptyString))
 		row.WriteString(" ")
 		row.WriteString(NewStyle().Sprint(name))
 		row.WriteString("\n")

@@ -62,7 +62,7 @@ func installOne(cwd, manifestPath string, m *manifest, args []string) {
 	name := args[2]
 	depURL := args[3]
 
-	cellsDir := filepath.Join(cwd, vida.CellsDirName)
+	cellsDir := filepath.Join(cwd, vida.ProjectCellsDir)
 	handleError(os.MkdirAll(cellsDir, 0o755))
 
 	destPath := filepath.Join(cellsDir, name+vida.VidaFileExtension)
@@ -90,7 +90,7 @@ func installAll(cwd string, m manifest) {
 		return
 	}
 
-	cellsDir := filepath.Join(cwd, vida.CellsDirName)
+	cellsDir := filepath.Join(cwd, vida.ProjectCellsDir)
 	handleError(os.MkdirAll(cellsDir, 0o755))
 
 	names := make([]string, 0, len(m.Dependencies))

@@ -143,7 +143,7 @@ func resolveConfig(fixedMethod string, args ...Value) (*requestConfig, error) {
 	}
 
 	// Override method only when the factory was created with a fixed verb.
-	if fixedMethod != "" {
+	if fixedMethod != EmptyString {
 		cfg.Method = fixedMethod
 	}
 	return cfg, nil

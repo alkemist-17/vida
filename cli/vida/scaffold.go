@@ -84,8 +84,8 @@ func scaffold(args []string) {
 		return os.WriteFile(dest, content, 0o644)
 	}))
 
-	handleError(os.MkdirAll(filepath.Join(targetDir, vida.CellsDirName, vida.RemoteModulesDir), 0o755))
-	handleError(os.WriteFile(filepath.Join(targetDir, ".gitignore"), []byte(vida.CellsDirName+"/"+vida.RemoteModulesDir+"/\n"), 0o644))
+	handleError(os.MkdirAll(filepath.Join(targetDir, vida.ProjectCellsDir, vida.RemoteModulesDir), 0o755))
+	handleError(os.WriteFile(filepath.Join(targetDir, ".gitignore"), []byte(vida.ProjectCellsDir+"/"+vida.RemoteModulesDir+"/\n"), 0o644))
 
 	entry := "main.vida"
 	if template == "lib" {
@@ -104,7 +104,7 @@ func scaffold(args []string) {
 		fmt.Printf("\tvida test\n\n\n\n")
 	} else {
 		fmt.Printf("\t# import this library from another project with:\n")
-		fmt.Printf("\t# import(\"%v/%v/%v\")\n\n\n\n", vida.CellsDirName, projectName, entry)
+		fmt.Printf("\t# import(\"%v/%v/%v\")\n\n\n\n", vida.ProjectCellsDir, projectName, entry)
 	}
 }
 
@@ -139,7 +139,7 @@ func readManifest(path string) (manifest, error) {
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
+		if line == vida.EmptyString || strings.HasPrefix(line, "#") {
 			continue
 		}
 		if strings.HasPrefix(line, "[") {
@@ -170,7 +170,7 @@ func readManifest(path string) (manifest, error) {
 		}
 	}
 
-	if m.Entry == "" {
+	if m.Entry == vida.EmptyString {
 		return m, fmt.Errorf("%q has no 'entry' field", path)
 	}
 	return m, nil
@@ -181,15 +181,15 @@ func readManifest(path string) (manifest, error) {
 func resolveEntryScript() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return vida.EmptyString, err
 	}
 	manifestPath := filepath.Join(cwd, manifestFileName)
 	if !fileExistsOnDiskCLI(manifestPath) {
-		return "", fmt.Errorf("no script given and no %v found in the current directory", manifestFileName)
+		return vida.EmptyString, fmt.Errorf("no script given and no %v found in the current directory", manifestFileName)
 	}
 	m, err := readManifest(manifestPath)
 	if err != nil {
-		return "", err
+		return vida.EmptyString, err
 	}
 	return filepath.Join(cwd, m.Entry), nil
 }
