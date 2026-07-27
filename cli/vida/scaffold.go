@@ -18,6 +18,7 @@ const (
 	defaultVersion   = "0.1.0"
 	manifestFileName = "vida.toml"
 	testsEntry       = "tests"
+	templatesPath    = "templates/"
 )
 
 type manifest struct {
@@ -30,7 +31,7 @@ type manifest struct {
 
 func scaffold(args []string) {
 	if len(args) < 3 {
-		handleError(fmt.Errorf("no project name given.\n\tUsage: vida init <name> [--template=app|lib]"))
+		handleError(fmt.Errorf("no project name given.\n\tUsage: vida init <project-name> [--template=app|lib]?"))
 	}
 
 	projectName := args[2]
@@ -42,7 +43,7 @@ func scaffold(args []string) {
 	}
 
 	if template != "app" && template != "lib" {
-		handleError(fmt.Errorf("unknown template %q. Available templates: app, lib", template))
+		handleError(fmt.Errorf("unknown template %q.\n\tAvailable templates: app, lib", template))
 	}
 
 	targetDir, err := filepath.Abs(projectName)
@@ -58,7 +59,7 @@ func scaffold(args []string) {
 
 	handleError(os.MkdirAll(targetDir, 0o755))
 
-	srcRoot := "templates/" + template
+	srcRoot := templatesPath + template
 	handleError(fs.WalkDir(templatesFS, srcRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -70,6 +71,7 @@ func scaffold(args []string) {
 		if rel == "." {
 			return nil
 		}
+
 		dest := filepath.Join(targetDir, rel)
 
 		if d.IsDir() {
@@ -88,7 +90,7 @@ func scaffold(args []string) {
 
 	entry := "main.vida"
 	if template == "lib" {
-		entry = "src/lib.vida"
+		entry = "lib.vida"
 	}
 
 	m := manifest{Name: projectName, Version: defaultVersion, Entry: entry, Test: testsEntry}
@@ -103,7 +105,7 @@ func scaffold(args []string) {
 		fmt.Printf("\tvida test\n\n\n\n")
 	} else {
 		fmt.Printf("\t# import this library from another project with:\n")
-		fmt.Printf("\t# import(\"%v/%v/%v\")\n\n\n\n", vida.ProjectCellsDir, projectName, entry)
+		fmt.Printf("\t# import(\"%v/%v/%v\")\n\n\n\n", vida.ProjectCellsDir, projectName, strings.TrimSuffix(entry, vida.VidaFileExtension))
 	}
 }
 
@@ -135,8 +137,8 @@ func readManifest(path string) (manifest, error) {
 	}
 
 	inDependencies := false
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(data), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if line == vida.EmptyString || strings.HasPrefix(line, "#") {
 			continue
