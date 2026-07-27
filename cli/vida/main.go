@@ -457,7 +457,7 @@ func resolveTestDir(cwd string) string {
 }
 
 // path checks whether VIDAPATH has set and notify about that.
-// otherwise it creates VIDAPATH at ~/vida-cells
+// otherwise it creates VIDAPATH at {os.HOME}/vida-cells
 func path() {
 	clear()
 	printVersion()
@@ -474,7 +474,7 @@ func path() {
 			fmt.Printf("\t%v\n\n\n", path)
 		} else {
 			fmt.Printf("\tVIDAPATH could not be set in your system\n")
-			fmt.Printf("\tPlease look for more info online\n\n\n")
+			fmt.Printf("\tPlease look for help online\n\n\n")
 		}
 	}
 }
