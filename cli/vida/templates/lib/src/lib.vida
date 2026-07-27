@@ -1,6 +1,6 @@
 // Entry point for this library.
 // Import it from another project with:
-// let mylib = import("modules/{{.Name}}/src/lib")
+// let mylib = import("cells/{{.Name}}/src/lib")
 
 let hello = fun {
 	ret "Hello from {{.Name}}!"

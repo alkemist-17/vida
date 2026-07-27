@@ -17,6 +17,7 @@ var templatesFS embed.FS
 const (
 	defaultVersion   = "0.1.0"
 	manifestFileName = "vida.toml"
+	testsEntry       = "tests"
 )
 
 type manifest struct {
@@ -83,15 +84,15 @@ func scaffold(args []string) {
 		return os.WriteFile(dest, content, 0o644)
 	}))
 
-	handleError(os.MkdirAll(filepath.Join(targetDir, vida.ModulesDirName, vida.RemoteModulesDir), 0o755))
-	handleError(os.WriteFile(filepath.Join(targetDir, ".gitignore"), []byte(vida.ModulesDirName+"/"+vida.RemoteModulesDir+"/\n"), 0o644))
+	handleError(os.MkdirAll(filepath.Join(targetDir, vida.CellsDirName, vida.RemoteModulesDir), 0o755))
+	handleError(os.WriteFile(filepath.Join(targetDir, ".gitignore"), []byte(vida.CellsDirName+"/"+vida.RemoteModulesDir+"/\n"), 0o644))
 
 	entry := "main.vida"
 	if template == "lib" {
 		entry = "src/lib.vida"
 	}
 
-	m := manifest{Name: projectName, Version: defaultVersion, Entry: entry, Test: "test"}
+	m := manifest{Name: projectName, Version: defaultVersion, Entry: entry, Test: testsEntry}
 	handleError(writeManifest(filepath.Join(targetDir, manifestFileName), m))
 
 	clear()
@@ -103,7 +104,7 @@ func scaffold(args []string) {
 		fmt.Printf("\tvida test\n\n\n\n")
 	} else {
 		fmt.Printf("\t# import this library from another project with:\n")
-		fmt.Printf("\t# import(\"modules/%v/%v\")\n\n\n\n", projectName, entry)
+		fmt.Printf("\t# import(\"%v/%v/%v\")\n\n\n\n", vida.CellsDirName, projectName, entry)
 	}
 }
 

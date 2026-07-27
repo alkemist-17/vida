@@ -2059,7 +2059,7 @@ func (c *compiler) resolveImportPath(path string) (string, error) {
 		return candidate, nil
 	}
 
-	modulesCandidate := filepath.Join(filepath.Dir(c.mainScriptID), ModulesDirName, path)
+	modulesCandidate := filepath.Join(filepath.Dir(c.mainScriptID), CellsDirName, path)
 	if fileExistsOnDisk(modulesCandidate) {
 		return modulesCandidate, nil
 	}
@@ -2095,7 +2095,7 @@ func (c *compiler) downloadModule(rawURL string) (string, error) {
 
 	localPath := filepath.Join(
 		filepath.Dir(c.mainScriptID),
-		ModulesDirName,
+		CellsDirName,
 		RemoteModulesDir,
 		filepath.FromSlash(u.Host+u.Path),
 	)
@@ -2104,7 +2104,7 @@ func (c *compiler) downloadModule(rawURL string) (string, error) {
 		return localPath, nil
 	}
 
-	if err := DownloadModuleTo(rawURL, localPath); err != nil {
+	if err := DownloadCellTo(rawURL, localPath); err != nil {
 		return "", err
 	}
 

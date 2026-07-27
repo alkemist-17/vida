@@ -361,7 +361,7 @@ func printHelp() {
 	fmt.Printf("\t%-11v compile and run a script\n", RUN)
 	fmt.Printf("\t%-11v scaffold a new project (--template=app|lib)\n", INIT)
 	fmt.Printf("\t%-11v run focused or all scripts in path|project\n", TEST)
-	fmt.Printf("\t%-11v download dependencies listed in vida.toml\n", INSTALL)
+	fmt.Printf("\t%-11v download any dependencies or those listed in vida.toml\n", INSTALL)
 	fmt.Printf("\t%-11v compile and run a script step by step\n", DEGUG)
 	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
 	fmt.Printf("\t%-11v show the token list\n", TOKENS)

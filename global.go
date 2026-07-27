@@ -61,7 +61,7 @@ const (
 
 const (
 	VIDAPATH         = "VIDAPATH"
-	ModulesDirName   = "modules"
+	CellsDirName     = "cells"
 	RemoteModulesDir = "remote"
 	downloadTimeout  = 15 * time.Second
 )
@@ -963,10 +963,10 @@ func pressEnterToContinue() {
 	fmt.Scanf(" ")
 }
 
-// DownloadModuleTo fetches rawURL and writes it verbatim to destPath,
+// DownloadCellTo fetches rawURL and writes it verbatim to destPath,
 // creating any needed directories. It does not check for an existing
 // cached file — callers decide caching policy.
-func DownloadModuleTo(rawURL, destPath string) error {
+func DownloadCellTo(rawURL, destPath string) error {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return fmt.Errorf("invalid module url %q: %v", rawURL, err)
