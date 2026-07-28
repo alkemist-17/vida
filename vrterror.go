@@ -48,7 +48,7 @@ type StackFrameInfo struct {
 	Frame    uint
 }
 
-func NewStackFrameInfo(scriptID string, line, frame uint) StackFrameInfo {
+func newStackFrameInfo(scriptID string, line, frame uint) StackFrameInfo {
 	return StackFrameInfo{
 		ScriptID: scriptID,
 		Line:     line,

@@ -629,7 +629,7 @@ func (vm *VM) printCallStack() {
 		} else {
 			nearLine = fn.CoreFn.MapScriptIPLine[modName][ip]
 		}
-		err := NewStackFrameInfo(modName, nearLine, uint(i))
+		err := newStackFrameInfo(modName, nearLine, uint(i))
 		fmt.Printf("%v\n\n\n", err)
 	}
 }

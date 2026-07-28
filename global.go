@@ -866,7 +866,7 @@ func StringLength(input *String) Integer {
 	return Integer(len(input.Runes))
 }
 
-func IsMemberOf(ctx *Context, args ...Value) (Bool, error) {
+func isMemberOf(ctx *Context, args ...Value) (Bool, error) {
 	if len(args) > 1 {
 		switch collection := args[1].(type) {
 		case *Array:

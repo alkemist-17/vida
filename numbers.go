@@ -99,7 +99,7 @@ func (l Integer) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return l, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, l, rhs)
+		return isMemberOf(ctx, l, rhs)
 	}
 	return Nil, ErrBinaryOpNotDefined
 }
@@ -247,7 +247,7 @@ func (f Float) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return f, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, f, rhs)
+		return isMemberOf(ctx, f, rhs)
 	}
 	return Nil, ErrBinaryOpNotDefined
 }

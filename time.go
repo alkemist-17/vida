@@ -29,7 +29,7 @@ func (t Time) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return t, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, t, rhs)
+		return isMemberOf(ctx, t, rhs)
 	default:
 		return Nil, ErrBinaryOpNotDefined
 	}

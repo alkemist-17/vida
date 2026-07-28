@@ -61,7 +61,7 @@ func (sb *VidaStringBuilder) Binop(ctx *Context, op uint64, rhs Value) (Value, e
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, sb, rhs)
+		return isMemberOf(ctx, sb, rhs)
 	default:
 		return Nil, ErrBinaryOpNotDefined
 	}
@@ -304,7 +304,7 @@ func (bb *VidaBytesBuilder) Binop(ctx *Context, op uint64, rhs Value) (Value, er
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, bb, rhs)
+		return isMemberOf(ctx, bb, rhs)
 	default:
 		return Nil, ErrBinaryOpNotDefined
 	}

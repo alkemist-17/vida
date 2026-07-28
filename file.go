@@ -161,7 +161,7 @@ func (file *FileHandler) Binop(ctx *Context, op uint64, rhs Value) (Value, error
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, file, rhs)
+		return isMemberOf(ctx, file, rhs)
 	default:
 		return Nil, ErrBinaryOpNotDefined
 	}

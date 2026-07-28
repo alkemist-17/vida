@@ -165,7 +165,7 @@ func (o *Object) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, o, rhs)
+		return isMemberOf(ctx, o, rhs)
 	}
 	return Nil, ErrBinaryOpNotDefined
 }

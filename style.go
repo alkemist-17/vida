@@ -17,7 +17,7 @@ func loadFoundationStyle() Value {
 	m.Value["name"] = NativeFunction(nameToRGBFn)
 	m.Value["lerp"] = NativeFunction(lerpFn)
 	m.Value["reset"] = NativeFunction(styleResetFn)
-	m.Value["showcase"] = NativeFunction(RunColorShowcase)
+	m.Value["showcase"] = NativeFunction(runColorShowcase)
 	return m
 }
 
@@ -41,7 +41,7 @@ type Style struct {
 	enabled                                              bool
 }
 
-func NewStyle() *Style {
+func newStyle() *Style {
 	return &Style{enabled: true}
 }
 
@@ -54,7 +54,7 @@ func (s *Style) FgRGB(r, g, b uint8) *Style { c := s.clone(); c.fg = &RGB{r, g, 
 func (s *Style) BgRGB(r, g, b uint8) *Style { c := s.clone(); c.bg = &RGB{r, g, b}; return c }
 
 func (s *Style) FgHex(hex string) (*Style, error) {
-	rgb, err := ParseHex(hex)
+	rgb, err := parseHex(hex)
 	if err != nil {
 		return s, err
 	}
@@ -64,7 +64,7 @@ func (s *Style) FgHex(hex string) (*Style, error) {
 }
 
 func (s *Style) BgHex(hex string) (*Style, error) {
-	rgb, err := ParseHex(hex)
+	rgb, err := parseHex(hex)
 	if err != nil {
 		return s, err
 	}
@@ -222,7 +222,7 @@ func (s *Style) Fill(a ...any) string {
 	return s.Sprint(padded)
 }
 
-func ParseHex(hex string) (RGB, error) {
+func parseHex(hex string) (RGB, error) {
 	hex = strings.TrimPrefix(hex, "#")
 	if len(hex) == 3 {
 		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
@@ -237,7 +237,7 @@ func ParseHex(hex string) (RGB, error) {
 	return RGB{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v)}, nil
 }
 
-func Lerp(a, b RGB, t float64) RGB {
+func lerp(a, b RGB, t float64) RGB {
 	lerp := func(x, y uint8) uint8 {
 		return uint8(float64(x) + (float64(y)-float64(x))*t)
 	}
@@ -266,7 +266,7 @@ func (s *Style) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return s, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, s, rhs)
+		return isMemberOf(ctx, s, rhs)
 	default:
 		return Nil, ErrBinaryOpNotDefined
 	}
@@ -302,7 +302,7 @@ func (s *Style) LookUp(ctx *Context, message Value) Value {
 }
 
 func styleNewFn(ctx *Context, args ...Value) (Value, error) {
-	return NewStyle(), nil
+	return newStyle(), nil
 }
 
 func styleResetFn(ctx *Context, args ...Value) (Value, error) {
@@ -321,7 +321,7 @@ func hexToRGBFn(ctx *Context, args ...Value) (Value, error) {
 	if !ok {
 		return Nil, ErrExpectedString
 	}
-	rgb, err := ParseHex(str.Value)
+	rgb, err := parseHex(str.Value)
 	if err != nil {
 		return Nil, err
 	}
@@ -365,7 +365,7 @@ func lerpFn(ctx *Context, args ...Value) (Value, error) {
 	if !aok || !bok || !tok {
 		return Nil, ErrInvalidTypeOfArgument
 	}
-	return rgbToObject(Lerp(a, b, t)), nil
+	return rgbToObject(lerp(a, b, t)), nil
 }
 
 func rgbToObject(c RGB) *Object {
@@ -774,7 +774,7 @@ var namedColors = map[string]RGB{
 }
 
 // RGB truecolor + Lerp.
-func RunColorShowcase(ctx *Context, args ...Value) (Value, error) {
+func runColorShowcase(ctx *Context, args ...Value) (Value, error) {
 	fmt.Print("\n")
 	bannerGradient()
 	fmt.Print("\n")
@@ -786,7 +786,7 @@ func RunColorShowcase(ctx *Context, args ...Value) (Value, error) {
 	fmt.Print("\n")
 	rainbowSweep()
 	fmt.Print("\n")
-	fmt.Println(NewStyle().Dim().Sprint("\n\nShowcase complete.\n\n"))
+	fmt.Println(newStyle().Dim().Sprint("\n\nShowcase complete.\n\n"))
 	fmt.Print("\n")
 	return Nil, nil
 }
@@ -803,8 +803,8 @@ func bannerGradient() {
 	var sb strings.Builder
 	for i, r := range runes {
 		t := float64(i) / float64(max(n-1, 1))
-		c := Lerp(from, to, t)
-		sb.WriteString(NewStyle().FgRGB(c.R, c.G, c.B).Bold().Sprint(string(r)))
+		c := lerp(from, to, t)
+		sb.WriteString(newStyle().FgRGB(c.R, c.G, c.B).Bold().Sprint(string(r)))
 	}
 	fmt.Printf("\n\n%s\n\n\n", sb.String())
 }
@@ -812,20 +812,20 @@ func bannerGradient() {
 // ---- 2. Named colors, swatch + label -----------------------------------
 
 func namedColorShowcase() {
-	fmt.Println(NewStyle().Underline().Sprint("Named colors\n\n"))
+	fmt.Println(newStyle().Underline().Sprint("Named colors\n\n"))
 	names := []string{
 		"tomato", "gold", "mint", "skyblue", "orchid",
 		"crimson", "forestgreen", "royalblue", "hotpink", "chocolate",
 	}
 	var row strings.Builder
 	for _, name := range names {
-		sw := NewStyle()
+		sw := newStyle()
 		sw, _ = sw.BgName(name)
 		sw = sw.Width(3)
 		sw, _ = sw.FgName("black")
 		row.WriteString(sw.Fill(EmptyString))
 		row.WriteString(" ")
-		row.WriteString(NewStyle().Sprint(name))
+		row.WriteString(newStyle().Sprint(name))
 		row.WriteString("\n")
 		fmt.Println(row.String())
 		row.Reset()
@@ -838,14 +838,14 @@ func namedColorShowcase() {
 // ---- 3. Hex <-> RGB round trip ------------------------------------------
 
 func hexRoundTrip() {
-	fmt.Println(NewStyle().Underline().Sprint("Hex <-> RGB\n\n"))
+	fmt.Println(newStyle().Underline().Sprint("Hex <-> RGB\n\n"))
 	hexes := []string{"#FF6B35", "#4ECDC4", "#A5D8FF", "#1A535C"}
 	for _, h := range hexes {
-		c, err := ParseHex(h)
+		c, err := parseHex(h)
 		if err != nil {
 			continue
 		}
-		swatch := NewStyle().BgRGB(c.R, c.G, c.B).Width(4).Sprint()
+		swatch := newStyle().BgRGB(c.R, c.G, c.B).Width(4).Sprint()
 		fmt.Printf("%s  %s  -> rgb(%3d, %3d, %3d) -> %s\n",
 			swatch, h, c.R, c.G, c.B, c.Hex())
 	}
@@ -854,8 +854,8 @@ func hexRoundTrip() {
 // ---- 4. Style combinations table ----------------------------------------
 
 func styleCombinations() {
-	fmt.Println(NewStyle().Underline().Sprint("\n\nStyle combinations\n\n"))
-	base := NewStyle().FgHexMust("#EAEAEA")
+	fmt.Println(newStyle().Underline().Sprint("\n\nStyle combinations\n\n"))
+	base := newStyle().FgHexMust("#EAEAEA")
 	combos := []struct {
 		label string
 		style *Style
@@ -877,14 +877,14 @@ func styleCombinations() {
 // ---- 5. Rainbow sweep: full HSV wheel via RGB interpolation ------------
 
 func rainbowSweep() {
-	fmt.Println(NewStyle().Underline().Sprint("\n\nRainbow sweep (HSV -> RGB)\n\n"))
+	fmt.Println(newStyle().Underline().Sprint("\n\nRainbow sweep (HSV -> RGB)\n\n"))
 	width := 60
 	for row := range 3 {
 		var sb strings.Builder
 		for i := range width {
 			hue := float64(i) / float64(width) * 360.0
 			c := hsvToRGB(hue, 0.85, 0.95-float64(row)*0.2)
-			sb.WriteString(NewStyle().BgRGB(c.R, c.G, c.B).Sprint(" "))
+			sb.WriteString(newStyle().BgRGB(c.R, c.G, c.B).Sprint(" "))
 		}
 		fmt.Println(sb.String())
 	}

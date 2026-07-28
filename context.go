@@ -72,7 +72,7 @@ func (ctx *Context) CompileAndRun() (err error) {
 }
 
 func (ctx *Context) PrintTokens() error {
-	l := NewLexer(ctx.src, ctx.contextID)
+	l := newLexer(ctx.src, ctx.contextID)
 	hadError := false
 	fmt.Printf("%5v   %-15v   %-2v\n\n", "Line", "Token", "Value")
 	for {

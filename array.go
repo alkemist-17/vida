@@ -47,7 +47,7 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 			copy(values[lLen:], r.Value)
 			return &Array{Value: values}, nil
 		case uint64(token.IN):
-			return IsMemberOf(ctx, xs, rhs)
+			return isMemberOf(ctx, xs, rhs)
 		}
 	}
 	switch op {
@@ -56,7 +56,7 @@ func (xs *Array) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.AND):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, xs, rhs)
+		return isMemberOf(ctx, xs, rhs)
 	}
 	return Nil, ErrBinaryOpNotDefined
 }

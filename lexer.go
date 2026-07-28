@@ -23,7 +23,7 @@ const bom = 0xFEFF
 const eof = -1
 const unexpectedChar = -2
 
-func NewLexer(src []byte, scriptID string) *Lexer {
+func newLexer(src []byte, scriptID string) *Lexer {
 	src = append(src, 10)
 	lexer := &Lexer{
 		src:         src,

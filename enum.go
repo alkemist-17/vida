@@ -32,7 +32,7 @@ func (e *Enum) Binop(ctx *Context, op uint64, rhs Value) (Value, error) {
 	case uint64(token.OR):
 		return rhs, nil
 	case uint64(token.IN):
-		return IsMemberOf(ctx, e, rhs)
+		return isMemberOf(ctx, e, rhs)
 	default:
 		return Nil, ErrBinaryOpNotDefined
 	}

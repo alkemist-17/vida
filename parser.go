@@ -30,7 +30,7 @@ type parser struct {
 
 func newParser(src []byte, scriptID string) *parser {
 	p := &parser{
-		lexer: NewLexer(src, scriptID),
+		lexer: newLexer(src, scriptID),
 		ok:    true,
 		ast:   &ast.Ast{},
 	}
