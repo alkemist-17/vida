@@ -2,6 +2,7 @@ package vida
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Iterator interface {
@@ -182,4 +183,164 @@ func (bi *BytesIterator) Clone() Value {
 
 func (bi *BytesIterator) Type() string {
 	return "BytesIterator"
+}
+
+type VidaIterator struct {
+	ReferenceSemanticsImpl
+	obj     *Object
+	ctx     *Context
+	nextFn  Value
+	keyFn   Value
+	valueFn Value
+}
+
+// NewVidaIterator creates a VidaIterator from a Vida object that exposes
+// callable next(), key(), and value() methods. All three are required;
+// a missing method produces a descriptive error.
+func NewVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
+	nextFn := obj.Get(ctx, &String{Value: "next"})
+	if !nextFn.IsCallable() {
+		return nil, fmt.Errorf("iterator object is missing a callable next() method")
+	}
+	keyFn := obj.Get(ctx, &String{Value: "key"})
+	if !keyFn.IsCallable() {
+		return nil, fmt.Errorf("iterator object is missing a callable key() method")
+	}
+	valueFn := obj.Get(ctx, &String{Value: "value"})
+	if !valueFn.IsCallable() {
+		return nil, fmt.Errorf("iterator object is missing a callable value() method")
+	}
+	return &VidaIterator{
+		obj:     obj,
+		ctx:     ctx,
+		nextFn:  nextFn,
+		keyFn:   keyFn,
+		valueFn: valueFn,
+	}, nil
+}
+
+func (vi *VidaIterator) Next() bool {
+	result, err := callVidaMethod(vi.ctx, vi.obj, vi.nextFn)
+	if err != nil {
+		return false
+	}
+	return bool(result.Boolean())
+}
+
+func (vi *VidaIterator) Key(ctx *Context) Value {
+	result, err := callVidaMethod(ctx, vi.obj, vi.keyFn)
+	if err != nil {
+		return Nil
+	}
+	return result
+}
+
+func (vi *VidaIterator) Value(ctx *Context) Value {
+	result, err := callVidaMethod(ctx, vi.obj, vi.valueFn)
+	if err != nil {
+		return Nil
+	}
+	return result
+}
+
+func (vi *VidaIterator) Boolean() Bool {
+	return True
+}
+
+func (vi *VidaIterator) IsIterable() Bool {
+	return True
+}
+
+func (vi *VidaIterator) Iterator() Value {
+	return vi
+}
+
+func (vi *VidaIterator) String() string {
+	return fmt.Sprintf("VidaIterator[%p]", vi)
+}
+
+func (vi *VidaIterator) Type() string {
+	return "VidaIterator"
+}
+
+func (vi *VidaIterator) Clone() Value {
+	return vi
+}
+
+// callVidaMethod invokes a method on self, passing self as the first
+// argument (the receiver). It mirrors the dispatch pattern used
+// throughout Object (see dispatchOperatorOverride).
+func callVidaMethod(ctx *Context, self *Object, method Value) (Value, error) {
+	switch fn := method.(type) {
+	case *Function:
+		return ctx.runFunctionInNewThread(fn, self)
+	case NativeFunction:
+		return fn.Call(ctx, self)
+	default:
+		return Nil, fmt.Errorf("value of type %s is not callable", method.Type())
+	}
+}
+
+// resolveVidaIterator checks whether obj defines a custom iterator protocol
+// and returns a ready-to-use VidaIterator if so.
+//
+// Priority:
+//  1. iter() method — invoked to produce a fresh iterator object, which
+//     must itself expose next/key/value.
+//  2. next() + key() + value() methods — the object is its own iterator.
+//  3. Neither — returns (nil, nil); the caller should fall back to the
+//     default Object.Iterator() (property iteration).
+//
+// A partial protocol (e.g. next() defined but key() missing) is reported
+// as an error rather than silently ignored, so typos surface early.
+func resolveVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
+	// Priority 1: iter() method
+	iterFn := obj.Get(ctx, &String{Value: "iter"})
+	if iterFn.IsCallable() {
+		result, err := callVidaMethod(ctx, obj, iterFn)
+		if err != nil {
+			return nil, fmt.Errorf("iter() call failed: %w", err)
+		}
+		iterObj, ok := result.(*Object)
+		if !ok {
+			return nil, fmt.Errorf("iter() must return an object, got %s", result.Type())
+		}
+		return NewVidaIterator(ctx, iterObj)
+	}
+
+	// Priority 2: self-iterating (next + key + value)
+	nextFn := obj.Get(ctx, &String{Value: "next"})
+	keyFn := obj.Get(ctx, &String{Value: "key"})
+	valueFn := obj.Get(ctx, &String{Value: "value"})
+	hasNext := nextFn.IsCallable()
+	hasKey := keyFn.IsCallable()
+	hasValue := valueFn.IsCallable()
+
+	if hasNext && hasKey && hasValue {
+		return &VidaIterator{
+			obj:     obj,
+			ctx:     ctx,
+			nextFn:  nextFn,
+			keyFn:   keyFn,
+			valueFn: valueFn,
+		}, nil
+	}
+
+	// Partial protocol: next() is the strongest signal of iterator intent.
+	// If it is present but key() or value() is missing, report an error
+	// instead of silently falling back to property iteration.
+	if hasNext {
+		var missing []string
+		if !hasKey {
+			missing = append(missing, "key()")
+		}
+		if !hasValue {
+			missing = append(missing, "value()")
+		}
+		return nil, fmt.Errorf("incomplete iterator protocol: has next() but missing %s",
+			strings.Join(missing, ", "))
+	}
+
+	// No custom iterator defined
+	return nil, nil
 }

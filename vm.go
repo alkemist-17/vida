@@ -301,7 +301,20 @@ func (vm *VM) run() error {
 			if !iterable.IsIterable() {
 				return vm.createError(ip, ErrValueNotIterable)
 			}
-			vm.Frame.stack[B] = iterable.Iterator()
+			resolved := false
+			if obj, ok := iterable.(*Object); ok {
+				vi, err := resolveVidaIterator(vm.ctx, obj)
+				if err != nil {
+					return vm.createError(ip, err)
+				}
+				if vi != nil {
+					vm.Frame.stack[B] = vi
+					resolved = true
+				}
+			}
+			if !resolved {
+				vm.Frame.stack[B] = iterable.Iterator()
+			}
 			ip = int(P)
 		case forLoop:
 			i := vm.Frame.stack[B].(Integer)

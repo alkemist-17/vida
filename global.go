@@ -859,6 +859,45 @@ func coreExtendVTable(ctx *Context, args ...Value) (Value, error) {
 	return &VidaError{Message: &String{Value: "extendvt expected three args: value, string and function or two args: value, object"}}, nil
 }
 
+// coreIter returns an iterator for any iterable value.
+//
+// For objects that define a custom iterator protocol (iter() method, or
+// next/key/value methods), it returns a VidaIterator. For built-in types
+// (arrays, strings, integers, bytes, objects without custom iterators),
+// it returns the corresponding Go-side iterator. For non-iterable values,
+// it returns nil.
+//
+// Usage:
+//
+//	let it = iter([1, 2, 3])
+//	let it2 = iter(myCustomIterable)
+//	let it3 = iter(true)   // nil — bool is not iterable
+func coreIter(ctx *Context, args ...Value) (Value, error) {
+	if len(args) != 1 {
+		return &VidaError{Message: &String{Value: "iter() expects exactly 1 argument"}}, nil
+	}
+	val := args[0]
+
+	// For objects: check for custom iterator protocol first
+	if obj, ok := val.(*Object); ok {
+		vi, err := resolveVidaIterator(ctx, obj)
+		if err != nil {
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
+		}
+		if vi != nil {
+			return vi, nil
+		}
+		// No custom iterator — fall through to default property iteration
+	}
+
+	// For all types: use existing IsIterable / Iterator
+	if val.IsIterable() {
+		return val.Iterator(), nil
+	}
+
+	return Nil, nil
+}
+
 func StringLength(input *String) Integer {
 	if input.Runes == nil {
 		input.Runes = []rune(input.Value)
