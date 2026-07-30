@@ -1753,3 +1753,359 @@ object RecChild(x) =< RecBase {
 }
 assert(RecChild(0).factorialLike(5) == 120, "19.2 super expression as recursion base case")
 
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 20: Local object declarations (scope-aware compilation)
+// ───────────────────────────────────────────────────────────────
+
+// 20.1 Object inside function — re-invocation works
+var makeNewPoint = fun {
+    object LocalPoint(x, y) {
+        sumPar = fun self -> self.x + self.y
+    }
+    ret LocalPoint
+}
+
+var P1 = makeNewPoint()
+var P2 = makeNewPoint()
+
+var pa = P1(1, 2)
+var pb = P2(3, 4)
+
+assert(pa.sumPar() == 3)
+assert(pb.sumPar() == 7)
+
+
+// 20.2 Instances from different calls are independent
+var makeCounter = fun {
+    object LocalCounter(start) {
+        inc = fun self {
+            self.n = self.n + 1 
+            ret self.n
+        }
+        init = fun self { self.n = self.start }
+    }
+    ret LocalCounter
+}
+var lC1 = makeCounter()
+var lC2 = makeCounter()
+var lc1 = lC1(10)
+var lc2 = lC2(20)
+assert(lc1.inc() == 11)
+assert(lc1.inc() == 12)
+assert(lc2.inc() == 21)
+assert(lc2.inc() == 22)
+
+
+
+
+
+// 20.3 Object inside loop within a function
+var testLoop = fun {
+    var results = []
+    var i = 0
+    while i < 3 {
+        object Adder(base) {
+            add = fun self, x -> self.base + x
+        }
+        var lA = Adder(i * 10)
+        results.append(lA.add(5))
+        i = i + 1
+    }
+    ret results
+}
+
+var _testloop = testLoop()
+assert(_testloop.len() == 3 and _testloop[0] == 5 and _testloop[1] == 15 and _testloop[2] == 25)
+
+
+
+
+// 20.4 Two functions, same object name — no collision
+var makeA = fun {
+    object Thing(x) {
+        val = fun self -> self.x * 2
+    }
+    ret Thing
+}
+
+var makeB = fun {
+    object Thing(x) {
+        val = fun self -> self.x * 3
+    }
+    ret Thing
+}
+
+var lA = makeA()
+var lB = makeB()
+assert(lA(5).val() == 10)
+assert(lB(5).val() == 15)
+
+
+
+
+// 20.5 Local object with self-referencing method (var rec forward decl)
+var nodeFactory = fun {
+    object Node(val) {
+        next = fun self -> Node(self.val + 1)
+    }
+    ret Node
+}
+
+var N = nodeFactory()
+var n1 = N(1)
+var n2 = n1.next()
+var n3 = n2.next()
+assert(n1.val == 1)
+assert(n2.val == 2)
+assert(n3.val == 3)
+
+
+
+
+// 20.6 Local object inheriting from global object
+object SuperAnimal(name) {
+    speak = fun self -> "..."
+}
+
+var makeDog = fun {
+    object LocalDog(name) =< SuperAnimal {
+        speak = fun self -> self.name + " says woof"
+    }
+    ret LocalDog
+}
+
+var D1 = makeDog()
+var D2 = makeDog()
+assert(D1("Rex").speak() == "Rex says woof")
+assert(D2("Fido").speak() == "Fido says woof")
+
+
+
+
+// 20.7 Local object inheriting from local object + re-invocation
+var makePets = fun {
+    object Pet(name) {
+        speak = fun self -> "..."
+        info = fun self -> self.name + ": " + self.speak()
+    }
+    object Cat(name) =< Pet {
+        speak = fun self -> "meow"
+    }
+    var lp = Pet("Generic")
+    var lc = Cat("Whiskers")
+    assert(lp.info()=="Generic: ...")
+    assert(lc.info()=="Whiskers: meow")
+}
+
+makePets()
+makePets()
+
+
+
+
+// 20.8 Object inside conditional branch
+var makeShape = fun kind {
+    if kind == "circle" {
+        object LocalCircle(r) {
+            area = fun self -> 3 * self.r * self.r
+        }
+        ret LocalCircle
+    }
+    object LocalRect(w, h) {
+        area = fun self -> self.w * self.h
+    }
+    ret LocalRect
+}
+
+var LC = makeShape("circle")
+var LR = makeShape("rect")
+assert(LC(5).area()==75)
+assert(LR(3, 4).area()==12)
+
+
+
+
+
+// 20.9 Local object with init and super — re-invocation
+
+object NBase(x) {
+    init = fun self { self.x = self.x * 2 }
+    get = fun self -> self.x
+}
+
+var makeChild = fun {
+    object NChild(x) =< NBase {
+        init = fun self {
+            super::init(self)
+            self.y = self.x + 1
+        }
+        sum = fun self -> self.x + self.y
+    }
+    ret NChild
+}
+
+var Ch1 = makeChild()
+var Ch2 = makeChild()
+assert(Ch1(5).sum()==21)
+assert(Ch2(10).sum()==41)
+
+
+
+// 20.10 Factory closure captures outer variable in vtable method
+var makeAdder = fun base {
+    object NAdder(x) {
+        add = fun self -> self.base + self.x
+        init = fun self { self.base = base }
+    }
+    ret NAdder
+}
+
+var A5 = makeAdder(5)
+var A10 = makeAdder(10)
+assert(A5(3).add()==8)
+assert(A10(3).add()==13)
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 21: Scoped objectVTables — sibling isolation
+// ───────────────────────────────────────────────────────────────
+// 21.1 Sibling functions with same object name — independent vtables
+var makeX = fun {
+    object NWidget(n) {
+        val = fun self -> self.n + 1
+    }
+    ret NWidget
+}
+
+var makeY = fun {
+    object NWidget(n) {
+        val = fun self -> self.n + 100
+    }
+    ret NWidget
+}
+
+var LX = makeX()
+var LY = makeY()
+assert(LX(5).val()==6)
+assert(LY(5).val()==105)
+
+
+
+
+
+
+// 21.2 Local object inherits enclosing function's object (nested scope lookup)
+var outer = fun {
+    object Base21(x) {
+        get = fun self -> self.x
+    }
+    var innner = fun {
+        object Child21(x) =< Base {
+            get = fun self -> self.x * 2
+        }
+        ret Child21
+    }
+    var LC = innner()
+    ret LC
+}
+
+var Ch = outer()
+assert(Ch(7).get()==14)
+
+
+
+
+
+// 21.3 Global object still visible inside functions
+
+object GlobalBase(x) {
+    double = fun self -> self.x * 2
+}
+
+var useGlobal = fun {
+    object LocalChild(x) =< GlobalBase {
+        triple = fun self -> self.x * 3
+    }
+    ret LocalChild
+}
+
+var LC1 = useGlobal()
+var LC2 = useGlobal()
+assert(LC1(4).double()==8)
+assert(LC2(4).triple()==12)
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────
+// SECTION 22: Same-name object: global + local coexistence
+// ───────────────────────────────────────────────────────────────
+// 22.1 Global and local object with the same name — no vtable collision
+object Point22(x, y) {
+    type = fun self -> "global"
+    add  = fun self, other -> Point22(self.x + other.x, self.y + other.y)
+}
+var makeLocalPoint = fun {
+    object IPoint(x, y) {
+        type = fun self -> "local"
+        dist = fun self -> self.x + self.y
+    }
+    ret IPoint
+}
+var LP = makeLocalPoint()
+var gp = Point22(1, 2)
+var lp = LP(3, 4)
+assert(gp.type()=="global")
+assert(lp.type()=="local")
+assert(lp.dist()==7)
+var gp2 = gp.add(Point22(10, 20))
+assert(gp2.x==11)
+assert(gp2.y==22)
+
+
+// 22.2 Local object inherits from shadowed local, not global
+object Base22(x) {
+    who = fun self -> "global Base"
+}
+
+let testShadow = fun {
+    object IBase(x) {
+        who = fun self -> "local Base"
+    }
+    object Child22(x) =< IBase {
+        childWho = fun self -> "child of " + self.who()
+    }
+    var lc = Child22(1)
+    assert(lc.childWho()=="child of local Base")
+    assert(IBase(2).who()=="local Base")
+}
+testShadow()
+assert(Base22(3).who()=="global Base")
+
+
+
+// 22.3 Re-invocation with same-name global still works
+var makePoint2 = fun {
+    object IPoint(x, y) {
+        sum = fun self -> self.x + self.y
+    }
+    ret IPoint
+}
+var A22 = makePoint2()
+var B22 = makePoint2()
+assert(A22(1, 2).sum()==3)
+assert(B22(3, 4).sum()==7)
+assert(Point22(10, 20).type()=="global")
+
+
+
+
+

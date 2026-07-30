@@ -12,41 +12,48 @@ import (
 )
 
 type compiler struct {
-	jumps              []int
-	breakJumps         []int
-	breakCount         []int
-	continueJumps      []int
-	continueCount      []int
-	withLoopWatermarks []int
-	withStack          []withScope
-	fn                 []*CoreFunction
-	superParentStack   []ast.Node
-	errMsg             string
-	mainScriptID       string
-	currentFn          *CoreFunction
-	ast                *ast.Ast
-	script             *Script
-	kb                 *konstBuilder
-	sb                 *symbolBuilder
-	ctx                *Context
-	scriptMap          map[string]int
-	depMap             map[string]struct{}
-	objectVTables      map[string]bool
-	extensionsLoader   ExtensionsLoader
-	lineErr            uint
-	scope              int
-	level              int
-	rAlloc             int
-	rDest              int
-	fromRefStmt        bool
-	mutLoc             bool
-	hadError           bool
-	isSubcompiler      bool
+	jumps               []int
+	breakJumps          []int
+	breakCount          []int
+	continueJumps       []int
+	continueCount       []int
+	withLoopWatermarks  []int
+	withStack           []withScope
+	fn                  []*CoreFunction
+	superParentStack    []ast.Node
+	objectVTableLocals  []objectVTableEntry
+	errMsg              string
+	mainScriptID        string
+	currentFn           *CoreFunction
+	ast                 *ast.Ast
+	script              *Script
+	kb                  *konstBuilder
+	sb                  *symbolBuilder
+	ctx                 *Context
+	scriptMap           map[string]int
+	depMap              map[string]struct{}
+	objectVTableGlobals map[string]bool
+	extensionsLoader    ExtensionsLoader
+	lineErr             uint
+	scope               int
+	level               int
+	rAlloc              int
+	rDest               int
+	fromRefStmt         bool
+	mutLoc              bool
+	hadError            bool
+	isSubcompiler       bool
 }
 
 type withScope struct {
 	resourceReg int
 	level       int
+}
+
+type objectVTableEntry struct {
+	name  string
+	level int
+	scope int
 }
 
 var dummy = struct{}{}
@@ -61,7 +68,6 @@ func newCompiler(ast *ast.Ast, scriptID string, ctx *Context, extensionsLoader E
 		kb:               newKonstBuilder(),
 		sb:               newSymbolBuilder(0),
 		scriptMap:        make(map[string]int),
-		objectVTables:    make(map[string]bool),
 		depMap:           dm,
 		mainScriptID:     scriptID,
 		extensionsLoader: extensionsLoader,
@@ -83,7 +89,6 @@ func newSubCompiler(ast *ast.Ast, scriptID string, kb *konstBuilder, store *[]Va
 		scriptMap:     scriptMap,
 		depMap:        depMap,
 		mainScriptID:  scriptID,
-		objectVTables: make(map[string]bool),
 	}
 	c.fn = append(c.fn, c.script.MainFunction.CoreFn)
 	c.currentFn = c.script.MainFunction.CoreFn
@@ -412,6 +417,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.cleanUpLoopScope(loop, false)
 
 		c.rAlloc -= c.sb.clearLocals(c.level, c.scope)
+		c.clearObjectVTableLocals(c.level, c.scope)
 		c.rAlloc -= 3
 		c.scope--
 	case *ast.IFor:
@@ -444,6 +450,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.cleanUpLoopScope(loop, false)
 
 		c.rAlloc -= c.sb.clearLocals(c.level, c.scope)
+		c.clearObjectVTableLocals(c.level, c.scope)
 		c.rAlloc--
 		c.scope--
 	case *ast.While:
@@ -517,6 +524,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 
 		c.rAlloc -= c.sb.clearLocals(c.level, c.scope)
+		c.clearObjectVTableLocals(c.level, c.scope)
 		c.scope--
 	case *ast.Break:
 		c.closeWithResourcesForLoopExit()
@@ -662,6 +670,7 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.compileStmt(n.Statement[i])
 		}
 		locals := c.sb.clearLocals(c.level, c.scope)
+		c.clearObjectVTableLocals(c.level, c.scope)
 		c.rAlloc -= locals
 		c.scope--
 	case *ast.Ret:
@@ -1461,6 +1470,7 @@ func (c *compiler) startFuncScope() int {
 
 func (c *compiler) leaveFuncScope() {
 	c.sb.clearLocals(c.level, c.scope)
+	c.clearObjectVTableLocals(c.level, c.scope)
 	c.fn = c.fn[:c.level]
 	c.level--
 	c.currentFn = c.fn[c.level]
@@ -1902,9 +1912,6 @@ func (c *compiler) closeWithResourcesForLoopExit() {
 const vtPrefix = "__vt__"
 
 func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
-	vtName := vtPrefix + n.Name
-
-	// ── 1. Detect `init` hook ──
 	hasInit := false
 	for _, pair := range n.Body {
 		if prop, ok := pair.Key.(*ast.Property); ok && prop.Value == "init" {
@@ -1913,55 +1920,82 @@ func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
 		}
 	}
 
-	// ── 2. Set super context for method bodies ──
 	if n.Parent != nil {
 		c.pushSuperParent(c.resolveVTableRefs(n.Parent))
 	} else {
 		c.pushSuperParent(nil)
 	}
 
-	// ── 3. Build the vtable expression ──
+	vtName := vtPrefix + n.Name
+	isLocal := c.level != 0 || c.scope != 0
+	if isLocal {
+		c.compileLocalObjectDecl(n, vtName, hasInit)
+	} else {
+		c.compileGlobalObjectDecl(n, vtName, hasInit)
+	}
+
+	c.popSuperParent()
+	c.registerObjectVTable(n.Name, isLocal)
+}
+
+// compileGlobalObjectDecl: unchanged behavior. Globals are re-read fresh on
+// every access, so a bare forward-declare-then-Mut is sufficient for
+// self-reference -- no cell needed.
+func (c *compiler) compileGlobalObjectDecl(n *ast.ObjectDecl, vtName string, hasInit bool) {
+	if _, isGlobal := c.sb.isGlobal(n.Name); !isGlobal {
+		c.compileStmt(&ast.Let{Identifier: n.Name, Expr: &ast.Nil{}, Line: n.Line})
+	}
+
 	vtObj := &ast.Object{Pairs: n.Body, Line: n.Line}
 	var vtExpr ast.Node = vtObj
 	if n.Parent != nil {
-		vtExpr = &ast.BinaryExpr{
-			Op:   token.VTABLE,
-			Lhs:  vtObj,
-			Rhs:  c.resolveVTableRefs(n.Parent),
-			Line: n.Line,
-		}
+		vtExpr = &ast.BinaryExpr{Op: token.VTABLE, Lhs: vtObj, Rhs: c.resolveVTableRefs(n.Parent), Line: n.Line}
 	}
+	c.compileStmt(&ast.Let{Identifier: vtName, Expr: vtExpr, Line: n.Line})
 
-	// ── 4. Forward-declare the constructor name ──
-	// Mirrors the `var rec` pattern: register the name with a nil
-	// placeholder BEFORE compiling any body that might reference it.
-	// Skip if the user already forward-declared it manually.
-	if _, isGlobal := c.sb.isGlobal(n.Name); !isGlobal {
-		c.compileStmt(&ast.Let{
-			Identifier: n.Name,
-			Expr:       &ast.Nil{},
-			Line:       n.Line,
-		})
+	constructor := c.buildObjectConstructor(n, vtName, hasInit)
+	c.compileStmt(&ast.Mut{Identifier: n.Name, Expr: constructor, Line: n.Line})
+}
+
+// compileLocalObjectDecl: self-reference inside method bodies is rewritten
+// to go through a local reference-semantic cell, so it stays correct
+// regardless of when the closure that reads it is actually called.
+func (c *compiler) compileLocalObjectDecl(n *ast.ObjectDecl, vtName string, hasInit bool) {
+	cellName := vtName + "__cell"
+	c.compileStmt(&ast.Var{Identifier: cellName, Expr: &ast.Object{Line: n.Line}, Line: n.Line})
+
+	replacement := selfRefReplacement(cellName)
+	rewrittenBody := make([]*ast.Pair, len(n.Body))
+	for i, p := range n.Body {
+		rewrittenBody[i] = &ast.Pair{Key: p.Key, Value: substituteSelfRef(p.Value, n.Name, replacement)}
 	}
+	vtObj := &ast.Object{Pairs: rewrittenBody, Line: n.Line}
+	var vtExpr ast.Node = vtObj
+	if n.Parent != nil {
+		vtExpr = &ast.BinaryExpr{Op: token.VTABLE, Lhs: vtObj, Rhs: c.resolveVTableRefs(n.Parent), Line: n.Line}
+	}
+	c.compileStmt(&ast.Var{Identifier: vtName, Expr: vtExpr, Line: n.Line})
 
-	// ── 5. Declare the vtable ──
-	// Method bodies can now reference n.Name (it's in the global table).
-	c.compileStmt(&ast.Let{
-		Identifier: vtName,
-		Expr:       vtExpr,
+	constructor := c.buildObjectConstructor(n, vtName, hasInit)
+
+	// Compile the constructor exactly once, landing it in the cell...
+	c.compileStmt(&ast.ReferenceStmt{Value: cellName, Line: n.Line})
+	c.compileStmt(&ast.ISet{Index: &ast.Property{Value: "ctor"}, Expr: constructor, Line: n.Line})
+
+	// ...then bind the externally-visible local by reading it back out,
+	// so outside callers get a plain, directly-callable closure and no
+	// second copy of it is ever built.
+	c.compileStmt(&ast.Var{
+		Identifier: n.Name,
+		Expr:       &ast.Select{Selectable: &ast.Reference{Value: cellName, Line: n.Line}, Selector: &ast.Property{Value: "ctor"}},
 		Line:       n.Line,
 	})
+}
 
-	// ── 6. Restore super context ──
-	c.popSuperParent()
-
-	// ── 7. Register this object for future =< resolution ──
-	if c.objectVTables == nil {
-		c.objectVTables = make(map[string]bool)
-	}
-	c.objectVTables[n.Name] = true
-
-	// ── 8. Build the constructor ──
+// buildObjectConstructor builds the `fun(...) { ... }` that produces
+// instances, closing over vtName. Shared by both the global and local
+// paths since the constructor's shape doesn't depend on where it lives.
+func (c *compiler) buildObjectConstructor(n *ast.ObjectDecl, vtName string, hasInit bool) *ast.Fun {
 	fieldPairs := make([]*ast.Pair, len(n.Params))
 	for i, p := range n.Params {
 		fieldPairs[i] = &ast.Pair{
@@ -1977,43 +2011,23 @@ func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
 		Line: n.Line,
 	}
 
-	var constructor *ast.Fun
 	if !hasInit {
-		// fun x, y -> {x = x, y = y} =< __vt__Point
-		constructor = &ast.Fun{
+		return &ast.Fun{
 			Args: n.Params,
 			Body: &ast.Block{Statement: []ast.Node{
 				&ast.Ret{Expr: vtableAssign, Line: n.Line},
 			}},
 		}
-	} else {
-		// fun x, y {
-		//     var obj = {x = x, y = y} =< __vt__Point
-		//     obj.init()
-		//     ret obj
-		// }
-		constructor = &ast.Fun{
-			Args: n.Params,
-			Body: &ast.Block{Statement: []ast.Node{
-				&ast.Var{Identifier: "obj", Expr: vtableAssign, Line: n.Line},
-				&ast.ReferenceStmt{Value: "obj", Line: n.Line},
-				&ast.MethodCallStmt{
-					Prop: &ast.Property{Value: "init"},
-					Args: []ast.Node{},
-					Line: n.Line,
-				},
-				&ast.Ret{Expr: &ast.Reference{Value: "obj", Line: n.Line}, Line: n.Line},
-			}},
-		}
 	}
-
-	// ── 9. Reassign the constructor over the nil placeholder ──
-	// Uses ast.Mut (the same node the parser produces for `x = expr`).
-	c.compileStmt(&ast.Mut{
-		Identifier: n.Name,
-		Expr:       constructor,
-		Line:       n.Line,
-	})
+	return &ast.Fun{
+		Args: n.Params,
+		Body: &ast.Block{Statement: []ast.Node{
+			&ast.Var{Identifier: "obj", Expr: vtableAssign, Line: n.Line},
+			&ast.ReferenceStmt{Value: "obj", Line: n.Line},
+			&ast.MethodCallStmt{Prop: &ast.Property{Value: "init"}, Args: []ast.Node{}, Line: n.Line},
+			&ast.Ret{Expr: &ast.Reference{Value: "obj", Line: n.Line}, Line: n.Line},
+		}},
+	}
 }
 
 // resolveVTableRefs walks an expression AST and replaces any Reference
@@ -2022,7 +2036,7 @@ func (c *compiler) compileObjectDecl(n *ast.ObjectDecl) {
 func (c *compiler) resolveVTableRefs(node ast.Node) ast.Node {
 	switch n := node.(type) {
 	case *ast.Reference:
-		if c.objectVTables != nil && c.objectVTables[n.Value] {
+		if c.isObjectVTable(n.Value) {
 			return &ast.Reference{Value: vtPrefix + n.Value, Line: n.Line}
 		}
 		return n
@@ -2083,6 +2097,42 @@ func (c *compiler) resolveImportPath(path string) (string, error) {
 	return EmptyString, fmt.Errorf("file '%v' cannot be found in your system", path)
 }
 
+func (c *compiler) registerObjectVTable(name string, isLocal bool) {
+	if isLocal {
+		c.objectVTableLocals = append(c.objectVTableLocals, objectVTableEntry{
+			name:  name,
+			level: c.level,
+			scope: c.scope,
+		})
+		return
+	}
+	if c.objectVTableGlobals == nil {
+		c.objectVTableGlobals = make(map[string]bool)
+	}
+	c.objectVTableGlobals[name] = true
+}
+
+func (c *compiler) isObjectVTable(name string) bool {
+	for i := len(c.objectVTableLocals) - 1; i >= 0; i-- {
+		if c.objectVTableLocals[i].name == name {
+			return true
+		}
+	}
+	return c.objectVTableGlobals[name]
+}
+
+// clearObjectVTableLocals mirrors sb.clearLocals: called at exactly the
+// same scope-exit points, it trims every entry belonging to the closing
+// (level, scope) off the tail of the stack. Safe to call even when no
+// object was declared in that scope -- it's then a no-op.
+func (c *compiler) clearObjectVTableLocals(level, scope int) {
+	i := len(c.objectVTableLocals)
+	for i > 0 && c.objectVTableLocals[i-1].level == level && c.objectVTableLocals[i-1].scope == scope {
+		i--
+	}
+	c.objectVTableLocals = c.objectVTableLocals[:i]
+}
+
 func isRemoteImport(path string) bool {
 	return strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://")
 }
@@ -2090,4 +2140,141 @@ func isRemoteImport(path string) bool {
 func fileExistsOnDisk(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
+}
+func selfRefReplacement(cellName string) ast.Node {
+	return &ast.Select{
+		Selectable: &ast.Reference{Value: cellName},
+		Selector:   &ast.Property{Value: "ctor"},
+	}
+}
+
+// substituteSelfRef returns a new tree where every bare Reference to `name`
+// is replaced by `replacement`. Used so a locally-declared object's self-
+// reference inside its own method bodies routes through a mutable
+// reference cell, since local free variables in Vida are captured by value
+// at closure-creation time and would otherwise freeze in whatever `name`
+// held at that moment (typically still Nil).
+func substituteSelfRef(node ast.Node, name string, replacement ast.Node) ast.Node {
+	if node == nil {
+		return nil
+	}
+	switch n := node.(type) {
+	case *ast.Reference:
+		if n.Value == name {
+			return replacement
+		}
+		return n
+	case *ast.BinaryExpr:
+		return &ast.BinaryExpr{Op: n.Op, Lhs: substituteSelfRef(n.Lhs, name, replacement), Rhs: substituteSelfRef(n.Rhs, name, replacement), Line: n.Line}
+	case *ast.PrefixExpr:
+		return &ast.PrefixExpr{Op: n.Op, Expr: substituteSelfRef(n.Expr, name, replacement), Line: n.Line}
+	case *ast.CallExpr:
+		return &ast.CallExpr{Fun: substituteSelfRef(n.Fun, name, replacement), Args: substituteSelfRefList(n.Args, name, replacement), Ellipsis: n.Ellipsis}
+	case *ast.MethodCallExpr:
+		return &ast.MethodCallExpr{Obj: substituteSelfRef(n.Obj, name, replacement), Prop: n.Prop, Args: substituteSelfRefList(n.Args, name, replacement), Ellipsis: n.Ellipsis}
+	case *ast.Select:
+		return &ast.Select{Selectable: substituteSelfRef(n.Selectable, name, replacement), Selector: n.Selector}
+	case *ast.IGet:
+		return &ast.IGet{Indexable: substituteSelfRef(n.Indexable, name, replacement), Index: substituteSelfRef(n.Index, name, replacement), Line: n.Line}
+	case *ast.Slice:
+		return &ast.Slice{Value: substituteSelfRef(n.Value, name, replacement), First: substituteSelfRef(n.First, name, replacement), Last: substituteSelfRef(n.Last, name, replacement), Mode: n.Mode}
+	case *ast.Array:
+		return &ast.Array{ExprList: substituteSelfRefList(n.ExprList, name, replacement)}
+	case *ast.Object:
+		pairs := make([]*ast.Pair, len(n.Pairs))
+		for i, p := range n.Pairs {
+			pairs[i] = &ast.Pair{Key: p.Key, Value: substituteSelfRef(p.Value, name, replacement)}
+		}
+		return &ast.Object{Pairs: pairs, Line: n.Line}
+	case *ast.Fun:
+		return &ast.Fun{Args: n.Args, IsVar: n.IsVar, Body: substituteSelfRef(n.Body, name, replacement)}
+	case *ast.Block:
+		stmts := make([]ast.Node, len(n.Statement))
+		for i, s := range n.Statement {
+			stmts[i] = substituteSelfRef(s, name, replacement)
+		}
+		return &ast.Block{Statement: stmts}
+	case *ast.Ret:
+		return &ast.Ret{Expr: substituteSelfRef(n.Expr, name, replacement), Line: n.Line}
+	case *ast.Mut:
+		return &ast.Mut{Identifier: n.Identifier, Expr: substituteSelfRef(n.Expr, name, replacement), Line: n.Line}
+	case *ast.Var:
+		return &ast.Var{Identifier: n.Identifier, Expr: substituteSelfRef(n.Expr, name, replacement), IsRecursive: n.IsRecursive, Line: n.Line}
+	case *ast.MultipleVar:
+		return &ast.MultipleVar{Identifiers: n.Identifiers, Exprs: substituteSelfRefList(n.Exprs, name, replacement), IsRecursive: n.IsRecursive, Line: n.Line}
+	case *ast.Let:
+		return &ast.Let{Identifier: n.Identifier, Expr: substituteSelfRef(n.Expr, name, replacement), Line: n.Line}
+	case *ast.MultipleLet:
+		return &ast.MultipleLet{Identifiers: n.Identifiers, Exprs: substituteSelfRefList(n.Exprs, name, replacement), Line: n.Line}
+	case *ast.MultipleMut:
+		targets := make([]*ast.MutTarget, len(n.Targets))
+		for i, t := range n.Targets {
+			targets[i] = &ast.MutTarget{
+				Identifier: t.Identifier,
+				Indexable:  substituteSelfRef(t.Indexable, name, replacement),
+				Index:      substituteSelfRef(t.Index, name, replacement),
+				Selectable: substituteSelfRef(t.Selectable, name, replacement),
+				Selector:   t.Selector,
+				Line:       t.Line,
+			}
+		}
+		return &ast.MultipleMut{Targets: targets, Exprs: substituteSelfRefList(n.Exprs, name, replacement), Line: n.Line}
+	case *ast.Branch:
+		branch := &ast.Branch{If: substituteSelfRef(n.If, name, replacement), Line: n.Line}
+		for _, e := range n.Elifs {
+			branch.Elifs = append(branch.Elifs, substituteSelfRef(e, name, replacement))
+		}
+		if n.Else != nil {
+			branch.Else = substituteSelfRef(n.Else, name, replacement)
+		}
+		return branch
+	case *ast.If:
+		return &ast.If{Condition: substituteSelfRef(n.Condition, name, replacement), Block: substituteSelfRef(n.Block, name, replacement)}
+	case *ast.Else:
+		return &ast.Else{Block: substituteSelfRef(n.Block, name, replacement)}
+	case *ast.For:
+		return &ast.For{Init: substituteSelfRef(n.Init, name, replacement), End: substituteSelfRef(n.End, name, replacement), Id: n.Id, Step: substituteSelfRef(n.Step, name, replacement), Block: substituteSelfRef(n.Block, name, replacement), Line: n.Line}
+	case *ast.IFor:
+		return &ast.IFor{Key: n.Key, Value: n.Value, Expr: substituteSelfRef(n.Expr, name, replacement), Block: substituteSelfRef(n.Block, name, replacement), Line: n.Line}
+	case *ast.While:
+		return &ast.While{Condition: substituteSelfRef(n.Condition, name, replacement), Block: substituteSelfRef(n.Block, name, replacement), Line: n.Line}
+	case *ast.With:
+		return &ast.With{Identifiers: n.Identifiers, Exprs: substituteSelfRefList(n.Exprs, name, replacement), Block: substituteSelfRef(n.Block, name, replacement), Line: n.Line}
+	case *ast.IGetStmt:
+		return &ast.IGetStmt{Index: substituteSelfRef(n.Index, name, replacement), Line: n.Line}
+	case *ast.SelectStmt:
+		return &ast.SelectStmt{Selector: substituteSelfRef(n.Selector, name, replacement), Line: n.Line}
+	case *ast.ISet:
+		return &ast.ISet{Index: substituteSelfRef(n.Index, name, replacement), Expr: substituteSelfRef(n.Expr, name, replacement), Line: n.Line}
+	case *ast.CallStmt:
+		return &ast.CallStmt{Args: substituteSelfRefList(n.Args, name, replacement), Ellipsis: n.Ellipsis, Line: n.Line}
+	case *ast.MethodCallStmt:
+		return &ast.MethodCallStmt{Args: substituteSelfRefList(n.Args, name, replacement), Prop: n.Prop, Ellipsis: n.Ellipsis, Line: n.Line}
+	case *ast.Export:
+		return &ast.Export{Expr: substituteSelfRef(n.Expr, name, replacement), Line: n.Line}
+	case *ast.SuperCallStmt:
+		return &ast.SuperCallStmt{Args: substituteSelfRefList(n.Args, name, replacement), Prop: n.Prop, Ellipsis: n.Ellipsis, Line: n.Line}
+	case *ast.ObjectDecl:
+		body := make([]*ast.Pair, len(n.Body))
+		for i, p := range n.Body {
+			body[i] = &ast.Pair{Key: p.Key, Value: substituteSelfRef(p.Value, name, replacement)}
+		}
+		return &ast.ObjectDecl{Name: n.Name, Params: n.Params, Parent: substituteSelfRef(n.Parent, name, replacement), Body: body, Line: n.Line}
+	default:
+		// Integer, Float, String, Boolean, Nil, Property, ForState,
+		// ReferenceStmt, Break, Continue, Import, Enum, Super: no
+		// reference to rewrite.
+		return n
+	}
+}
+
+func substituteSelfRefList(nodes []ast.Node, name string, replacement ast.Node) []ast.Node {
+	if nodes == nil {
+		return nil
+	}
+	out := make([]ast.Node, len(nodes))
+	for i, n := range nodes {
+		out[i] = substituteSelfRef(n, name, replacement)
+	}
+	return out
 }
