@@ -175,6 +175,8 @@ func textFromCodepoints(ctx *Context, args ...Value) (Value, error) {
 			runes = append(runes, rune(v))
 		}
 	}
+	// NFKC - Compatibility Decomposition, followed by Canonical Composition
+	// for compatibility with Vida approach to codepoints.
 	normalized := norm.NFKC.String(string(runes))
 	return &String{Value: normalized, Runes: []rune(normalized)}, nil
 }
