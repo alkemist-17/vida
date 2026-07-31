@@ -112,13 +112,13 @@ func compileVidaScript(path string) error {
 		return cmd.Run()
 	}
 
-	fmt.Println("Initializing module ...")
+	fmt.Println("Initializing module")
 
 	if err := runCmd("go", "mod", "init", "vida_autogen"); err != nil {
 		return fmt.Errorf("failed to init go mod: %w", err)
 	}
 
-	fmt.Println("Fetching Vida context ...")
+	fmt.Println("Fetching Vida context")
 
 	if err := runCmd("go", "get", "github.com/alkemist-17/vida@latest"); err != nil {
 		return fmt.Errorf("failed to get Vida context: %w", err)
@@ -135,12 +135,23 @@ func compileVidaScript(path string) error {
 		outputBinaryName += ".exe"
 	}
 	outputBinaryPath := filepath.Join(currentDir, outputBinaryName)
-	fmt.Printf("Compiling %s -> %s ... \n", path, outputBinaryName)
+	fmt.Printf("Compiling %s into %s\n", path, outputBinaryName)
 
-	if err := runCmd("go", "build", "-o", outputBinaryPath, tmpGoFile); err != nil {
+	if err := runCmd("go", "build", "-ldflags=-s -w", "-o", outputBinaryPath, tmpGoFile); err != nil {
 		return fmt.Errorf("failed to compile script: %w", err)
 	}
 
-	fmt.Println("Done.")
+	if _, err := exec.LookPath("upx"); err == nil {
+		fmt.Println("Detected upx compression tool")
+		fmt.Println("Attempting to compress binary with upx")
+		err := runCmd("upx", "--best", outputBinaryPath)
+		if err != nil {
+			fmt.Println("UPX compresssion failed, but still the excecutable file was created")
+		} else {
+			fmt.Println("Binary compressed successfully")
+		}
+	}
+
+	fmt.Println("Done")
 	return nil
 }
