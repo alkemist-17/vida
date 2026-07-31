@@ -111,8 +111,19 @@ func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 	return store
 }
 
-func corePrint(ctx *Context, args ...Value) (Value, error) {
+func corePrintOld(args ...Value) (Value, error) {
 	VFprintln(os.Stdout, args...)
+	return Nil, nil
+}
+
+func corePrint(ctx *Context, args ...Value) (Value, error) {
+	for i, arg := range args {
+		if i > 0 {
+			io.WriteString(os.Stdout, " ")
+		}
+		io.WriteString(os.Stdout, resolveDisplay(ctx, arg))
+	}
+	io.WriteString(os.Stdout, "\n")
 	return Nil, nil
 }
 
@@ -1041,4 +1052,28 @@ func DownloadCellTo(rawURL, destPath string) error {
 	}
 
 	return nil
+}
+
+func resolveDisplay(ctx *Context, v Value) string {
+	if v == nil {
+		return Nil.String()
+	}
+	method := v.LookUp(ctx, &String{Value: "toString"})
+	if method.Equals(ctx, Nil) {
+		return v.String()
+	}
+	var result Value
+	var err error
+	switch fn := method.(type) {
+	case *Function:
+		result, err = ctx.runFunctionInNewThread(fn, v)
+	case NativeFunction:
+		result, err = fn.Call(ctx, v)
+	default:
+		return v.String()
+	}
+	if err != nil || result == nil {
+		return v.String()
+	}
+	return result.String()
 }
