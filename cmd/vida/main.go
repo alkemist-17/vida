@@ -77,11 +77,7 @@ func main() {
 		case PATH:
 			path()
 		case COMPILE:
-			if len(args) > 2 {
-				handleError(compileVidaScript(args[2]))
-			} else {
-				handleError(errorNoArgsGivenTo(COMPILE))
-			}
+			compile(args)
 		default:
 			handleError(fmt.Errorf("unknown command '%v'.\n\tType 'vida help' for assistance.", parseCMD(args[1])))
 		}
@@ -92,18 +88,25 @@ func main() {
 
 func runDebug(args []string) {
 	clear()
+	printVersion()
+
+	var p string
+	var err error
+
 	if len(args) > 2 {
-		printVersion()
-		p, err := filepath.Abs(args[2])
-		handleError(err)
-		src, err := vida.LoadScriptFromFile(p)
-		handleError(err)
-		ctx := vida.NewContext(src, p, extensions.GetLoader())
-		err = ctx.RunDebugSession()
+		p, err = filepath.Abs(args[2])
 		handleError(err)
 	} else {
-		handleError(errorNoArgsGivenTo(DEGUG))
+		entry, err := resolveEntryScript()
+		handleError(err)
+		p = entry
 	}
+
+	src, err := vida.LoadScriptFromFile(p)
+	handleError(err)
+	ctx := vida.NewContext(src, p, extensions.GetLoader())
+	err = ctx.RunDebugSession()
+	handleError(err)
 }
 
 func run(args []string) {
@@ -114,8 +117,8 @@ func run(args []string) {
 		p, err = filepath.Abs(args[2])
 		handleError(err)
 	} else {
-		entry, err2 := resolveEntryScript()
-		handleError(err2)
+		entry, err := resolveEntryScript()
+		handleError(err)
 		p = entry
 	}
 
@@ -132,24 +135,45 @@ func run(args []string) {
 func measureRunTime(args []string) {
 	clear()
 	printVersion()
+
+	var p string
+	var err error
+
 	if len(args) > 2 {
-		p, err := filepath.Abs(args[2])
+		p, err = filepath.Abs(args[2])
 		handleError(err)
-		src, err := vida.LoadScriptFromFile(p)
-		handleError(err)
-		ctx := vida.NewContext(src, p, extensions.GetLoader())
-		ctx.Compile()
-		duration, err := ctx.MeasureRunTime()
-		if err != nil {
-			printError(err)
-			ctx.PrintCallStack()
-			fmt.Printf("\tFailure ❌\n\n\n\n")
-			return
-		}
-		printDuration(duration)
 	} else {
-		handleError(errorNoArgsGivenTo(TIME))
+		entry, err := resolveEntryScript()
+		handleError(err)
+		p = entry
 	}
+
+	src, err := vida.LoadScriptFromFile(p)
+	handleError(err)
+	ctx := vida.NewContext(src, p, extensions.GetLoader())
+	ctx.Compile()
+	duration, err := ctx.MeasureRunTime()
+	if err != nil {
+		printError(err)
+		ctx.PrintCallStack()
+		fmt.Printf("\tFailure ❌\n\n\n\n")
+		return
+	}
+	printDuration(duration)
+}
+
+func compile(args []string) {
+	var p string
+	var err error
+	if len(args) > 2 {
+		p, err = filepath.Abs(args[2])
+		handleError(err)
+	} else {
+		entry, err := resolveEntryScript()
+		handleError(err)
+		p = entry
+	}
+	handleError(compileVidaScript(p))
 }
 
 func printTokens(args []string) {
