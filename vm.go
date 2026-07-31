@@ -301,20 +301,7 @@ func (vm *VM) run() error {
 			if !iterable.IsIterable() {
 				return vm.createError(ip, ErrValueNotIterable)
 			}
-			resolved := false
-			if obj, ok := iterable.(*Object); ok {
-				vi, err := resolveVidaIterator(vm.ctx, obj)
-				if err != nil {
-					return vm.createError(ip, err)
-				}
-				if vi != nil {
-					vm.Frame.stack[B] = vi
-					resolved = true
-				}
-			}
-			if !resolved {
-				vm.Frame.stack[B] = iterable.Iterator()
-			}
+			vm.Frame.stack[B] = iterable.Iterator(vm.ctx)
 			ip = int(P)
 		case forLoop:
 			i := vm.Frame.stack[B].(Integer)
@@ -364,7 +351,7 @@ func (vm *VM) run() error {
 			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				description := fmt.Sprintf(": %v", val.String())
+				description := fmt.Sprintf(": %v", val.Type())
 				return vm.createError(ip, ErrValueNotCallable+internalBasicError(description))
 			}
 			if fn, ok := val.(*Function); ok {

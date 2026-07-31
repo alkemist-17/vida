@@ -226,8 +226,8 @@ func (o *Object) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, ErrNotImplemented
 }
 
-func (o *Object) Iterator() Value {
-	return newObjectIterator(o)
+func (o *Object) Iterator(ctx *Context) Value {
+	return newObjectIterator(ctx, o)
 }
 
 func (o *Object) String() string {

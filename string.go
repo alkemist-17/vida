@@ -97,7 +97,7 @@ func (s *String) IsCallable() Bool {
 	return false
 }
 
-func (s *String) Iterator() Value {
+func (s *String) Iterator(ctx *Context) Value {
 	if s.Runes == nil {
 		s.Runes = []rune(s.Value)
 	}

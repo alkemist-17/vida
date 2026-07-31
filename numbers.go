@@ -134,7 +134,7 @@ func (i Integer) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, ErrNotImplemented
 }
 
-func (i Integer) Iterator() Value {
+func (i Integer) Iterator(ctx *Context) Value {
 	if i < 0 {
 		i = -i
 	}
@@ -282,7 +282,7 @@ func (f Float) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, ErrNotImplemented
 }
 
-func (f Float) Iterator() Value {
+func (f Float) Iterator(ctx *Context) Value {
 	return Nil
 }
 

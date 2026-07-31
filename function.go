@@ -199,7 +199,7 @@ func (nativeFn NativeFunction) Call(ctx *Context, args ...Value) (Value, error) 
 	return nativeFn(ctx, args...)
 }
 
-func (nativeFn NativeFunction) Iterator() Value {
+func (nativeFn NativeFunction) Iterator(ctx *Context) Value {
 	return Nil
 }
 

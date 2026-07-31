@@ -1,0 +1,184 @@
+// ═══════════════════════════════════════════════════════════════
+// Vida Iterator Protocol — Test Suite
+// ═══════════════════════════════════════════════════════════════
+
+// ── Test 1: Self-iterating object (next + key + value) ────────
+
+object counter(n) {
+    next = fun self {
+        self.n = self.n + 1
+        ret self.n <= 3
+    }
+    
+    key = fun self {
+        ret self.n - 1
+    }
+    
+    value = fun self {
+        ret self.n * 10
+    }
+}
+
+for k, v in counter(0) {
+    assert(k in [0,1,2] and v in [10, 20, 30])
+}
+
+
+
+
+// ── Test 2: Iterable with inner iter() creates a new custom iterable object ──────────────────
+
+let makeRange = fun lo, hi {
+    var cur = lo - 1
+    object range() {
+        iter = fun self {
+            object internal(cur) {
+                next = fun self {
+                    self.cur = self.cur + 1
+                    ret self.cur <= hi
+                }
+                key = fun self {
+                    ret self.cur - lo
+                }
+                value = fun self {
+                    ret self.cur
+                }
+            }
+            ret internal(cur)
+        }
+    }
+    ret range().iter()
+}
+
+let r = makeRange(1, 3)
+for k, v in r { assert(k in [0,1,2], v in [1,2,3]) }
+
+r = makeRange(1, 3)
+for k, v in r { assert(k in [0,1,2], v in [1,2,3]) }
+
+
+
+
+
+// ── Test 3: Infinite iterator + break ────────────────────────
+let naturals = fun n {
+    object internal(n) {
+        next = fun self {
+            self.n = self.n + 1
+            ret true
+        }
+        key = fun self {
+            ret self.n
+        }
+        value = fun self {
+            ret self.n
+        }
+    }
+    ret internal(n)
+}
+
+let sum = 0
+
+for _, v in naturals(0) {
+    if v > 5 { break }
+    sum = sum + v
+}
+
+assert(sum==15)
+
+
+
+
+
+// ── Test 4: Truthiness in next() ────────────────────────
+object truthy(n) {
+    next = fun self {
+        self.n = self.n + 1
+        if self.n <= 2 { ret 1 }       // truthy (integer)
+        if self.n == 3 { ret "yes" }   // truthy (string)
+        ret nil                // falsy → stop
+    }
+    key = fun self -> self.n
+    value = fun self -> self.n * 100
+}
+
+for k, v in truthy(0) { assert(k in [1,2,3], v in [100, 200, 300]) }
+
+
+
+
+// ── Test 7: for-in on integer still works (regression) ───────
+for i in 5 {
+    assert(i in [0,1,2,3,4])
+}
+
+
+
+// ── Test 8: for-in on object properties still works (regression)
+let plain = {
+    x = 1
+    y = 2
+}
+
+for k, v in plain {
+    assert(k in ["x", "y"], v in [1,2])
+}
+
+
+
+
+
+// ── Test 9: array regression ─────────────────
+for k, v in [7, 8, 9] {
+    assert(k in [0,1,2] and v in [7,8,9])
+}
+
+
+
+
+// ── Test 10: Fibonacci iterator ──────────────────────────────
+let fibonacci = fun {
+    let a = 0
+    let b = 1
+    object fib() {
+        next = fun self -> true
+        key = fun self -> a
+        value = fun self {
+            var result = a
+            a, b = b, a + b
+            ret result
+        }
+    }
+    ret fib()
+}
+
+for i, v in fibonacci() {
+    if v > 50 { break }
+    assert(v in [0, 1, 2, 3, 5, 8, 13, 21, 34])
+}
+
+
+
+// ── Test 11: Inherited iterator methods via VTable ───────────
+object baseIterator(items, idx) {
+    next = fun self {
+        self.idx = self.idx + 1
+        ret self.idx < 3
+    }
+    key = fun self -> self.idx
+    value = fun self -> self.items[self.idx]
+}
+
+object child(items, idx) =< baseIterator {
+    init = fun self {
+        self.extra = "child"
+    }
+}
+
+let c = child([100,200,300], -1)
+
+for k, v in c {
+    assert(k in [0,1,2] and v in [100,200,300])
+}
+
+

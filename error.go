@@ -61,7 +61,7 @@ func (e *VidaError) IsCallable() Bool {
 	return false
 }
 
-func (e *VidaError) Iterator() Value {
+func (e *VidaError) Iterator(ctx *Context) Value {
 	return Nil
 }
 

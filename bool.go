@@ -61,7 +61,7 @@ func (b Bool) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, ErrNotImplemented
 }
 
-func (b Bool) Iterator() Value {
+func (b Bool) Iterator(ctx *Context) Value {
 	return Nil
 }
 

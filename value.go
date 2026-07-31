@@ -12,7 +12,7 @@ type Value interface {
 	Set(Value, Value) error
 	Equals(ctx *Context, value Value) Bool
 	IsIterable() Bool
-	Iterator() Value
+	Iterator(ctx *Context) Value
 	IsCallable() Bool
 	Call(ctx *Context, args ...Value) (Value, error)
 	String() string
@@ -54,7 +54,7 @@ func (i ValueSemanticsImpl) IsIterable() Bool {
 	return false
 }
 
-func (i ValueSemanticsImpl) Iterator() Value {
+func (i ValueSemanticsImpl) Iterator(*Context) Value {
 	return Nil
 }
 
@@ -125,7 +125,7 @@ func (i *ReferenceSemanticsImpl) IsIterable() Bool {
 	return false
 }
 
-func (i *ReferenceSemanticsImpl) Iterator() Value {
+func (i *ReferenceSemanticsImpl) Iterator(*Context) Value {
 	return Nil
 }
 

@@ -103,7 +103,7 @@ func (xs *Array) IsCallable() Bool {
 	return false
 }
 
-func (xs *Array) Iterator() Value {
+func (xs *Array) Iterator(ctx *Context) Value {
 	return &ArrayIterator{Array: xs.Value, Init: -1, End: len(xs.Value)}
 }
 

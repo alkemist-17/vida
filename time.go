@@ -62,7 +62,7 @@ func (t Time) Call(ctx *Context, args ...Value) (Value, error) {
 	return Nil, ErrNotImplemented
 }
 
-func (t Time) Iterator() Value {
+func (t Time) Iterator(ctx *Context) Value {
 	return Nil
 }
 

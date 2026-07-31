@@ -146,7 +146,7 @@ func (b *Bytes) IsCallable() Bool {
 	return false
 }
 
-func (b *Bytes) Iterator() Value {
+func (b *Bytes) Iterator(ctx *Context) Value {
 	return &BytesIterator{Bytes: b.Value, Init: -1, End: len(b.Value)}
 }
 

@@ -2,7 +2,6 @@ package vida
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Iterator interface {
@@ -31,8 +30,20 @@ func (it *ArrayIterator) Value(ctx *Context) Value {
 	return it.Array[it.Init]
 }
 
-func (it ArrayIterator) String() string {
-	return fmt.Sprintf("ArrayIterator[i = %v, e = %v]", it.Init, it.End)
+func (it *ArrayIterator) IsIterable() Bool {
+	return True
+}
+
+func (it *ArrayIterator) Iterator(ctx *Context) Value {
+	return it
+}
+
+func (it *ArrayIterator) String() string {
+	return fmt.Sprintf("Iterator[%p]", it)
+}
+
+func (it *ArrayIterator) ObjectKey() string {
+	return it.String()
 }
 
 func (it *ArrayIterator) Clone() Value {
@@ -40,7 +51,7 @@ func (it *ArrayIterator) Clone() Value {
 }
 
 func (it *ArrayIterator) Type() string {
-	return "ArrayIterator"
+	return "iterator"
 }
 
 type ObjectIterator struct {
@@ -51,7 +62,10 @@ type ObjectIterator struct {
 	End  int
 }
 
-func newObjectIterator(o *Object) *ObjectIterator {
+func newObjectIterator(ctx *Context, o *Object) Value {
+	if ui, ok := hasUserIterator(ctx, o); ok {
+		return ui
+	}
 	var keys []string
 	for k := range o.Value {
 		keys = append(keys, k)
@@ -78,8 +92,20 @@ func (it *ObjectIterator) Value(ctx *Context) Value {
 	return it.Obj[it.Keys[it.Init]]
 }
 
-func (it ObjectIterator) String() string {
-	return fmt.Sprintf("ObjectIterator[i = %v, e = %v]", it.Init, it.End)
+func (it *ObjectIterator) IsIterable() Bool {
+	return True
+}
+
+func (it *ObjectIterator) Iterator(ctx *Context) Value {
+	return it
+}
+
+func (it *ObjectIterator) String() string {
+	return fmt.Sprintf("Iterator[%p]", it)
+}
+
+func (it *ObjectIterator) ObjectKey() string {
+	return it.String()
 }
 
 func (it *ObjectIterator) Clone() Value {
@@ -87,7 +113,7 @@ func (it *ObjectIterator) Clone() Value {
 }
 
 func (it *ObjectIterator) Type() string {
-	return "ObjectIterator"
+	return "iterator"
 }
 
 type StringIterator struct {
@@ -110,8 +136,20 @@ func (it *StringIterator) Value(ctx *Context) Value {
 	return &String{Value: string(it.Runes[it.Init]), Runes: it.Runes[it.Init : it.Init+1]}
 }
 
-func (it StringIterator) String() string {
-	return fmt.Sprintf("StringIterator[i = %v, e = %v]", it.Init, it.End)
+func (it *StringIterator) IsIterable() Bool {
+	return True
+}
+
+func (it *StringIterator) Iterator(ctx *Context) Value {
+	return it
+}
+
+func (it *StringIterator) String() string {
+	return fmt.Sprintf("Iterator[%p]", it)
+}
+
+func (it *StringIterator) ObjectKey() string {
+	return it.String()
 }
 
 func (it *StringIterator) Clone() Value {
@@ -119,7 +157,7 @@ func (it *StringIterator) Clone() Value {
 }
 
 func (it *StringIterator) Type() string {
-	return "StringIterator"
+	return "iterator"
 }
 
 type IntegerIterator struct {
@@ -141,8 +179,20 @@ func (it *IntegerIterator) Value(ctx *Context) Value {
 	return it.Init
 }
 
-func (it IntegerIterator) String() string {
-	return fmt.Sprintf("IntIterator[i = %v, e = %v]", it.Init, it.End)
+func (it *IntegerIterator) IsIterable() Bool {
+	return True
+}
+
+func (it *IntegerIterator) Iterator(ctx *Context) Value {
+	return it
+}
+
+func (it *IntegerIterator) String() string {
+	return fmt.Sprintf("Iterator[%p]", it)
+}
+
+func (it *IntegerIterator) ObjectKey() string {
+	return it.String()
 }
 
 func (it *IntegerIterator) Clone() Value {
@@ -150,7 +200,7 @@ func (it *IntegerIterator) Clone() Value {
 }
 
 func (it *IntegerIterator) Type() string {
-	return "IntIterator"
+	return "iterator"
 }
 
 type BytesIterator struct {
@@ -173,8 +223,20 @@ func (bi *BytesIterator) Value(ctx *Context) Value {
 	return Integer(bi.Bytes[bi.Init])
 }
 
-func (bi BytesIterator) String() string {
-	return fmt.Sprintf("BytesIterator[i = %v, e = %v]", bi.Init, bi.End)
+func (bi *BytesIterator) IsIterable() Bool {
+	return True
+}
+
+func (bi *BytesIterator) Iterator(ctx *Context) Value {
+	return bi
+}
+
+func (bi *BytesIterator) String() string {
+	return fmt.Sprintf("Iterator[%p]", bi)
+}
+
+func (it *BytesIterator) ObjectKey() string {
+	return it.String()
 }
 
 func (bi *BytesIterator) Clone() Value {
@@ -182,10 +244,10 @@ func (bi *BytesIterator) Clone() Value {
 }
 
 func (bi *BytesIterator) Type() string {
-	return "BytesIterator"
+	return "iterator"
 }
 
-type VidaIterator struct {
+type UserIterator struct {
 	ReferenceSemanticsImpl
 	obj     *Object
 	ctx     *Context
@@ -194,10 +256,10 @@ type VidaIterator struct {
 	valueFn Value
 }
 
-// NewVidaIterator creates a VidaIterator from a Vida object that exposes
+// Creates a UserIterator from a Vida object that exposes
 // callable next(), key(), and value() methods. All three are required;
 // a missing method produces a descriptive error.
-func NewVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
+func newUserIterator(ctx *Context, obj *Object) (*UserIterator, error) {
 	nextFn := obj.Get(ctx, &String{Value: "next"})
 	if !nextFn.IsCallable() {
 		return nil, fmt.Errorf("iterator object is missing a callable next() method")
@@ -210,7 +272,7 @@ func NewVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
 	if !valueFn.IsCallable() {
 		return nil, fmt.Errorf("iterator object is missing a callable value() method")
 	}
-	return &VidaIterator{
+	return &UserIterator{
 		obj:     obj,
 		ctx:     ctx,
 		nextFn:  nextFn,
@@ -219,7 +281,7 @@ func NewVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
 	}, nil
 }
 
-func (vi *VidaIterator) Next() bool {
+func (vi *UserIterator) Next() bool {
 	result, err := callVidaMethod(vi.ctx, vi.obj, vi.nextFn)
 	if err != nil {
 		return false
@@ -227,7 +289,7 @@ func (vi *VidaIterator) Next() bool {
 	return bool(result.Boolean())
 }
 
-func (vi *VidaIterator) Key(ctx *Context) Value {
+func (vi *UserIterator) Key(ctx *Context) Value {
 	result, err := callVidaMethod(ctx, vi.obj, vi.keyFn)
 	if err != nil {
 		return Nil
@@ -235,7 +297,7 @@ func (vi *VidaIterator) Key(ctx *Context) Value {
 	return result
 }
 
-func (vi *VidaIterator) Value(ctx *Context) Value {
+func (vi *UserIterator) Value(ctx *Context) Value {
 	result, err := callVidaMethod(ctx, vi.obj, vi.valueFn)
 	if err != nil {
 		return Nil
@@ -243,27 +305,31 @@ func (vi *VidaIterator) Value(ctx *Context) Value {
 	return result
 }
 
-func (vi *VidaIterator) Boolean() Bool {
+func (vi *UserIterator) Boolean() Bool {
 	return True
 }
 
-func (vi *VidaIterator) IsIterable() Bool {
+func (vi *UserIterator) IsIterable() Bool {
 	return True
 }
 
-func (vi *VidaIterator) Iterator() Value {
+func (vi *UserIterator) Iterator(ctx *Context) Value {
 	return vi
 }
 
-func (vi *VidaIterator) String() string {
-	return fmt.Sprintf("VidaIterator[%p]", vi)
+func (vi *UserIterator) String() string {
+	return fmt.Sprintf("Iterator[%p]", vi)
 }
 
-func (vi *VidaIterator) Type() string {
-	return "VidaIterator"
+func (it *UserIterator) ObjectKey() string {
+	return it.String()
 }
 
-func (vi *VidaIterator) Clone() Value {
+func (vi *UserIterator) Type() string {
+	return "iterator"
+}
+
+func (vi *UserIterator) Clone() Value {
 	return vi
 }
 
@@ -281,34 +347,7 @@ func callVidaMethod(ctx *Context, self *Object, method Value) (Value, error) {
 	}
 }
 
-// resolveVidaIterator checks whether obj defines a custom iterator protocol
-// and returns a ready-to-use VidaIterator if so.
-//
-// Priority:
-//  1. iter() method — invoked to produce a fresh iterator object, which
-//     must itself expose next/key/value.
-//  2. next() + key() + value() methods — the object is its own iterator.
-//  3. Neither — returns (nil, nil); the caller should fall back to the
-//     default Object.Iterator() (property iteration).
-//
-// A partial protocol (e.g. next() defined but key() missing) is reported
-// as an error rather than silently ignored, so typos surface early.
-func resolveVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
-	// Priority 1: iter() method
-	iterFn := obj.Get(ctx, &String{Value: "iter"})
-	if iterFn.IsCallable() {
-		result, err := callVidaMethod(ctx, obj, iterFn)
-		if err != nil {
-			return nil, fmt.Errorf("iter() call failed: %w", err)
-		}
-		iterObj, ok := result.(*Object)
-		if !ok {
-			return nil, fmt.Errorf("iter() must return an object, got %s", result.Type())
-		}
-		return NewVidaIterator(ctx, iterObj)
-	}
-
-	// Priority 2: self-iterating (next + key + value)
+func hasUserIterator(ctx *Context, obj *Object) (Value, bool) {
 	nextFn := obj.Get(ctx, &String{Value: "next"})
 	keyFn := obj.Get(ctx, &String{Value: "key"})
 	valueFn := obj.Get(ctx, &String{Value: "value"})
@@ -317,30 +356,13 @@ func resolveVidaIterator(ctx *Context, obj *Object) (*VidaIterator, error) {
 	hasValue := valueFn.IsCallable()
 
 	if hasNext && hasKey && hasValue {
-		return &VidaIterator{
+		return &UserIterator{
 			obj:     obj,
 			ctx:     ctx,
 			nextFn:  nextFn,
 			keyFn:   keyFn,
 			valueFn: valueFn,
-		}, nil
+		}, true
 	}
-
-	// Partial protocol: next() is the strongest signal of iterator intent.
-	// If it is present but key() or value() is missing, report an error
-	// instead of silently falling back to property iteration.
-	if hasNext {
-		var missing []string
-		if !hasKey {
-			missing = append(missing, "key()")
-		}
-		if !hasValue {
-			missing = append(missing, "value()")
-		}
-		return nil, fmt.Errorf("incomplete iterator protocol: has next() but missing %s",
-			strings.Join(missing, ", "))
-	}
-
-	// No custom iterator defined
-	return nil, nil
+	return Nil, false
 }

@@ -58,7 +58,7 @@ func (e *Enum) IsIterable() Bool {
 	return false
 }
 
-func (e *Enum) Iterator() Value {
+func (e *Enum) Iterator(ctx *Context) Value {
 	return Nil
 }
 
