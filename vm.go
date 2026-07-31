@@ -364,7 +364,8 @@ func (vm *VM) run() error {
 			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				return vm.createError(ip, ErrValueNotCallable)
+				description := fmt.Sprintf(": %v", val.String())
+				return vm.createError(ip, ErrValueNotCallable+internalBasicError(description))
 			}
 			if fn, ok := val.(*Function); ok {
 				if vm.fp >= frameSize {

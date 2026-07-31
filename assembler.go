@@ -326,9 +326,3 @@ func (c *compiler) generateLocalAlreadyDefinedError(ref string, line uint) {
 	c.lineErr = line
 	c.errMsg = fmt.Sprintf("local reference '%v' already defined in the same scope", ref)
 }
-
-func (c *compiler) generateGlobalShadowedByLocalError(ref string, line uint) {
-	c.hadError = true
-	c.lineErr = line
-	c.errMsg = fmt.Sprintf("module level reference '%v' is shadowed by a local with the same name", ref)
-}

@@ -580,7 +580,8 @@ func (vm *VM) runThread(fp, givenIP int, start bool, args ...Value) error {
 			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				return vm.createError(ip, ErrValueNotCallable)
+				description := fmt.Sprintf(": %v", val.String())
+				return vm.createError(ip, ErrValueNotCallable+internalBasicError(description))
 			}
 			if fn, ok := val.(*Function); ok {
 				if vm.fp >= len(vm.Frames) {
@@ -1105,7 +1106,8 @@ func (vm *VM) debugThread(fp, givenIP int, start bool, args ...Value) error {
 			F := P >> shift16
 			P = P & clean16
 			if !val.IsCallable() {
-				return vm.createError(ip, ErrValueNotCallable)
+				description := fmt.Sprintf(": %v", val.String())
+				return vm.createError(ip, ErrValueNotCallable+internalBasicError(description))
 			}
 			if fn, ok := val.(*Function); ok {
 				if vm.fp >= len(vm.Frames) {

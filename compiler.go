@@ -180,10 +180,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 			c.generateGlobalAlreadyDefinedError(n.Identifier, n.Line)
 			return
 		}
-		if _, isLocal, _ := c.sb.isLocal(n.Identifier); isLocal {
-			c.generateGlobalShadowedByLocalError(n.Identifier, n.Line)
-			return
-		}
 		*c.script.GlobalStore = append(*c.script.GlobalStore, Nil)
 		from, scope := c.compileExpr(n.Expr, true)
 		switch scope {
@@ -206,10 +202,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 				c.generateGlobalAlreadyDefinedError(id, n.Line)
 				return
 			}
-			if _, isLocal, _ := c.sb.isLocal(id); isLocal {
-				c.generateGlobalShadowedByLocalError(id, n.Line)
-				return
-			}
 			*c.script.GlobalStore = append(*c.script.GlobalStore, Nil)
 			from, scope := c.compileExpr(n.Exprs[i], true)
 			switch scope {
@@ -227,10 +219,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		}
 	case *ast.Var:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
-		if _, isGlobal := c.sb.isGlobal(n.Identifier); isGlobal {
-			c.generateGlobalShadowedByLocalError(n.Identifier, n.Line)
-			return
-		}
 		if _, isLocal, k := c.sb.isLocal(n.Identifier); isLocal && c.scope == k.scope {
 			c.generateLocalAlreadyDefinedError(n.Identifier, n.Line)
 			return
@@ -261,10 +249,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 	case *ast.MultipleVar:
 		c.currentFn.MapScriptIPLine[c.currentFn.ScriptID][len(c.currentFn.Code)] = n.Line
 		for i, id := range n.Identifiers {
-			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
-				c.generateGlobalShadowedByLocalError(id, n.Line)
-				return
-			}
 			if _, isLocal, k := c.sb.isLocal(id); isLocal && c.scope == k.scope {
 				c.generateLocalAlreadyDefinedError(id, n.Line)
 				return
@@ -488,14 +472,6 @@ func (c *compiler) compileStmt(node ast.Node) {
 		c.scope++
 		resourceRegs := make([]int, len(n.Identifiers))
 		for i, id := range n.Identifiers {
-			if _, isGlobal := c.sb.isGlobal(id); isGlobal {
-				c.generateGlobalShadowedByLocalError(id, n.Line)
-				return
-			}
-			if _, isLocal, k := c.sb.isLocal(id); isLocal && c.scope == k.scope {
-				c.generateLocalAlreadyDefinedError(id, n.Line)
-				return
-			}
 			reg := c.rAlloc
 			from, scope := c.compileExpr(n.Exprs[i], true)
 			switch scope {

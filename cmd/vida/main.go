@@ -26,6 +26,7 @@ const (
 	INIT         = "init"
 	INSTALL      = "install"
 	PATH         = "path"
+	COMPILE      = "compile"
 	FLAG_I       = "-I"
 )
 
@@ -75,6 +76,12 @@ func main() {
 			install(args)
 		case PATH:
 			path()
+		case COMPILE:
+			if len(args) > 2 {
+				handleError(compileVidaScript(args[2]))
+			} else {
+				handleError(errorNoArgsGivenTo(COMPILE))
+			}
 		default:
 			handleError(fmt.Errorf("unknown command '%v'.\n\tType 'vida help' for assistance.", parseCMD(args[1])))
 		}
@@ -340,7 +347,7 @@ func printError(err error) {
 func parseCMD(cmd string) string {
 	cmd = strings.ToLower(cmd)
 	switch cmd {
-	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, INIT, INSTALL:
+	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, INIT, INSTALL, COMPILE:
 		return cmd
 	default:
 		return cmd
@@ -358,24 +365,25 @@ func printVersion() {
 func printHelp() {
 	clear()
 	printVersion()
-	fmt.Printf("\tCLI Tool\n")
+	fmt.Printf("\tVida Tool\n")
 	fmt.Println("\tUsage:  vida  [command]  [script]")
 	fmt.Printf("\n\n")
-	fmt.Printf("\t%-11v compile and run a script\n", RUN)
+	fmt.Printf("\t%-11v compile a script to bytecode and run it\n", RUN)
 	fmt.Printf("\t%-11v scaffold a new project (--template=app|lib)\n", INIT)
 	fmt.Printf("\t%-11v run focused or all scripts in path|project\n", TEST)
 	fmt.Printf("\t%-11v download any dependencies or those listed in vida.toml\n", INSTALL)
-	fmt.Printf("\t%-11v compile and run a script step by step\n", DEGUG)
-	fmt.Printf("\t%-11v compile and run a script measuring their runtime\n", TIME)
-	fmt.Printf("\t%-11v show the token list\n", TOKENS)
-	fmt.Printf("\t%-11v show the syntax tree\n", AST)
-	fmt.Printf("\t%-11v show a colorized syntax tree\n", SEMANTIC_AST)
+	fmt.Printf("\t%-11v compile script to machine code\n", COMPILE)
+	fmt.Printf("\t%-11v run a script step by step\n", DEGUG)
+	fmt.Printf("\t%-11v compile a script to bytecode and measure its runtime\n", TIME)
+	fmt.Printf("\t%-11v show a list of tokens\n", TOKENS)
+	fmt.Printf("\t%-11v show the abstact syntax tree\n", AST)
+	fmt.Printf("\t%-11v show a colorized abstract syntax tree\n", SEMANTIC_AST)
 	fmt.Printf("\t%-11v show this message\n", HELP)
-	fmt.Printf("\t%-11v show the language version\n", VERSION)
-	fmt.Printf("\t%-11v compile and show the compiled code\n", CODE)
+	fmt.Printf("\t%-11v show Vida's version\n", VERSION)
+	fmt.Printf("\t%-11v compile a script to bytecode and show it\n", CODE)
 	fmt.Printf("\t%-11v gets or sets vidapath in the env vars of the host system\n", PATH)
-	fmt.Printf("\t%-11v show the description of Vida\n", ABOUT)
-	fmt.Printf("\t%-11v add a directory to the module search path\n", FLAG_I)
+	fmt.Printf("\t%-11v show Vida's oneline description\n", ABOUT)
+	fmt.Printf("\t%-11v add directories to the module search path\n", FLAG_I)
 	fmt.Printf("\t%-11v %v", vida.EmptyString, flagIExample)
 	fmt.Println()
 	fmt.Println()
