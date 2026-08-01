@@ -48,7 +48,7 @@ const (
 	foundationTime      = "time"
 	foundationCast      = "cast"
 	foundationRand      = "rand"
-	foundationIO        = "io"
+	foundationFile      = "file"
 	foundationOS        = "os"
 	foundationException = "exception"
 	foundationCO        = "co"
@@ -57,6 +57,9 @@ const (
 	foundationTask      = "task"
 	foundationRegex     = "re"
 	foundationStyle     = "style"
+	foundationFmt       = "fmt"
+	foundationFS        = "fs"
+	foundationPath      = "path"
 )
 
 const (
@@ -93,7 +96,6 @@ var coreLibNames = []string{
 	"newArray",
 	"load",
 	"assert",
-	"fmt",
 	"input",
 	"error",
 }
@@ -104,7 +106,6 @@ func loadCoreLib(store *[]Value, extensionsLoader ExtensionsLoader) *[]Value {
 		NativeFunction(coreNewArray),
 		generateLoadFunction(extensionsLoader),
 		NativeFunction(coreAssert),
-		NativeFunction(coreFormat),
 		NativeFunction(coreReadLine),
 		NativeFunction(coreError),
 	)
@@ -767,8 +768,8 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationCasting()
 					case foundationRand:
 						module = loadFoundationRandom()
-					case foundationIO:
-						module = loadFoundationIO()
+					case foundationFile:
+						module = loadFoundationFile()
 					case foundationOS:
 						module = loadFoundationOS()
 					case foundationException:
@@ -787,6 +788,12 @@ func generateLoadFunction(extensionsLoader ExtensionsLoader) NativeFunction {
 						module = loadFoundationStyle()
 					case foundationBuilders:
 						module = loadFoundationBuilders()
+					case foundationFmt:
+						module = loadFoundationFmt()
+					case foundationFS:
+						module = loadFoundationFileSystem()
+					case foundationPath:
+						module = loadFoundationPath()
 					default:
 						module = Nil
 						return &VidaError{Message: &String{Value: fmt.Sprintf("load function could not find the module '%v'", extensionName.Value)}}, nil

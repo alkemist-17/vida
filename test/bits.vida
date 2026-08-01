@@ -2,16 +2,16 @@
 var x = 0xFFFFFFFF
 var y = 16
 
-print(fmt("Bits: %032b", x))
-print(fmt("Bits: %032b", y))
+print("Bits: %032b".fmt(x))
+print("Bits: %032b".fmt(y))
 
-print(fmt("BOR : %032b", x | y))
-print(fmt("BAND: %032b", x & y))
-print(fmt("BXOR: %032b", x ^ y))
-print(fmt("BSHL: %032b", x << y))
-print(fmt("BSHR: %032b", x >> y))
-print(fmt("BNOT: %032b", ~x))
-print(fmt("BNOT: %032b", ~y))
+print("BOR : %032b".fmt(x | y))
+print("BAND: %032b".fmt(x & y))
+print("BXOR: %032b".fmt(x ^ y))
+print("BSHL: %032b".fmt(x << y))
+print("BSHR: %032b".fmt(x >> y))
+print("BNOT: %032b".fmt(~x))
+print("BNOT: %032b".fmt(~y))
 
 
 // Tiny Encryption Algorithm

@@ -40,5 +40,5 @@ for in 10 {
 }
 
 for in 10 {
-    print(fmt("%032b", rand::U32()))
+    print("%032b".fmt(rand::U32()))
 }

@@ -7,12 +7,11 @@ import (
 )
 
 func loadFoundationOS() Value {
-	m := &Object{Value: make(map[string]Value, 17)}
+	m := &Object{Value: make(map[string]Value, 18)}
 	m.Value["args"] = NativeFunction(osArgs)
 	m.Value["env"] = NativeFunction(osEnviron)
 	m.Value["exit"] = NativeFunction(osExit)
 	m.Value["getFromEnv"] = NativeFunction(osGetEnv)
-	m.Value["pwd"] = NativeFunction(osGetWD)
 	m.Value["hostname"] = NativeFunction(osHostname)
 	m.Value["pathSeparator"] = NativeFunction(osGetPathSeparator)
 	m.Value["mkdir"] = NativeFunction(osMkdir)
@@ -22,24 +21,27 @@ func loadFoundationOS() Value {
 	m.Value["name"] = NativeFunction(osName)
 	m.Value["arch"] = NativeFunction(osArch)
 	m.Value["run"] = NativeFunction(osRunCMD)
-	m.Value["stdin"] = &FileHandler{Handler: os.Stdin}
-	m.Value["stdout"] = &FileHandler{Handler: os.Stdout}
-	m.Value["stderr"] = &FileHandler{Handler: os.Stderr}
+	m.Value["cwd"] = NativeFunction(osCwd)
+	m.Value["chdir"] = NativeFunction(osChdir)
+	m.Value["stdin"] = newVidaFile(os.Stdin, "<stdin>", os.O_RDONLY)
+	m.Value["stdout"] = newVidaFile(os.Stdout, "<stdout>", os.O_WRONLY)
+	m.Value["stderr"] = newVidaFile(os.Stderr, "<stderr>", os.O_WRONLY)
 	return m
 }
 
 func osArgs(ctx *Context, args ...Value) (Value, error) {
-	xs := &Array{}
-	for _, v := range os.Args {
-		xs.Value = append(xs.Value, &String{Value: v})
+	xs := &Array{Value: make([]Value, len(os.Args))}
+	for i, v := range os.Args {
+		xs.Value[i] = &String{Value: v}
 	}
 	return xs, nil
 }
 
 func osEnviron(ctx *Context, args ...Value) (Value, error) {
-	xs := &Array{}
-	for _, v := range os.Environ() {
-		xs.Value = append(xs.Value, &String{Value: v})
+	env := os.Environ()
+	xs := &Array{Value: make([]Value, len(env))}
+	for i, v := range os.Environ() {
+		xs.Value[i] = &String{Value: v}
 	}
 	return xs, nil
 }
@@ -64,14 +66,6 @@ func osGetEnv(ctx *Context, args ...Value) (Value, error) {
 		}
 	}
 	return Nil, nil
-}
-
-func osGetWD(ctx *Context, args ...Value) (Value, error) {
-	if d, e := os.Getwd(); e == nil {
-		return &String{Value: d}, nil
-	} else {
-		return &VidaError{Message: &String{Value: e.Error()}}, nil
-	}
 }
 
 func osHostname(ctx *Context, args ...Value) (Value, error) {

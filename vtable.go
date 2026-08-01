@@ -150,13 +150,27 @@ func (ctx *Context) loadStyleVT() {
 }
 
 func (ctx *Context) loadFileHandlerVT() {
-	vt := &Object{Value: make(map[string]Value, 6)}
-	vt.Value["close"] = NativeFunction(fileClose)
-	vt.Value["isClosed"] = NativeFunction(fileIsClosed)
-	vt.Value["name"] = NativeFunction(fileName)
-	vt.Value["write"] = NativeFunction(fileWrite)
-	vt.Value["lines"] = NativeFunction(fileReadLines)
-	vt.Value["read"] = NativeFunction(fileRead)
+	vt := &Object{Value: make(map[string]Value, 18)}
+	vt.Value["close"] = NativeFunction(fhClose)
+	vt.Value["isClosed"] = NativeFunction(fhIsClosed)
+	vt.Value["name"] = NativeFunction(fhName)
+	vt.Value["write"] = NativeFunction(fhWrite)
+	vt.Value["read"] = NativeFunction(fhRead)
+	vt.Value["lines"] = NativeFunction(fhLines)
+	vt.Value["readAll"] = NativeFunction(fhReadAll)
+	vt.Value["readLine"] = NativeFunction(fhReadLine)
+	vt.Value["readBytes"] = NativeFunction(fhReadBytes)
+	vt.Value["writeString"] = NativeFunction(fhWriteString)
+	vt.Value["writeLine"] = NativeFunction(fhWriteLine)
+	vt.Value["seek"] = NativeFunction(fhSeek)
+	vt.Value["tell"] = NativeFunction(fhTell)
+	// ── buffering & durability ─────────────────────────
+	vt.Value["flush"] = NativeFunction(fhFlush)
+	vt.Value["sync"] = NativeFunction(fhSync)
+	// ── metadata & mutation ────────────────────────────
+	vt.Value["stat"] = NativeFunction(fhStat)
+	vt.Value["truncate"] = NativeFunction(fhTruncate)
+	vt.Value["size"] = NativeFunction(fhSize)
 	vt.VTable = ctx.vtables[universalT].(*Object)
 	ctx.vtables[fileHandlerT] = vt
 }

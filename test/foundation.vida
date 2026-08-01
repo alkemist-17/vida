@@ -1,11 +1,11 @@
 let objType = {}.type()
 
-let assertModule = fun module {
-    assert(module and module.type() == objType and module.len() > 0)
+let assertModule = fun module, message {
+    assert(module and module.type() == objType and module.len() > 0, message)
 }
 
-let assertCache = fun dup, ext {
-    assert(dup == ext and dup.type() == objType and ext.type() == objType and dup.len() == ext.len())
+let assertCache = fun dup, ext, message {
+    assert(dup == ext and dup.type() == objType and ext.type() == objType and dup.len() == ext.len(), message)
 }
 
 let currentFoundationExtensions = [
@@ -18,7 +18,7 @@ let currentFoundationExtensions = [
     "std.object",
     "std.array",
     "std.rand",
-    "std.io",
+    "std.file",
     "std.os",
     "std.co",
     "std.json",
@@ -29,8 +29,8 @@ let currentFoundationExtensions = [
 ]
 
 for _, v in currentFoundationExtensions {
-    assertModule(load(v))
-    assertCache(load(v), load(v))
+    assertModule(load(v), "assert module loading: %v".fmt(v))
+    assertCache(load(v), load(v), "assert module caching from: %v".fmt(v))
 }
 
 

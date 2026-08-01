@@ -256,31 +256,6 @@ type UserIterator struct {
 	valueFn Value
 }
 
-// Creates a UserIterator from a Vida object that exposes
-// callable next(), key(), and value() methods. All three are required;
-// a missing method produces a descriptive error.
-func newUserIterator(ctx *Context, obj *Object) (*UserIterator, error) {
-	nextFn := obj.Get(ctx, &String{Value: "next"})
-	if !nextFn.IsCallable() {
-		return nil, fmt.Errorf("iterator object is missing a callable next() method")
-	}
-	keyFn := obj.Get(ctx, &String{Value: "key"})
-	if !keyFn.IsCallable() {
-		return nil, fmt.Errorf("iterator object is missing a callable key() method")
-	}
-	valueFn := obj.Get(ctx, &String{Value: "value"})
-	if !valueFn.IsCallable() {
-		return nil, fmt.Errorf("iterator object is missing a callable value() method")
-	}
-	return &UserIterator{
-		obj:     obj,
-		ctx:     ctx,
-		nextFn:  nextFn,
-		keyFn:   keyFn,
-		valueFn: valueFn,
-	}, nil
-}
-
 func (vi *UserIterator) Next() bool {
 	result, err := callVidaMethod(vi.ctx, vi.obj, vi.nextFn)
 	if err != nil {

@@ -69,6 +69,10 @@ func (e *VidaError) String() string {
 	return fmt.Sprintf("error[message: %v]", e.Message.String())
 }
 
+func (e *VidaError) Error() string {
+	return fmt.Sprintf("error[message: %v]", e.Message.String())
+}
+
 func (e *VidaError) ObjectKey() string {
 	return fmt.Sprintf("error[message: %v]", e.Message.ObjectKey())
 }
