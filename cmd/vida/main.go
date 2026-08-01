@@ -27,6 +27,7 @@ const (
 	INSTALL      = "install"
 	PATH         = "path"
 	COMPILE      = "compile"
+	BUNDLE       = "bundle"
 	FLAG_I       = "-I"
 )
 
@@ -78,6 +79,8 @@ func main() {
 			path()
 		case COMPILE:
 			compile(args)
+		case BUNDLE:
+			bundle(args)
 		default:
 			handleError(fmt.Errorf("unknown command '%v'.\n\tType 'vida help' for assistance.", parseCMD(args[1])))
 		}
@@ -173,7 +176,9 @@ func compile(args []string) {
 		handleError(err)
 		p = entry
 	}
-	handleError(compileVidaScript(p))
+	b, err := vida.BundleSource(p)
+	handleError(err)
+	bundleAndCompile(b)
 }
 
 func printTokens(args []string) {
@@ -371,7 +376,7 @@ func printError(err error) {
 func parseCMD(cmd string) string {
 	cmd = strings.ToLower(cmd)
 	switch cmd {
-	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, INIT, INSTALL, COMPILE:
+	case RUN, DEGUG, TOKENS, AST, HELP, VERSION, ABOUT, CODE, TIME, INIT, INSTALL, COMPILE, BUNDLE:
 		return cmd
 	default:
 		return cmd
@@ -397,6 +402,7 @@ func printHelp() {
 	fmt.Printf("\t%-11v run focused or all scripts in path|project\n", TEST)
 	fmt.Printf("\t%-11v download any dependencies or those listed in vida.toml\n", INSTALL)
 	fmt.Printf("\t%-11v compile script to machine code\n", COMPILE)
+	fmt.Printf("\t%-11v flatten a script and its local imports into one file (-o out.vida | --compile)\n", BUNDLE)
 	fmt.Printf("\t%-11v run a script step by step\n", DEGUG)
 	fmt.Printf("\t%-11v compile a script to bytecode and measure its runtime\n", TIME)
 	fmt.Printf("\t%-11v show a list of tokens\n", TOKENS)

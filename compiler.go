@@ -2035,6 +2035,18 @@ func (c *compiler) resolveVTableRefs(node ast.Node) ast.Node {
 }
 
 func (c *compiler) resolveImportPath(path string) (string, error) {
+	return resolveImportPathFromDir(filepath.Dir(c.mainScriptID), path)
+}
+
+// resolveImportPathFromDir implements Vida's import-resolution search order
+// relative to baseDir (the directory of the file containing the import call):
+// absolute paths pass through unchanged; otherwise it looks for the path
+// next to baseDir, then under baseDir's 'cells' directory, then across every
+// directory listed in VIDAPATH. It is a free function (not a *compiler
+// method) so that both the compiler and the bundler (which resolves imports
+// across many files without a single shared *compiler instance) apply
+// identical resolution semantics.
+func resolveImportPathFromDir(baseDir, path string) (string, error) {
 	if isRemoteImport(path) {
 		return EmptyString, fmt.Errorf(
 			"remote imports are not allowed directly in code:\n"+
@@ -2051,12 +2063,12 @@ func (c *compiler) resolveImportPath(path string) (string, error) {
 		return path, nil
 	}
 
-	candidate := filepath.Join(filepath.Dir(c.mainScriptID), path)
+	candidate := filepath.Join(baseDir, path)
 	if fileExistsOnDisk(candidate) {
 		return candidate, nil
 	}
 
-	cellsCandidate := filepath.Join(filepath.Dir(c.mainScriptID), ProjectCellsDir, path)
+	cellsCandidate := filepath.Join(baseDir, ProjectCellsDir, path)
 	if fileExistsOnDisk(cellsCandidate) {
 		return cellsCandidate, nil
 	}

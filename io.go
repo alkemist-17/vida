@@ -7,8 +7,8 @@ import (
 func loadFoundationIO() Value {
 	m := &Object{Value: make(map[string]Value, 24)}
 	// fmt
-	m.Value["write"] = NativeFunction(ioWrite)
-	m.Value["fwrite"] = NativeFunction(ioFWrite)
+	m.Value["print"] = NativeFunction(ioPrint)
+	m.Value["fprint"] = NativeFunction(ioFPrint)
 	m.Value["printf"] = NativeFunction(ioPrintF)
 	m.Value["fprintf"] = NativeFunction(ioFPrintF)
 	m.Value["errorf"] = NativeFunction(ioErrorf)
@@ -29,7 +29,7 @@ func loadFoundationIO() Value {
 	m.Value["C"] = Integer(os.O_CREATE)
 	m.Value["T"] = Integer(os.O_TRUNC)
 	m.Value["readFile"] = NativeFunction(ioReadFile)
-	// Streams
+	// OS File Streams
 	m.Value["stdin"] = &FileHandler{Handler: os.Stdin}
 	m.Value["stdout"] = &FileHandler{Handler: os.Stdout}
 	m.Value["stderr"] = &FileHandler{Handler: os.Stderr}
@@ -37,7 +37,7 @@ func loadFoundationIO() Value {
 }
 
 // fmt API
-func ioFWrite(ctx *Context, args ...Value) (Value, error) {
+func ioFPrint(ctx *Context, args ...Value) (Value, error) {
 	if len(args) > 1 {
 		switch handler := args[0].(type) {
 		case *Object:
@@ -103,7 +103,7 @@ func ioFPrintF(ctx *Context, args ...Value) (Value, error) {
 	return Nil, nil
 }
 
-func ioWrite(ctx *Context, args ...Value) (Value, error) {
+func ioPrint(ctx *Context, args ...Value) (Value, error) {
 	VFprint(os.Stdout, args...)
 	return Nil, nil
 }
