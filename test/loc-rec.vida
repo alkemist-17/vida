@@ -4,14 +4,14 @@ var rec androidPhone = {
     os = "Android"
     series
     size
-    price
+    price = 100
     new = fun -> androidPhone.clone()
 }
 
 
 for in 1000 {
     var phone = androidPhone::new()
-    assert(phone.os == androidPhone.os)
+    assert(phone.os == androidPhone.os and phone.series == nil and phone.size == nil and phone.price == 100)
 }
 
 
@@ -60,5 +60,6 @@ var rec fib = fun n {
 
 assert(fib(10) == 55)
 
-
+var rec xs = [100, 200, fun -> xs]
+assert(xs[2]() == nil)
 

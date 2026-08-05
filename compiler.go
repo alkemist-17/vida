@@ -228,7 +228,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 		if n.IsRecursive {
 			c.sb.addLocal(n.Identifier, c.level, c.scope, to)
 			c.emitLoad(c.kb.NilIndex(), to, loadFromKonst)
-			from, scope = c.compileExpr(n.Expr, true)
+			if _, ok := n.Expr.(*ast.Array); ok {
+				c.rAlloc++
+				from, scope = c.compileExpr(n.Expr, true)
+				c.rAlloc--
+			} else {
+				from, scope = c.compileExpr(n.Expr, true)
+			}
 		} else {
 			from, scope = c.compileExpr(n.Expr, true)
 			c.sb.addLocal(n.Identifier, c.level, c.scope, to)
@@ -258,7 +264,13 @@ func (c *compiler) compileStmt(node ast.Node) {
 			if n.IsRecursive {
 				c.sb.addLocal(id, c.level, c.scope, to)
 				c.emitLoad(c.kb.NilIndex(), to, loadFromKonst)
-				from, scope = c.compileExpr(n.Exprs[i], true)
+				if _, ok := n.Exprs[i].(*ast.Array); ok {
+					c.rAlloc++
+					from, scope = c.compileExpr(n.Exprs[i], true)
+					c.rAlloc--
+				} else {
+					from, scope = c.compileExpr(n.Exprs[i], true)
+				}
 			} else {
 				from, scope = c.compileExpr(n.Exprs[i], true)
 				c.sb.addLocal(id, c.level, c.scope, to)
@@ -1937,7 +1949,7 @@ func (c *compiler) compileGlobalObjectDecl(n *ast.ObjectDecl, vtName string, has
 // to go through a local reference-semantic cell, so it stays correct
 // regardless of when the closure that reads it is actually called.
 func (c *compiler) compileLocalObjectDecl(n *ast.ObjectDecl, vtName string, hasInit bool) {
-	cellName := vtName + "__cell"
+	cellName := vtName + "__cell$"
 	c.compileStmt(&ast.Var{Identifier: cellName, Expr: &ast.Object{Line: n.Line}, Line: n.Line})
 
 	replacement := selfRefReplacement(cellName)
