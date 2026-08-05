@@ -103,7 +103,7 @@ func (f *Function) Binop(ctx *Context, op uint64, r Value) (Value, error) {
 
 func (f *Function) Equals(ctx *Context, other Value) Bool {
 	of, ok := other.(*Function)
-	return Bool(ok && f == of)
+	return Bool(ok && f.CoreFn == of.CoreFn)
 }
 
 func (f *Function) IsCallable() Bool {
