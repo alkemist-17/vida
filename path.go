@@ -1,6 +1,9 @@
 package vida
 
-import "path/filepath"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 func loadFoundationPath() Value {
 	m := &Object{Value: make(map[string]Value, 10)}
@@ -19,20 +22,24 @@ func loadFoundationPath() Value {
 
 func pathJoin(_ *Context, args ...Value) (Value, error) {
 	parts := make([]string, 0, len(args))
-	for _, a := range args {
-		if s, ok := a.(*String); ok {
-			parts = append(parts, s.Value)
+	for i, a := range args {
+		s, ok := a.(*String)
+		if !ok {
+			return argError("join", fmt.Sprintf("argument %d must be a string, got %s", i+1, a.Type()))
 		}
+		parts = append(parts, s.Value)
 	}
 	return &String{Value: filepath.Join(parts...)}, nil
 }
 
 func pathResolve(_ *Context, args ...Value) (Value, error) {
 	parts := make([]string, 0, len(args))
-	for _, a := range args {
-		if s, ok := a.(*String); ok {
-			parts = append(parts, s.Value)
+	for i, a := range args {
+		s, ok := a.(*String)
+		if !ok {
+			return argError("resolve", fmt.Sprintf("argument %d must be a string, got %s", i+1, a.Type()))
 		}
+		parts = append(parts, s.Value)
 	}
 	abs, err := filepath.Abs(filepath.Join(parts...))
 	if err != nil {

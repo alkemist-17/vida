@@ -315,172 +315,213 @@ func loadObjectLib() Value {
 }
 
 func objectInjectProperties(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			for _, v := range args[1:] {
-				if other, ok := v.(*Object); ok && other != self {
-					for k, x := range other.Value {
-						if _, isPresent := self.Value[k]; !isPresent {
-							self.Value[k] = x
-						}
-					}
-				}
+	if len(args) < 2 {
+		return argError("inject", fmt.Sprintf("expected at least 2 object arguments, got %d", len(args)))
+	}
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("inject", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	for i, v := range args[1:] {
+		other, ok := v.(*Object)
+		if !ok {
+			return argError("inject", fmt.Sprintf("argument %d must be an object, got %s", i+2, v.Type()))
+		}
+		if other == self {
+			continue
+		}
+		for k, x := range other.Value {
+			if _, isPresent := self.Value[k]; !isPresent {
+				self.Value[k] = x
 			}
-			return self, nil
 		}
 	}
-	return Nil, nil
+	return self, nil
 }
 
 func objectInjectAndOverrideProperties(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			for _, v := range args[1:] {
-				if other, ok := v.(*Object); ok && other != self {
-					maps.Copy(self.Value, other.Value)
-				}
-			}
-			return self, nil
+	if len(args) < 2 {
+		return argError("override", fmt.Sprintf("expected at least 2 object arguments, got %d", len(args)))
+	}
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("override", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	for i, v := range args[1:] {
+		other, ok := v.(*Object)
+		if !ok {
+			return argError("override", fmt.Sprintf("argument %d must be an object, got %s", i+2, v.Type()))
+		}
+		if other != self {
+			maps.Copy(self.Value, other.Value)
 		}
 	}
-	return Nil, nil
+	return self, nil
 }
 
 func objectCheckProperties(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			set := make(map[string]bool)
-			for _, v := range args[1:] {
-				if other, ok := v.(*Object); ok && other != self {
-					for k := range other.Value {
-						set[k] = false
-					}
-				}
+	if len(args) < 2 {
+		return argError("implements", fmt.Sprintf("expected at least 2 object arguments, got %d", len(args)))
+	}
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("implements", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	set := make(map[string]bool)
+	for i, v := range args[1:] {
+		other, ok := v.(*Object)
+		if !ok {
+			return argError("implements", fmt.Sprintf("argument %d must be an object, got %s", i+2, v.Type()))
+		}
+		if other != self {
+			for k := range other.Value {
+				set[k] = false
 			}
-			objectrecursiveMetaSearch(set, self)
-			for _, v := range set {
-				if !v {
-					return False, nil
-				}
-			}
-			return True, nil
 		}
 	}
-	return Nil, nil
+	objectrecursiveMetaSearch(set, self)
+	for _, v := range set {
+		if !v {
+			return False, nil
+		}
+	}
+	return True, nil
 }
 
 func objectExtractProperties(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			for _, v := range args[1:] {
-				if other, ok := v.(*Object); ok && other != self {
-					for k := range other.Value {
-						delete(self.Value, k)
-					}
-				}
+	if len(args) < 2 {
+		return argError("extract", fmt.Sprintf("expected at least 2 object arguments, got %d", len(args)))
+	}
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("extract", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	for i, v := range args[1:] {
+		other, ok := v.(*Object)
+		if !ok {
+			return argError("extract", fmt.Sprintf("argument %d must be an object, got %s", i+2, v.Type()))
+		}
+		if other != self {
+			for k := range other.Value {
+				delete(self.Value, k)
 			}
-			return self, nil
 		}
 	}
-	return Nil, nil
+	return self, nil
 }
 
 func objectCircumventDeleteProperty(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			for _, prop := range args[1:] {
-				delete(self.Value, prop.ObjectKey())
-			}
-			return self, nil
-		}
+	if len(args) < 2 {
+		return argError("del", fmt.Sprintf("expected at least 2 arguments (object, key...), got %d", len(args)))
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("del", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	for _, prop := range args[1:] {
+		delete(self.Value, prop.ObjectKey())
+	}
+	return self, nil
 }
 
 func objectCircumventGetValue(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			if val, ok := self.Value[args[1].ObjectKey()]; ok {
-				return val, nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("get", fmt.Sprintf("expected 2 arguments (object, key), got %d", len(args)))
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("get", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	if val, ok := self.Value[args[1].ObjectKey()]; ok {
+		return val, nil
+	}
+	return Nil, nil // key not present is a valid result, not an error
 }
 
 func objectCircumventSetValue(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
-	if l > 2 && (l-1)%2 == 0 {
-		if self, ok := args[0].(*Object); ok {
-			for i := 1; i < l; i += 2 {
-				self.Value[args[i].ObjectKey()] = args[i+1]
-			}
-			return self, nil
-		}
+	if l < 3 || (l-1)%2 != 0 {
+		return argError("set", fmt.Sprintf("expected an object followed by key/value pairs, got %d argument(s)", l))
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("set", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	for i := 1; i < l; i += 2 {
+		self.Value[args[i].ObjectKey()] = args[i+1]
+	}
+	return self, nil
 }
 
 func objectGetOrSet(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
-	if l > 1 {
-		if self, ok := args[0].(*Object); ok {
-			if val, ok := self.Value[args[1].ObjectKey()]; ok {
-				return val, nil
-			}
-			if l > 2 {
-				self.Value[args[1].ObjectKey()] = args[2]
-				return self, nil
-			}
-		}
+	if l < 2 {
+		return argError("getset", fmt.Sprintf("expected at least 2 arguments (object, key, [value]), got %d", l))
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("getset", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	if val, ok := self.Value[args[1].ObjectKey()]; ok {
+		return val, nil
+	}
+	if l > 2 {
+		self.Value[args[1].ObjectKey()] = args[2]
+		return self, nil
+	}
+	return Nil, nil // key not present and no default value given
 }
 
 func objectCircumventHasValue(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if self, ok := args[0].(*Object); ok {
-			for _, val := range args[1:] {
-				if _, exists := self.Value[val.ObjectKey()]; !exists {
-					return False, nil
-				}
-			}
-			return True, nil
+	if len(args) < 2 {
+		return argError("has", fmt.Sprintf("expected at least 2 arguments (object, key...), got %d", len(args)))
+	}
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("has", fmt.Sprintf("argument 1 must be an object, got %s", args[0].Type()))
+	}
+	for _, val := range args[1:] {
+		if _, exists := self.Value[val.ObjectKey()]; !exists {
+			return False, nil
 		}
 	}
-	return Nil, nil
+	return True, nil
 }
 
 func objectGetKeys(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if self, ok := args[0].(*Object); ok {
-			lobj := len(self.Value)
-			keys := make([]Value, int(lobj))
-			var idx int
-			for k := range self.Value {
-				keys[idx] = &String{Value: k}
-				idx++
-			}
-			return &Array{Value: keys}, nil
-		}
+	if len(args) == 0 {
+		return argError("keys", "expected an object argument")
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("keys", fmt.Sprintf("expected an object argument, got %s", args[0].Type()))
+	}
+	lobj := len(self.Value)
+	keys := make([]Value, int(lobj))
+	var idx int
+	for k := range self.Value {
+		keys[idx] = &String{Value: k}
+		idx++
+	}
+	return &Array{Value: keys}, nil
 }
 
 func objectGetValues(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if self, ok := args[0].(*Object); ok {
-			lobj := len(self.Value)
-			values := make([]Value, int(lobj))
-			var idx int
-			for _, v := range self.Value {
-				values[idx] = v
-				idx++
-			}
-			return &Array{Value: values}, nil
-		}
+	if len(args) == 0 {
+		return argError("values", "expected an object argument")
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("values", fmt.Sprintf("expected an object argument, got %s", args[0].Type()))
+	}
+	lobj := len(self.Value)
+	values := make([]Value, int(lobj))
+	var idx int
+	for _, v := range self.Value {
+		values[idx] = v
+		idx++
+	}
+	return &Array{Value: values}, nil
 }
 
 func objectrecursiveMetaSearch(set map[string]bool, self *Object) {
@@ -495,22 +536,26 @@ func objectrecursiveMetaSearch(set map[string]bool, self *Object) {
 }
 
 func objectIsEmpty(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if self, ok := args[0].(*Object); ok {
-			return Bool(len(self.Value) == 0), nil
-		}
+	if len(args) == 0 {
+		return argError("isEmpty", "expected an object argument")
 	}
-	return Nil, nil
+	self, ok := args[0].(*Object)
+	if !ok {
+		return argError("isEmpty", fmt.Sprintf("expected an object argument, got %s", args[0].Type()))
+	}
+	return Bool(len(self.Value) == 0), nil
 }
 
 func objectClear(ctx *Context, args ...Value) (Value, error) {
-	for _, val := range args {
-		if o, ok := val.(*Object); ok {
-			for k := range o.Value {
-				delete(o.Value, k)
-			}
-			return o, nil
-		}
+	if len(args) == 0 {
+		return argError("clear", "expected an object argument")
 	}
-	return Nil, nil
+	o, ok := args[0].(*Object)
+	if !ok {
+		return argError("clear", fmt.Sprintf("expected an object argument, got %s", args[0].Type()))
+	}
+	for k := range o.Value {
+		delete(o.Value, k)
+	}
+	return o, nil
 }

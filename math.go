@@ -1,6 +1,7 @@
 package vida
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -10,87 +11,91 @@ func loadFoundationMath() Value {
 	m.Value["tau"] = Float(math.Pi * 2)
 	m.Value["phi"] = Float(math.Phi)
 	m.Value["e"] = Float(math.E)
-	m.Value["inf"] = mathIntFloat(math.Inf)
-	m.Value["isNan"] = mathIsNan(math.IsNaN)
-	m.Value["isInf"] = mathIsInf(math.IsInf)
+	m.Value["inf"] = mathIntFloat("inf", math.Inf)
+	m.Value["isNan"] = mathIsNan("isNan", math.IsNaN)
+	m.Value["isInf"] = mathIsInf("isInf", math.IsInf)
 	m.Value["nan"] = mathNan(math.NaN)
-	m.Value["ceil"] = mathFromFloatToFloat(math.Ceil)
-	m.Value["floor"] = mathFromFloatToFloat(math.Floor)
-	m.Value["round"] = mathFromFloatToFloat(math.Round)
-	m.Value["roundToEven"] = mathFromFloatToFloat(math.RoundToEven)
-	m.Value["abs"] = mathFromFloatToFloat(math.Abs)
-	m.Value["sqrt"] = mathFromFloatToFloat(math.Sqrt)
-	m.Value["cbrt"] = mathFromFloatToFloat(math.Cbrt)
-	m.Value["sin"] = mathFromFloatToFloat(math.Sin)
-	m.Value["cos"] = mathFromFloatToFloat(math.Cos)
-	m.Value["tan"] = mathFromFloatToFloat(math.Tan)
-	m.Value["asin"] = mathFromFloatToFloat(math.Asin)
-	m.Value["acos"] = mathFromFloatToFloat(math.Acos)
-	m.Value["atan"] = mathFromFloatToFloat(math.Atan)
-	m.Value["atan2"] = mathFrom2FloatsToFloat(math.Atan2)
-	m.Value["sinh"] = mathFromFloatToFloat(math.Sinh)
-	m.Value["cosh"] = mathFromFloatToFloat(math.Cosh)
-	m.Value["tanh"] = mathFromFloatToFloat(math.Tanh)
-	m.Value["asinh"] = mathFromFloatToFloat(math.Asinh)
-	m.Value["acosh"] = mathFromFloatToFloat(math.Acosh)
-	m.Value["atanh"] = mathFromFloatToFloat(math.Atanh)
+	m.Value["ceil"] = mathFromFloatToFloat("ceil", math.Ceil)
+	m.Value["floor"] = mathFromFloatToFloat("floor", math.Floor)
+	m.Value["round"] = mathFromFloatToFloat("round", math.Round)
+	m.Value["roundToEven"] = mathFromFloatToFloat("roundToEven", math.RoundToEven)
+	m.Value["abs"] = mathFromFloatToFloat("abs", math.Abs)
+	m.Value["sqrt"] = mathFromFloatToFloat("sqrt", math.Sqrt)
+	m.Value["cbrt"] = mathFromFloatToFloat("cbrt", math.Cbrt)
+	m.Value["sin"] = mathFromFloatToFloat("sin", math.Sin)
+	m.Value["cos"] = mathFromFloatToFloat("cos", math.Cos)
+	m.Value["tan"] = mathFromFloatToFloat("tan", math.Tan)
+	m.Value["asin"] = mathFromFloatToFloat("asin", math.Asin)
+	m.Value["acos"] = mathFromFloatToFloat("acos", math.Acos)
+	m.Value["atan"] = mathFromFloatToFloat("atan", math.Atan)
+	m.Value["atan2"] = mathFrom2FloatsToFloat("atan2", math.Atan2)
+	m.Value["sinh"] = mathFromFloatToFloat("sinh", math.Sinh)
+	m.Value["cosh"] = mathFromFloatToFloat("cosh", math.Cosh)
+	m.Value["tanh"] = mathFromFloatToFloat("tanh", math.Tanh)
+	m.Value["asinh"] = mathFromFloatToFloat("asinh", math.Asinh)
+	m.Value["acosh"] = mathFromFloatToFloat("acosh", math.Acosh)
+	m.Value["atanh"] = mathFromFloatToFloat("atanh", math.Atanh)
 	m.Value["pow"] = mathPow(math.Pow)
-	m.Value["pow10"] = mathIntFloat(math.Pow10)
-	m.Value["mod"] = mathFrom2FloatsToFloat(math.Mod)
-	m.Value["rem"] = mathFrom2FloatsToFloat(math.Remainder)
-	m.Value["exp"] = mathFromFloatToFloat(math.Exp)
-	m.Value["exp2"] = mathFromFloatToFloat(math.Exp2)
-	m.Value["gamma"] = mathFromFloatToFloat(math.Gamma)
-	m.Value["hypot"] = mathFrom2FloatsToFloat(math.Hypot)
-	m.Value["max"] = mathFrom2FloatsToFloat(math.Max)
-	m.Value["min"] = mathFrom2FloatsToFloat(math.Min)
-	m.Value["log"] = mathFromFloatToFloat(math.Log)
-	m.Value["log2"] = mathFromFloatToFloat(math.Log2)
-	m.Value["log10"] = mathFromFloatToFloat(math.Log10)
-	m.Value["trunc"] = mathFromFloatToFloat(math.Trunc)
+	m.Value["pow10"] = mathIntFloat("pow10", math.Pow10)
+	m.Value["mod"] = mathFrom2FloatsToFloat("mod", math.Mod)
+	m.Value["rem"] = mathFrom2FloatsToFloat("rem", math.Remainder)
+	m.Value["exp"] = mathFromFloatToFloat("exp", math.Exp)
+	m.Value["exp2"] = mathFromFloatToFloat("exp2", math.Exp2)
+	m.Value["gamma"] = mathFromFloatToFloat("gamma", math.Gamma)
+	m.Value["hypot"] = mathFrom2FloatsToFloat("hypot", math.Hypot)
+	m.Value["max"] = mathFrom2FloatsToFloat("max", math.Max)
+	m.Value["min"] = mathFrom2FloatsToFloat("min", math.Min)
+	m.Value["log"] = mathFromFloatToFloat("log", math.Log)
+	m.Value["log2"] = mathFromFloatToFloat("log2", math.Log2)
+	m.Value["log10"] = mathFromFloatToFloat("log10", math.Log10)
+	m.Value["trunc"] = mathFromFloatToFloat("trunc", math.Trunc)
 	return m
 }
 
-func mathIntFloat(fn func(int) float64) NativeFunction {
+func mathIntFloat(name string, fn func(int) float64) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 0 {
-			if v, ok := args[0].(Integer); ok {
-				return Float(fn(int(v))), nil
-			}
+		if len(args) == 0 {
+			return argError(name, "expected an integer argument")
 		}
-		return Nil, nil
+		v, ok := args[0].(Integer)
+		if !ok {
+			return argError(name, fmt.Sprintf("expected an integer argument, got %s", args[0].Type()))
+		}
+		return Float(fn(int(v))), nil
 	}
 }
 
-func mathIsNan(fn func(float64) bool) NativeFunction {
+func mathIsNan(name string, fn func(float64) bool) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 0 {
-			if v, ok := args[0].(Float); ok {
-				return Bool(fn(float64(v))), nil
-			}
-			if v, ok := args[0].(Integer); ok {
-				return Bool(fn(float64(v))), nil
-			}
+		if len(args) == 0 {
+			return argError(name, "expected a numeric argument")
 		}
-		return Nil, nil
+		if v, ok := args[0].(Float); ok {
+			return Bool(fn(float64(v))), nil
+		}
+		if v, ok := args[0].(Integer); ok {
+			return Bool(fn(float64(v))), nil
+		}
+		return argError(name, fmt.Sprintf("expected a numeric argument, got %s", args[0].Type()))
 	}
 }
 
-func mathIsInf(fn func(float64, int) bool) NativeFunction {
+func mathIsInf(name string, fn func(float64, int) bool) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 1 {
-			if v, ok := args[0].(Float); ok {
-				if i, oki := args[1].(Integer); oki {
-					return Bool(fn(float64(v), int(i))), nil
-				}
-			}
-			if v, ok := args[0].(Integer); ok {
-				if i, oki := args[1].(Integer); oki {
-					return Bool(fn(float64(v), int(i))), nil
-				}
-			}
+		if len(args) < 2 {
+			return argError(name, fmt.Sprintf("expected 2 arguments (value, sign), got %d", len(args)))
 		}
-		return Nil, nil
+		i, oki := args[1].(Integer)
+		if !oki {
+			return argError(name, fmt.Sprintf("argument 2 (sign) must be an integer, got %s", args[1].Type()))
+		}
+		if v, ok := args[0].(Float); ok {
+			return Bool(fn(float64(v), int(i))), nil
+		}
+		if v, ok := args[0].(Integer); ok {
+			return Bool(fn(float64(v), int(i))), nil
+		}
+		return argError(name, fmt.Sprintf("argument 1 must be numeric, got %s", args[0].Type()))
 	}
 }
 
@@ -100,30 +105,35 @@ func mathNan(fn func() float64) NativeFunction {
 	}
 }
 
-func mathFromFloatToFloat(fn func(float64) float64) NativeFunction {
+func mathFromFloatToFloat(name string, fn func(float64) float64) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 0 {
-			if v, ok := args[0].(Float); ok {
-				return Float(fn(float64(v))), nil
-			}
-			if v, ok := args[0].(Integer); ok {
-				return Float(fn(float64(v))), nil
-			}
+		if len(args) == 0 {
+			return argError(name, "expected a numeric argument")
 		}
-		return Nil, nil
+		if v, ok := args[0].(Float); ok {
+			return Float(fn(float64(v))), nil
+		}
+		if v, ok := args[0].(Integer); ok {
+			return Float(fn(float64(v))), nil
+		}
+		return argError(name, fmt.Sprintf("expected a numeric argument, got %s", args[0].Type()))
 	}
 }
 
-func mathFrom2FloatsToFloat(fn func(float64, float64) float64) NativeFunction {
+func mathFrom2FloatsToFloat(name string, fn func(float64, float64) float64) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 1 {
-			l, okl := getFloat(args[0])
-			r, okr := getFloat(args[1])
-			if okl && okr {
-				return Float(fn(float64(l), float64(r))), nil
-			}
+		if len(args) < 2 {
+			return argError(name, fmt.Sprintf("expected 2 numeric arguments, got %d", len(args)))
 		}
-		return Nil, nil
+		l, okl := getFloat(args[0])
+		if !okl {
+			return argError(name, fmt.Sprintf("argument 1 must be numeric, got %s", args[0].Type()))
+		}
+		r, okr := getFloat(args[1])
+		if !okr {
+			return argError(name, fmt.Sprintf("argument 2 must be numeric, got %s", args[1].Type()))
+		}
+		return Float(fn(float64(l), float64(r))), nil
 	}
 }
 
@@ -139,24 +149,30 @@ func getFloat(value Value) (Float, bool) {
 
 func mathPow(fn func(float64, float64) float64) NativeFunction {
 	return func(ctx *Context, args ...Value) (Value, error) {
-		if len(args) > 1 {
-			switch l := args[0].(type) {
-			case Integer:
-				switch r := args[1].(type) {
-				case Integer:
-					return Integer(fn(float64(l), float64(r))), nil
-				case Float:
-					return Float(fn(float64(l), float64(r))), nil
-				}
-			case Float:
-				switch r := args[1].(type) {
-				case Integer:
-					return Float(fn(float64(l), float64(r))), nil
-				case Float:
-					return Float(fn(float64(l), float64(r))), nil
-				}
-			}
+		if len(args) < 2 {
+			return argError("pow", fmt.Sprintf("expected 2 numeric arguments, got %d", len(args)))
 		}
-		return Nil, nil
+		switch l := args[0].(type) {
+		case Integer:
+			switch r := args[1].(type) {
+			case Integer:
+				return Integer(fn(float64(l), float64(r))), nil
+			case Float:
+				return Float(fn(float64(l), float64(r))), nil
+			default:
+				return argError("pow", fmt.Sprintf("argument 2 must be numeric, got %s", args[1].Type()))
+			}
+		case Float:
+			switch r := args[1].(type) {
+			case Integer:
+				return Float(fn(float64(l), float64(r))), nil
+			case Float:
+				return Float(fn(float64(l), float64(r))), nil
+			default:
+				return argError("pow", fmt.Sprintf("argument 2 must be numeric, got %s", args[1].Type()))
+			}
+		default:
+			return argError("pow", fmt.Sprintf("argument 1 must be numeric, got %s", args[0].Type()))
+		}
 	}
 }

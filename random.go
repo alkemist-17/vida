@@ -2,6 +2,7 @@ package vida
 
 import (
 	cryptoRand "crypto/rand"
+	"fmt"
 	"math"
 	"math/rand/v2"
 )
@@ -57,45 +58,50 @@ func randNextF(fn func() float64) NativeFunction {
 }
 
 func randPerm(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if inputVal, ok := args[0].(Integer); ok {
-			size := int(inputVal)
-			if 0 < size && size < math.MaxInt32 {
-				xs := make([]Value, size)
-				for i := range xs {
-					xs[i] = Integer(i)
-				}
-				rand.Shuffle(size, func(i, j int) { xs[i], xs[j] = xs[j], xs[i] })
-				return &Array{Value: xs}, nil
-			}
-		}
+	if len(args) == 0 {
+		return argError("perm", "expected an integer argument")
 	}
-	return Nil, nil
+	inputVal, ok := args[0].(Integer)
+	if !ok {
+		return argError("perm", fmt.Sprintf("expected an integer argument, got %s", args[0].Type()))
+	}
+	size := int(inputVal)
+	if size <= 0 || size >= math.MaxInt32 {
+		return argError("perm", fmt.Sprintf("size must be between 1 and %d, got %d", math.MaxInt32-1, size))
+	}
+	xs := make([]Value, size)
+	for i := range xs {
+		xs[i] = Integer(i)
+	}
+	rand.Shuffle(size, func(i, j int) { xs[i], xs[j] = xs[j], xs[i] })
+	return &Array{Value: xs}, nil
 }
 
 func randShuffled(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		switch v := args[0].(type) {
-		case *Array:
-			c := v.Clone().(*Array)
-			rand.Shuffle(len(v.Value), func(i, j int) { c.Value[i], c.Value[j] = c.Value[j], c.Value[i] })
-			return c, nil
-		case *String:
-			if v.Runes == nil {
-				v.Runes = []rune(v.Value)
-			}
-			l := len(v.Runes)
-			r := make([]rune, l)
-			copy(r, v.Runes)
-			rand.Shuffle(l, func(i, j int) { r[i], r[j] = r[j], r[i] })
-			return &String{Value: string(r), Runes: r}, nil
-		case *Bytes:
-			c := v.Clone().(*Bytes)
-			rand.Shuffle(len(v.Value), func(i, j int) { c.Value[i], c.Value[j] = c.Value[j], c.Value[i] })
-			return c, nil
-		}
+	if len(args) == 0 {
+		return argError("shuffled", "expected an array, string, or bytes argument")
 	}
-	return Nil, nil
+	switch v := args[0].(type) {
+	case *Array:
+		c := v.Clone().(*Array)
+		rand.Shuffle(len(v.Value), func(i, j int) { c.Value[i], c.Value[j] = c.Value[j], c.Value[i] })
+		return c, nil
+	case *String:
+		if v.Runes == nil {
+			v.Runes = []rune(v.Value)
+		}
+		l := len(v.Runes)
+		r := make([]rune, l)
+		copy(r, v.Runes)
+		rand.Shuffle(l, func(i, j int) { r[i], r[j] = r[j], r[i] })
+		return &String{Value: string(r), Runes: r}, nil
+	case *Bytes:
+		c := v.Clone().(*Bytes)
+		rand.Shuffle(len(v.Value), func(i, j int) { c.Value[i], c.Value[j] = c.Value[j], c.Value[i] })
+		return c, nil
+	default:
+		return argError("shuffled", fmt.Sprintf("expected an array, string, or bytes argument, got %s", v.Type()))
+	}
 }
 
 func randNextU32(ctx *Context, args ...Value) (Value, error) {
@@ -160,17 +166,20 @@ func randNewChaCha8() NativeFunction {
 }
 
 func randBytes(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if inputValue, ok := args[0].(Integer); ok {
-			size := int(inputValue)
-			if 0 < size && size < math.MaxInt32 {
-				b := make([]byte, size)
-				cryptoRand.Read(b)
-				return &Bytes{Value: b}, nil
-			}
-		}
+	if len(args) == 0 {
+		return argError("bytes", "expected an integer size argument")
 	}
-	return Nil, nil
+	inputValue, ok := args[0].(Integer)
+	if !ok {
+		return argError("bytes", fmt.Sprintf("expected an integer size argument, got %s", args[0].Type()))
+	}
+	size := int(inputValue)
+	if size <= 0 || size >= math.MaxInt32 {
+		return argError("bytes", fmt.Sprintf("size must be between 1 and %d, got %d", math.MaxInt32-1, size))
+	}
+	b := make([]byte, size)
+	cryptoRand.Read(b)
+	return &Bytes{Value: b}, nil
 }
 
 func randText(ctx *Context, args ...Value) (Value, error) {
@@ -189,50 +198,66 @@ func randNanoID(ctx *Context, args ...Value) (Value, error) {
 		}
 		return &String{Value: string(nanoid), Runes: nanoid}, nil
 	case 1:
-		if size, ok := args[0].(Integer); ok && 0 < size && size <= nanoIDMaxSize {
-			b := make([]byte, size)
-			r := []rune(nanoIDDefaultAlphabet)
-			cryptoRand.Read(b)
-			nanoid := make([]rune, size)
-			for i := range size {
-				nanoid[i] = r[b[i]&63]
-			}
-			return &String{Value: string(nanoid), Runes: nanoid}, nil
+		size, ok := args[0].(Integer)
+		if !ok {
+			return argError("nanoid", fmt.Sprintf("expected an integer size argument, got %s", args[0].Type()))
 		}
+		if size <= 0 || size > nanoIDMaxSize {
+			return argError("nanoid", fmt.Sprintf("size must be between 1 and %d, got %d", nanoIDMaxSize, size))
+		}
+		b := make([]byte, size)
+		r := []rune(nanoIDDefaultAlphabet)
+		cryptoRand.Read(b)
+		nanoid := make([]rune, size)
+		for i := range size {
+			nanoid[i] = r[b[i]&63]
+		}
+		return &String{Value: string(nanoid), Runes: nanoid}, nil
+	default:
+		return argError("nanoid", fmt.Sprintf("expected 0 or 1 arguments, got %d", len(args)))
 	}
-	return Nil, nil
 }
 
 func randNanoIDCustomAlphabeth(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		alpha, okAlpha := args[0].(*String)
-		size, oksize := args[1].(Integer)
-		if okAlpha && oksize && 0 < len(alpha.Value) && len(alpha.Value) < 256 && size > 0 {
-			mask := generateMask(len(alpha.Value))
-			steps := int(math.Ceil(1.6 * float64(mask*size) / float64(len(alpha.Value))))
-			nanoid := make([]rune, size)
-			b := make([]byte, steps)
-			r := []rune(alpha.Value)
-			lenr := len(r)
-			return NativeFunction(func(ctx *Context, args ...Value) (Value, error) {
-				for {
-					cryptoRand.Read(b)
-					var j int
-					for i := range steps {
-						idx := int(b[i] & byte(mask))
-						if idx < lenr {
-							nanoid[j] = r[idx]
-							j++
-							if j == int(size) {
-								return &String{Value: string(nanoid), Runes: nanoid}, nil
-							}
-						}
+	if len(args) < 2 {
+		return argError("customNanoid", fmt.Sprintf("expected 2 arguments (alphabet, size), got %d", len(args)))
+	}
+	alpha, okAlpha := args[0].(*String)
+	if !okAlpha {
+		return argError("customNanoid", fmt.Sprintf("argument 1 (alphabet) must be a string, got %s", args[0].Type()))
+	}
+	size, oksize := args[1].(Integer)
+	if !oksize {
+		return argError("customNanoid", fmt.Sprintf("argument 2 (size) must be an integer, got %s", args[1].Type()))
+	}
+	if len(alpha.Value) == 0 || len(alpha.Value) >= 256 {
+		return argError("customNanoid", fmt.Sprintf("alphabet length must be between 1 and 255, got %d", len(alpha.Value)))
+	}
+	if size <= 0 {
+		return argError("customNanoid", fmt.Sprintf("size must be greater than 0, got %d", size))
+	}
+	mask := generateMask(len(alpha.Value))
+	steps := int(math.Ceil(1.6 * float64(mask*size) / float64(len(alpha.Value))))
+	nanoid := make([]rune, size)
+	b := make([]byte, steps)
+	r := []rune(alpha.Value)
+	lenr := len(r)
+	return NativeFunction(func(ctx *Context, args ...Value) (Value, error) {
+		for {
+			cryptoRand.Read(b)
+			var j int
+			for i := range steps {
+				idx := int(b[i] & byte(mask))
+				if idx < lenr {
+					nanoid[j] = r[idx]
+					j++
+					if j == int(size) {
+						return &String{Value: string(nanoid), Runes: nanoid}, nil
 					}
 				}
-			}), nil
+			}
 		}
-	}
-	return Nil, nil
+	}), nil
 }
 
 func generateMask(length int) Integer {

@@ -2,6 +2,7 @@ package vida
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/alkemist-17/vida/token"
@@ -171,12 +172,14 @@ func loadFoundationTime() Value {
 }
 
 func timeSleep(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		val, ok := args[0].(Integer)
-		if ok {
-			time.Sleep(time.Duration(val))
-		}
+	if len(args) == 0 {
+		return argError("time.sleep", "expected an integer duration (nanoseconds) argument")
 	}
+	val, ok := args[0].(Integer)
+	if !ok {
+		return argError("time.sleep", fmt.Sprintf("expected an integer duration argument, got %s", args[0].Type()))
+	}
+	time.Sleep(time.Duration(val))
 	return Nil, nil
 }
 
@@ -201,29 +204,36 @@ func timeNow(ctx *Context, args ...Value) (Value, error) {
 	case 0:
 		return Time(time.Now()), nil
 	case 1:
-		if f, ok := args[0].(*String); ok && f.Value == time.Local.String() {
+		f, ok := args[0].(*String)
+		if !ok {
+			return argError("time.now", fmt.Sprintf("expected a string argument, got %s", args[0].Type()))
+		}
+		if f.Value == time.Local.String() {
 			return Time(time.Now().Local()), nil
-		} else if ok && f.Value == time.UTC.String() {
+		} else if f.Value == time.UTC.String() {
 			return Time(time.Now().UTC()), nil
-		} else {
-			r := time.Now().Format(f.Value)
-			if len(r) > 0 {
-				return &String{Value: r}, nil
-			}
 		}
+		return &String{Value: time.Now().Format(f.Value)}, nil
 	case 2:
-		if f, ok := args[0].(*String); ok {
-			if l, ok := args[1].(*String); ok {
-				switch l.Value {
-				case time.Local.String():
-					return &String{Value: time.Now().Local().Format(f.Value)}, nil
-				case time.UTC.String():
-					return &String{Value: time.Now().UTC().Format(f.Value)}, nil
-				}
-			}
+		f, ok := args[0].(*String)
+		if !ok {
+			return argError("time.now", fmt.Sprintf("argument 1 (format) must be a string, got %s", args[0].Type()))
 		}
+		l, ok := args[1].(*String)
+		if !ok {
+			return argError("time.now", fmt.Sprintf("argument 2 (location) must be a string, got %s", args[1].Type()))
+		}
+		switch l.Value {
+		case time.Local.String():
+			return &String{Value: time.Now().Local().Format(f.Value)}, nil
+		case time.UTC.String():
+			return &String{Value: time.Now().UTC().Format(f.Value)}, nil
+		default:
+			return argError("time.now", fmt.Sprintf("unsupported location %q: expected %q or %q", l.Value, time.Local.String(), time.UTC.String()))
+		}
+	default:
+		return argError("time.now", fmt.Sprintf("expected 0, 1, or 2 arguments, got %d", len(args)))
 	}
-	return Nil, nil
 }
 
 func timeDate(ctx *Context, args ...Value) (Value, error) {
@@ -232,218 +242,284 @@ func timeDate(ctx *Context, args ...Value) (Value, error) {
 		return Time(time.Now()), nil
 	case 8:
 		y, ok_0 := args[0].(Integer)
-		m, ok_1 := args[1].(Integer)
-		d, ok_2 := args[2].(Integer)
-		h, ok_3 := args[3].(Integer)
-		min, ok_4 := args[4].(Integer)
-		sec, ok_5 := args[5].(Integer)
-		nsec, ok_6 := args[6].(Integer)
-		loc, ok_7 := args[7].(*String)
-		if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 {
-			if loc.Value == time.Local.String() {
-				return Time(time.Date(int(y), time.Month(m), int(d), int(h), int(min), int(sec), int(nsec), time.Local)), nil
-			} else if loc.Value == time.UTC.String() {
-				return Time(time.Date(int(y), time.Month(m), int(d), int(h), int(min), int(sec), int(nsec), time.UTC)), nil
-			}
+		if !ok_0 {
+			return argError("time.date", fmt.Sprintf("argument 1 (year) must be an integer, got %s", args[0].Type()))
 		}
+		m, ok_1 := args[1].(Integer)
+		if !ok_1 {
+			return argError("time.date", fmt.Sprintf("argument 2 (month) must be an integer, got %s", args[1].Type()))
+		}
+		d, ok_2 := args[2].(Integer)
+		if !ok_2 {
+			return argError("time.date", fmt.Sprintf("argument 3 (day) must be an integer, got %s", args[2].Type()))
+		}
+		h, ok_3 := args[3].(Integer)
+		if !ok_3 {
+			return argError("time.date", fmt.Sprintf("argument 4 (hour) must be an integer, got %s", args[3].Type()))
+		}
+		min, ok_4 := args[4].(Integer)
+		if !ok_4 {
+			return argError("time.date", fmt.Sprintf("argument 5 (minute) must be an integer, got %s", args[4].Type()))
+		}
+		sec, ok_5 := args[5].(Integer)
+		if !ok_5 {
+			return argError("time.date", fmt.Sprintf("argument 6 (second) must be an integer, got %s", args[5].Type()))
+		}
+		nsec, ok_6 := args[6].(Integer)
+		if !ok_6 {
+			return argError("time.date", fmt.Sprintf("argument 7 (nanosecond) must be an integer, got %s", args[6].Type()))
+		}
+		loc, ok_7 := args[7].(*String)
+		if !ok_7 {
+			return argError("time.date", fmt.Sprintf("argument 8 (location) must be a string, got %s", args[7].Type()))
+		}
+		if loc.Value == time.Local.String() {
+			return Time(time.Date(int(y), time.Month(m), int(d), int(h), int(min), int(sec), int(nsec), time.Local)), nil
+		} else if loc.Value == time.UTC.String() {
+			return Time(time.Date(int(y), time.Month(m), int(d), int(h), int(min), int(sec), int(nsec), time.UTC)), nil
+		}
+		return argError("time.date", fmt.Sprintf("unsupported location %q: expected %q or %q", loc.Value, time.Local.String(), time.UTC.String()))
+	default:
+		return argError("time.date", fmt.Sprintf("expected 0 or 8 arguments (year, month, day, hour, minute, second, nanosecond, location), got %d", len(args)))
 	}
-	return Nil, nil
 }
 
 func timeFormat(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if t, ok := args[0].(Time); ok {
-			if f, ok := args[1].(*String); ok {
-				return &String{Value: time.Time(t).Format(f.Value)}, nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.format", fmt.Sprintf("expected 2 arguments (time, layout), got %d", len(args)))
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.format", fmt.Sprintf("argument 1 must be a time value, got %s", args[0].Type()))
+	}
+	f, ok := args[1].(*String)
+	if !ok {
+		return argError("time.format", fmt.Sprintf("argument 2 (layout) must be a string, got %s", args[1].Type()))
+	}
+	return &String{Value: time.Time(t).Format(f.Value)}, nil
 }
 
 func timeGetYear(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Year()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getYear", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getYear", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Year()), nil
 }
 
 func timeGetMonth(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Month()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getMonth", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getMonth", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Month()), nil
 }
 
 func timeGetDay(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Day()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getDay", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getDay", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Day()), nil
 }
 
 func timeGetHours(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Hour()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getHours", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getHours", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Hour()), nil
 }
 
 func timeGetMinutes(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Minute()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getMinutes", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getMinutes", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Minute()), nil
 }
 
 func timeGetSeconds(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Second()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getSeconds", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getSeconds", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Second()), nil
 }
 
 func timeGetNanoseconds(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).Nanosecond()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.getNanoseconds", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getNanoseconds", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).Nanosecond()), nil
 }
 
 func timeGetLocation(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return &String{Value: time.Time(t).Location().String()}, nil
-		}
+	if len(args) == 0 {
+		return argError("time.getLocation", "expected a time argument")
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.getLocation", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return &String{Value: time.Time(t).Location().String()}, nil
 }
 
 func timeIn(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if zone, ok := args[0].(*String); ok {
-			location, e := time.LoadLocation(zone.Value)
-			if e != nil {
-				return Nil, nil
-			}
-			return Time(time.Now().In(location)), nil
-		}
+	if len(args) == 0 {
+		return Time(time.Now().UTC()), nil
 	}
-	return Time(time.Now().UTC()), nil
+	zone, ok := args[0].(*String)
+	if !ok {
+		return argError("time.nowIn", fmt.Sprintf("expected a string timezone argument, got %s", args[0].Type()))
+	}
+	location, e := time.LoadLocation(zone.Value)
+	if e != nil {
+		return argError("time.nowIn", e.Error())
+	}
+	return Time(time.Now().In(location)), nil
 }
 
 func timeDateIn(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if t, ok := args[0].(Time); ok {
-			if zone, ok := args[1].(*String); ok {
-				location, e := time.LoadLocation(zone.Value)
-				if e != nil {
-					return Nil, nil
-				}
-				return Time(time.Time(t).In(location)), nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.dateIn", fmt.Sprintf("expected 2 arguments (time, timezone), got %d", len(args)))
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.dateIn", fmt.Sprintf("argument 1 must be a time value, got %s", args[0].Type()))
+	}
+	zone, ok := args[1].(*String)
+	if !ok {
+		return argError("time.dateIn", fmt.Sprintf("argument 2 (timezone) must be a string, got %s", args[1].Type()))
+	}
+	location, e := time.LoadLocation(zone.Value)
+	if e != nil {
+		return argError("time.dateIn", e.Error())
+	}
+	return Time(time.Time(t).In(location)), nil
 }
 
 func timeToUnixNano(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return Integer(time.Time(t).UnixNano()), nil
-		}
+	if len(args) == 0 {
+		return argError("time.toUnixNano", "expected a time argument")
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.toUnixNano", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return Integer(time.Time(t).UnixNano()), nil
 }
 
 func timeParse(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if f, ok := args[0].(*String); ok {
-			if dt, ok := args[1].(*String); ok {
-				t, err := time.Parse(f.Value, dt.Value)
-				if err != nil {
-					return &VidaError{Message: &String{Value: err.Error()}}, nil
-				}
-				return Time(t), nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.parse", fmt.Sprintf("expected 2 arguments (layout, value), got %d", len(args)))
 	}
-	return Nil, nil
+	f, ok := args[0].(*String)
+	if !ok {
+		return argError("time.parse", fmt.Sprintf("argument 1 (layout) must be a string, got %s", args[0].Type()))
+	}
+	dt, ok := args[1].(*String)
+	if !ok {
+		return argError("time.parse", fmt.Sprintf("argument 2 (value) must be a string, got %s", args[1].Type()))
+	}
+	t, err := time.Parse(f.Value, dt.Value)
+	if err != nil {
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
+	}
+	return Time(t), nil
 }
 
 func timeSince(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if t, ok := args[0].(Time); ok {
-			return timeCreateDuration(time.Since(time.Time(t))), nil
-		}
+	if len(args) == 0 {
+		return argError("time.since", "expected a time argument")
 	}
-	return Nil, nil
-
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.since", fmt.Sprintf("expected a time argument, got %s", args[0].Type()))
+	}
+	return timeCreateDuration(time.Since(time.Time(t))), nil
 }
 
 func timeAddDuration(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if t, ok := args[0].(Time); ok {
-			if duration, ok := args[1].(Integer); ok {
-				return Time(time.Time(t).Add(time.Duration(duration))), nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.add", fmt.Sprintf("expected 2 arguments (time, durationNanos), got %d", len(args)))
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.add", fmt.Sprintf("argument 1 must be a time value, got %s", args[0].Type()))
+	}
+	duration, ok := args[1].(Integer)
+	if !ok {
+		return argError("time.add", fmt.Sprintf("argument 2 (duration) must be an integer, got %s", args[1].Type()))
+	}
+	return Time(time.Time(t).Add(time.Duration(duration))), nil
 }
 
 func timeSub(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if t, ok := args[0].(Time); ok {
-			if u, ok := args[1].(Time); ok {
-				return timeCreateDuration(time.Time(t).Sub(time.Time(u))), nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.sub", fmt.Sprintf("expected 2 time arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.sub", fmt.Sprintf("argument 1 must be a time value, got %s", args[0].Type()))
+	}
+	u, ok := args[1].(Time)
+	if !ok {
+		return argError("time.sub", fmt.Sprintf("argument 2 must be a time value, got %s", args[1].Type()))
+	}
+	return timeCreateDuration(time.Time(t).Sub(time.Time(u))), nil
 }
 
 func timeAfter(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if t, ok := args[0].(Time); ok {
-			if u, ok := args[1].(Time); ok {
-				return Bool(time.Time(t).After(time.Time(u))), nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.after", fmt.Sprintf("expected 2 time arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.after", fmt.Sprintf("argument 1 must be a time value, got %s", args[0].Type()))
+	}
+	u, ok := args[1].(Time)
+	if !ok {
+		return argError("time.after", fmt.Sprintf("argument 2 must be a time value, got %s", args[1].Type()))
+	}
+	return Bool(time.Time(t).After(time.Time(u))), nil
 }
 
 func timeBefore(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if t, ok := args[0].(Time); ok {
-			if u, ok := args[1].(Time); ok {
-				return Bool(time.Time(t).Before(time.Time(u))), nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("time.before", fmt.Sprintf("expected 2 time arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	t, ok := args[0].(Time)
+	if !ok {
+		return argError("time.before", fmt.Sprintf("argument 1 must be a time value, got %s", args[0].Type()))
+	}
+	u, ok := args[1].(Time)
+	if !ok {
+		return argError("time.before", fmt.Sprintf("argument 2 must be a time value, got %s", args[1].Type()))
+	}
+	return Bool(time.Time(t).Before(time.Time(u))), nil
 }
 
 func timeCreateDuration(v time.Duration) *Object {

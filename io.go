@@ -29,9 +29,13 @@ func loadFoundationFile() Value {
 	m.Value["O_APPEND"] = Integer(os.O_APPEND)
 	m.Value["O_TRUNC"] = Integer(os.O_TRUNC)
 	m.Value["O_EXCL"] = Integer(os.O_EXCL)
+
+	// Cursor
 	m.Value["SEEK_SET"] = Integer(0)
 	m.Value["SEEK_CUR"] = Integer(1)
 	m.Value["SEEK_END"] = Integer(2)
+
+	// Permissions
 	m.Value["PERM_DEFAULT"] = Integer(0o644)
 	m.Value["PERM_DIR"] = Integer(0o755)
 	return m

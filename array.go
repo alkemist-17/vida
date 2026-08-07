@@ -201,186 +201,243 @@ func loadFoundationArray() Value {
 }
 
 func arrayConcat(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		var size int
-		for _, v := range args {
-			if xs, ok := v.(*Array); ok {
-				size += len(xs.Value)
-			}
-		}
-		if size < 0 || size >= MaxMemSize {
-			return Nil, ErrMaxMemSize
-		}
-		result := make([]Value, 0, size)
-		for _, v := range args {
-			if xs, ok := v.(*Array); ok {
-				result = append(result, xs.Value...)
-			}
-		}
-		return &Array{Value: result}, nil
+	if len(args) < 2 {
+		return argError("concat", fmt.Sprintf("expected at least 2 array arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	var size int
+	for i, v := range args {
+		xs, ok := v.(*Array)
+		if !ok {
+			return argError("concat", fmt.Sprintf("argument %d must be an array, got %s", i+1, v.Type()))
+		}
+		size += len(xs.Value)
+	}
+	if size < 0 || size >= MaxMemSize {
+		return Nil, ErrMaxMemSize
+	}
+	result := make([]Value, 0, size)
+	for _, v := range args {
+		xs := v.(*Array)
+		result = append(result, xs.Value...)
+	}
+	return &Array{Value: result}, nil
 }
 
 func arrayRandomElement(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		switch val := args[0].(type) {
-		case *Array:
-			return val.Value[rand.Int()%len(val.Value)], nil
-		case *String:
-			if val.Runes == nil {
-				val.Runes = []rune(val.Value)
-			}
-			return &String{Value: string(val.Runes[rand.Int()%len(val.Runes)])}, nil
-		case *Bytes:
-			return Integer(val.Value[rand.Int()%len(val.Value)]), nil
-		}
+	if len(args) == 0 {
+		return argError("randomElement", "expected an array, string, or bytes argument")
 	}
-	return Nil, nil
+	switch val := args[0].(type) {
+	case *Array:
+		if len(val.Value) == 0 {
+			return argError("randomElement", "cannot pick a random element from an empty array")
+		}
+		return val.Value[rand.Int()%len(val.Value)], nil
+	case *String:
+		if val.Runes == nil {
+			val.Runes = []rune(val.Value)
+		}
+		if len(val.Runes) == 0 {
+			return argError("randomElement", "cannot pick a random element from an empty string")
+		}
+		return &String{Value: string(val.Runes[rand.Int()%len(val.Runes)])}, nil
+	case *Bytes:
+		if len(val.Value) == 0 {
+			return argError("randomElement", "cannot pick a random element from empty bytes")
+		}
+		return Integer(val.Value[rand.Int()%len(val.Value)]), nil
+	default:
+		return argError("randomElement", fmt.Sprintf("expected an array, string, or bytes argument, got %s", val.Type()))
+	}
 }
 
 func arrayClear(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			xs.Value = xs.Value[:0]
-			return xs, nil
-		}
+	if len(args) == 0 {
+		return argError("clear", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("clear", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	xs.Value = xs.Value[:0]
+	return xs, nil
 }
 
 func arrayCap(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			return Integer(cap(xs.Value)), nil
-		}
+	if len(args) == 0 {
+		return argError("cap", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("cap", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	return Integer(cap(xs.Value)), nil
 }
 
 func arrayOverlaps(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		a, okA := args[0].(*Array)
-		b, okB := args[1].(*Array)
-		if okA && okB {
-			return Bool(overlapsBackingArray(a.Value, b.Value)), nil
-		}
+	if len(args) < 2 {
+		return argError("overlaps", fmt.Sprintf("expected 2 array arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	a, okA := args[0].(*Array)
+	if !okA {
+		return argError("overlaps", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	b, okB := args[1].(*Array)
+	if !okB {
+		return argError("overlaps", fmt.Sprintf("argument 2 must be an array, got %s", args[1].Type()))
+	}
+	return Bool(overlapsBackingArray(a.Value, b.Value)), nil
 }
 
 func arrayGrow(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		xs, ok := args[0].(*Array)
-		size, oksize := args[1].(Integer)
-		if ok && oksize && 0 <= size && size < MaxMemSize {
-			xs.Value = slices.Grow(xs.Value, int(size))
-			return xs, nil
-		}
+	if len(args) < 2 {
+		return argError("grow", fmt.Sprintf("expected 2 arguments (array, size), got %d", len(args)))
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("grow", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	size, oksize := args[1].(Integer)
+	if !oksize {
+		return argError("grow", fmt.Sprintf("argument 2 (size) must be an integer, got %s", args[1].Type()))
+	}
+	if size < 0 || size >= MaxMemSize {
+		return argError("grow", fmt.Sprintf("size must be between 0 and %d, got %d", MaxMemSize, size))
+	}
+	xs.Value = slices.Grow(xs.Value, int(size))
+	return xs, nil
 }
 
 func arrayIndex(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if xs, ok := args[0].(*Array); ok {
-			for i, v := range xs.Value {
-				if v.Equals(ctx, args[1]) {
-					return Integer(i), nil
-				}
-			}
+	if len(args) < 2 {
+		return argError("index", fmt.Sprintf("expected 2 arguments (array, value), got %d", len(args)))
+	}
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("index", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	for i, v := range xs.Value {
+		if v.Equals(ctx, args[1]) {
+			return Integer(i), nil
 		}
 	}
-	return Nil, nil
+	return Nil, nil // not found is a valid result, not an error
 }
 
 func arrayInsert(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
-		if xs, ok := args[0].(*Array); ok {
-			if idx, ok := args[1].(Integer); ok {
-				if idx < 0 {
-					idx = idx + Integer(len(xs.Value))
-				}
-				if idx >= 0 && idx <= Integer(len(xs.Value)) {
-					xs.Value = slices.Insert(xs.Value, int(idx), args[2:]...)
-					return xs, nil
-				}
-			}
-		}
+	if len(args) < 3 {
+		return argError("insert", fmt.Sprintf("expected at least 3 arguments (array, index, value...), got %d", len(args)))
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("insert", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	idx, ok := args[1].(Integer)
+	if !ok {
+		return argError("insert", fmt.Sprintf("argument 2 (index) must be an integer, got %s", args[1].Type()))
+	}
+	if idx < 0 {
+		idx = idx + Integer(len(xs.Value))
+	}
+	if idx < 0 || idx > Integer(len(xs.Value)) {
+		return argError("insert", fmt.Sprintf("index %d out of range for array of length %d", args[1], len(xs.Value)))
+	}
+	xs.Value = slices.Insert(xs.Value, int(idx), args[2:]...)
+	return xs, nil
 }
 
 func arrayReverse(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			slices.Reverse(xs.Value)
-			return xs, nil
-		}
+	if len(args) == 0 {
+		return argError("reverse", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("reverse", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	slices.Reverse(xs.Value)
+	return xs, nil
 }
 
 func arrayRemove(ctx *Context, args ...Value) (Value, error) {
+	if len(args) != 2 && len(args) != 3 {
+		return argError("remove", fmt.Sprintf("expected 2 arguments (array, index) or 3 arguments (array, start, end), got %d", len(args)))
+	}
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("remove", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	if len(xs.Value) == 0 {
+		return argError("remove", "cannot remove from an empty array")
+	}
 	switch len(args) {
 	case 2:
-		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
-			if i, ok := args[1].(Integer); ok {
-				if i < 0 {
-					i = i + Integer(len(xs.Value))
-				}
-				if 0 <= i && i < Integer(len(xs.Value)) {
-					val := xs.Value[i]
-					xs.Value = slices.Delete(xs.Value, int(i), int(i+1))
-					return val, nil
-				}
-			}
+		i, ok := args[1].(Integer)
+		if !ok {
+			return argError("remove", fmt.Sprintf("argument 2 (index) must be an integer, got %s", args[1].Type()))
 		}
-	case 3:
-		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
-			if i, ok := args[1].(Integer); ok {
-				if j, ok := args[2].(Integer); ok {
-					if i < 0 {
-						i = i + Integer(len(xs.Value))
-					}
-					if j < 0 {
-						j = j + Integer(len(xs.Value))
-					}
-					if 0 <= i && i < Integer(len(xs.Value)) && 0 <= j && j <= Integer(len(xs.Value)) && i < j {
-						val := make([]Value, len(xs.Value[i:j]))
-						copy(val, xs.Value[i:j])
-						xs.Value = slices.Delete(xs.Value, int(i), int(j))
-						return &Array{Value: val}, nil
-					}
-				}
-			}
+		if i < 0 {
+			i = i + Integer(len(xs.Value))
 		}
+		if i < 0 || i >= Integer(len(xs.Value)) {
+			return argError("remove", fmt.Sprintf("index %d out of range for array of length %d", args[1], len(xs.Value)))
+		}
+		val := xs.Value[i]
+		xs.Value = slices.Delete(xs.Value, int(i), int(i+1))
+		return val, nil
+	default: // case 3
+		i, ok := args[1].(Integer)
+		if !ok {
+			return argError("remove", fmt.Sprintf("argument 2 (start) must be an integer, got %s", args[1].Type()))
+		}
+		j, ok := args[2].(Integer)
+		if !ok {
+			return argError("remove", fmt.Sprintf("argument 3 (end) must be an integer, got %s", args[2].Type()))
+		}
+		if i < 0 {
+			i = i + Integer(len(xs.Value))
+		}
+		if j < 0 {
+			j = j + Integer(len(xs.Value))
+		}
+		if i < 0 || i >= Integer(len(xs.Value)) || j < 0 || j > Integer(len(xs.Value)) || i >= j {
+			return argError("remove", fmt.Sprintf("invalid range [%d:%d] for array of length %d", args[1], args[2], len(xs.Value)))
+		}
+		val := make([]Value, len(xs.Value[i:j]))
+		copy(val, xs.Value[i:j])
+		xs.Value = slices.Delete(xs.Value, int(i), int(j))
+		return &Array{Value: val}, nil
 	}
-	return Nil, nil
 }
 
 func arrayReversed(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			vals := make([]Value, len(xs.Value))
-			copy(vals, xs.Value)
-			slices.Reverse(vals)
-			return &Array{Value: vals}, nil
-		}
+	if len(args) == 0 {
+		return argError("reversed", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("reversed", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	vals := make([]Value, len(xs.Value))
+	copy(vals, xs.Value)
+	slices.Reverse(vals)
+	return &Array{Value: vals}, nil
 }
 
 func arrayPop(ctx *Context, args ...Value) (Value, error) {
-	if len(args) == 1 {
-		if xs, ok := args[0].(*Array); ok && len(xs.Value) > 0 {
-			lastIndex := len(xs.Value) - 1
-			val := xs.Value[lastIndex]
-			xs.Value = xs.Value[:lastIndex]
-			return val, nil
-		}
+	if len(args) != 1 {
+		return argError("pop", fmt.Sprintf("expected 1 argument (array), got %d", len(args)))
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("pop", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	if len(xs.Value) > 0 {
+		lastIndex := len(xs.Value) - 1
+		val := xs.Value[lastIndex]
+		xs.Value = xs.Value[:lastIndex]
+		return val, nil
+	}
+	return argError("pop", "cannot pop from an empty array")
 }
 
 func arrayContains(ctx *Context, args ...Value) (Value, error) {
@@ -396,122 +453,148 @@ func arrayContains(ctx *Context, args ...Value) (Value, error) {
 }
 
 func arrayToObject(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			o := &Object{Value: make(map[string]Value, len(xs.Value))}
-			for i, v := range xs.Value {
-				o.Value[Integer(i).ObjectKey()] = v
-			}
-			return o, nil
-		}
+	if len(args) == 0 {
+		return argError("toObject", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("toObject", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	o := &Object{Value: make(map[string]Value, len(xs.Value))}
+	for i, v := range xs.Value {
+		o.Value[Integer(i).ObjectKey()] = v
+	}
+	return o, nil
 }
 
 func arrayIsArray(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		_, ok := args[0].(*Array)
-		return Bool(ok), nil
+	if len(args) == 0 {
+		return argError("isArray", "expected 1 argument")
 	}
-	return Nil, nil
+	_, ok := args[0].(*Array)
+	return Bool(ok), nil
 }
 
 func arrayIsEmpty(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			return Bool(len(xs.Value) == 0), nil
-		}
+	if len(args) == 0 {
+		return argError("isEmpty", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("isEmpty", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	return Bool(len(xs.Value) == 0), nil
 }
 
 func arrayPairs(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			entries := make([]Value, len(xs.Value))
-			for i, v := range xs.Value {
-				pair := &Array{Value: make([]Value, 0, 2)}
-				pair.Value = append(pair.Value, Integer(i), v)
-				entries[i] = pair
-			}
-			return &Array{Value: entries}, nil
-		}
+	if len(args) == 0 {
+		return argError("pairs", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("pairs", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	entries := make([]Value, len(xs.Value))
+	for i, v := range xs.Value {
+		pair := &Array{Value: make([]Value, 0, 2)}
+		pair.Value = append(pair.Value, Integer(i), v)
+		entries[i] = pair
+	}
+	return &Array{Value: entries}, nil
 }
 
 func arrayCompact(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			xs.Value = slices.Compact(xs.Value)
-			return xs, nil
-		}
+	if len(args) == 0 {
+		return argError("compact", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("compact", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	xs.Value = slices.Compact(xs.Value)
+	return xs, nil
 }
 
 func arrayCompacted(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			cloned := xs.Clone().(*Array)
-			cloned.Value = slices.Compact(cloned.Value)
-			return cloned, nil
-		}
+	if len(args) == 0 {
+		return argError("compacted", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("compacted", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	cloned := xs.Clone().(*Array)
+	cloned.Value = slices.Compact(cloned.Value)
+	return cloned, nil
 }
 
 func arrayChunk(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if xs, ok := args[0].(*Array); ok {
-			if len(xs.Value) == 0 {
-				return &Array{}, nil
-			}
-			if n, ok := args[1].(Integer); ok && n >= 1 {
-				count := (len(xs.Value) + int(n) - 1) / int(n)
-				container := make([]Value, 0, count)
-				for v := range slices.Chunk(xs.Value, int(n)) {
-					container = append(container, &Array{Value: v})
-				}
-				return &Array{Value: container}, nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("chunk", fmt.Sprintf("expected 2 arguments (array, size), got %d", len(args)))
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("chunk", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	if len(xs.Value) == 0 {
+		return &Array{}, nil
+	}
+	n, ok := args[1].(Integer)
+	if !ok {
+		return argError("chunk", fmt.Sprintf("argument 2 (size) must be an integer, got %s", args[1].Type()))
+	}
+	if n < 1 {
+		return argError("chunk", fmt.Sprintf("chunk size must be at least 1, got %d", n))
+	}
+	count := (len(xs.Value) + int(n) - 1) / int(n)
+	container := make([]Value, 0, count)
+	for v := range slices.Chunk(xs.Value, int(n)) {
+		container = append(container, &Array{Value: v})
+	}
+	return &Array{Value: container}, nil
 }
 
 func arrayClip(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if xs, ok := args[0].(*Array); ok {
-			xs.Value = slices.Clip(xs.Value)
-			return xs, nil
-		}
+	if len(args) == 0 {
+		return argError("clip", "expected an array argument")
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("clip", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
+	}
+	xs.Value = slices.Clip(xs.Value)
+	return xs, nil
 }
 
 func arrayReplace(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 2 {
-		if xs, ok := args[0].(*Array); ok {
-			i, iok := args[1].(Integer)
-			j, jok := args[2].(Integer)
-			ll, rr := int(i), int(j)
-			if iok && jok {
-				xsLen := len(xs.Value)
-				if ll < 0 {
-					ll += xsLen
-				}
-				if rr < 0 {
-					rr += xsLen
-				}
-				if 0 <= ll && ll <= xsLen && 0 <= rr && rr <= xsLen && ll < rr {
-					xs.Value = slices.Replace(xs.Value, ll, rr, args[3:]...)
-					return xs, nil
-				}
-			}
-		}
+	if len(args) < 3 {
+		return argError("replace", fmt.Sprintf("expected at least 3 arguments (array, start, end, value...), got %d", len(args)))
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("replace", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	i, iok := args[1].(Integer)
+	if !iok {
+		return argError("replace", fmt.Sprintf("argument 2 (start) must be an integer, got %s", args[1].Type()))
+	}
+	j, jok := args[2].(Integer)
+	if !jok {
+		return argError("replace", fmt.Sprintf("argument 3 (end) must be an integer, got %s", args[2].Type()))
+	}
+	ll, rr := int(i), int(j)
+	xsLen := len(xs.Value)
+	if ll < 0 {
+		ll += xsLen
+	}
+	if rr < 0 {
+		rr += xsLen
+	}
+	if ll < 0 || ll > xsLen || rr < 0 || rr > xsLen || ll >= rr {
+		return argError("replace", fmt.Sprintf("invalid range [%d:%d] for array of length %d", i, j, xsLen))
+	}
+	xs.Value = slices.Replace(xs.Value, ll, rr, args[3:]...)
+	return xs, nil
 }
 
 func overlapsBackingArray[T any](a, b []T) bool {
@@ -546,7 +629,7 @@ type ord interface {
 func genericSortBy[T ord](xs *[]Value, extract func(Value) (T, error)) error {
 	for i, v := range *xs {
 		if _, err := extract(v); err != nil {
-			return fmt.Errorf("sort: element[%d] type mismatch: %w", i, err)
+			return fmt.Errorf("sort: element %d %s", i, err.Error())
 		}
 
 	}
@@ -561,7 +644,7 @@ func genericSortBy[T ord](xs *[]Value, extract func(Value) (T, error)) error {
 func extractInteger(v Value) (int64, error) {
 	i, ok := v.(Integer)
 	if !ok {
-		return 0, fmt.Errorf("expected Integer, got %T", v)
+		return 0, fmt.Errorf("expected an integer, got %s", v.Type())
 	}
 	return int64(i), nil
 }
@@ -569,7 +652,7 @@ func extractInteger(v Value) (int64, error) {
 func extractFloat(v Value) (float64, error) {
 	f, ok := v.(Float)
 	if !ok {
-		return 0, fmt.Errorf("expected Float, got %T", v)
+		return 0, fmt.Errorf("expected a float, got %s", v.Type())
 	}
 	return float64(f), nil
 }
@@ -577,19 +660,19 @@ func extractFloat(v Value) (float64, error) {
 func extractString(v Value) (string, error) {
 	s, ok := v.(*String)
 	if !ok {
-		return EmptyString, fmt.Errorf("expected *String, got %T", v)
+		return EmptyString, fmt.Errorf("expected a string, got %s", v.Type())
 	}
 	return s.Value, nil
 }
 
 func arraySort(ctx *Context, args ...Value) (Value, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("sort: expected array argument")
+		return argError("sort", "expected an array argument")
 	}
 
 	xs, ok := args[0].(*Array)
 	if !ok {
-		return nil, fmt.Errorf("sort: expected array argument")
+		return argError("sort", fmt.Sprintf("expected an array argument, got %s", args[0].Type()))
 	}
 
 	if len(xs.Value) <= 1 {
@@ -601,65 +684,76 @@ func arraySort(ctx *Context, args ...Value) (Value, error) {
 	switch sample.(type) {
 	case Integer:
 		if err := genericSortBy(&xs.Value, extractInteger); err != nil {
-			return nil, err
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	case Float:
 		if err := genericSortBy(&xs.Value, extractFloat); err != nil {
-			return nil, err
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	case *String:
 		if err := genericSortBy(&xs.Value, extractString); err != nil {
-			return nil, err
+			return &VidaError{Message: &String{Value: err.Error()}}, nil
 		}
 	default:
-		return nil, fmt.Errorf("std.array.sort: unsupported type for native sort: %v", sample.Type())
+		return argError("sort", fmt.Sprintf("unsupported element type %q: sort only supports arrays of all-integer, all-float, or all-string elements (use sortBy for custom comparisons)", sample.Type()))
 	}
 
 	return xs, nil
 }
 
 func arrayRepeat(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if xs, ok := args[0].(*Array); ok {
-			if t, ok := args[1].(Integer); ok && t >= 0 && t < MaxMemSize {
-				return &Array{Value: slices.Repeat(xs.Value, int(t))}, nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("repeat", fmt.Sprintf("expected 2 arguments (array, count), got %d", len(args)))
 	}
-	return Nil, nil
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("repeat", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	t, ok := args[1].(Integer)
+	if !ok {
+		return argError("repeat", fmt.Sprintf("argument 2 (count) must be an integer, got %s", args[1].Type()))
+	}
+	if t < 0 || t >= MaxMemSize {
+		return argError("repeat", fmt.Sprintf("count must be between 0 and %d, got %d", MaxMemSize, t))
+	}
+	return &Array{Value: slices.Repeat(xs.Value, int(t))}, nil
 }
 
 func arraySortWithCompareVidaFunction(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if xs, ok := args[0].(*Array); ok {
-			if compareFn, ok := args[1].(*Function); ok {
-				th := ctx.getInternalThread(compareFn)
-				vm := &VM{th, ctx}
-				slices.SortFunc(xs.Value, func(a, b Value) int {
-					if err := vm.runThread(0, 0, true, a, b); err == nil {
-						v := vm.Channel
-						vm.Reset(compareFn)
-						switch t := v.(type) {
-						case Integer:
-							return int(t)
-						case Bool:
-							var r int
-							if t {
-								r = -1
-							} else {
-								r = 1
-							}
-							return r
-						}
-					}
-					return 0
-				})
-				ctx.releaseInternalThread()
-				return xs, nil
+	if len(args) < 2 {
+		return argError("sortBy", fmt.Sprintf("expected 2 arguments (array, compareFn), got %d", len(args)))
+	}
+	xs, ok := args[0].(*Array)
+	if !ok {
+		return argError("sortBy", fmt.Sprintf("argument 1 must be an array, got %s", args[0].Type()))
+	}
+	compareFn, ok := args[1].(*Function)
+	if !ok {
+		return argError("sortBy", fmt.Sprintf("argument 2 (compareFn) must be a function, got %s", args[1].Type()))
+	}
+	th := ctx.getInternalThread(compareFn)
+	vm := &VM{th, ctx}
+	slices.SortFunc(xs.Value, func(a, b Value) int {
+		if err := vm.runThread(0, 0, true, a, b); err == nil {
+			v := vm.Channel
+			vm.Reset(compareFn)
+			switch t := v.(type) {
+			case Integer:
+				return int(t)
+			case Bool:
+				var r int
+				if t {
+					r = -1
+				} else {
+					r = 1
+				}
+				return r
 			}
 		}
-	}
-	return Nil, nil
+		return 0
+	})
+	ctx.releaseInternalThread()
+	return xs, nil
 }
 
 func collectionProcessView(ctx *Context, args ...Value) (Value, error) {

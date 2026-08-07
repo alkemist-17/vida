@@ -1,7 +1,7 @@
 package vida
 
 import (
-	"errors"
+	"fmt"
 )
 
 func loadFoundationCoroutine() Value {
@@ -29,32 +29,61 @@ func loadFoundationCoroutine() Value {
 
 func coNewThread(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
+	if l == 0 {
+		return argError("co.new", "expected a function argument")
+	}
+	fn, okFn := args[0].(*Function)
+	if !okFn {
+		return argError("co.new", fmt.Sprintf("argument 1 must be a function, got %s", args[0].Type()))
+	}
 	switch l {
 	case 1:
-		if fn, ok := args[0].(*Function); ok {
-			return coNewThreadWithSizeControl(fn, ctx.script, minFrameSize, minStackSize), nil
-		}
+		return coNewThreadWithSizeControl(fn, ctx.script, minFrameSize, minStackSize), nil
 	case 2:
-		fn, okFn := args[0].(*Function)
-		frameSize, ok := args[1].(Integer)
-		if okFn && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize {
+		if frameSize, ok := args[1].(Integer); ok {
+			if frameSize < minFrameSize || frameSize > maxFrameSize {
+				return argError("co.new", fmt.Sprintf("frame size must be between %d and %d, got %d", minFrameSize, maxFrameSize, frameSize))
+			}
 			return coNewThreadWithSizeControl(fn, ctx.script, frameSize, minStackSize), nil
 		}
 		config, okConfig := args[1].(*Object)
+		if !okConfig {
+			return argError("co.new", fmt.Sprintf("argument 2 must be an integer (frame size) or an object ({frame, stack}), got %s", args[1].Type()))
+		}
 		fSize, okFSize := config.Value["frame"].(Integer)
+		if !okFSize {
+			return argError("co.new", "config object must have an integer 'frame' field")
+		}
 		sSize, okSSize := config.Value["stack"].(Integer)
-		if okFn && okConfig && okFSize && okSSize && minFrameSize <= fSize && fSize <= maxFrameSize && minStackSize <= sSize && sSize <= maxStackSize {
-			return coNewThreadWithSizeControl(fn, ctx.script, fSize, sSize), nil
+		if !okSSize {
+			return argError("co.new", "config object must have an integer 'stack' field")
 		}
+		if fSize < minFrameSize || fSize > maxFrameSize {
+			return argError("co.new", fmt.Sprintf("frame size must be between %d and %d, got %d", minFrameSize, maxFrameSize, fSize))
+		}
+		if sSize < minStackSize || sSize > maxStackSize {
+			return argError("co.new", fmt.Sprintf("stack size must be between %d and %d, got %d", minStackSize, maxStackSize, sSize))
+		}
+		return coNewThreadWithSizeControl(fn, ctx.script, fSize, sSize), nil
 	case 3:
-		fn, okFn := args[0].(*Function)
 		frameSize, okFS := args[1].(Integer)
-		stackSize, ok := args[2].(Integer)
-		if okFn && okFS && ok && minFrameSize <= frameSize && frameSize <= maxFrameSize && minStackSize <= stackSize && stackSize <= maxStackSize {
-			return coNewThreadWithSizeControl(fn, ctx.script, frameSize, stackSize), nil
+		if !okFS {
+			return argError("co.new", fmt.Sprintf("argument 2 (frame size) must be an integer, got %s", args[1].Type()))
 		}
+		stackSize, ok := args[2].(Integer)
+		if !ok {
+			return argError("co.new", fmt.Sprintf("argument 3 (stack size) must be an integer, got %s", args[2].Type()))
+		}
+		if frameSize < minFrameSize || frameSize > maxFrameSize {
+			return argError("co.new", fmt.Sprintf("frame size must be between %d and %d, got %d", minFrameSize, maxFrameSize, frameSize))
+		}
+		if stackSize < minStackSize || stackSize > maxStackSize {
+			return argError("co.new", fmt.Sprintf("stack size must be between %d and %d, got %d", minStackSize, maxStackSize, stackSize))
+		}
+		return coNewThreadWithSizeControl(fn, ctx.script, frameSize, stackSize), nil
+	default:
+		return argError("co.new", fmt.Sprintf("expected 1 to 3 arguments, got %d", l))
 	}
-	return Nil, errors.New("expected a function as first argument")
 }
 
 func coGetThreadState(ctx *Context, args ...Value) (Value, error) {
@@ -64,7 +93,7 @@ func coGetThreadState(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.state", "expected a thread argument")
 }
 
 func coRunThread(ctx *Context, args ...Value) (Value, error) {
@@ -88,7 +117,7 @@ func coRunThread(ctx *Context, args ...Value) (Value, error) {
 			return Nil, ErrResumingNotSuspendedThread
 		}
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.run", "expected a thread argument")
 }
 
 func coSuspendThread(ctx *Context, args ...Value) (Value, error) {
@@ -110,21 +139,24 @@ func coGetCurrentRunningThread(ctx *Context, args ...Value) (Value, error) {
 }
 
 func coRecycleThread(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		if th, ok := args[0].(*Thread); ok && th.State == Done {
-			if fn, okfn := args[1].(*Function); okfn {
-				th.Channel = Nil
-				th.Script.MainFunction = fn
-				th.State = Ready
-				return th, nil
-			}
-		} else if !ok {
-			return Nil, ErrNotThread
-		} else if th.State != Done {
-			return Nil, ErrRecyclingThread
-		}
+	if len(args) < 2 {
+		return Nil, runtimeErrorf("co.recycle", "expected 2 arguments (thread, function), got %d", len(args))
 	}
-	return Nil, nil
+	th, ok := args[0].(*Thread)
+	if !ok {
+		return Nil, ErrNotThread
+	}
+	if th.State != Done {
+		return Nil, ErrRecyclingThread
+	}
+	fn, okfn := args[1].(*Function)
+	if !okfn {
+		return Nil, runtimeErrorf("co.recycle", "argument 2 must be a function, got %s", args[1].Type())
+	}
+	th.Channel = Nil
+	th.Script.MainFunction = fn
+	th.State = Ready
+	return th, nil
 }
 
 func coCompleteThread(ctx *Context, args ...Value) (Value, error) {
@@ -140,7 +172,7 @@ func coCompleteThread(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.complete", "expected a thread argument")
 }
 
 func coIsActive(ctx *Context, args ...Value) (Value, error) {
@@ -150,7 +182,7 @@ func coIsActive(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.isActive", "expected a thread argument")
 }
 
 func coIsDone(ctx *Context, args ...Value) (Value, error) {
@@ -160,7 +192,7 @@ func coIsDone(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.isDone", "expected a thread argument")
 }
 
 func coIsMain(ctx *Context, args ...Value) (Value, error) {
@@ -174,7 +206,7 @@ func coGetStackSize(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.getStackSize", "expected a thread argument")
 }
 
 func coGetFrameSize(ctx *Context, args ...Value) (Value, error) {
@@ -184,7 +216,7 @@ func coGetFrameSize(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.getFrameSize", "expected a thread argument")
 }
 
 func coValue(ctx *Context, args ...Value) (Value, error) {
@@ -194,7 +226,7 @@ func coValue(ctx *Context, args ...Value) (Value, error) {
 		}
 		return Nil, ErrNotThread
 	}
-	return Nil, nil
+	return Nil, runtimeErrorf("co.value", "expected a thread argument")
 }
 
 func coNewThreadWithSizeControl(fn *Function, script *Script, frameSize, stackSize Integer) *Thread {

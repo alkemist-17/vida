@@ -302,7 +302,7 @@ func statToValue(info os.FileInfo) Value {
 	return &Object{Value: map[string]Value{
 		"name":    &String{Value: info.Name()},
 		"size":    Integer(info.Size()),
-		"isDir":   boolToValue(info.IsDir()),
+		"isDir":   Bool(info.IsDir()),
 		"mode":    Integer(info.Mode().Perm()),
 		"modTime": Integer(info.ModTime().UnixMilli()),
 		"type":    &String{Value: info.Mode().Type().String()},

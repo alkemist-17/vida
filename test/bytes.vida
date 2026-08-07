@@ -112,8 +112,8 @@ assert(A.len() == 3)
 assert(bytes::timingSafeEqual(A, B))
 assert(not(A == B))                          // distinct instances
 
-// From array — non-integer elements are silently ignored
-A = bytes::new([0xAA, 0xBB, nil, true, false, "x", 0xCC])
+// From array
+A = bytes::new([0xAA, 0xBB, 0xCC])
 assert(A.len() == 3)
 assert(A[0] == 0xAA and A[1] == 0xBB and A[2] == 0xCC)
 
@@ -141,7 +141,7 @@ assert(bytes::timingSafeEqual(A, B))
 assert(not(A == B))
 
 // From array — same filtering as new
-A = bytes::from([0x01, 0x02, nil, 0x03])
+A = bytes::from([0x01, 0x02, 0x03])
 assert(A.len() == 3 and A[2] == 0x03)
 
 
@@ -888,7 +888,7 @@ assert(nilUUID.len() == 36)
 
 // Max UUID (non-bytes argument)
 var maxUUID = bytes::uuid("not-16-bytes")
-assert(maxUUID == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
+assert(maxUUID != "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF" and maxUUID.isError())
 
 // Random UUID structure
 var randUUID = bytes::uuid()

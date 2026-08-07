@@ -37,7 +37,7 @@ for in N {print(nanoid())}
 for in N {assert(nanoid().len() == size)}
 
 assert(rand::uuid(nil) == "00000000-0000-0000-0000-000000000000")
-assert(rand::uuid(422) == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
+assert(rand::uuid(422).isError())
 
 var uuid = rand::uuid()
 var dash = "-"

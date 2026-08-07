@@ -224,192 +224,221 @@ func loadFoundationBytes() Value {
 
 func bytesCreateNewBytesValue(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
-	if l > 0 {
-		switch v := args[0].(type) {
-		case Integer:
-			var init byte = 0
-			if l > 1 {
-				if val, ok := args[1].(Integer); ok {
-					init = byte(val)
-				}
-			}
-			if v > 0 && v < MaxMemSize {
-				b := make([]byte, v)
-				for i := range b {
-					b[i] = init
-				}
-				return &Bytes{Value: b}, nil
-			}
-		case *String:
-			return &Bytes{Value: []byte(v.Value)}, nil
-		case *Bytes:
-			return v.Clone(), nil
-		case *Array:
-			var bts []byte
-			for _, val := range v.Value {
-				if i, ok := val.(Integer); ok {
-					bts = append(bts, byte(i))
-				}
-			}
-			return &Bytes{Value: bts}, nil
-		}
+	if l == 0 {
+		return &Bytes{}, nil
 	}
-	return &Bytes{}, nil
+	switch v := args[0].(type) {
+	case Integer:
+		var init byte = 0
+		if l > 1 {
+			val, ok := args[1].(Integer)
+			if !ok {
+				return argError("bytes.new", fmt.Sprintf("argument 2 (fill value) must be an integer, got %s", args[1].Type()))
+			}
+			init = byte(val)
+		}
+		if v < 0 || v >= MaxMemSize {
+			return argError("bytes.new", fmt.Sprintf("size must be between 0 and %d, got %d", MaxMemSize-1, v))
+		}
+		if v == 0 {
+			return &Bytes{}, nil
+		}
+		b := make([]byte, v)
+		for i := range b {
+			b[i] = init
+		}
+		return &Bytes{Value: b}, nil
+	case *String:
+		return &Bytes{Value: []byte(v.Value)}, nil
+	case *Bytes:
+		return v.Clone(), nil
+	case *Array:
+		bts := make([]byte, 0, len(v.Value))
+		for i, val := range v.Value {
+			iv, ok := val.(Integer)
+			if !ok {
+				return argError("bytes.new", fmt.Sprintf("array element %d must be an integer, got %s", i, val.Type()))
+			}
+			bts = append(bts, byte(iv))
+		}
+		return &Bytes{Value: bts}, nil
+	default:
+		return argError("bytes.new", fmt.Sprintf("expected an integer size, string, bytes, or array argument, got %s", v.Type()))
+	}
 }
 
 func bytesFromValue(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		switch v := args[0].(type) {
-		case *String:
-			return &Bytes{Value: []byte(v.Value)}, nil
-		case *Bytes:
-			return v.Clone(), nil
-		case *Array:
-			var bts []byte
-			for _, val := range v.Value {
-				if i, ok := val.(Integer); ok {
-					bts = append(bts, byte(i))
-				}
-			}
-			return &Bytes{Value: bts}, nil
-		}
+	if len(args) == 0 {
+		return &Bytes{}, nil
 	}
-	return &Bytes{}, nil
+	switch v := args[0].(type) {
+	case *String:
+		return &Bytes{Value: []byte(v.Value)}, nil
+	case *Bytes:
+		return v.Clone(), nil
+	case *Array:
+		bts := make([]byte, 0, len(v.Value))
+		for i, val := range v.Value {
+			iv, ok := val.(Integer)
+			if !ok {
+				return argError("bytes.from", fmt.Sprintf("array element %d must be an integer, got %s", i, val.Type()))
+			}
+			bts = append(bts, byte(iv))
+		}
+		return &Bytes{Value: bts}, nil
+	default:
+		return argError("bytes.from", fmt.Sprintf("expected a string, bytes, or array argument, got %s", v.Type()))
+	}
 }
 
 func bytesGenerateCryptoRand(ctx *Context, args ...Value) (Value, error) {
 	switch len(args) {
 	case 1:
-		if inputValue, ok := args[0].(Integer); ok {
-			size := int(inputValue)
-			if 0 < size && size < math.MaxInt32 {
-				b := make([]byte, size)
-				cryptoRand.Read(b)
-				return &Bytes{Value: b}, nil
-			}
+		inputValue, ok := args[0].(Integer)
+		if !ok {
+			return argError("bytes.genCryptoRand", fmt.Sprintf("expected an integer size argument, got %s", args[0].Type()))
 		}
+		size := int(inputValue)
+		if size <= 0 || size >= math.MaxInt32 {
+			return argError("bytes.genCryptoRand", fmt.Sprintf("size must be between 1 and %d, got %d", math.MaxInt32-1, size))
+		}
+		b := make([]byte, size)
+		cryptoRand.Read(b)
+		return &Bytes{Value: b}, nil
 	case 2:
 		s, okS := args[0].(Integer)
-		e, okE := args[1].(Integer)
-		if okS && okE {
-			size := int(s)
-			if 0 < size && size < math.MaxInt32 {
-				b := make([]byte, size)
-				cryptoRand.Read(b)
-				switch e {
-				case Integer(bytesEncodingBase64):
-					return &String{Value: base64.StdEncoding.EncodeToString(b)}, nil
-				case Integer(bytesEncodingHex):
-					return &String{Value: hex.EncodeToString(b)}, nil
-				case Integer(bytesEncodingHEX):
-					return &String{Value: strings.ToUpper(hex.EncodeToString(b))}, nil
-				case Integer(bytesEncodingBinary):
-					var sb strings.Builder
-					sb.Grow(len(b) * 8)
-					for _, v := range b {
-						fmt.Fprintf(&sb, "%08b", v)
-					}
-					return &String{Value: sb.String()}, nil
-				default:
-					return &Bytes{Value: b}, nil
-				}
-			}
+		if !okS {
+			return argError("bytes.genCryptoRand", fmt.Sprintf("argument 1 (size) must be an integer, got %s", args[0].Type()))
 		}
+		e, okE := args[1].(Integer)
+		if !okE {
+			return argError("bytes.genCryptoRand", fmt.Sprintf("argument 2 (encoding) must be an integer, got %s", args[1].Type()))
+		}
+		size := int(s)
+		if size <= 0 || size >= math.MaxInt32 {
+			return argError("bytes.genCryptoRand", fmt.Sprintf("size must be between 1 and %d, got %d", math.MaxInt32-1, size))
+		}
+		b := make([]byte, size)
+		cryptoRand.Read(b)
+		switch e {
+		case Integer(bytesEncodingBase64):
+			return &String{Value: base64.StdEncoding.EncodeToString(b)}, nil
+		case Integer(bytesEncodingHex):
+			return &String{Value: hex.EncodeToString(b)}, nil
+		case Integer(bytesEncodingHEX):
+			return &String{Value: strings.ToUpper(hex.EncodeToString(b))}, nil
+		case Integer(bytesEncodingBinary):
+			var sb strings.Builder
+			sb.Grow(len(b) * 8)
+			for _, v := range b {
+				fmt.Fprintf(&sb, "%08b", v)
+			}
+			return &String{Value: sb.String()}, nil
+		default:
+			return &Bytes{Value: b}, nil
+		}
+	default:
+		return argError("bytes.genCryptoRand", fmt.Sprintf("expected 1 or 2 arguments, got %d", len(args)))
 	}
-	return Nil, nil
 }
 
 func bytesTimingSafeEqual(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		lhs, okl := args[0].(*Bytes)
-		rhs, okr := args[1].(*Bytes)
-		if okl && okr {
-			return Bool(subtle.ConstantTimeCompare(lhs.Value, rhs.Value) == 1), nil
-		}
-		return False, nil
+	if len(args) < 2 {
+		return argError("bytes.timingSafeEqual", fmt.Sprintf("expected 2 bytes arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	lhs, okl := args[0].(*Bytes)
+	if !okl {
+		return argError("bytes.timingSafeEqual", fmt.Sprintf("argument 1 must be bytes, got %s", args[0].Type()))
+	}
+	rhs, okr := args[1].(*Bytes)
+	if !okr {
+		return argError("bytes.timingSafeEqual", fmt.Sprintf("argument 2 must be bytes, got %s", args[1].Type()))
+	}
+	return Bool(subtle.ConstantTimeCompare(lhs.Value, rhs.Value) == 1), nil
 }
 
 func bytesEncode(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		b, okI := args[0].(*Bytes)
-		e, okE := args[1].(Integer)
-		if okI && okE {
-			switch e {
-			case Integer(bytesEncodingBase64):
-				return &String{Value: base64.StdEncoding.EncodeToString(b.Value)}, nil
-			case Integer(bytesEncodingHex):
-				return &String{Value: hex.EncodeToString(b.Value)}, nil
-			case Integer(bytesEncodingHEX):
-				return &String{Value: strings.ToUpper(hex.EncodeToString(b.Value))}, nil
-			case Integer(bytesEncodingBase64URL):
-				return &String{Value: base64.URLEncoding.EncodeToString(b.Value)}, nil
-			case Integer(bytesEncodingBinary):
-				var sb strings.Builder
-				sb.Grow(len(b.Value) * 8)
-				for _, v := range b.Value {
-					fmt.Fprintf(&sb, "%08b", v)
-				}
-				return &String{Value: sb.String()}, nil
-			default:
-				return b, nil
-			}
-		}
+	if len(args) < 2 {
+		return argError("bytes.encode", fmt.Sprintf("expected 2 arguments (bytes, encoding), got %d", len(args)))
 	}
-	return Nil, nil
+	b, okI := args[0].(*Bytes)
+	if !okI {
+		return argError("bytes.encode", fmt.Sprintf("argument 1 must be bytes, got %s", args[0].Type()))
+	}
+	e, okE := args[1].(Integer)
+	if !okE {
+		return argError("bytes.encode", fmt.Sprintf("argument 2 (encoding) must be an integer, got %s", args[1].Type()))
+	}
+	switch e {
+	case Integer(bytesEncodingBase64):
+		return &String{Value: base64.StdEncoding.EncodeToString(b.Value)}, nil
+	case Integer(bytesEncodingHex):
+		return &String{Value: hex.EncodeToString(b.Value)}, nil
+	case Integer(bytesEncodingHEX):
+		return &String{Value: strings.ToUpper(hex.EncodeToString(b.Value))}, nil
+	case Integer(bytesEncodingBase64URL):
+		return &String{Value: base64.URLEncoding.EncodeToString(b.Value)}, nil
+	case Integer(bytesEncodingBinary):
+		var sb strings.Builder
+		sb.Grow(len(b.Value) * 8)
+		for _, v := range b.Value {
+			fmt.Fprintf(&sb, "%08b", v)
+		}
+		return &String{Value: sb.String()}, nil
+	default:
+		return b, nil
+	}
 }
 
 func bytesDecode(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		s, okS := args[0].(*String)
-		e, okE := args[1].(Integer)
-		if okS && okE {
-			var r []byte
-			var err error
-			switch e {
-			case Integer(bytesEncodingBase64):
-				r, err = base64.StdEncoding.DecodeString(s.Value)
-				goto resolve
-			case Integer(bytesEncodingHex), Integer(bytesEncodingHEX):
-				r, err = hex.DecodeString(s.Value)
-				goto resolve
-			case Integer(bytesEncodingBase64URL):
-				r, err = base64.URLEncoding.DecodeString(s.Value)
-				goto resolve
-			case Integer(bytesEncodingBinary):
-				l := len(s.Value)
-				if l%8 == 0 {
-					r = make([]byte, l/8)
-					for i := 0; i < l; i += 8 {
-						var b byte
-						for j := range 8 {
-							switch s.Value[i+j] {
-							case '1':
-								b = (b << 1) | 1
-							case '0':
-								b <<= 1
-							default:
-								return Nil, nil
-							}
-						}
-						r[i/8] = b
-					}
-					goto resolve
-				}
-				goto nilvalue
-			default:
-				return &Bytes{Value: []byte(s.Value)}, nil
-			}
-		resolve:
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			return &Bytes{Value: r}, nil
-		}
+	if len(args) < 2 {
+		return argError("bytes.decode", fmt.Sprintf("expected 2 arguments (string, encoding), got %d", len(args)))
 	}
-nilvalue:
-	return Nil, nil
+	s, okS := args[0].(*String)
+	if !okS {
+		return argError("bytes.decode", fmt.Sprintf("argument 1 must be a string, got %s", args[0].Type()))
+	}
+	e, okE := args[1].(Integer)
+	if !okE {
+		return argError("bytes.decode", fmt.Sprintf("argument 2 (encoding) must be an integer, got %s", args[1].Type()))
+	}
+
+	var r []byte
+	var err error
+	switch e {
+	case Integer(bytesEncodingBase64):
+		r, err = base64.StdEncoding.DecodeString(s.Value)
+	case Integer(bytesEncodingHex), Integer(bytesEncodingHEX):
+		r, err = hex.DecodeString(s.Value)
+	case Integer(bytesEncodingBase64URL):
+		r, err = base64.URLEncoding.DecodeString(s.Value)
+	case Integer(bytesEncodingBinary):
+		l := len(s.Value)
+		if l%8 != 0 {
+			return argError("bytes.decode", fmt.Sprintf("binary-encoded string length must be a multiple of 8, got %d", l))
+		}
+		r = make([]byte, l/8)
+		for i := 0; i < l; i += 8 {
+			var b byte
+			for j := range 8 {
+				switch s.Value[i+j] {
+				case '1':
+					b = (b << 1) | 1
+				case '0':
+					b <<= 1
+				default:
+					return argError("bytes.decode", fmt.Sprintf("invalid binary digit %q at position %d: expected '0' or '1'", s.Value[i+j], i+j))
+				}
+			}
+			r[i/8] = b
+		}
+	default:
+		return &Bytes{Value: []byte(s.Value)}, nil
+	}
+	if err != nil {
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
+	}
+	return &Bytes{Value: r}, nil
 }
 
 func bytesEncodings() *Object {
@@ -445,146 +474,172 @@ func bytesHMACAlgorithms() *Object {
 }
 
 func bytesToFile(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		b, okB := args[0].(*Bytes)
-		p, okP := args[1].(*String)
-		if okB && okP {
-			f, err := os.Create(p.Value)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			defer f.Close()
-			n, err := f.Write(b.Value)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			return Integer(n), nil
-		}
-		s, okS := args[0].(*String)
-		if okS && okP {
-			f, err := os.Create(p.Value)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			defer f.Close()
-			n, err := f.Write([]byte(s.Value))
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			return Integer(n), nil
-		}
+	if len(args) < 2 {
+		return argError("bytes.toFile", fmt.Sprintf("expected 2 arguments (data, path), got %d", len(args)))
 	}
-	return Nil, nil
+	p, okP := args[1].(*String)
+	if !okP {
+		return argError("bytes.toFile", fmt.Sprintf("argument 2 (path) must be a string, got %s", args[1].Type()))
+	}
+	var data []byte
+	switch v := args[0].(type) {
+	case *Bytes:
+		data = v.Value
+	case *String:
+		data = []byte(v.Value)
+	default:
+		return argError("bytes.toFile", fmt.Sprintf("argument 1 must be bytes or a string, got %s", args[0].Type()))
+	}
+	f, err := os.Create(p.Value)
+	if err != nil {
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
+	}
+	defer f.Close()
+	n, err := f.Write(data)
+	if err != nil {
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
+	}
+	return Integer(n), nil
 }
 
 func bytesFromFile(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if path, ok := args[0].(*String); ok {
-			data, err := os.ReadFile(path.Value)
-			if err != nil {
-				return &VidaError{Message: &String{Value: err.Error()}}, nil
-			}
-			return &Bytes{Value: data}, nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.fromFile", "expected a path string argument")
 	}
-	return Nil, nil
+	path, ok := args[0].(*String)
+	if !ok {
+		return argError("bytes.fromFile", fmt.Sprintf("expected a path string argument, got %s", args[0].Type()))
+	}
+	data, err := os.ReadFile(path.Value)
+	if err != nil {
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
+	}
+	return &Bytes{Value: data}, nil
 }
 
 func bytesXOR(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		lhs, okl := args[0].(*Bytes)
-		rhs, okr := args[1].(*Bytes)
-		if okl && okr {
-			l := min(len(lhs.Value), len(rhs.Value))
-			dst := make([]byte, l)
-			subtle.XORBytes(dst, lhs.Value, rhs.Value)
-			return &Bytes{Value: dst}, nil
-		}
+	if len(args) < 2 {
+		return argError("bytes.xor", fmt.Sprintf("expected 2 bytes arguments, got %d", len(args)))
 	}
-	return Nil, nil
+	lhs, okl := args[0].(*Bytes)
+	if !okl {
+		return argError("bytes.xor", fmt.Sprintf("argument 1 must be bytes, got %s", args[0].Type()))
+	}
+	rhs, okr := args[1].(*Bytes)
+	if !okr {
+		return argError("bytes.xor", fmt.Sprintf("argument 2 must be bytes, got %s", args[1].Type()))
+	}
+	l := min(len(lhs.Value), len(rhs.Value))
+	dst := make([]byte, l)
+	subtle.XORBytes(dst, lhs.Value, rhs.Value)
+	return &Bytes{Value: dst}, nil
 }
 
 func bytesUUID(ctx *Context, args ...Value) (Value, error) {
-	if len(args) == 1 {
+	switch len(args) {
+	case 0:
+		b := make([]byte, bytesUUIDLen)
+		cryptoRand.Read(b)
+		return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])}, nil
+	case 1:
 		if _, ok := args[0].(NilValue); ok {
 			return &String{Value: "00000000-0000-0000-0000-000000000000"}, nil
 		}
-		if b, ok := args[0].(*Bytes); ok && len(b.Value) == bytesUUIDLen {
+		if b, ok := args[0].(*Bytes); ok {
+			if len(b.Value) != bytesUUIDLen {
+				return argError("bytes.uuid", fmt.Sprintf("expected %d bytes, got %d", bytesUUIDLen, len(b.Value)))
+			}
 			return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b.Value[0:4], b.Value[4:6], b.Value[6:8], b.Value[8:10], b.Value[10:])}, nil
 		}
-		return &String{Value: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"}, nil
+		return argError("bytes.uuid", fmt.Sprintf("expected nil or bytes argument, got %s", args[0].Type()))
+	default:
+		return argError("bytes.uuid", fmt.Sprintf("expected 0 or 1 arguments, got %d", len(args)))
 	}
-	b := make([]byte, bytesUUIDLen)
-	cryptoRand.Read(b)
-	return &String{Value: fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])}, nil
 }
 
 func bytesParseUUID(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if s, ok := args[0].(*String); ok && len(s.Value) == 2*bytesUUIDLen+4 && s.Value[8] == '-' && s.Value[13] == '-' && s.Value[18] == '-' && s.Value[23] == '-' {
-			decoded, err := hex.DecodeString(fmt.Sprintf("%v%v%v%v%v", s.Value[0:8], s.Value[9:13], s.Value[14:18], s.Value[19:23], s.Value[24:36]))
-			if err == nil && len(decoded) == bytesUUIDLen {
-				return &Bytes{Value: decoded}, nil
-			}
-		}
+	if len(args) == 0 {
+		return argError("bytes.parseUUID", "expected a UUID string argument")
 	}
-	return Nil, nil
+	s, ok := args[0].(*String)
+	if !ok {
+		return argError("bytes.parseUUID", fmt.Sprintf("expected a string argument, got %s", args[0].Type()))
+	}
+	if len(s.Value) != 2*bytesUUIDLen+4 || s.Value[8] != '-' || s.Value[13] != '-' || s.Value[18] != '-' || s.Value[23] != '-' {
+		return argError("bytes.parseUUID", fmt.Sprintf("%q is not a valid UUID string", s.Value))
+	}
+	decoded, err := hex.DecodeString(fmt.Sprintf("%v%v%v%v%v", s.Value[0:8], s.Value[9:13], s.Value[14:18], s.Value[19:23], s.Value[24:36]))
+	if err != nil {
+		return &VidaError{Message: &String{Value: err.Error()}}, nil
+	}
+	if len(decoded) != bytesUUIDLen {
+		return argError("bytes.parseUUID", fmt.Sprintf("%q is not a valid UUID string", s.Value))
+	}
+	return &Bytes{Value: decoded}, nil
 }
 
 func bytesToString(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if b, ok := args[0].(*Bytes); ok {
-			return &String{Value: string(b.Value)}, nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.toString", "expected a bytes argument")
 	}
-	return Nil, nil
+	b, ok := args[0].(*Bytes)
+	if !ok {
+		return argError("bytes.toString", fmt.Sprintf("expected a bytes argument, got %s", args[0].Type()))
+	}
+	return &String{Value: string(b.Value)}, nil
 }
 
 func bytesIsEmpty(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if b, ok := args[0].(*Bytes); ok {
-			return Bool(len(b.Value) == 0), nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.isEmpty", "expected a bytes argument")
 	}
-	return Nil, nil
+	b, ok := args[0].(*Bytes)
+	if !ok {
+		return argError("bytes.isEmpty", fmt.Sprintf("expected a bytes argument, got %s", args[0].Type()))
+	}
+	return Bool(len(b.Value) == 0), nil
 }
 
 func bytesBitLen(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if b, ok := args[0].(*Bytes); ok {
-			return Integer(len(b.Value) * 8), nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.bitLen", "expected a bytes argument")
 	}
-	return Nil, nil
+	b, ok := args[0].(*Bytes)
+	if !ok {
+		return argError("bytes.bitLen", fmt.Sprintf("expected a bytes argument, got %s", args[0].Type()))
+	}
+	return Integer(len(b.Value) * 8), nil
 }
 
 func bytesDump(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if b, ok := args[0].(*Bytes); ok {
-			const rowSize = 16
-			var sb strings.Builder
-			l := len(b.Value)
-			for i := 0; i < l; i += rowSize {
-				end := min(i+rowSize, l)
-				row := b.Value[i:end]
-				fmt.Fprintf(&sb, "%08x ", i)
-				var space int
-				for j := range rowSize {
-					if j < len(row) {
-						space++
-						fmt.Fprintf(&sb, "%02x", row[j])
-						if space > 1 {
-							space = 0
-							sb.WriteByte(' ')
-						}
-					}
-				}
-				sb.WriteByte('\n')
-			}
-			return &String{Value: sb.String()}, nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.hexdump", "expected a bytes argument")
 	}
-	return Nil, nil
+	b, ok := args[0].(*Bytes)
+	if !ok {
+		return argError("bytes.hexdump", fmt.Sprintf("expected a bytes argument, got %s", args[0].Type()))
+	}
+	const rowSize = 16
+	var sb strings.Builder
+	l := len(b.Value)
+	for i := 0; i < l; i += rowSize {
+		end := min(i+rowSize, l)
+		row := b.Value[i:end]
+		fmt.Fprintf(&sb, "%08x ", i)
+		var space int
+		for j := range rowSize {
+			if j < len(row) {
+				space++
+				fmt.Fprintf(&sb, "%02x", row[j])
+				if space > 1 {
+					space = 0
+					sb.WriteByte(' ')
+				}
+			}
+		}
+		sb.WriteByte('\n')
+	}
+	return &String{Value: sb.String()}, nil
 }
 
 func bytesEndianess(ctx *Context, args ...Value) (Value, error) {
@@ -597,72 +652,90 @@ func bytesEndianess(ctx *Context, args ...Value) (Value, error) {
 
 func bytesCopyTo(ctx *Context, args ...Value) (Value, error) {
 	l := len(args)
-	if len(args) > 2 {
-		dst, okD := args[0].(*Bytes)
-		src, okS := args[1].(*Bytes)
-		srcOffset, okO := args[2].(Integer)
+	if l < 3 {
+		return argError("bytes.copyTo", fmt.Sprintf("expected at least 3 arguments (dst, src, srcOffset), got %d", l))
+	}
+	dst, okD := args[0].(*Bytes)
+	if !okD {
+		return argError("bytes.copyTo", fmt.Sprintf("argument 1 (dst) must be bytes, got %s", args[0].Type()))
+	}
+	src, okS := args[1].(*Bytes)
+	if !okS {
+		return argError("bytes.copyTo", fmt.Sprintf("argument 2 (src) must be bytes, got %s", args[1].Type()))
+	}
+	srcOffset, okO := args[2].(Integer)
+	if !okO {
+		return argError("bytes.copyTo", fmt.Sprintf("argument 3 (srcOffset) must be an integer, got %s", args[2].Type()))
+	}
 
-		if okD && okS && okO {
-			dstLen := len(dst.Value)
-			srcLen := len(src.Value)
-			offset := int(srcOffset)
-			length := dstLen
-			if l > 3 {
-				if l, ok := args[3].(Integer); ok && int(l) <= dstLen {
-					length = int(l)
-				}
-			}
-
-			if offset < 0 || offset+length > srcLen {
-				return &VidaError{Message: &String{Value: "source range out of bounds"}}, nil
-			}
-
-			copy(dst.Value, src.Value[offset:offset+length])
-			return Integer(length), nil
+	dstLen := len(dst.Value)
+	srcLen := len(src.Value)
+	offset := int(srcOffset)
+	length := dstLen
+	if l > 3 {
+		n, ok := args[3].(Integer)
+		if !ok {
+			return argError("bytes.copyTo", fmt.Sprintf("argument 4 (length) must be an integer, got %s", args[3].Type()))
+		}
+		if int(n) <= dstLen {
+			length = int(n)
 		}
 	}
-	return Nil, nil
 
+	if offset < 0 || offset+length > srcLen {
+		return argError("bytes.copyTo", "source range out of bounds")
+	}
+
+	copy(dst.Value, src.Value[offset:offset+length])
+	return Integer(length), nil
 }
 
 func bytesFill(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 1 {
-		b, okB := args[0].(*Bytes)
-		val, okV := args[1].(Integer)
-		if okB && okV {
-			for i := range b.Value {
-				b.Value[i] = byte(val % 256)
-			}
-			return b, nil
-		}
+	if len(args) < 2 {
+		return argError("bytes.fill", fmt.Sprintf("expected 2 arguments (bytes, value), got %d", len(args)))
 	}
-	return Nil, nil
+	b, okB := args[0].(*Bytes)
+	if !okB {
+		return argError("bytes.fill", fmt.Sprintf("argument 1 must be bytes, got %s", args[0].Type()))
+	}
+	val, okV := args[1].(Integer)
+	if !okV {
+		return argError("bytes.fill", fmt.Sprintf("argument 2 (value) must be an integer, got %s", args[1].Type()))
+	}
+	for i := range b.Value {
+		b.Value[i] = byte(val % 256)
+	}
+	return b, nil
 }
 
 func bytesReverse(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if b, okB := args[0].(*Bytes); okB {
-			for i, j := 0, len(b.Value)-1; i < j; i, j = i+1, j-1 {
-				b.Value[i], b.Value[j] = b.Value[j], b.Value[i]
-			}
-			return b, nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.reverse", "expected a bytes argument")
 	}
-	return Nil, nil
+	b, okB := args[0].(*Bytes)
+	if !okB {
+		return argError("bytes.reverse", fmt.Sprintf("expected a bytes argument, got %s", args[0].Type()))
+	}
+	for i, j := 0, len(b.Value)-1; i < j; i, j = i+1, j-1 {
+		b.Value[i], b.Value[j] = b.Value[j], b.Value[i]
+	}
+	return b, nil
 }
 
 func bytesReversed(ctx *Context, args ...Value) (Value, error) {
-	if len(args) > 0 {
-		if b, okB := args[0].(*Bytes); okB {
-			n := len(b.Value)
-			nb := make([]byte, n)
-			for i := range n {
-				nb[i] = b.Value[n-1-i]
-			}
-			return &Bytes{Value: nb}, nil
-		}
+	if len(args) == 0 {
+		return argError("bytes.reversed", "expected a bytes argument")
 	}
-	return Nil, nil
+	b, okB := args[0].(*Bytes)
+	if !okB {
+		return argError("bytes.reversed", fmt.Sprintf("expected a bytes argument, got %s", args[0].Type()))
+	}
+	n := len(b.Value)
+	nb := make([]byte, n)
+	for i := range n {
+		nb[i] = b.Value[n-1-i]
+	}
+	return &Bytes{Value: nb}, nil
 }
 
 func bytesConcat(ctx *Context, args ...Value) (Value, error) {

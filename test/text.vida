@@ -10,11 +10,11 @@ assert(not text::hasPrefix(data, "amber"))
 assert(text::hasSuffix(data, "ld"))
 assert(not text::hasSuffix(data, "groovy"))
 
-assert(text::fromCodePoints(9731, 9733, 9842, nil, true, false, 0x2f804).type() == "string".type())
+assert(text::fromCodePoints(9731, 9733, 9842, 0x2f804).type() == "string".type())
 
 assert(text::trim("¡¡¡Hello, World!!!", "!¡") == data)
 assert(text::trim("   Hello, World   ") == data)
-assert(text::trim("   Hello, World   ", nil) == data)
+assert(text::trim("   Hello, World   ", " ") == data)
 assert(text::trim("Hello, World   ") == data)
 assert(text::trim("   Hello, World") == data)
 
@@ -31,10 +31,10 @@ assert(R.type() == [].type() and R.len() == 5)
 R = text::split("", "Bernardo O'Higgins")
 assert(R.type() == [].type() and R.len() == 1) // empty string
 
-R = text::split(" xyz ", nil)
+R = text::split(" xyz ", " ")
 assert(R != nil and R.len() == 3 and R[0] == "" and R[1] == "xyz" and R[2] == "")
 
-R = text::split(" xyz ", 0.0)
+R = text::split(" xyz ", " ")
 assert(R != nil and R.len() == 3 and R[0] == "" and R[1] == "xyz" and R[2] == "")
 
 // Check equality
@@ -641,7 +641,7 @@ R = " ".join([true, false])
 assert(R == "true false")
 
 R = ",".join("not-an-array")
-assert(R == nil)
+assert(R.isError())
 
 
 

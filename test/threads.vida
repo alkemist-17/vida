@@ -304,7 +304,7 @@ assert(
 )
 
 t = wrap(fun {
-	assert(ex::protect(array.sortBy, [1,2,3], suspend) == nil)
+	assert(ex::protect(array.sortBy, [1,2,3], suspend).isError())
 	suspend(100)
 	ret 200
 })
